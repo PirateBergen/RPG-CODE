@@ -31,6 +31,7 @@ async function requestCharacterEffect(kind,actor,payload={}){
   await new Promise((resolve,reject)=>{listener=s=>{const r=s.val();if(r?.status==="done")resolve();if(["failed","cancelled"].includes(r?.status))reject(new Error(r.error||"Demande annulée"))};timer=setTimeout(async()=>{try{const r=await ref.child("status").transaction(v=>v==="queued"?"cancelled":undefined);if(r.committed)reject(new Error("Le MJ doit être connecté pour confirmer cette action"));else listener(await ref.once("value"))}catch(e){reject(e)}},15000);ref.on("value",listener,reject)})
  }catch(error){showNotification(error.message)}finally{clearTimeout(timer);if(listener)ref.off("value",listener);characterEffectRequests.delete(key)}
 }
+function showCurseIntro(player){showNotification(player.toUpperCase()+" : malédiction complète, en attente de la roue du MJ…")}
 function triggerCurseWheel(){ /* Le MJ coordonne automatiquement les personnages à huit points. */ }
 function applyCurseEffect(){ /* L’effet est appliqué une seule fois dans la transaction du MJ. */ }
 async function spinCurseWheel(player){

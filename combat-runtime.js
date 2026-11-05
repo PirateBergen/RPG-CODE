@@ -189,6 +189,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       })
       root.combat.turnState = { phase: "rolling", round: 1, sequence: 0, currentIndex: 0, currentActorId: "", participants: combatParticipants(root), rolls: {}, order: [] }
       root.game.combatState = { active: true, id, mainMob, tier, extraMobs: extraMobs.slice(0, 2), returnMap: root.game.map || currentMap || "taverne.jpg", returnTokens, returnAudio:root.game.mapAudio||null, time: now }
+      for(const hero of COMBAT_CHARACTERS)if(root.characters?.[hero]?.cursedEffect==="critOnly")root.characters[hero].cursedCombatId=id
       delete root.game.combatOutcome
       ;["storyImage", "storyImage2", "storyImage3", "highPNJName"].forEach(key => delete root.game[key])
       return root
@@ -211,6 +212,7 @@ async function finishReliableCombat(combatId){
  const root=combatClone(current)
  const type=root.game.combatOutcome?.combatId===combatId?root.game.combatOutcome.type:(!livingHeroes(root).length?"defeat":"victory")
  const outcome=sealCombatOutcome(root,type)
+ for(const hero of COMBAT_CHARACTERS){const c=root.characters?.[hero];if(c?.cursedCombatId===combatId){delete c.cursedEffect;delete c.cursedCombatId}}
  root.game.map=outcome.returnMap;root.tokens=combatClone(outcome.returnTokens)
  root.game.mapAudio=outcome.returnAudio||null
  root.game.combatOutcome.returnedAt=Date.now()

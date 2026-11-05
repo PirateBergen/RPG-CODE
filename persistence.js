@@ -311,6 +311,7 @@ async function replaceSession(state, action, operation) {
   SESSION_BRANCHES.forEach(key => { payload[key] = state[key] ?? null })
   payload.combatRequests = null
   payload.explorationRequests = null
+  payload.characterRequests = null
   payload.sessionControl = { revision: operation.id, action, changedAt: Date.now() }
   await db.ref().update(payload) // Tous les remplacements et suppressions sont atomiques.
   operation.markCommitted()
@@ -514,7 +515,7 @@ function resolveCharacterCurse(character, playerId, rollId, resultIndex) {
   if (!character || !rollId || character.lastCurseResolution?.id === rollId) return null
   const next = cloneSession(character)
   switch (resultIndex) {
-    case 0: next.hp = Math.max(1, Math.floor((Number(next.hp) || 100) * 0.6)); break
+    case 0: { const hp = Number.isFinite(Number(next.hp)) ? Math.max(0, Number(next.hp)) : 0; next.hp = hp === 0 ? 0 : Math.max(1, Math.floor(hp * 0.6)); break }
     case 1: { const stat = playerMainStat[playerId]; if (stat) next[stat] = Math.max(0, (Number(next[stat]) || 0) - 4); break }
     case 2: next.cursedEffect = "critOnly"; break
     case 3: { const items = String(next.inventaire || "").split("\n").filter(s => s.trim()); items.pop(); next.inventaire = items.join("\n"); break }

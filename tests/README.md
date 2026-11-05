@@ -10,3 +10,5 @@ Les présentations sont vérifiées dans cinq DOM JSDOM, pas dans cinq navigateu
 Exploration : node tests/exploration.cjs. Pour le parcours complet, lancer tests/firebase-exploration.cjs avec l’émulateur Realtime Database sur 127.0.0.1:9005 (projet demo-rpg-exploration). Ce test exécute tous les scripts, avec deux MJ et trois joueurs, puis deux reconnexions supplémentaires. Les sons sont capturés par les appels play(), sans écoute réelle.
 
 Fins de combat : node tests/combat-exit.cjs ; puis tests/firebase-combat-exit.cjs avec le même émulateur local (namespace demo-rpg-exit). Vérifie les cinq rôles, les animations et retours de boss, les KO collectifs, Bibi seule, un écran retardé et une reconnexion.
+
+Malédictions et pouvoirs : node tests/character-effects.cjs ; tests/firebase-character-effects.cjs nécessite l’émulateur local sur 127.0.0.1:9005 (projet demo-rpg-effects). Les cinq sessions sont simulées ; les sons ne sont pas écoutés.

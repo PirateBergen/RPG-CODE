@@ -2284,7 +2284,7 @@ function showCurseIntro(playerID) {
 }
 
 function showCurseWheelScreen(playerID) {
-  const isCursed = isGM || (myToken && myToken.id === playerID)
+  const isCursed = canAccessCharacter(playerID)
   let s = document.getElementById("curseWheelScreen")
   if (!s) { s = document.createElement("div"); s.id = "curseWheelScreen"; document.body.appendChild(s) }
   s.innerHTML = ""
@@ -2345,22 +2345,7 @@ function showCurseResult(playerID, resultIndex) {
   const d=document.createElement("div"); d.innerText=ch.description; d.style.cssText="font-family:IM Fell English;font-size:clamp(16px,2.5vw,22px);color:#cc6666;text-align:center;margin-bottom:30px;"; s.appendChild(d)
   if (isGM) applyCurseEffect(playerID,safeIndex)
   else if (myToken && myToken.id===playerID) applyCurseEffect(playerID,safeIndex)
-  setTimeout(()=>{
-    if (s && s.parentNode) s.remove()
-    db.ref("curse/wheel").remove()
-    if (isGM) db.ref("characters/"+playerID+"/curse").set(0)
-    else if (myToken && myToken.id===playerID) db.ref("characters/"+playerID+"/curse").set(0)
-    if(currentSheetPlayer===playerID){
-      curseLevel=0
-      document.querySelectorAll(".curseGem").forEach(g=>g.classList.remove("active"))
-    }
-    if (window.__curseWheelTriggeredFor === String(playerID).toLowerCase()) window.__curseWheelTriggeredFor = null
-    const tok=document.getElementById(playerID)
-    if(tok){
-      tok.classList.remove("cursed")
-      stopBloodEffect(tok)
-    }
-  },5000)
+
 }
 
 function applyCurseEffect(playerID, ri) {

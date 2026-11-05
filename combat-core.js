@@ -200,6 +200,11 @@ function resolveHeroCombatAction(root, request, dice) {
   const power = getPlayerAttackPower(attack, roll, stat, { playerId: actor, charData: data, isSpecial: special })
   if (crit) raw.corruption = Math.min(10, combatInt(raw.corruption) + 1)
   if (fail) raw.curse = Math.min(8, combatInt(raw.curse) + 1)
+  if(raw.cursedEffect==="critOnly"&&raw.cursedCombatId===c.id&&!crit){
+    if(special){c.playerSpecials ||= {};c.playerSpecials[actor]=true}
+    nextCombatTurn(root,request)
+    return {actor,attack:attack.name,roll,dice:max,crit,fail,amount:0,mode:"curse-blocked",special,target:slot,message:"Malédiction : seul un critique produit un effet"}
+  }
   if (heal) {
     if (!COMBAT_CHARACTERS.includes(payload.target)) throw new Error("Choisissez un héros à soigner")
     const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * 2 : power)

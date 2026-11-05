@@ -41,6 +41,7 @@ function detachFirebaseAccessSync() {
   window.__authRole = null; window.__authPlayerId = null
   if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
   if(typeof syncCombatExitCoordinator==="function")syncCombatExitCoordinator()
+  if(typeof syncCharacterEffects==="function")syncCharacterEffects()
   if(typeof syncExplorationCoordinator === "function") syncExplorationCoordinator()
   stopCharacterSubscriptions()
   stopPersistenceSync()
@@ -58,6 +59,7 @@ function syncFirebaseAccessForUser(uid) {
     if(typeof syncExplorationCoordinator === "function")syncExplorationCoordinator()
     if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
     if(typeof syncCombatExitCoordinator==="function")syncCombatExitCoordinator()
+  if(typeof syncCharacterEffects==="function")syncCharacterEffects()
     if (window.__sessionBusy) recoverExpiredSessionLock().catch(error => console.warn(error))
     if (previousRole === "gm" && window.__authRole !== "gm") resetLocalCharacterAccess()
     syncCharacterSubscriptions()
@@ -2461,6 +2463,7 @@ db.ref("curse/wheel").on("value", snap => {
   if (!data) {
     window.__curseWheelTriggeredFor = null
     window.__activeCurseWheel = null
+    if(typeof presentSavedCurseWheel==="function")presentSavedCurseWheel(null)
     return
   }
   presentSavedCurseWheel(data)
@@ -3260,6 +3263,7 @@ function watchCharacter(snapshot) {
     } else {
       token.classList.remove("powerReady", "powerFull")
       if (myToken && myToken.id === playerID) powerModeActive = false
+      if(myToken?.id===playerID)document.getElementById("usePowerBtn")?.remove()
       const p1 = document.getElementById("power1Sound")
       if (p1 && myToken && myToken.id === playerID) { p1.pause(); p1.currentTime = 0 }
     }

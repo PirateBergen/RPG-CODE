@@ -393,7 +393,7 @@ function playRoiIntro(mob, tierMob) {
       let iv = setInterval(() => { if (roiSnd.volume > 0.04) roiSnd.volume = Math.max(0, roiSnd.volume - 0.05); else { roiSnd.pause(); clearInterval(iv) } }, 80)
     }, 15000)
     setTimeout(() => {
-      db.ref("game/storyImage").remove()
+      if(isGM)db.ref("game/storyImage").remove()
       if (box) { box.style.transition = "opacity 1s ease"; box.style.opacity = "0" }
       cf.style.transition = "opacity 1s ease"; cf.style.opacity = "0"
     }, 15000)
@@ -1048,7 +1048,7 @@ function _startRemoteCombat(data) {
   if (window.__sessionBusy) return
   if (isGM || !data || !data.active) return
   if (!gameStarted) return
-  if (gameState !== "GAME" && gameState !== "COMBAT") return
+  if (gameState !== "GAME" && gameState !== "COMBAT" && gameState !== "DIALOGUE") return
   if (combatActive && currentMob === data.mainMob) return
 
   currentMob = data.mainMob

@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "description": "Dépendances des tests uniquement, sans effet sur le site statique",
+  "devDependencies": {
+    "jsdom": "31.0.0",
+    "@sinonjs/fake-timers": "15.4.0",
+    "@firebase/rules-unit-testing": "6.0.0",
+    "firebase": "13.2.0"
+  }
+}

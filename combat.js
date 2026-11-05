@@ -78,7 +78,7 @@ async function submitInitiativeRoll(actorId) {
   const roll = Math.floor(Math.random()*12)+1
   try {
     const result = await db.ref("combat/turnState/rolls/"+actorId).transaction(current => current == null ? roll : undefined)
-    if (result.committed) showDiceAnimation(COMBAT_MOBS.includes(actorId)?"MOB":actorId,12,roll)
+    // Le listener partagé affiche le jet confirmé sur tous les écrans.
   } catch(error) { showNotification("Initiative non enregistrée : "+error.message) }
 }
 
@@ -365,6 +365,7 @@ function launchFromMobMenu() {
 function _launchCombatWithMobs(mainMob, forceTier, extraMobs) { return launchReliableCombat(mainMob, forceTier, extraMobs) }
 
 function combatSequence(mob, forceTier) {
+  window.__combatIntroUntil = Date.now()+((mob === "roi" && (forceTier||mobStats[mob]?.tier)==="boss")?24500:6500)
   const tierMob = forceTier || (mobStats[mob] ? mobStats[mob].tier : "weak")
   if (mob === "roi" && tierMob === "boss") playRoiIntro(mob, tierMob)
   else _startCombatSequence(mob, tierMob)
@@ -689,7 +690,7 @@ function spawnEloSummonToken(data) {
 /* VICTOIRE / DÉFAITE        */
 /* ========================= */
 
-function showVictory() {
+function _showVictoryNow() {
   window.__combatOutcomeShowing = true
   if (typeof addSessionLog === "function") addSessionLog("🏆 Victoire !")
 
@@ -733,7 +734,7 @@ function showVictory() {
   }, 7000)
 }
 
-function showDefeat() {
+function _showDefeatNow() {
   if (window.__combatOutcomeShowing) return
   window.__combatOutcomeShowing = true
   if (typeof addSessionLog === "function") addSessionLog("💀 Défaite")
@@ -750,6 +751,7 @@ function showDefeat() {
   flashRed(); screenShakeHard()
   setTimeout(() => {
     screen.style.display = "none"
+    endCombat(); returnToMap()
     setTimeout(() => { window.__combatOutcomeShowing = false }, 250)
   }, 5000)
 }
@@ -1070,6 +1072,7 @@ function _startRemoteCombat(data) {
     const ts = window.__combatTurnState
     if (ts && typeof renderCombatInitiativeOverlay === "function") {
       renderCombatInitiativeOverlay(ts)
+      if(ts.phase==="active")queueCombatTurnBanner(window.__combatSnapshot?.id||"legacy",ts)
       if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
     }
   }, 350)
@@ -1077,7 +1080,7 @@ function _startRemoteCombat(data) {
 
 function _playRemoteCombatExit() {
   if (isGM) return
-  if (window.__combatOutcomeShowing || window.__pendingLocalDefeat) return
+  if (window.__combatOutcomeShowing || window.__combatOutcomeQueued || window.__pendingLocalDefeat) return
   const localId = typeof getLocalPlayerId === "function"
     ? getLocalPlayerId()
     : (myToken ? String(myToken.id || "").toLowerCase() : "")
@@ -1103,7 +1106,7 @@ function _playRemoteCombatExit() {
 
   db.ref("characters/" + localId + "/hp").once("value", snap => {
     const hp = parseInt(snap.val(), 10) || 0
-    if (hp <= 0) {
+    if (hp <= 0 && !window.__combatSnapshot?.id) {
       if (typeof triggerLocalDefeat === "function") triggerLocalDefeat("remote-exit-hp")
       else showDefeat()
       return
@@ -1252,7 +1255,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
       if (typeof showCombatHUD === "function") showCombatHUD()
       if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
-      _showCombatTurnBanner(data)
+      queueCombatTurnBanner(window.__combatSnapshot?.id || "legacy",data)
       return
     }
 
@@ -1262,7 +1265,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.__lastCombatActorId = data.currentActorId
       if (data.currentActorId !== prevActor) {
         if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
-        _showCombatTurnBanner(data)
+        queueCombatTurnBanner(window.__combatSnapshot?.id || "legacy",data)
       }
     }
 

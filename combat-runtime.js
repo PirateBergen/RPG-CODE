@@ -102,6 +102,7 @@ function chooseEnemyCombatTarget() {
 }
 
 async function requestHeroCombatAction(attack, options = {}) {
+  if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   if (window.__playerAttackResolving || window.__sessionBusy) return
   const actor = options.actorId || getCombatHUDPlayerId()
   if (!canAccessCharacter(actor)) return
@@ -118,6 +119,7 @@ async function requestHeroCombatAction(attack, options = {}) {
 }
 
 async function requestEnemyCombatAction(attack, mobData, panel, forcedTarget, slot) {
+  if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   if (!isGM || window.__mobAttackResolving) return
   const actor = slot || panel?.dataset.slot || mobData.slot || "mob"
   window.__mobAttackResolving = true
@@ -127,6 +129,7 @@ async function requestEnemyCombatAction(attack, mobData, panel, forcedTarget, sl
 }
 
 async function requestAllyCombatAction(pnj, action, targetId, panel) {
+  if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   const actor = getCombatHUDPlayerId() || getCurrentCombatActorId()
   if (!COMBAT_HEROES.includes(actor)) { showNotification("Les alliés interviennent pendant un tour de joueur"); return }
   if (getCurrentCombatActorId() !== actor) { showNotification("Ce n’est pas le tour de cet acteur"); return }
@@ -206,17 +209,9 @@ async function finishReliableCombat(combatId) {
   })
 }
 
-function presentCombatResolution(action) {
-  if (!action || action.id === lastCombatPresentationId || action.time < (window.__pageLoadTime || 0)) return
-  lastCombatPresentationId = action.id
-  const result = action.result
-  if (Number.isFinite(result.roll)) showDiceAnimation(result.actor?.startsWith("mob") ? "MOB" : result.actor || "MJ", result.dice || 20, result.roll)
-  if (result.mode === "hero" || result.mode === "damage" || result.mode === "heal") showNotification((result.actor || "").toUpperCase() + " — " + result.attack + " : " + result.amount + (result.mode === "heal" ? " PV restaurés" : " dégâts"))
-  else if (result.mode === "ally") showNotification((result.pnjId || "Allié").toUpperCase() + " — " + result.attack + " : jet " + result.roll)
-  else if (result.message) showNotification(result.message)
-}
 
 async function requestPlayerThuumAction(word) {
+  if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   const actor = myToken?.id
   if (!actor || window.__playerAttackResolving) return
   window.__playerAttackResolving = true
@@ -277,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!data) return
     window.__combatTurnState = data.turnState || null
     window.__playerCombatSpecialsUsed = data.playerSpecials || {}; window.__playerCombatFlags = data.playerFlags || {}
-    presentCombatResolution(data.lastAction)
+    observeCombatPresentation(data)
     if (combatActive) {
       COMBAT_MOBS.forEach(slot => {
         activeMobSlots[slot] = !!data[slot]
@@ -298,3 +293,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })
 })
+
+async function requestManualCombatOutcome(type) {
+  if(!isGM || !["victory","defeat"].includes(type) || window.__sessionBusy)return
+  try{await transactCombatRoot(current=>{
+    if(!current?.combat || current.combat.phase==="finished")return undefined
+    const root=combatClone(current)
+    root.combat.phase="finished";root.combat.turnState.phase="finished"
+    root.game.combatOutcome={type,combatId:root.combat.id,time:Date.now(),manual:true}
+    if(type==="victory"){
+      root.game.defeatedMobs ||= {}
+      COMBAT_MOBS.forEach(slot=>{if(root.combat[slot])root.game.defeatedMobs[root.combat[slot].name]=true})
+    }
+    return root
+  })}catch(error){showNotification("Fin de combat non confirmée : "+error.message)}
+}

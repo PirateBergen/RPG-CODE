@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261105.4"</script>
+  <script>window.GAME_V = "20261105.5"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -799,8 +799,8 @@
       <input id="mobDamageInput" type="number" placeholder="0">
     </div>
     <div id="gmCombatButtons">
-      <button id="btnVictoire" onclick="showVictory()">⚔ VICTOIRE</button>
-      <button id="btnDefaite"  onclick="showDefeat()">💀 DÉFAITE</button>
+      <button id="btnVictoire" onclick="requestManualCombatOutcome('victory')">⚔ VICTOIRE</button>
+      <button id="btnDefaite"  onclick="requestManualCombatOutcome('defeat')">💀 DÉFAITE</button>
     </div>
     </div>
   </div>
@@ -916,6 +916,7 @@
 <script>document.write('<script src="access.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="persistence.js?v='+GAME_V+'"><\/script>')</script>
 <!-- 4. Logique principale + Firebase listeners -->
+<script>document.write('<script src="presentation.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="game.js?v='+GAME_V+'"><\/script>')</script>
 <!-- 5. Interface utilisateur -->
 <script>document.write('<script src="ui.js?v='+GAME_V+'"><\/script>')</script>

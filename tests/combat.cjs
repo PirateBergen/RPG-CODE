@@ -19,7 +19,8 @@ function request(root,kind,actor,payload={},uid=actor==='greg'||actor==='bibi'?'
 function reduce(root,id='action-1',seed=12345){ctx.input=clone(root);ctx.requestId=id;ctx.seed=seed;return clone(run('reduceCombatRequest(input,requestId,seed)'))}
 function seedFor(roll,max){for(let seed=0;seed<100000;seed++){ctx.seed=seed;if(run('combatRandom(seed)('+max+')')===roll)return seed}throw Error('seed not found')}
 async function test(name,fn){try{await fn();results.push({name,ok:true})}catch(e){results.push({name,ok:false,error:e.stack})}}
-(async()=>{
+module.exports={fixture,request,reduce,seedFor};
+if(require.main===module)(async()=>{
 for(const name of ['combat-core.js','combat-runtime.js','combat.js','ui.js','game.js','persistence.js'])await test('Syntaxe '+name,()=>new vm.Script(read(name)));
 await test('Tous les scripts combinés',()=>new vm.Script(['config.js','state.js','utils.js','access.js','persistence.js','game.js','ui.js','combat.js','combat-core.js','combat-runtime.js'].map(read).join('\n;\n')));
 await test('Initiative : Greg/Bibi a un seul participant',()=>{ctx.root=fixture();const list=clone(run('combatParticipants(root)'));assert.deepEqual(list.map(p=>p.id),['greg','ju','elo','mob','mob2']);assert.equal(list[0].label,'Greg / Bibi')});

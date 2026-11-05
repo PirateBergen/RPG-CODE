@@ -188,7 +188,7 @@ function resolveHeroCombatAction(root, request, dice) {
     if (!COMBAT_CHARACTERS.includes(payload.target)) throw new Error("Choisissez un héros à soigner")
     const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * 2 : power)
     nextCombatTurn(root, request)
-    return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, mode: "heal", target: payload.target }
+    return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, mode: "heal", special, target: payload.target, targetName: payload.target.toUpperCase() }
   }
   let damage = fail ? 0 : power * (crit ? 2 : 1), groupHeal = 0
   if (special) {
@@ -218,7 +218,7 @@ function resolveHeroCombatAction(root, request, dice) {
   if (groupHeal > 0) COMBAT_CHARACTERS.filter(id => root.characters[id].hp > 0).forEach(id => combatHeal(root, request, "ELO", id, groupHeal))
   if (special) { c.playerSpecials ||= {}; c.playerSpecials[actor] = true }
   nextCombatTurn(root, request)
-  return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, mode: "damage", target: slot }
+  return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, mode: "damage", special, target: slot, targetName: mob.name.toUpperCase() }
 }
 
 function resolveEnemyCombatAction(root, request, dice) {
@@ -227,9 +227,10 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (!mob) throw new Error("Ennemi introuvable")
   const special = getMobSpecialAttack(mob.name, mob.tier || "weak")
   const normal = getMobAttacksForMob(mob.name, mob.tier || "weak")
+  let specialRoll = null
   let attack = payload.random ? null : [...normal, ...(special ? [special] : [])].find(a => a.name === payload.attack)
   if (payload.random) {
-    const specialRoll = dice(20)
+    specialRoll = dice(20)
     const choices = specialRoll === 20 && special && !mob.specialUsed ? [special] : normal.filter(a => normal.length === 1 || a.name !== mob.lastAttack)
     attack = choices[dice(choices.length) - 1]
   }
@@ -254,9 +255,9 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (attack.special) mob.specialUsed = true
   if (attack.healSelfRatio) mob.hp = Math.min(mob.maxHP, mob.hp + Math.round(applied * attack.healSelfRatio))
   mob.lastAttack = attack.name
-  root.game.mobAttackEvent = { attackName: attack.name, icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : targets[0].toUpperCase(), mobName: mob.name.toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
+  const presentation = { attackName: attack.name, icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : targets[0].toUpperCase(), mobName: mob.name.toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
   nextCombatTurn(root, request)
-  return { actor: slot, attack: attack.name, amount: damage, targets, mode: "enemy" }
+  return { actor: slot, attack: attack.name, amount: damage, targets, mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}) }
 }
 
 function resolveAllyCombatAction(root, request, dice) {
@@ -284,7 +285,7 @@ function resolveAllyCombatAction(root, request, dice) {
   root.combat.usedAllies ||= {}; root.combat.usedAllies[action.id] = true
   delete root.game.playerAllyAccess
   nextCombatTurn(root, request)
-  return { actor: request.actor, attack: action.label, pnjId: pnj.id, roll, dice: action.dice, crit, fail, amount, mode: "ally" }
+  return { actor: request.actor, attack: action.label, pnjId: pnj.id, actionId: action.id, target: payload.target || "", roll, dice: action.dice, crit, fail, amount, mode: "ally" }
 }
 
 function reduceCombatRequest(current, id, seed) {
@@ -327,11 +328,15 @@ function reduceCombatRequest(current, id, seed) {
       if (word === "REIHKT") root.combat[target].attackMalus = { amount: Math.max(1, (learned.rank || 1) * 2), turns: 2 }
       root.combat.usedThuum ||= {}; root.combat.usedThuum[request.actor] ||= {}; root.combat.usedThuum[request.actor][word] = true
       delete root.game.playerThuumAccess[request.actor][word]
-      root.game.thuumCast = { playerId: request.actor, word, time: request.time, outsideCombat: false }
+      // Le cri et ses effets visuels sont transmis avec le résultat de cette action.
       nextCombatTurn(root, request); result = { actor: request.actor, mode: "thuum", word, amount: amounts.main }
     } else throw new Error("Action inconnue")
     request.status = "done"; request.result = result
-    root.combat.lastAction = { id, time: request.time, result }
+    const visual={id,combatId:root.combat.id,time:Date.now(),result,nextTurn:combatClone(root.combat.turnState)}
+    root.combat.lastAction = visual
+    root.combat.visualEvents ||= {}; root.combat.visualEvents[id]=visual
+    const entries=Object.entries(root.combat.visualEvents).sort((a,b)=>a[1].time-b[1].time)
+    entries.slice(0,Math.max(0,entries.length-120)).forEach(([key])=>delete root.combat.visualEvents[key])
     return root
   } catch (error) { return fail(error) }
 }

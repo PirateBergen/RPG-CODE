@@ -799,6 +799,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(heroVideo, 0.88)
     heroVideo.onerror = () => heroVideo.style.display = "none"
     stage.appendChild(heroVideo)
+    heroVideo.play().catch(()=>{heroVideo.muted=true;heroVideo.play().catch(()=>{})})
   } else if (presentation.image) {
     const heroImage = document.createElement("img")
     heroImage.className = "playerSpecialImage playerSpecialImage--" + presentation.scene
@@ -893,6 +894,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   }
 
   setTimeout(() => {
+    overlay.querySelectorAll("video").forEach(video=>video.pause())
     overlay.style.transition = "opacity 0.42s ease"
     overlay.style.opacity = "0"
     setTimeout(() => overlay.remove(), 450)
@@ -949,7 +951,7 @@ function showPlayerAttackImpact(playerId, attack, outcome, meta = {}) {
 
   const sub = document.createElement("div")
   sub.style.cssText = "margin-top:10px;font-family:Cinzel,serif;font-size:14px;letter-spacing:1px;text-align:center;color:" + accent + ";"
-  if (outcome.mode === "heal") sub.innerText = playerId.toUpperCase() + " récupère " + (outcome.amount || 0) + " PV"
+  if (outcome.mode === "heal") sub.innerText = String(outcome.targetName || playerId).toUpperCase() + " récupère " + (outcome.amount || 0) + " PV"
   else sub.innerText = playerId.toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
   box.appendChild(sub)
 
@@ -2185,7 +2187,23 @@ function renderRuneChallenge(data) {
 function unlockRuneHint(hintId) { db.ref("game/runeChallenge/unlockedHints").once("value",snap=>{ const c=snap.val()||[]; if(!c.includes(hintId)){ c.push(hintId); db.ref("game/runeChallenge/unlockedHints").set(c); showNotification("Fragment runique découvert !"); flashGold() } }) }
 function revealRuneLetter(letter) { if(!isGM) return; db.ref("game/runeChallenge/revealedLetters").once("value",snap=>{ const c=snap.val()||[], u=letter.toUpperCase(); if(!c.includes(u)){ c.push(u); db.ref("game/runeChallenge/revealedLetters").set(c); showNotification("Lettre révélée : "+u+" = "+(runeAlphabet[u]||"?")) } }) }
 function showRuneVictory() { playSound("critSound"); flashGold(); flashGold(); screenShakeHard(); powerExplosion(); const w=document.createElement("div"); w.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Cinzel Decorative','Cinzel',serif;font-size:40px;color:gold;text-shadow:0 0 20px gold;text-align:center;pointer-events:none;z-index:99999999;"; const title=document.createElement("div"); title.innerText="⚔ MESSAGE DÉCHIFFRÉ ⚔"; const sub=document.createElement("span"); sub.style.cssText="font-size:18px;color:#c8a050;"; sub.innerText="Les runes révèlent leur secret !"; w.appendChild(title); w.appendChild(sub); document.body.appendChild(w); setTimeout(()=>{ w.style.transition="opacity 1s"; w.style.opacity="0"; setTimeout(()=>w.remove(),1000) },4000) }
-function tryRuneEventOnDice() { const sb=document.getElementById("storyImage"); if(!sb||sb.style.display!=="flex") return; db.ref("game/runeChallenge").once("value",snap=>{ const data=snap.val(); if(!data||!data.active) return; if(Math.random()>0.25) return; const rev=data.revealedLetters||[], ml=[...new Set("ALUERDSBVTIN OPQCM".split("").filter(c=>c.trim()))], unrev=ml.filter(l=>!rev.includes(l)); if(!unrev.length) return; const l=unrev[Math.floor(Math.random()*unrev.length)], r=runeAlphabet[l]||"?", d=runeEventDialogues[Math.floor(Math.random()*runeEventDialogues.length)]; showRuneBubble(d,l,r); setTimeout(()=>revealRuneLetter(l),3000) }) }
+async function tryRuneEventOnDice(eventId) {
+  if(!isGM || !eventId || window.__sessionBusy)return
+  const box=document.getElementById("storyImage")
+  if(!box || box.style.display!=="flex")return
+  try {
+    const claim=await db.ref("game/runeDiceClaims/"+eventId).transaction(value=>value?undefined:true)
+    if(!claim.committed)return
+    const data=(await db.ref("game/runeChallenge").once("value")).val()
+    if(!data?.active || Math.random()>0.25)return
+    const revealed=data.revealedLetters||[],letters=[...new Set("ALUERDSBVTIN OPQCM".split("").filter(c=>c.trim()))].filter(c=>!revealed.includes(c))
+    if(!letters.length)return
+    const letter=letters[Math.floor(Math.random()*letters.length)]
+    await db.ref("game/runeDiceEvent").set({id:eventId,letter,rune:runeAlphabet[letter]||"?",dialogue:runeEventDialogues[Math.floor(Math.random()*runeEventDialogues.length)],time:Date.now()})
+    setTimeout(()=>revealRuneLetter(letter),3000)
+  }catch(error){console.warn("Événement de rune non confirmé",error)}
+}
+
 function showRuneBubble(dialogue, letter, rune) { const ex=document.getElementById("runeBubble"); if(ex) ex.remove(); const b=document.createElement("div"); b.id="runeBubble"; b.style.cssText="position:fixed;bottom:30%;left:55%;max-width:320px;background:url('images/paper.png') center/100% 100% no-repeat;padding:24px 30px;font-family:'IM Fell English',serif;font-size:15px;color:#2b1a10;line-height:1.6;z-index:9999999;opacity:0;transition:opacity 0.6s ease;pointer-events:none;"; const tx=document.createElement("div"); tx.innerText=dialogue; tx.style.cssText="margin-bottom:12px;font-style:italic;"; b.appendChild(tx); const rd=document.createElement("div"); rd.style.cssText="text-align:center;font-size:32px;color:#c8a050;text-shadow:0 0 10px gold;font-family:serif;margin:8px 0 4px;"; rd.innerText=rune; b.appendChild(rd); const ld=document.createElement("div"); ld.style.cssText="text-align:center;font-family:'Cinzel',serif;font-size:14px;color:#8b4000;letter-spacing:2px;"; ld.innerText="= "+letter; b.appendChild(ld); document.body.appendChild(b); setTimeout(()=>b.style.opacity="1",50); playSound("parcheminSound"); setTimeout(()=>{ b.style.opacity="0"; setTimeout(()=>b.remove(),600) },6000) }
 
 /* ========================= */
@@ -3175,7 +3193,7 @@ function _executeAllyAction(pnj, action, targetId, panel) { return requestAllyCo
 
 function showAllyActionResult(data) { /* Les jets et effets sont désormais résolus par le MJ, une seule fois. */ }
 
-function _allyInvocationCinematic(pnj, action, targetId) {
+function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
   // ÉTAPE 1 — Tremblement + flash
   screenShakeHard()
   setTimeout(()=>screenShakeHard(), 300)
@@ -3219,52 +3237,12 @@ function _allyInvocationCinematic(pnj, action, targetId) {
     // ÉTAPE 3 — Après 4s, lancer le dé
     setTimeout(()=>{
       cinScreen.style.opacity = "0"
-      setTimeout(()=>{ cinScreen.remove(); _rollAllyDice(pnj, action, targetId) }, 600)
+      setTimeout(()=>{ cinScreen.remove(); if(typeof onComplete==="function")onComplete() }, 600)
     }, 4000)
   }, 600)
 }
 
-function _rollAllyDice(pnj, action, targetId) {
-  const diceOverlay = document.createElement("div"); diceOverlay.id = "allyDiceOverlay"
-  diceOverlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.82);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999996;opacity:0;transition:opacity 0.4s;`
-  diceOverlay.innerHTML = `
-    <div style="font-family:'Cinzel Decorative',Cinzel,serif;font-size:12px;color:${pnj.color};letter-spacing:5px;margin-bottom:24px;opacity:0.8;">${action.label.toUpperCase()}</div>
-    <div id="allyDiceNum" style="font-family:'Cinzel',serif;font-size:110px;font-weight:bold;color:${pnj.color};text-shadow:0 0 40px ${pnj.color}88;min-width:180px;text-align:center;transition:all 0.08s;">?</div>
-    <div style="font-size:14px;color:#6a8a9a;margin-top:12px;letter-spacing:3px;">D${action.dice}</div>
-  `
-  document.body.appendChild(diceOverlay)
-  setTimeout(()=>diceOverlay.style.opacity="1", 20)
-
-  // Roulade identique à celle des joueurs
-  let spins = 0; const maxSpins = 16
-  const spinIv = setInterval(()=>{
-    spins++
-    const el = document.getElementById("allyDiceNum"); if (!el) return
-    el.innerText = Math.floor(Math.random()*action.dice)+1
-    if (spins >= maxSpins) {
-      clearInterval(spinIv)
-      const roll = Math.floor(Math.random()*action.dice)+1
-      el.innerText = roll
-      el.style.fontSize = "140px"
-
-      // Son diceinv.mp3
-      const diceInv = new Audio("audio/diceinv.mp3"); setManagedAudioBaseVolume(diceInv, 0.85); diceInv.play().catch(()=>{})
-      setTimeout(()=>{ let iv=setInterval(()=>{ if(diceInv.volume>0.05) diceInv.volume=Math.max(0,diceInv.volume-0.05); else{ diceInv.pause(); clearInterval(iv) } },100) }, 3000)
-
-      // Son crit/fail UNIQUEMENT selon résultat, après 400ms
-      setTimeout(()=>{
-        if (roll === action.dice) playSound("critSound", 0.8)
-        else if (roll === 1) playSound("critFailSound", 0.8)
-      }, 400)
-
-      // Fermer après 2s puis appliquer
-      setTimeout(()=>{
-        diceOverlay.style.opacity = "0"
-        setTimeout(()=>{ diceOverlay.remove(); _applyAllyResult(pnj, action, roll, targetId) }, 400)
-      }, 2000)
-    }
-  }, 90)
-}
+// Aucun jet local après une invocation : le résultat partagé est présenté par presentation.js.
 
 function _applyAllyResult() { /* Présentation uniquement ; la résolution est centralisée. */ }
 

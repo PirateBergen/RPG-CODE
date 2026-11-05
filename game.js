@@ -575,6 +575,8 @@ function getLocalPlayerId() {
 
 function triggerLocalDefeat(reason) {
   const localId = getLocalPlayerId()
+  if (window.__combatSnapshot?.id && window.__combatSnapshot.phase !== "finished") return false
+  if (window.__combatSnapshot?.id && livingMobs(window.__combatSnapshot).length === 0) return false
   if (isGM || !localId || window.__combatOutcomeShowing || window.__pendingLocalDefeat) return false
   if (!(combatActive || gameState === "COMBAT" || reason === "playerDeath" || reason === "combatOutcome" || reason === "hp-watch" || reason === "remote-exit-hp")) return false
   window.__pendingLocalDefeat = true
@@ -1655,7 +1657,7 @@ db.ref("combat/mob").on("value", snap => {
         hud.style.display = "block"
         activeMobSlots["mob"] = true
       }
-      if (data.hp <= 0 && combatActive && !window.__combatOutcomeShowing) {
+      if (!livingMobs(window.__combatSnapshot).length && window.__combatSnapshot?.phase === "finished" && combatActive && !window.__combatOutcomeShowing) {
         showVictory()
       }
     }
@@ -1663,16 +1665,12 @@ db.ref("combat/mob").on("value", snap => {
 
 // ─── diceRoll ───
 db.ref("diceRoll").on("child_added", snap => {
-  if (window.__sessionBusy) return
-  const roll = snap.val()
-  if (!roll || !roll.player || !roll.dice || !roll.result) return
-  if (roll.time && roll.time < gameStartTime) return
-  // Validation : résultat doit être cohérent avec le dé
-  const dice   = parseInt(roll.dice)
-  const result = parseInt(roll.result)
-  if (!Number.isInteger(dice) || !Number.isInteger(result)) return
-  if (result < 1 || result > dice) return
-  showDiceAnimation(roll.player, dice, result)
+  if (!window.__sessionBusy) presentSharedDice(snap.key,snap.val())
+})
+
+db.ref("game/runeDiceEvent").on("value",snap=>{
+  const data=snap.val()
+  if(!window.__sessionBusy && data?.id && data.time >= (window.__pageLoadTime||0))enqueueSharedVisual("rune-"+data.id,()=>showRuneBubble(data.dialogue,data.letter,data.rune),6800)
 })
 
 // ─── storyImage slots ───
@@ -2467,22 +2465,14 @@ function showMobSpecialAttackEvent(data) {
   setTimeout(() => {
     overlay.style.opacity = "0"
     setTimeout(() => { if (overlay.parentNode) overlay.remove() }, 450)
-    db.ref("game/mobAttackEvent").remove()
+
   }, 6000)
   screenShakeHard()
   if (!scene || ["draugr", "ogre", "melenchon", "balraug", "dragon", "gobelins", "fenrir", "kraken", "jormungand", "nhiddog"].includes(scene)) screenShakeHard()
 }
 
 // ─── mobAttackEvent ───
-db.ref("game/mobAttackEvent").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  if (!data) return
-  // Ignorer données résiduelles (antérieures au chargement de la page ou > 8s)
-  if (!data.time || data.time < (window.__pageLoadTime || 0) || Date.now() - data.time > 8000) {
-    db.ref("game/mobAttackEvent").remove()
-    return
-  }
+function showMobAttackPresentation(data) {
   if (data.special) {
     showMobSpecialAttackEvent(data)
     return
@@ -2543,10 +2533,16 @@ db.ref("game/mobAttackEvent").on("value", snap => {
   setTimeout(() => {
     notif.style.opacity = "0"
     setTimeout(() => { if (notif.parentNode) notif.remove() }, 500)
-    db.ref("game/mobAttackEvent").remove()
+
   }, 2800)
   screenShakeHard()
   playSound("powerSound", 0.52)
+
+}
+window.showMobAttackPresentation=showMobAttackPresentation
+db.ref("game/mobAttackEvent").on("value",snap=>{
+  const data=snap.val()
+  if(!window.__sessionBusy && data?.time >= (window.__pageLoadTime||0))enqueueSharedVisual("legacy-mob-"+data.time,()=>showMobAttackPresentation(data),data.special?7000:3400)
 })
 
 // ─── curse/wheel ───
@@ -2702,7 +2698,7 @@ db.ref("game/combatOutcome").on("value", snap => {
     const targetId = String(data.player || "").trim().toLowerCase()
     if (targetId && targetId !== localId.trim().toLowerCase()) return
     if (isGM) showDefeat(); else triggerLocalDefeat("combatOutcome")
-    setTimeout(()=>{ if(combatActive){endCombat();returnToMap()} },5500)
+    // La sortie suit la présentation de la défaite sur chaque écran.
   }
 })
 
@@ -3236,7 +3232,7 @@ db.ref("game/thuumCast").on("value", snap => {
   if (!data || !data.time) return
   if (data.time <= window.__lastThuumCastTime) return
   window.__lastThuumCastTime = data.time
-  playThuumCastEffect(data)
+  if(data.outsideCombat !== false)enqueueSharedVisual("thuum-"+data.time,()=>playThuumCastEffect(data),2000)
 })
 
 // ─── allyBroadcast — cinématique invocation alliée (visible par tous) ───
@@ -3804,7 +3800,7 @@ function _buildDice3D(resultBox) {
   return { cube, label, resLabel }
 }
 
-function showDiceAnimation(playerName, max, final, rawRoll) {
+function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
   window.__diceResolutionUntil = Date.now() + 2600
   const resultBox = document.getElementById("diceResult")
   resultBox.classList.remove("crit", "fail", "mjRoll")
@@ -3814,8 +3810,8 @@ function showDiceAnimation(playerName, max, final, rawRoll) {
 
   const safeName = String(playerName).replace(/</g, "&lt;").replace(/>/g, "&gt;")
   const naturalRoll = Number.isFinite(parseInt(rawRoll, 10)) ? parseInt(rawRoll, 10) : final
-  const isCritical = Number.isInteger(naturalRoll) && Number.isInteger(max) && naturalRoll === max && naturalRoll > 1
-  const isFailure = Number.isInteger(naturalRoll) && naturalRoll === 1
+  const isCritical = rollMeta.crit ?? (Number.isInteger(naturalRoll) && Number.isInteger(max) && naturalRoll === max && naturalRoll > 1)
+  const isFailure = rollMeta.fail ?? (Number.isInteger(naturalRoll) && naturalRoll === 1)
   const { cube, label, resLabel } = _buildDice3D(resultBox)
 
   label.textContent = safeName + " — d" + max
@@ -3848,7 +3844,7 @@ function showDiceAnimation(playerName, max, final, rawRoll) {
         resultBox.classList.add("crit")
         resLabel.textContent = "✦ " + final + " ✦"
         playSound("critSound"); screenShake(); flashGold()
-        tryRuneEventOnDice()
+        if(isGM && rollMeta.eventId)tryRuneEventOnDice(rollMeta.eventId)
         if (playerName !== "MJ" && playerName !== "MOB") {
           // Conséquence appliquée une seule fois par le lanceur ou le moteur de combat.
         }
@@ -3857,7 +3853,7 @@ function showDiceAnimation(playerName, max, final, rawRoll) {
       if (isFailure) {
         resultBox.classList.add("fail")
         playSound("critFailSound"); screenShakeHard(); flashRed()
-        tryRuneEventOnDice()
+        if(isGM && rollMeta.eventId)tryRuneEventOnDice(rollMeta.eventId)
         if (playerName !== "MJ" && playerName !== "MOB") {
           // Conséquence appliquée une seule fois par le lanceur ou le moteur de combat.
         }
@@ -3877,7 +3873,7 @@ function showDiceAnimation(playerName, max, final, rawRoll) {
           resultBox.classList.remove("crit","fail","mjRoll")
           cube.style.animation = ""
         }, 500)
-      }, 5600)
+      }, 1800)
     }, 300)
   }, 1800)
 }
@@ -3890,7 +3886,7 @@ function rollStat(stat) {
   const statValue = parseInt(field.value) || 0
   const dice = Math.floor(Math.random() * 20) + 1
   applyFreeDiceConsequences(myToken.id,20,dice)
-  showDiceAnimation(myToken.id, 20, dice + statValue, dice)
+  db.ref("diceRoll").push({player:myToken.id,dice:20,result:dice+statValue,rawRoll:dice,time:Date.now(),sender:myToken.id}).catch(error=>showNotification("Jet non partagé : "+error.message))
 }
 
 /* ========================= */

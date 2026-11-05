@@ -748,12 +748,12 @@ function getMobWeakness(mobName, mobTier = "weak") {
 const mobSpecialPresentations = {
   valkyrie: {
     scene: "valkyrie",
-    sound: "valkyrie.mp3",
+    sound: "impact.mp3",
     soundVolume: 0.68,
     kicker: "Jugement céleste",
     emphasis: "divine",
     particles: [],
-    image: "valkyriespé.jpg",
+    image: "valkyrie.png",
     quoteFrame: "cadre.png"
   },
   liquorice: {

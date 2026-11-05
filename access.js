@@ -30,7 +30,14 @@ function readCharacter(id, onValue, onError) {
       })
   return promise.then(snapshot => {
     // Un résultat demandé sous une ancienne identité ne doit pas remplir la fiche.
-    if (uid !== window.__authUid || generation !== characterAccessGeneration) throw new Error("Accès personnage modifié")
+    if (uid !== window.__authUid) {
+      const error = new Error("Accès personnage modifié")
+      if (onValue) { if (onError) onError(error); return null }
+      throw error
+    }
+    // Les rôles/profils arrivent séparément pendant la connexion : refaire la
+    // projection avec les droits actuels plutôt que signaler une erreur normale.
+    if (generation !== characterAccessGeneration) return readCharacter(id, onValue, onError)
     if (onValue) onValue(snapshot)
     return snapshot
   }).catch(error => {

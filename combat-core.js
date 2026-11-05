@@ -1,5 +1,30 @@
 "use strict"
 
+
+function combatExitSnapshot(root,type,request={}){
+  const c=root.combat,state=root.game?.combatState||{},origin=state.returnMap||root.game?.map||"taverne.jpg"
+  const map=type==="victory"&&c?.mob?.name==="balraug"?"prairie.jpg":type==="victory"&&c?.mob?.name==="kraken"?"niflheim.jpg":origin
+  const tokens=combatClone(state.returnTokens||root.tokens||{})
+  if(tokens.bibi&&root.tokens?.bibi)tokens.bibi.followGreg=root.tokens.bibi.followGreg!==false
+  const result={type,combatId:c.id,time:Date.now(),returnMap:map,returnTokens:tokens,returnAudio:map===origin?(state.returnAudio||(root.game.mapAudio&&(!root.game.mapAudio.map||root.game.mapAudio.map===origin)?root.game.mapAudio:null)):null,lootBonus:!!COMBAT_MOBS.some(slot=>c?.[slot]?.victoryLootBonus?.active)}
+  if(c.lastAction)result.finalAction=combatClone(c.lastAction)
+  return result
+}
+function sealCombatOutcome(root,type,request={}){
+  root.game ||= {}
+  if(root.game.combatOutcome?.combatId===root.combat.id&&root.combat.phase==="finished"&&root.game.combatOutcome.returnMap&&root.game.combatOutcome.returnTokens)return root.game.combatOutcome
+  root.game.combatOutcome=combatExitSnapshot(root,type,request)
+  const now=new Date();root.game.sessionLog ||= {}
+  root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
+  root.combat.phase="finished";root.combat.turnState ||= {};root.combat.turnState.phase="finished"
+  if(type==="victory"){
+    root.game.defeatedMobs ||= {}
+    COMBAT_MOBS.forEach(slot=>{if(root.combat[slot])root.game.defeatedMobs[root.combat[slot].name]=true})
+  }
+  return root.game.combatOutcome
+}
+
+
 const COMBAT_HEROES = ["greg", "ju", "elo"]
 const COMBAT_MOBS = ["mob", "mob2", "mob3"]
 const COMBAT_CHARACTERS = [...COMBAT_HEROES, "bibi"]
@@ -86,20 +111,11 @@ function combatDamage(root, request, from, slot, amount, type = "dmg") {
   return before - target.hp
 }
 
-function combatOutcome(root, request) {
-  if (!livingMobs(root.combat).length) {
-    root.combat.phase = "finished"; root.combat.turnState.phase = "finished"
-    root.game.combatOutcome = { type: "victory", combatId: root.combat.id, time: request.time, lootBonus: COMBAT_MOBS.some(slot => root.combat[slot]?.victoryLootBonus?.active) }
-    root.game.defeatedMobs ||= {}
-    COMBAT_MOBS.forEach(slot => { if (root.combat[slot]) root.game.defeatedMobs[root.combat[slot].name] = true })
-    return true
-  }
-  if (!livingHeroes(root).length) {
-    root.combat.phase = "finished"; root.combat.turnState.phase = "finished"
-    root.game.combatOutcome = { type: "defeat", combatId: root.combat.id, time: request.time }
-    return true
-  }
-  return false
+function combatOutcome(root,request){
+ if(root.combat.phase==="finished")return true
+ if(!livingHeroes(root).length){sealCombatOutcome(root,"defeat",request);return true}
+ if(!livingMobs(root.combat).length){sealCombatOutcome(root,"victory",request);return true}
+ return false
 }
 
 function tickCombatRound(root, request) {
@@ -164,7 +180,7 @@ function resolveHeroCombatAction(root, request, dice) {
   requireCombatTurn(root, request, actor)
   const raw = root.characters[actor], data = combatCharacter(root, actor)
   const special = !!payload.special
-  const attack = special ? getPlayerSpecialAttack(actor) : (attacks[actor] || []).find(a => a.name === payload.attack)
+  const attack = getCombatHeroAttack(actor,payload.attack,special)
   if (!attack || attack.name !== payload.attack) throw new Error("Capacité inconnue")
   if (special && c.playerSpecials?.[actor]) throw new Error("Spéciale déjà utilisée")
   const heal = getPlayerAttackTypeKey(attack) === "heal"
@@ -204,7 +220,7 @@ function resolveHeroCombatAction(root, request, dice) {
   if (attack.name === "Petite merde" && c.playerFlags?.[actor]?.spiderSense) damage *= 2
   const amount = combatDamage(root, request, actor.toUpperCase() + " — " + attack.name, slot, Math.round(damage))
   if (!fail) {
-    if (actor === "greg" && attack.name === "Le Bibi" && crit) mob.bibiRage = { damage: 2, turns: 3 }
+    if ((actor === "greg" || actor === "bibi") && attack.name === "Le Bibi" && crit) mob.bibiRage = { damage: 2, turns: 3 }
     if (actor === "greg" && attack.name === "I know Frank (si arc)" && crit) mob.playerBleed = { damage: 1, turns: 2 }
     if (actor === "ju" && getPlayerAttackTypeKey(attack) === "charm") { mob.yuAggro = { turns: 3, allyBonus: 1 }; if (crit) mob.yuSkipNextTurn = { active: true } }
     if (attack.name === "Petite merde" && crit) mob.attackMalus = { amount: 1, turns: 2 }
@@ -334,9 +350,12 @@ function reduceCombatRequest(current, id, seed) {
     request.status = "done"; request.result = result
     const visual={id,combatId:root.combat.id,time:Date.now(),result,nextTurn:combatClone(root.combat.turnState)}
     root.combat.lastAction = visual
+    if(root.game.combatOutcome?.combatId===root.combat.id)root.game.combatOutcome.finalAction=combatClone(visual)
     root.combat.visualEvents ||= {}; root.combat.visualEvents[id]=visual
     const entries=Object.entries(root.combat.visualEvents).sort((a,b)=>a[1].time-b[1].time)
     entries.slice(0,Math.max(0,entries.length-120)).forEach(([key])=>delete root.combat.visualEvents[key])
     return root
   } catch (error) { return fail(error) }
 }
+
+function getCombatHeroAttack(actor,name,special=false){if(special)return getPlayerSpecialAttack(actor);const list=actor==="bibi"?[attacks.greg.find(a=>a.name==="Le Bibi")]:attacks[actor]||[];return list.find(a=>a?.name===name)}

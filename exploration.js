@@ -9,6 +9,7 @@ const explorationPending=new Set()
 function requireExplorationConnection(){
   if(!window.__explorationOnline)throw new Error("Connexion interrompue : attendez la reconnexion avant de réessayer.")
   if(window.__sessionBusy)throw new Error("La partie est en cours de synchronisation")
+  if(window.__combatReturnInProgress||window.__combatOutcomeQueued||window.__combatOutcomeShowing||window.__combatSnapshot?.phase==="finished")throw new Error("Attendez le retour à la carte.")
 }
 function syncExplorationCoordinator(){
   if(explorationCoordinatorRef&&explorationCoordinatorCb)explorationCoordinatorRef.off("child_added",explorationCoordinatorCb)
@@ -166,7 +167,7 @@ function scheduleCemeteryOpening(data){
  if(!isGM||cemeteryOpenTimers.has(data.time))return
  cemeteryOpenTimers.add(data.time)
  setTimeout(async()=>{cemeteryOpenTimers.delete(data.time);if(window.__sessionBusy){scheduleCemeteryOpening(data);return}
- try{await transactCombatRoot(current=>{const spell=current?.game?.cemeterySpell;if(!spell||spell.time!==data.time||spell.glipheShown||spell.freed)return undefined;const root=combatClone(current);Object.assign(root.game.cemeterySpell,{glipheShown:true,turnIdx:0,revision:0});return root})}catch(error){showNotification(error.message)}
+ try{await transactCombatRoot(current=>{const spell=current?.game?.cemeterySpell;if(!spell||spell.time!==data.time||spell.glipheShown||spell.freed||current.game.combatState?.active)return undefined;const root=combatClone(current);Object.assign(root.game.cemeterySpell,{glipheShown:true,turnIdx:0,revision:0});return root})}catch(error){showNotification(error.message)}
  },Math.max(1000,10000-(Date.now()-data.time)))
 }
 function ensureCemeteryMusic(){let music=document.getElementById("sortPrisonMusic");if(!music){music=document.createElement("audio");music.id="sortPrisonMusic";music.src="audio/sortprison.mp3";music.loop=true;document.body.appendChild(music);setManagedAudioBaseVolume(music,.75);music.play().catch(()=>{})}}

@@ -8,3 +8,5 @@ Les tests firebase-combat.cjs et firebase-presentation.cjs exigent un émulateur
 Les présentations sont vérifiées dans cinq DOM JSDOM, pas dans cinq navigateurs graphiques. Le résultat de chaque dé est comparé, les créations de cinématiques sont vérifiées, et les minuteries sont accélérées. Les sons sont simulés ; leur audibilité dépend du navigateur, du volume et d'un premier clic sur le site.
 
 Exploration : node tests/exploration.cjs. Pour le parcours complet, lancer tests/firebase-exploration.cjs avec l’émulateur Realtime Database sur 127.0.0.1:9005 (projet demo-rpg-exploration). Ce test exécute tous les scripts, avec deux MJ et trois joueurs, puis deux reconnexions supplémentaires. Les sons sont capturés par les appels play(), sans écoute réelle.
+
+Fins de combat : node tests/combat-exit.cjs ; puis tests/firebase-combat-exit.cjs avec le même émulateur local (namespace demo-rpg-exit). Vérifie les cinq rôles, les animations et retours de boss, les KO collectifs, Bibi seule, un écran retardé et une reconnexion.

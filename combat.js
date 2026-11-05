@@ -488,7 +488,7 @@ function _startCombatSequence(mob, tierMob) {
           if (isGM) {
             document.getElementById("gmDamagePanel").style.display = "block"
             if (typeof toggleGMDamageControls === "function") toggleGMDamageControls(true)
-            document.getElementById("gmCombatPanel").style.display = "flex"
+            document.getElementById("gmCombatButtons").style.display = "flex"
           }
         }, 600)
       }, 800)
@@ -690,14 +690,10 @@ function spawnEloSummonToken(data) {
 /* VICTOIRE / DÉFAITE        */
 /* ========================= */
 
-function _showVictoryNow() {
+function _showVictoryNow(outcome) {
   window.__combatOutcomeShowing = true
-  if (typeof addSessionLog === "function") addSessionLog("🏆 Victoire !")
 
-  db.ref("combat/mob/victoryLootBonus").once("value", snap => {
-    const bonus = snap.val()
-    if (bonus && bonus.active) showNotification("Spider Sense a révélé un meilleur butin pour la victoire.")
-  })
+  if(outcome?.lootBonus)showNotification("Spider Sense a révélé un meilleur butin pour la victoire.")
   playSound("victorySound", 0.45)
   fadeMusicOut(() => {})
 
@@ -715,29 +711,15 @@ function _showVictoryNow() {
     if (vs) { let iv = setInterval(() => { if (vs.volume > 0.03) vs.volume -= 0.03; else { vs.pause(); vs.volume = 0; clearInterval(iv) } }, 100) }
   }, 5000)
   setTimeout(() => {
-    victory.style.display = "none"
-    endCombat()
-    if (currentMob === "balraug") {
-      currentMap = "prairie.jpg"
-      if (isGM) db.ref("game/map").set("prairie.jpg")
-      returnToMap()
-      setTimeout(() => crossfadeMusic(mapMusic["prairie.jpg"]), 800)
-    } else if (currentMob === "kraken") {
-      currentMap = "niflheim.jpg"
-      if (isGM) db.ref("game/map").set("niflheim.jpg")
-      returnToMap()
-      setTimeout(() => crossfadeMusic(mapMusic["niflheim.jpg"]), 800)
-    } else {
-      returnToMap()
-    }
-    setTimeout(() => { window.__combatOutcomeShowing = false }, 300)
+    victory.style.display="none"
+    if(typeof completeCombatReturn==="function")completeCombatReturn(outcome)
+    else{endCombat();returnToMap();window.__combatOutcomeShowing=false}
   }, 7000)
 }
 
-function _showDefeatNow() {
+function _showDefeatNow(outcome) {
   if (window.__combatOutcomeShowing) return
   window.__combatOutcomeShowing = true
-  if (typeof addSessionLog === "function") addSessionLog("💀 Défaite")
   window.__pendingLocalDefeat = true
   combatActive = true
   setGameState("COMBAT")
@@ -751,14 +733,14 @@ function _showDefeatNow() {
   flashRed(); screenShakeHard()
   setTimeout(() => {
     screen.style.display = "none"
-    endCombat(); returnToMap()
-    setTimeout(() => { window.__combatOutcomeShowing = false }, 250)
+    if(typeof completeCombatReturn==="function")completeCombatReturn(outcome)
+    else{endCombat();returnToMap();window.__combatOutcomeShowing=false}
   }, 5000)
 }
 
-function endCombat() {
-  if (!combatActive) return
-  combatActive = false
+function endCombat(options = {}) {
+  if (!combatActive && !options.force) return
+  combatActive = false; combatStarting = false
   if (typeof resetLocalCombatVisualState === "function") resetLocalCombatVisualState()
   setGameState("GAME")
 
@@ -768,9 +750,10 @@ function endCombat() {
     if (token && map) { map.appendChild(token); token.style.position = "absolute" }
   })
 
-  const gcp = document.getElementById("gmCombatPanel"); if (gcp) gcp.style.display = "none"
+  const gcp = document.getElementById("gmCombatButtons"); if (gcp) gcp.style.display = "none"
   const gdp = document.getElementById("gmDamagePanel"); if (gdp) gdp.style.display = "none"
   stopBossFireEffect()
+  document.querySelectorAll('[id^="mobToken_"]').forEach(token=>{if(token._slotRef&&token._slotRefCb)token._slotRef.off("value",token._slotRefCb);token.remove()})
 
   const atkPanel = document.getElementById("mobAttackPanel"); if (atkPanel) atkPanel.remove()
   ;["mob2","mob3"].forEach(s => { activeMobSlots[s] = false })
@@ -801,45 +784,21 @@ function endCombat() {
   window.__eloSummonState = null
   const eloSummonToken = document.getElementById("eloSummonToken"); if (eloSummonToken) eloSummonToken.remove()
   if (typeof closePlayerThuumPanel === "function") closePlayerThuumPanel()
-  if (isGM) finishReliableCombat(window.__combatSnapshot?.id).catch(error=>showNotification("Fin de combat non confirmée : "+error.message))
+  if (isGM && !options.skipFinish) finishReliableCombat(window.__combatSnapshot?.id).catch(error=>showNotification("Fin de combat non confirmée : "+error.message))
 
   setTimeout(() => { if (typeof updateThuumButton === "function") updateThuumButton() }, 80)
 }
 
-function returnToMap() {
-  const fade = document.getElementById("fadeScreen")
-  fade.style.transition = "opacity 0.6s ease"; fade.style.opacity = "1"; fade.style.pointerEvents = "none"
-
-  setTimeout(() => {
-    const map = document.getElementById("map")
-    if (currentMap) map.style.backgroundImage = "url('images/" + currentMap + "')"
-
-    ;["greg","ju","elo","bibi","mobToken"].forEach(id => {
-      const token = document.getElementById(id)
-      if (token && map) {
-        map.appendChild(token)
-        token.style.top = ""; token.style.left = ""; token.style.transform = ""
-        token.style.width = ""; token.style.height = ""; token.style.position = "absolute"; token.style.pointerEvents = "auto"
-      }
-    })
-
-    const mobToken = document.getElementById("mobToken"); if (mobToken) mobToken.style.display = "none"
-
-    db.ref("tokens").once("value", snapshot => {
-      const data = snapshot.val(); if (!data) return
-      Object.keys(data).forEach(id => {
-        const token = document.getElementById(id)
-        if (token && data[id]) { token.style.left = data[id].x + "px"; token.style.top = data[id].y + "px" }
-      })
-    })
-
-    setTimeout(() => {
-      fade.style.transition = "opacity 0.8s ease"; fade.style.opacity = "0"; fade.style.pointerEvents = "none"
-      // Balraug — musique déjà en cours, ne pas relancer
-      if (currentMap && mapMusic[currentMap]) crossfadeMusic(mapMusic[currentMap])
-      if (typeof updateThuumButton === "function") updateThuumButton()
-    }, 300)
-  }, 600)
+function returnToMap(outcome){
+ const fade=document.getElementById("fadeScreen")
+ if(fade){fade.style.transition="opacity .6s ease";fade.style.opacity="1";fade.style.pointerEvents="none"}
+ setTimeout(()=>{
+ const map=document.getElementById("map")
+ for(const id of ["greg","ju","elo","bibi","mobToken"]){const token=document.getElementById(id);if(!token||!map)continue;map.appendChild(token);token.style.transform="";token.style.width="";token.style.height="";token.style.position="absolute";token.style.pointerEvents="auto"}
+ const mob=document.getElementById("mobToken");if(mob)mob.style.display="none"
+ if(typeof restoreCombatMap==="function")restoreCombatMap(outcome)
+ setTimeout(()=>{if(fade){fade.style.transition="opacity .8s ease";fade.style.opacity="0"}window.__combatReturnInProgress=false},300)
+ },600)
 }
 
 /* ========================= */
@@ -1051,6 +1010,7 @@ function _startRemoteCombat(data) {
   if (gameState !== "GAME" && gameState !== "COMBAT" && gameState !== "DIALOGUE") return
   if (combatActive && currentMob === data.mainMob) return
 
+  window.__localCombatId=data.id||window.__combatSnapshot?.id;window.__completedCombatExitId=null
   currentMob = data.mainMob
   if (data.returnMap) currentMap = data.returnMap
 
@@ -1078,88 +1038,13 @@ function _startRemoteCombat(data) {
   }, 350)
 }
 
-function _playRemoteCombatExit() {
-  if (isGM) return
-  if (window.__combatOutcomeShowing || window.__combatOutcomeQueued || window.__pendingLocalDefeat) return
-  const localId = typeof getLocalPlayerId === "function"
-    ? getLocalPlayerId()
-    : (myToken ? String(myToken.id || "").toLowerCase() : "")
-
-  const proceedExit = () => {
-    const fade = document.getElementById("fadeScreen")
-    if (fade) {
-      fade.style.transition = "opacity 0.6s ease"
-      fade.style.opacity = "1"
-      fade.style.pointerEvents = "none"
-    }
-
-    setTimeout(() => {
-      endCombat()
-      returnToMap()
-    }, 450)
-  }
-
-  if (!localId) {
-    proceedExit()
-    return
-  }
-
-  db.ref("characters/" + localId + "/hp").once("value", snap => {
-    const hp = parseInt(snap.val(), 10) || 0
-    if (hp <= 0 && !window.__combatSnapshot?.id) {
-      if (typeof triggerLocalDefeat === "function") triggerLocalDefeat("remote-exit-hp")
-      else showDefeat()
-      return
-    }
-    proceedExit()
-  })
+function _playRemoteCombatExit(){
+ if(window.__combatOutcomeQueued||window.__combatOutcomeShowing)return
+ Promise.all([db.ref("game/map").once("value"),db.ref("tokens").once("value")]).then(([map,tokens])=>completeCombatReturn({combatId:window.__localCombatId,returnMap:map.val()||currentMap,returnTokens:tokens.val()||{}}))
 }
 
-function _resolveRemoteCombatEnd(attempt = 0) {
-  if (isGM) return
-  if (window.__combatOutcomeShowing || window.__pendingLocalDefeat) return
-  const maxAttempts = 6
-
-  db.ref("game/combatOutcome").once("value", outcomeSnap => {
-    const outcome = outcomeSnap.val()
-
-    if (window.__combatOutcomeShowing || window.__pendingLocalDefeat) return
-
-    // Ignorer un outcome trop vieux (données résiduelles d'un ancien combat)
-    if (outcome && outcome.time && Date.now() - outcome.time > 30000) {
-      _playRemoteCombatExit()
-      return
-    }
-
-    if (outcome && outcome.type === "defeat") {
-      const localId = typeof getLocalPlayerId === "function"
-        ? getLocalPlayerId()
-        : (myToken ? String(myToken.id || "").toLowerCase() : "")
-      const targetId = String(outcome.player || "").toLowerCase()
-      if (targetId && localId && targetId === localId) {
-        if (typeof triggerLocalDefeat === "function") triggerLocalDefeat("combatStateClose")
-        else {
-          window.__pendingLocalDefeat = true
-          showDefeat()
-        }
-        return
-      }
-      _playRemoteCombatExit()
-      return
-    }
-
-    if (outcome && outcome.type === "victory") {
-      _playRemoteCombatExit()
-      return
-    }
-
-    if (attempt < maxAttempts) {
-      setTimeout(() => _resolveRemoteCombatEnd(attempt + 1), 180)
-      return
-    }
-
-    _playRemoteCombatExit()
-  })
+function _resolveRemoteCombatEnd(){
+ db.ref("game/combatOutcome").once("value",snap=>{const data=snap.val();if(data)observeCombatEnding(data);else if(!window.__combatOutcomeQueued&&!window.__combatOutcomeShowing)_playRemoteCombatExit()})
 }
 
 function _showCombatTurnBanner(data) {

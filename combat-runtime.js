@@ -13,7 +13,12 @@ async function transactCombatRoot(update) {
   // Lire la racine évite d’abandonner une action valide sur ce premier null.
   const keepCache = () => {}
   ref.on("value", keepCache)
-  try { await ref.once("value"); return await ref.transaction(update) }
+  try {
+    for(let attempt=0;attempt<4;attempt++){
+      await ref.once("value")
+      try{return await ref.transaction(update,undefined,false)}catch(error){if(!/^(set|update)$/.test(error.message||"")||attempt===3)throw error}
+    }
+  }
   finally { ref.off("value", keepCache) }
 }
 
@@ -104,7 +109,8 @@ function chooseEnemyCombatTarget() {
 async function requestHeroCombatAction(attack, options = {}) {
   if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   if (window.__playerAttackResolving || window.__sessionBusy) return
-  const actor = options.actorId || getCombatHUDPlayerId()
+  let actor = options.actorId || getCombatHUDPlayerId()
+  if(actor==="greg"&&attack.name==="Le Bibi"&&window.__publicCharacters?.greg?.hp<=0&&window.__publicCharacters?.bibi?.hp>0)actor="bibi"
   if (!canAccessCharacter(actor)) return
   if (getCurrentCombatActorId() !== combatOwner(actor)) { showNotification("Ce n’est pas votre tour"); return }
   window.__playerAttackResolving = true
@@ -182,7 +188,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
         root.combat.presentation.positions[slot === "mob" ? "mobToken" : "mobToken_" + slot] = position
       })
       root.combat.turnState = { phase: "rolling", round: 1, sequence: 0, currentIndex: 0, currentActorId: "", participants: combatParticipants(root), rolls: {}, order: [] }
-      root.game.combatState = { active: true, id, mainMob, tier, extraMobs: extraMobs.slice(0, 2), returnMap: root.game.map || currentMap || "taverne.jpg", returnTokens, time: now }
+      root.game.combatState = { active: true, id, mainMob, tier, extraMobs: extraMobs.slice(0, 2), returnMap: root.game.map || currentMap || "taverne.jpg", returnTokens, returnAudio:root.game.mapAudio||null, time: now }
       delete root.game.combatOutcome
       ;["storyImage", "storyImage2", "storyImage3", "highPNJName"].forEach(key => delete root.game[key])
       return root
@@ -192,21 +198,25 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
     _state.pendingExtraMobs = {}; extraMobs.slice(0, 2).forEach((mob, index) => { _state.pendingExtraMobs["mob" + (index + 2)] = mob })
     COMBAT_MOBS.forEach(slot => { activeMobSlots[slot] = !!result.snapshot.child("combat/" + slot).val() })
     document.querySelectorAll(".gmSection").forEach(section => { section.style.display = "none" })
+    window.__localCombatId=id; window.__completedCombatExitId=null
     setGameState("COMBAT"); combatSequence(mainMob, forceTier)
     setTimeout(() => { combatStarting = false }, 8000)
   } catch (error) { combatStarting = false; combatActive = false; showNotification("Combat non démarré : " + error.message) }
 }
 
-async function finishReliableCombat(combatId) {
-  if (window.__authRole !== "gm" || !combatId) return
-  await transactCombatRoot(current => {
-    if (!current?.combat || current.combat.id !== combatId || current.combat.phase !== "finished") return undefined
-    const root = combatClone(current), state = root.game.combatState || {}, victory = root.game.combatOutcome?.type === "victory"
-    if (state.returnTokens) {root.tokens=combatClone(state.returnTokens);if(root.tokens.bibi)root.tokens.bibi.followGreg=current.tokens?.bibi?.followGreg!==false}
-    root.game.map = victory && root.combat.mob.name === "balraug" ? "prairie.jpg" : victory && root.combat.mob.name === "kraken" ? "niflheim.jpg" : state.returnMap || root.game.map || "taverne.jpg"
-    delete root.combat; delete root.game.combatState; delete root.game.playerAllyAccess
-    return root
-  })
+async function finishReliableCombat(combatId){
+ if(window.__authRole!=="gm"||!combatId)return
+ return transactCombatRoot(current=>{
+ if(!current?.combat||current.combat.id!==combatId||current.combat.phase!=="finished"||current.sessionControl?.phase)return undefined
+ const root=combatClone(current)
+ const type=root.game.combatOutcome?.combatId===combatId?root.game.combatOutcome.type:(!livingHeroes(root).length?"defeat":"victory")
+ const outcome=sealCombatOutcome(root,type)
+ root.game.map=outcome.returnMap;root.tokens=combatClone(outcome.returnTokens)
+ root.game.mapAudio=outcome.returnAudio||null
+ root.game.combatOutcome.returnedAt=Date.now()
+ delete root.combat;delete root.game.combatState;delete root.game.playerAllyAccess;delete root.game.mobAttackEvent
+ return root
+ })
 }
 
 
@@ -286,10 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       })
       renderAllMobPanels(); updateThuumButton()
-      if(data.phase==="finished" && !window.__combatOutcomeShowing){
-        if(data.turnState?.phase==="finished" && !livingMobs(data).length)showVictory()
-        else if(!livingHeroes({characters:window.__publicCharacters||{}}).length)showDefeat()
-      }
+      if(data.phase==="finished"&&window.__pendingCombatOutcome)observeCombatEnding(window.__pendingCombatOutcome)
     }
   })
 })
@@ -299,8 +306,7 @@ async function requestManualCombatOutcome(type) {
   try{await transactCombatRoot(current=>{
     if(!current?.combat || current.combat.phase==="finished")return undefined
     const root=combatClone(current)
-    root.combat.phase="finished";root.combat.turnState.phase="finished"
-    root.game.combatOutcome={type,combatId:root.combat.id,time:Date.now(),manual:true}
+    sealCombatOutcome(root,type,{time:Date.now()});root.game.combatOutcome.manual=true
     if(type==="victory"){
       root.game.defeatedMobs ||= {}
       COMBAT_MOBS.forEach(slot=>{if(root.combat[slot])root.game.defeatedMobs[root.combat[slot].name]=true})

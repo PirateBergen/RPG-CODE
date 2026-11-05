@@ -464,8 +464,10 @@ async function awaitResumeSessionPresentation() {
     if (game.wantedBoardOpen) openWantedBoard(true)
     presentSavedCurseWheel(curseSnap.val())
     updateMadnessUI(game.groupMadness || 0); updateWorldMapFogTopLeft(); updateMapLoreBookVisibility(); updateThuumButton()
+    if(game.combatOutcome&&typeof observeCombatEnding==="function"){if(game.combatState?.id)window.__localCombatId=game.combatState.id;observeCombatEnding(game.combatOutcome)}
     if (!game.combatState?.active || !combat.mob || combat.phase === "finished") return
     currentMap = game.combatState.returnMap || game.map || "taverne.jpg"
+    window.__localCombatId=combat.id
     currentMob = combat.mob.name; combatActive = true; combatStarting = false
     activeMobSlots = { mob: true, mob2: !!combat.mob2, mob3: !!combat.mob3 }
     _state.pendingExtraMobs = {}
@@ -484,7 +486,7 @@ async function awaitResumeSessionPresentation() {
     renderAllMobPanels(); showCombatHUD(); loadPlayerCombatStats()
     if (combat.turnState) renderCombatInitiativeOverlay(combat.turnState)
     updateCombatTokenStateVisuals(); renderCombatStatusPanel()
-    if (isGM) { document.getElementById("gmDamagePanel").style.display = "block"; document.getElementById("gmCombatPanel").style.display = "flex" }
+    if (isGM) { document.getElementById("gmDamagePanel").style.display = "block"; document.getElementById("gmCombatButtons").style.display = "flex" }
   } catch (error) { showNotification("Affichage de la partie incomplet : " + error.message); console.error(error) }
 }
 

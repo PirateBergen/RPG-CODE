@@ -61,7 +61,7 @@ function presentCombatResolution(action) {
       if(Number.isFinite(result.roll)) _showDiceAnimationNow(result.actor?.startsWith("mob")?"MOB":result.actor||"MJ",result.dice||20,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
       const impact=()=>{
         if(result.mode==="damage" || result.mode==="heal"){
-          const attack=result.special?getPlayerSpecialAttack(result.actor):(attacks[result.actor]||[]).find(a=>a.name===result.attack)
+          const attack=typeof getCombatHeroAttack==="function"?getCombatHeroAttack(result.actor,result.attack,result.special):(result.special?getPlayerSpecialAttack(result.actor):(attacks[result.actor]||[]).find(a=>a.name===result.attack))
           if(attack)showPlayerAttackImpact(result.actor,attack,{mode:result.mode,amount:result.amount,targetName:result.targetName||result.target},{special:result.special,crit:result.crit,fail:result.fail})
         } else if(result.mode==="enemy" && result.presentation)showMobAttackPresentation(result.presentation)
         else if(result.mode==="thuum")playThuumCastEffect({playerId:result.actor,word:result.word})
@@ -69,17 +69,18 @@ function presentCombatResolution(action) {
       }
       if(Number.isFinite(result.roll))setTimeout(impact,2400);else impact()
     }
-    if(action.nextTurn?.phase==="active")setTimeout(()=>_showCombatTurnBanner(action.nextTurn),duration)
+    if(action.nextTurn?.phase==="active")setTimeout(()=>{if(window.__pendingCombatOutcome?.combatId!==action.combatId)_showCombatTurnBanner(action.nextTurn)},duration)
   },duration+(action.nextTurn?.phase==="active"?2800:0))
 }
 
 function queueCombatTurnBanner(combatId,state) {
   if(!state || state.phase!=="active")return
-  const add=()=>enqueueSharedVisual("turn-"+combatId+"-"+(state.sequence||0),()=>_showCombatTurnBanner(state),2800,state.sequence>0?2:0.5)
+  const add=()=>enqueueSharedVisual("turn-"+combatId+"-"+(state.sequence||0),()=>{if(window.__pendingCombatOutcome?.combatId!==combatId)_showCombatTurnBanner(state)},2800,state.sequence>0?2:0.5)
   if(state.sequence>0)setTimeout(add,100);else add()
 }
 
 function queueCombatOutcome(type) {
+  if(window.__pendingCombatOutcome&&typeof observeCombatEnding==="function"){observeCombatEnding(window.__pendingCombatOutcome);return}
   if(window.__combatOutcomeShowing || window.__combatOutcomeQueued)return
   window.__combatOutcomeQueued=true
   const id=window.__combatSnapshot?.id||"legacy"

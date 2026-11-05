@@ -2891,7 +2891,7 @@ function startSpellAura() { if(document.getElementById("spellAura")) return; con
 function stopSpellAura() { const a=document.getElementById("spellAura"); if(!a) return; a.style.transition="opacity 1.5s ease"; a.style.opacity="0"; setTimeout(()=>{ if(a.parentNode) a.remove() },1500) }
 
 async function triggerCemeteryEvent(){
- if(!isGM)return
+ if(!isGM||combatActive||combatStarting)return
  try{requireExplorationConnection();await transactCombatRoot(current=>{
  if(current?.game?.completedEvents?.cemetery||current?.game?.cemeterySpell?.active)return undefined
  const root=combatClone(current);root.game ||= {};root.game.cemeterySpell={active:true,time:Date.now(),glipheShown:false};return root

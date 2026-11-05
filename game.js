@@ -40,6 +40,7 @@ function detachFirebaseAccessSync() {
   window.__authProfileRef = null; window.__authProfileCb = null
   window.__authRole = null; window.__authPlayerId = null
   if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
+  if(typeof syncCombatExitCoordinator==="function")syncCombatExitCoordinator()
   if(typeof syncExplorationCoordinator === "function") syncExplorationCoordinator()
   stopCharacterSubscriptions()
   stopPersistenceSync()
@@ -56,6 +57,7 @@ function syncFirebaseAccessForUser(uid) {
     window.__authRole = typeof role === "string" ? role : null
     if(typeof syncExplorationCoordinator === "function")syncExplorationCoordinator()
     if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
+    if(typeof syncCombatExitCoordinator==="function")syncCombatExitCoordinator()
     if (window.__sessionBusy) recoverExpiredSessionLock().catch(error => console.warn(error))
     if (previousRole === "gm" && window.__authRole !== "gm") resetLocalCharacterAccess()
     syncCharacterSubscriptions()
@@ -571,19 +573,10 @@ function getLocalPlayerId() {
   return ""
 }
 
-function triggerLocalDefeat(reason) {
-  const localId = getLocalPlayerId()
-  if (window.__combatSnapshot?.id && window.__combatSnapshot.phase !== "finished") return false
-  if (window.__combatSnapshot?.id && livingMobs(window.__combatSnapshot).length === 0) return false
-  if (isGM || !localId || window.__combatOutcomeShowing || window.__pendingLocalDefeat) return false
-  if (!(combatActive || gameState === "COMBAT" || reason === "playerDeath" || reason === "combatOutcome" || reason === "hp-watch" || reason === "remote-exit-hp")) return false
-  window.__pendingLocalDefeat = true
-  combatActive = true
-  setGameState("COMBAT")
-  setTimeout(() => {
-    if (!window.__combatOutcomeShowing) showDefeat()
-  }, reason === "hp" ? 50 : 80)
-  return true
+function triggerLocalDefeat(){
+ const outcome=window.__pendingCombatOutcome
+ if(outcome?.type==="defeat"&&outcome.combatId===(window.__localCombatId||window.__combatSnapshot?.id)){observeCombatEnding(outcome);return true}
+ return false
 }
 
 function watchLocalPlayerDefeat(playerId) {
@@ -1630,16 +1623,14 @@ db.ref("combat/mob").on("value", snap => {
         }
       }
       if (lastMobHP !== null && data.hp < lastMobHP) { flashRed(); screenShake() }
-      if (!livingMobs(window.__combatSnapshot).length && window.__combatSnapshot?.phase === "finished" && combatActive && !window.__combatOutcomeShowing) { showVictory() }
+      // L’issue collective est publiée par le coordinateur du combat.
       lastMobHP = data.hp
     } else {
       if (combatActive) {
         hud.style.display = "block"
         activeMobSlots["mob"] = true
       }
-      if (!livingMobs(window.__combatSnapshot).length && window.__combatSnapshot?.phase === "finished" && combatActive && !window.__combatOutcomeShowing) {
-        showVictory()
-      }
+      // Ne pas déduire une victoire du seul ennemi principal.
     }
 })
 
@@ -1719,6 +1710,7 @@ db.ref("game/map").on("value", snap => {
   const mapName = snap.val()
   if (!mapName) return
   window.__latestMapValue = mapName
+  if(combatActive&&window.__pendingCombatOutcome?.combatId===window.__localCombatId&&!window.__combatReturnInProgress)return
   if (gameState !== GAME_STATE.GAME && gameState !== GAME_STATE.COMBAT) return
 
   const map  = document.getElementById("map")
@@ -2571,28 +2563,7 @@ db.ref("game/playerDeath").on("value", snap => {
   })
 
 // ─── combatOutcome — victoire/défaite fiable côté joueurs ───
-db.ref("game/combatOutcome").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  if (!data || window.__combatOutcomeShowing) return
-
-  if (data.type === "victory" && (combatActive || gameState === "COMBAT")) {
-    showVictory()
-    return
-  }
-
-  if (data.type === "defeat") {
-    // Ignorer un outcome trop vieux (données résiduelles)
-    if (data.time && Date.now() - data.time > 15000) return
-    const localId = getLocalPlayerId()
-    if (!localId) return
-    // Pas de filtre sur le joueur ciblé = défaite collective, tout le monde voit l'écran
-    const targetId = String(data.player || "").trim().toLowerCase()
-    if (targetId && targetId !== localId.trim().toLowerCase()) return
-    if (isGM) showDefeat(); else triggerLocalDefeat("combatOutcome")
-    // La sortie suit la présentation de la défaite sur chaque écran.
-  }
-})
+// Fin de combat : combat-exit.js, sans filtre sur le héros local.
 
 // ─── playerRevive ───
 db.ref("game/playerRevive").on("value", snap => {
@@ -2608,7 +2579,7 @@ db.ref("game/playerRevive").on("value", snap => {
     if (skull) { skull.style.transition = "opacity 0.5s"; skull.style.opacity = "0"; setTimeout(() => skull.remove(), 500) }
   }
   deadPlayers[pid] = false
-  if (!isGM && getLocalPlayerId() === String(pid || "").toLowerCase()) {
+  if (!isGM && getLocalPlayerId() === String(pid || "").toLowerCase() && !window.__combatOutcomeQueued && !window.__combatOutcomeShowing) {
     window.__pendingLocalDefeat = false
     window.__combatOutcomeShowing = false
     const defeatScreen = document.getElementById("defeatScreen")
@@ -3150,6 +3121,7 @@ function updateTokenFromDB(snapshot) {
   const data = snapshot.val()
   if (!data) return
   window.__tokenPositions ||= {}; window.__tokenPositions[id]=data
+  if(combatActive&&window.__pendingCombatOutcome?.combatId===window.__localCombatId&&!window.__combatReturnInProgress)return
   if (selected?.id === id && _state.tokenDragging) return
   const token = document.getElementById(id)
   if (!token) return
@@ -3272,12 +3244,9 @@ function watchCharacter(snapshot) {
         skull.innerText = "mort"
         token.appendChild(skull)
       }
-      if (isGM && !window.__hpDeathSyncBusy?.[playerID] && !wasDead) {
-        if (!window.__hpDeathSyncBusy) window.__hpDeathSyncBusy = {}
-        window.__hpDeathSyncBusy[playerID] = true
-        db.ref("game/playerDeath").set({ player: playerID, time: Date.now() }).finally(() => {
-          setTimeout(() => { if (window.__hpDeathSyncBusy) delete window.__hpDeathSyncBusy[playerID] }, 1500)
-        })
+      if(!wasDead&&Number.isFinite(data.hp)&&gameStarted&&(combatActive||gameState==="GAME")){
+        showNotification(playerID.toUpperCase()+" est KO.")
+        playSound("defeatSound",.35)
       }
     } else {
       token.classList.remove("playerDead")
@@ -3761,7 +3730,9 @@ function refreshActivePNJs() {
 }
 
   function setGameState(state) {
+    const previousState=gameState
     gameState = state
+    if(state==="COMBAT"&&previousState!=="COMBAT"&&typeof suspendExplorationForCombat==="function")suspendExplorationForCombat()
   if (state !== "GAME" && state !== "COMBAT" && typeof cleanupRuneChallengeUI === "function") cleanupRuneChallengeUI()
   switch (state) {
     case "MENU":

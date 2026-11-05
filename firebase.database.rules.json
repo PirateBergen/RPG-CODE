@@ -14,7 +14,7 @@
         ".read": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'gm')",
         ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && newData.exists() && (!data.child('playerId').exists() || newData.child('playerId').val() === data.child('playerId').val())))",
         "playerId": {
-          ".validate": "newData.isString() && (newData.val() === 'greg' || newData.val() === 'ju' || newData.val() === 'elo')"
+          ".validate": "newData.isString() && (newData.val() === data.val() || newData.val() === 'greg' || newData.val() === 'ju' || newData.val() === 'elo')"
         }
       }
     },
@@ -145,86 +145,94 @@
     },
     "combat": {
       ".read": "auth != null",
-      ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       "turnState": {
         "rolls": {
           "$actorId": {
-            ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($actorId === 'greg' || $actorId === 'ju' || $actorId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $actorId) || ($actorId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
-            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 20"
+            ".write": "auth != null && ($actorId === 'greg' || $actorId === 'ju' || $actorId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $actorId && root.child('combat').child('turnState').child('phase').val() === 'rolling' && !data.exists() && !root.child('sessionControl').child('phase').exists()",
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 12 && newData.val() % 1 === 0"
           }
         },
         "currentIndex": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
           ".validate": "newData.isNumber() && newData.val() >= 0"
         },
         "currentActorId": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
           ".validate": "newData.isString()"
         },
         "round": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
           ".validate": "newData.isNumber() && newData.val() >= 1"
         }
       },
       "mob": {
         "hp": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000"
         },
         "bibiRage": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "yuAggro": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "yuSkipNextTurn": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "playerBleed": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "playerPoison": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "spiderSenseBuff": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "victoryLootBonus": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "attackMalus": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         },
         "revealedWeakness": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         }
       },
       "usedThuum": {
         "$playerId": {
-          ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         }
       },
       "eloSummon": {
-        ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+        "x": {
+          ".write": "auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()",
+          ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+        },
+        "y": {
+          ".write": "auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()",
+          ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+        }
       },
       "allyBroadcast": {
-        ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
         ".validate": "newData.hasChildren(['pnjId', 'actionId', 'time']) && newData.child('pnjId').isString() && newData.child('actionId').isString() && newData.child('time').isNumber()"
       },
       "hits": {
         "$hitId": {
-          ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
           ".validate": "newData.hasChildren(['from','to','amount','type','round','time']) && newData.child('from').isString() && newData.child('to').isString() && newData.child('amount').isNumber() && newData.child('amount').val() >= 0 && newData.child('amount').val() <= 9999 && newData.child('round').isNumber() && newData.child('round').val() >= 1 && newData.child('time').isNumber()"
         }
       },
       "playerSpecials": {
         "$playerId": {
-          ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         }
       },
       "playerFlags": {
         "$playerId": {
-          ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
         }
       }
     },
@@ -391,6 +399,18 @@
           "$client": {
             ".validate": "newData.hasChildren(['ok']) && newData.child('ok').isBoolean()"
           }
+        }
+      }
+    },
+    "combatRequests": {
+      ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+      "$request": {
+        ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
+        ".write": "auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'queued' && newData.child('combatId').val() === root.child('combat').child('id').val() && (root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('actor').val() || (root.child('profiles').child(auth.uid).child('playerId').val() === 'greg' && newData.child('actor').val() === 'bibi'))",
+        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','status','combatId','sequence','time']) && newData.child('sequence').isNumber() && newData.child('sequence').val() >= 0 && newData.child('sequence').val() % 1 === 0 && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'hero' || newData.child('kind').val() === 'pass' || newData.child('kind').val() === 'ally' || newData.child('kind').val() === 'thuum'))",
+        "status": {
+          ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
         }
       }
     }

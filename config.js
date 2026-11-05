@@ -140,7 +140,7 @@ const mobStats = {
 const attacks = {
   greg: [
     { name:"Chat Bite (CaC)",      type:"Mêlée",    dice:12, stat:"Force",        effect:"Morsure brutale",                                             crit:"Dégâts x2" },
-    { name:"Le Bibi",              type:"Spécial",  dice:20, stat:"Chance",       effect:"Bibi attaque avec rage",                                      crit:"Bibi entre en rage, -2 HP mobs pendant 3 tours" },
+    { name:"Le Bibi",              type:"Spécial",  dice:20, stat:"Chance",       effect:"Bibi attaque avec rage",                                      crit:"Bonus allié de +2 dégâts pendant 3 rounds" },
     { name:"I know Frank (si arc)",type:"Distance", dice:12, stat:"Perspicacité", effect:"Tir précis arc",                                              crit:"Dégâts x2 et saignement, -1 HP pendant 2 tours" }
   ],
   ju: [
@@ -151,7 +151,7 @@ const attacks = {
   elo: [
     { name:"Mains magiques",                  type:"Soin",      dice:12, stat:"Defense", effect:"Restaure HP à soi ou allié",                                                     crit:"Pv restaurés x2" },
     { name:"Je vais te raconter une histoire",type:"Sort",      dice:12, stat:"Charme",  effect:"invoque les forces de la nature. Dégats double en forêt ou mine",                crit:"L'ennemi est empoisonné, -2 hp pendant 2 tours" },
-    { name:"Je suis jet laguée",              type:"Invocation",dice:12, stat:"Chance",  effect:"Invoque un familier. D4 dégats cumulés, disparait après 3 tours ou si mort",    crit:"Le familier devient fou, dégats x2 et attaque tous les mobs" }
+    { name:"Je suis jet laguée",              type:"Invocation",dice:12, stat:"Chance",  effect:"Invoque un familier : bonus D4 aux attaques d’Elo pendant 3 rounds",    crit:"Le familier devient fou, dégats x2 et attaque tous les mobs" }
   ]
 }
 
@@ -164,7 +164,7 @@ const playerSpecialAttacks = {
     effect: "Exécution brutale sur cible affaiblie",
     crit: "Dégâts colossaux",
     fail: "Greg vacille et rate sa fenêtre d'exécution.",
-    conditionText: "Mob principal à 40% HP ou moins",
+    conditionText: "Cible à 40% HP ou moins",
     flavor: "Greg lâche toute retenue et termine le travail sans élégance.",
     icon: "slash_overlay.png",
     rule: "mob_below_forty",
@@ -178,7 +178,7 @@ const playerSpecialAttacks = {
     effect: "Riposte de précision après la spéciale ennemie",
     crit: "Rupture totale des défenses",
     fail: "Le plan s'effondre et Yu révèle trop tôt son jeu.",
-    conditionText: "Le mob principal a déjà utilisé sa spéciale",
+    conditionText: "La cible a déjà utilisé sa spéciale",
     flavor: "Ju attend exactement le moment où l'ennemi se croit intouchable.",
     icon: "rune_glow.png",
     rule: "mob_used_special",
@@ -1275,7 +1275,7 @@ const ALLY_PNJS = [
         label:    "Lancer de Gungnir",
         type:     "damage",
         icon:     "⚡",
-        desc:     "Odin jette sa lance sacrée. D20 × 25 dégâts. Critique 18-20 : dégâts × 4.",
+        desc:     "Odin jette sa lance sacrée. 200 + D20 × 25 dégâts. Critique 18-20 : dégâts × 4.",
         dice:     20,
         dmgBase:  200,
         dmgBonus: 25,
@@ -1308,7 +1308,7 @@ const ALLY_PNJS = [
         label:    "Mjolnir",
         type:     "damage",
         icon:     "🔨",
-        desc:     "Thor abat Mjolnir. D20 × 30 dégâts. Sur 15+ : frappe tous les mobs en même temps.",
+        desc:     "Thor abat Mjolnir. 250 + D20 × 30 dégâts. Sur 15+ : frappe tous les mobs en même temps.",
         dice:     20,
         dmgBase:  250,
         dmgBonus: 30,
@@ -1340,7 +1340,7 @@ const ALLY_PNJS = [
         label:    "Seiðr de guerre",
         type:     "damage",
         icon:     "🌙",
-        desc:     "Freya tisse un sort dévastateur. D20 × 20 dégâts. Sur 1 : retour de flamme.",
+        desc:     "Freya tisse un sort dévastateur. 180 + D20 × 20 dégâts. Sur 1 : dégâts réduits à 20 %.",
         dice:     20,
         dmgBase:  180,
         dmgBonus: 20,
@@ -1361,7 +1361,7 @@ const ALLY_PNJS = [
         label:    "Malédiction ancienne",
         type:     "malus",
         icon:     "🌑",
-        desc:     "Elle maudit l'ennemi en son cœur. D20 : sur 10+, le mob perd tout avantage ce combat.",
+        desc:     "Elle maudit l'ennemi en son cœur. D20 : sur 10+, le mob inflige 25 % de dégâts en moins ce combat.",
         dice:     20,
         threshold: 10,
         dialogue: "Tu portes désormais mon sceau.",

@@ -39,6 +39,7 @@ function detachFirebaseAccessSync() {
   window.__authRoleRef = null; window.__authRoleCb = null
   window.__authProfileRef = null; window.__authProfileCb = null
   window.__authRole = null; window.__authPlayerId = null
+  if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
   stopCharacterSubscriptions()
   stopPersistenceSync()
 }
@@ -52,6 +53,7 @@ function syncFirebaseAccessForUser(uid) {
     const role = snap.val()
     const previousRole = window.__authRole
     window.__authRole = typeof role === "string" ? role : null
+    if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
     if (window.__sessionBusy) recoverExpiredSessionLock().catch(error => console.warn(error))
     if (previousRole === "gm" && window.__authRole !== "gm") resetLocalCharacterAccess()
     syncCharacterSubscriptions()
@@ -717,7 +719,7 @@ window.THUUMS = {
     word: "REIHKT",
     words: ["REIHKT", "MUUR", "ZAAL"],
     translation: "Terreur • Paralysie • Effondrement",
-    description: "Brise la volonté de la cible et réduit sa défense.",
+    description: "Réduit la puissance des attaques de la cible pendant deux rounds.",
     unlockMap: "epouventail.jpg",
     buttonImage: "images/runeskraa.png",
     combatDamageByRank: rank => ({ main: 6 + rank * 3, splash: 0 }),
@@ -1497,31 +1499,9 @@ function usePlayerThuum(forcedWord) {
     return
   }
 
-  addSessionLog("ᚱ " + playerId.toUpperCase() + " utilise " + activeWord + " en combat")
-  db.ref("combat/usedThuum/" + playerId + "/" + activeWord).set(true)
-  db.ref("game/playerThuumAccess/" + playerId + "/" + activeWord).remove()
-  db.ref("game/thuumCast").set({
-    playerId,
-    word: activeWord,
-    time: Date.now(),
-    outsideCombat: false
-  })
-  setTimeout(() => db.ref("game/thuumCast").remove(), 1500)
-
-  const rank = ((getMyThuumWords()[activeWord] || {}).rank || 1)
-  const damage = def.combatDamageByRank ? def.combatDamageByRank(rank) : { main: 8 + rank * 4, splash: 3 + rank * 2 }
-  const mainDmg = damage.main
-  const splash = damage.splash
-
-  db.ref("combat/mob/hp").transaction(cur => { if (cur == null) return undefined; return Math.max(1, safeInt(cur) - mainDmg) })
-
-  ;["mob2", "mob3"].forEach(slot => {
-    db.ref("combat/" + slot + "/hp").transaction(cur => { if (cur == null) return undefined; return Math.max(1, safeInt(cur) - splash) })
-  })
-
-  closePlayerPowersPanel()
-  updateThuumButton()
+  requestPlayerThuumAction(activeWord)
 }
+
 
 /* ========================= */
 /* FIREBASE LISTENERS        */
@@ -1668,7 +1648,7 @@ db.ref("combat/mob").on("value", snap => {
         }
       }
       if (lastMobHP !== null && data.hp < lastMobHP) { flashRed(); screenShake() }
-      if (data.hp <= 0 && combatActive && !window.__combatOutcomeShowing) { showVictory() }
+      if (!livingMobs(window.__combatSnapshot).length && window.__combatSnapshot?.phase === "finished" && combatActive && !window.__combatOutcomeShowing) { showVictory() }
       lastMobHP = data.hp
     } else {
       if (combatActive) {
@@ -2690,8 +2670,7 @@ db.ref("game/playerDeath").on("value", snap => {
   screenShakeHard()
   if (!isGM && getLocalPlayerId() === String(pid || "").toLowerCase()) triggerLocalDefeat("playerDeath")
   if (isGM) {
-      db.ref("game/combatOutcome").set({ type: "defeat", player: pid, time: Date.now() })
-      setTimeout(() => db.ref("game/combatOutcome").remove(), 6500)
+      // Un KO individuel ne remplace pas l’issue collective du combat.
       if (!document.getElementById("revive_" + pid)) {
         const revBtn = document.createElement("button"); revBtn.id = "revive_" + pid
       revBtn.style.cssText = "position:fixed;bottom:104px;left:50%;transform:translateX(-50%);z-index:99999;padding:10px 24px;font-family:'Cinzel Decorative',serif;font-size:13px;background:linear-gradient(rgba(0,80,0,0.8),rgba(0,40,0,0.8));color:#88ff88;border:2px solid rgba(50,180,50,0.6);border-radius:6px;cursor:pointer;letter-spacing:2px;animation:bifrostPulse 1.5s ease-in-out infinite alternate;"
@@ -2706,7 +2685,6 @@ db.ref("game/playerDeath").on("value", snap => {
 // ─── combatOutcome — victoire/défaite fiable côté joueurs ───
 db.ref("game/combatOutcome").on("value", snap => {
   if (window.__sessionBusy) return
-  if (isGM) return
   const data = snap.val()
   if (!data || window.__combatOutcomeShowing) return
 
@@ -2723,7 +2701,8 @@ db.ref("game/combatOutcome").on("value", snap => {
     // Pas de filtre sur le joueur ciblé = défaite collective, tout le monde voit l'écran
     const targetId = String(data.player || "").trim().toLowerCase()
     if (targetId && targetId !== localId.trim().toLowerCase()) return
-    triggerLocalDefeat("combatOutcome")
+    if (isGM) showDefeat(); else triggerLocalDefeat("combatOutcome")
+    setTimeout(()=>{ if(combatActive){endCombat();returnToMap()} },5500)
   }
 })
 
@@ -3436,6 +3415,7 @@ function watchCharacter(snapshot) {
   const playerID = snapshot.key
   const data     = snapshot.val()
   if (!data) return
+  window.__publicCharacters ||= {}; window.__publicCharacters[playerID] = {hp:data.hp,lvl:data.lvl}
 
   updateTokenStats(playerID)
   updateGMStats(playerID, data)
@@ -3708,6 +3688,7 @@ function rollDice(max) {
     playerName = myToken.id
   }
   const result = Math.floor(Math.random() * max) + 1
+  applyFreeDiceConsequences(playerName,max,result)
   db.ref("diceRoll").push({ player: playerName, dice: max, result, time: Date.now(), sender: playerName })
 }
 
@@ -3869,10 +3850,7 @@ function showDiceAnimation(playerName, max, final, rawRoll) {
         playSound("critSound"); screenShake(); flashGold()
         tryRuneEventOnDice()
         if (playerName !== "MJ" && playerName !== "MOB") {
-          db.ref("characters/" + playerName + "/corruption").once("value", snap => {
-            db.ref("characters/" + playerName + "/corruption").set(Math.min(10, (parseInt(snap.val()) || 0) + 1))
-            showNotification(playerName.toUpperCase() + " gagne 1 point de Pouvoir !")
-          })
+          // Conséquence appliquée une seule fois par le lanceur ou le moteur de combat.
         }
       }
 
@@ -3881,10 +3859,7 @@ function showDiceAnimation(playerName, max, final, rawRoll) {
         playSound("critFailSound"); screenShakeHard(); flashRed()
         tryRuneEventOnDice()
         if (playerName !== "MJ" && playerName !== "MOB") {
-          db.ref("characters/" + playerName + "/curse").once("value", snap => {
-            db.ref("characters/" + playerName + "/curse").set(Math.min(8, (parseInt(snap.val()) || 0) + 1))
-            showNotification(playerName.toUpperCase() + " gagne 1 point de Malédiction !")
-          })
+          // Conséquence appliquée une seule fois par le lanceur ou le moteur de combat.
         }
       }
 
@@ -3914,6 +3889,7 @@ function rollStat(stat) {
   const field = document.getElementById(stat); if (!field) return
   const statValue = parseInt(field.value) || 0
   const dice = Math.floor(Math.random() * 20) + 1
+  applyFreeDiceConsequences(myToken.id,20,dice)
   showDiceAnimation(myToken.id, 20, dice + statValue, dice)
 }
 
@@ -4679,6 +4655,7 @@ document.addEventListener("mousemove", e => {
   const now = Date.now()
   if (now - lastSend > sendDelay && (gx !== lastSentX || gy !== lastSentY)) {
     if (selected.id === "eloSummonToken") db.ref("combat/eloSummon").update({ x: gx, y: gy })
+    else if (selected._fbSlot) db.ref("combat/"+selected._fbSlot).update({x:gx,y:gy})
     else if (!selected._fbSlot) {
       const upd = { x: gx, y: gy }
       if (facing !== null) upd.facing = facing
@@ -4707,6 +4684,7 @@ document.addEventListener("mouseup", () => {
     if (snapX !== lastSentX || snapY !== lastSentY) {
       const facing = selected.classList.contains("faceLeft") ? 1 : 0
       if (selected.id === "eloSummonToken") db.ref("combat/eloSummon").update({ x: snapX, y: snapY })
+      else if (selected._fbSlot) db.ref("combat/"+selected._fbSlot).update({x:snapX,y:snapY,facing})
       else if (!selected._fbSlot) db.ref("tokens/" + selected.id).update({ x: snapX, y: snapY, facing })
       if (selected.id === "greg") {
         const bibi = document.getElementById("bibi")

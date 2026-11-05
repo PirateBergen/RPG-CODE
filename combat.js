@@ -53,92 +53,36 @@ function getCombatActorLabel(actorId) {
   return id.toUpperCase()
 }
 
-function getInitiativeParticipants() {
-  const list = [
-    { id: "greg", type: "player", label: "Greg", image: "greg.png" },
-    { id: "ju", type: "player", label: "Yu", image: "ju.png" },
-    { id: "elo", type: "player", label: "Elo", image: "elo.png" },
-    { id: "bibi", type: "player", label: "Bibi", image: "bibi.png" }
-  ]
-  ;["mob", "mob2", "mob3"].forEach(slot => {
-    if (!activeMobSlots[slot]) return
-    const data = slot === "mob"
-      ? { name: currentMob || "mob" }
-      : (_state.pendingExtraMobs && _state.pendingExtraMobs[slot] ? { name: _state.pendingExtraMobs[slot] } : null)
-    if (!data || !data.name) return
-    list.push({
-      id: slot,
-      type: "mob",
-      label: String(data.name || slot).toUpperCase(),
-      image: sanitizeAssetName(String(data.name || "gobelins") + ".png")
-    })
-  })
-  return list
-}
+function getInitiativeParticipants() { return combatParticipants({ characters: window.__publicCharacters || {}, combat: window.__combatSnapshot || {} }) }
 
-function initCombatTurnState() {
-  if (!isGM) return
-  if (window.__combatTurnStateInitPending) return
-  window.__combatTurnStateInitPending = true
-  window.__lastCombatPhase = null
-  window.__combatInitiativeHidden = false
-  const participants = getInitiativeParticipants()
-  const payload = {
-    phase: "rolling",
-    round: 1,
-    currentIndex: 0,
-    currentActorId: "",
-    participants,
-    rolls: {},
-    order: [],
-    time: Date.now()
-  }
-  const releaseLock = () => {
-    clearTimeout(window.__combatTurnStateInitPendingTimer)
-    window.__combatTurnStateInitPendingTimer = setTimeout(() => {
-      window.__combatTurnStateInitPending = false
-    }, 900)
-  }
-  db.ref("combat/turnState").set(payload).then(releaseLock).catch(err => {
-    console.error("initCombatTurnState write failed:", err)
-    setTimeout(() => {
-      db.ref("combat/turnState").set({ ...payload, time: Date.now() }).then(releaseLock).catch(retryErr => {
-        console.error("initCombatTurnState retry failed:", retryErr)
-        window.__combatTurnStateInitPending = false
-        if (typeof showNotification === "function") showNotification("Synchronisation combat retardée, réessaie dans un instant.", "danger")
-      })
-    }, 180)
+async function initCombatTurnState() {
+  if (!isGM || window.__sessionBusy) return
+  await migrateSharedFamiliarTurn()
+  await transactCombatRoot(current => {
+    if (!current?.combat || current.combat.turnState) return undefined
+    const root = combatClone(current)
+    root.combat.turnState = { phase:"rolling", participants:combatParticipants(root), rolls:{}, order:[], round:1, sequence:0, currentActorId:"", currentIndex:0 }
+    return root
   })
+  const state = getCombatTurnState()
+  if (state) { renderCombatInitiativeOverlay(state); finalizeCombatInitiativeIfReady(state) }
 }
 
 function canRollInitiativeForActor(actorId, state) {
-  const actor = String(actorId || "")
-  if (!state || state.phase !== "rolling") return false
-  const rolls = state.rolls || {}
-  if (rolls[actor]) return false
-  if (isGM) return actor === "mob" || actor === "mob2" || actor === "mob3"
-  return !!(myToken && canAccessCharacter(actor))
+  if (!state || state.phase !== "rolling" || actorId === "bibi" || !(state.participants || []).some(p => p.id === actorId) || Number.isInteger(state.rolls?.[actorId])) return false
+  return isGM || !!(myToken && myToken.id === actorId && canAccessCharacter(actorId))
 }
 
-function submitInitiativeRoll(actorId) {
-  const state = getCombatTurnState()
-  const actor = String(actorId || "")
-  if (!canRollInitiativeForActor(actor, state)) return
-  const roll = Math.floor(Math.random() * 12) + 1
-  db.ref("combat/turnState/rolls/" + actor).set(roll)
-  showDiceAnimation(actor === "mob" || actor === "mob2" || actor === "mob3" ? "MJ" : actor, 12, roll)
+async function submitInitiativeRoll(actorId) {
+  if (!canRollInitiativeForActor(actorId, getCombatTurnState())) return
+  const roll = Math.floor(Math.random()*12)+1
+  try {
+    const result = await db.ref("combat/turnState/rolls/"+actorId).transaction(current => current == null ? roll : undefined)
+    if (result.committed) showDiceAnimation(COMBAT_MOBS.includes(actorId)?"MOB":actorId,12,roll)
+  } catch(error) { showNotification("Initiative non enregistrée : "+error.message) }
 }
 
-function submitInitiativeRollForGMTest(actorId) {
-  if (!isGM) return
-  const state = getCombatTurnState()
-  const actor = String(actorId || "")
-  if (!state || state.phase !== "rolling") return
-  if ((state.rolls || {})[actor]) return
-  const roll = Math.floor(Math.random() * 12) + 1
-  db.ref("combat/turnState/rolls/" + actor).set(roll)
-  showDiceAnimation(actor === "mob" || actor === "mob2" || actor === "mob3" ? "MJ" : actor, 12, roll)
-}
+function submitInitiativeRollForGMTest(actorId) { if(isGM) return submitInitiativeRoll(actorId) }
 
 function submitAllInitiativeRollsForGMTest() {
   if (!isGM) return
@@ -148,78 +92,33 @@ function submitAllInitiativeRollsForGMTest() {
   participants.forEach(entry => submitInitiativeRollForGMTest(entry.id))
 }
 
-function finalizeCombatInitiativeIfReady(state) {
-  if (!isGM || !state || state.phase !== "rolling") return
-  if (window.__combatInitiativeFinalizePending) return
-  const participants = Array.isArray(state.participants) ? state.participants : []
-  const rolls = state.rolls || {}
-  if (!participants.length) return
-
-  // Auto-roll mob dice dès que tous les joueurs ont rollé
-  const players = participants.filter(e => e.type === "player")
-  const mobs    = participants.filter(e => e.type === "mob")
-  const allPlayersReady = players.every(e => Number.isFinite(parseInt(rolls[e.id], 10)))
-  if (allPlayersReady) {
-    mobs.forEach(entry => {
-      if (!Number.isFinite(parseInt(rolls[entry.id], 10))) {
-        const roll = Math.floor(Math.random() * 12) + 1
-        db.ref("combat/turnState/rolls/" + entry.id).set(roll)
-      }
-    })
-  }
-
-  const allReady = participants.every(entry => Number.isFinite(parseInt(rolls[entry.id], 10)))
-  if (!allReady) return
-  const order = participants
-    .map((entry, index) => ({ ...entry, roll: parseInt(rolls[entry.id], 10) || 0, index }))
-    .sort((a, b) => {
-      if (b.roll !== a.roll) return b.roll - a.roll
-      if (a.type !== b.type) return a.type === "player" ? -1 : 1
-      return a.index - b.index
-    })
+async function finalizeCombatInitiativeIfReady(state) {
+  if (!isGM || !state || state.phase !== "rolling" || window.__combatInitiativeFinalizePending || window.__sessionBusy) return
   window.__combatInitiativeFinalizePending = true
-  const finalizePayload = {
-    phase: "active",
-    order,
-    currentIndex: 0,
-    currentActorId: order[0] ? order[0].id : "",
-    round: 1
-  }
-  const releaseFinalize = () => {
-    clearTimeout(window.__combatInitiativeFinalizePendingTimer)
-    window.__combatInitiativeFinalizePendingTimer = setTimeout(() => {
-      window.__combatInitiativeFinalizePending = false
-    }, 900)
-  }
-  db.ref("combat/turnState").update(finalizePayload).then(releaseFinalize).catch(err => {
-    console.error("finalizeInitiativeOrder write failed:", err)
-    setTimeout(() => {
-      db.ref("combat/turnState").update(finalizePayload).then(releaseFinalize).catch(retryErr => {
-        console.error("finalizeInitiativeOrder retry failed:", retryErr)
-        window.__combatInitiativeFinalizePending = false
-        if (typeof showNotification === "function") showNotification("Synchronisation de l'initiative retardée, réessaie dans un instant.", "danger")
-      })
-    }, 180)
-  })
+  const seed=Math.floor(Math.random()*4294967296)
+  try {
+    await transactCombatRoot(current => {
+      if (!current?.combat?.turnState || current.sessionControl?.phase || current.combat.turnState.phase !== "rolling") return undefined
+      const root=combatClone(current); normalizeCombatTurns(root)
+      const ts=root.combat.turnState, heroes=ts.participants.filter(p=>p.type==="player")
+      if (!heroes.every(p=>Number.isInteger(ts.rolls?.[p.id]) && ts.rolls[p.id]>=1 && ts.rolls[p.id]<=12)) return undefined
+      const dice=combatRandom(seed); ts.rolls ||= {}
+      ts.participants.filter(p=>p.type==="mob").forEach(p=>{ if(ts.rolls[p.id]==null) ts.rolls[p.id]=dice(12) })
+      const ready=finalizedInitiative(ts); if(!ready) return undefined
+      root.combat.turnState=ready
+      return root
+    })
+  } catch(error) { showNotification("Initiative non confirmée : "+error.message) }
+  finally { window.__combatInitiativeFinalizePending=false }
 }
 
-function advanceCombatTurn() {
-  const state = getCombatTurnState()
-  if (!state || state.phase !== "active") return
-  const order = Array.isArray(state.order) ? state.order : []
-  if (!order.length) return
-  let nextIndex = (parseInt(state.currentIndex, 10) || 0) + 1
-  let nextRound = parseInt(state.round, 10) || 1
-  if (nextIndex >= order.length) {
-    nextIndex = 0
-    nextRound += 1
-  }
-  const nextActor = order[nextIndex] ? order[nextIndex].id : ""
-  db.ref("combat/turnState").update({
-    currentIndex: nextIndex,
-    currentActorId: nextActor,
-    round: nextRound
-  }).catch(err => console.error("advanceCombatTurn write failed:", err))
+async function advanceCombatTurn() {
+  const state=getCombatTurnState(); if(!state || state.phase!=="active") return
+  const actor=state.currentActorId
+  try {
+    const dead=isGM && !combatActorAlive({ characters:window.__publicCharacters||{},combat:window.__combatSnapshot||{} },actor)
+    await submitCombatAction(dead?"skipDead":"pass",actor)
+  } catch(error) { showNotification(error.message) }
 }
 
 function closeCombatInitiativeOverlay() {
@@ -311,7 +210,7 @@ function renderCombatInitiativeOverlay(state) {
 
   // Joueur : pendant la phase de jet, n'affiche que sa propre carte
   if (!isGM && state.phase === "rolling" && myToken) {
-    entries = entries.filter(e => canAccessCharacter(String(e.id || "")))
+    entries = entries.filter(e => e.id !== "bibi" && canAccessCharacter(String(e.id || "")))
   }
 
   entries.forEach((entry, idx) => {
@@ -412,6 +311,7 @@ function renderCombatInitiativeOverlay(state) {
 
 function startCombat(mob, forceTier) {
   if (combatStarting || !isGM) return
+  if (combatActive) { showNotification("Terminez le combat en cours avant d’en lancer un autre"); return }
   // Balraug uniquement sur sa map
   if (mob === "balraug" && currentMap !== "balraug.jpg") {
     showNotification("⚠ Balraug ne peut être invoqué que dans sa map !")
@@ -462,105 +362,7 @@ function launchFromMobMenu() {
   _launchCombatWithMobs(_state.pendingMob, _state.pendingTier, [mob2, mob3].filter(Boolean))
 }
 
-function _launchCombatWithMobs(mainMob, forceTier, extraMobs) {
-  if (combatActive || combatStarting) return
-  combatStarting = true; combatActive = true
-  window.__combatInitiativeHidden = false
-  if (typeof addSessionLog === "function") addSessionLog("⚔ Combat démarré — " + mainMob + (extraMobs.length ? " + " + extraMobs.join(", ") : ""))
-  window.__playerCombatSpecialsUsed = {}
-  window.__playerCombatFlags = {}
-  window.__combatDamageLog = []
-  db.ref("game/storyImage").remove()
-  db.ref("game/storyImage2").remove()
-  db.ref("game/storyImage3").remove()
-  db.ref("game/highPNJName").remove()
-  ;["storyImage","storyImage2","storyImage3"].forEach(id => {
-    const box = document.getElementById(id)
-    if (!box) return
-    box.style.display = "none"
-    box.style.opacity = "0"
-  })
-  document.querySelectorAll("[id^='pnjNameTag']").forEach(tag => tag.remove())
-  setGameState("COMBAT"); currentMob = mainMob
-  document.querySelectorAll(".gmSection").forEach(sec => { sec.style.display = "none" })
-  document.getElementById("mobD12").style.display = "inline-block"
-  document.getElementById("mobD20").style.display = "inline-block"
-
-  const tier = forceTier || (mobStats[mainMob] ? mobStats[mainMob].tier : "weak")
-
-  getPartyLevel(level => {
-    const base = mobStats[mainMob] ? mobStats[mainMob].baseHP : 10
-    const tierMults  = { weak:1.3,  medium:2.0, high:3.4, boss:6.1  }
-    const tierScales = { weak:0.15, medium:0.22, high:0.30, boss:0.41 }
-    const tierLvlOff = { weak:-1,   medium:1,   high:3,    boss:8    }
-    const softenBossCurve = effectiveLevel => {
-      if (tier !== "boss" || effectiveLevel <= 10) return effectiveLevel
-      return 10 + (effectiveLevel - 10) * 0.65
-    }
-    const mult = tierMults[tier]  || 1.0
-    const sc   = tierScales[tier] || 0.12
-    const getTieredLevelBonus = lvl => {
-      let total = 0
-      for (let current = 2; current <= lvl; current += 1) {
-        let perLevel = 1
-        if (current >= 15) perLevel = 4
-        else if (current >= 10) perLevel = 3
-        else if (current >= 5) perLevel = 2
-        total += perLevel
-      }
-      return total
-    }
-    const levelBonus = getTieredLevelBonus(Math.max(1, level))
-    const effLevel = softenBossCurve(level + levelBonus * 0.42)
-    const hp   = Math.round(base * mult * Math.pow(1 + effLevel * sc, 1.72))
-    const lvl  = Math.max(1, level + (tierLvlOff[tier] || 0))
-    db.ref("combat/mob").set({ name:mainMob, hp, maxHP:hp, lvl, tier })
-    // La fermeture du MJ conserve le combat pour permettre sa reprise.
-
-    _state.pendingExtraMobs = {}
-    extraMobs.forEach((mob, i) => {
-      const slot = ["mob2","mob3"][i]
-      if (!slot || !mob) return
-      _state.pendingExtraMobs[slot] = mob
-      const tier2 = mobStats[mob] ? mobStats[mob].tier : "weak"
-      const base2 = mobStats[mob] ? mobStats[mob].baseHP : 10
-      const mult2 = { weak:1.45, medium:2.3, high:3.95, boss:6.8 }[tier2] || 1.45
-      const lf2   = { weak:5,   medium:10,   high:17,  boss:36  }[tier2] || 5
-      setTimeout(() => {
-        getPartyLevel(lv => {
-          const softenBossCurve = effectiveLevel => {
-            if (tier2 !== "boss" || effectiveLevel <= 10) return effectiveLevel
-            return 10 + (effectiveLevel - 10) * 0.65
-          }
-          const getTieredLevelBonus = lvl => {
-            let total = 0
-            for (let current = 2; current <= lvl; current += 1) {
-              let perLevel = 1
-              if (current >= 15) perLevel = 4
-              else if (current >= 10) perLevel = 3
-              else if (current >= 5) perLevel = 2
-              total += perLevel
-            }
-            return total
-          }
-          const levelBonus2 = getTieredLevelBonus(Math.max(1, lv))
-          const effectiveLv2 = softenBossCurve(lv + levelBonus2 * 0.42)
-          const hp2  = Math.round(base2 * mult2 + effectiveLv2 * lf2 + Math.floor(effectiveLv2 * effectiveLv2 * 0.75))
-          const lvl2 = Math.max(1, lv + ({ weak:-1, medium:1, high:3, boss:8 }[tier2] || 0))
-          db.ref("combat/" + slot).set({ name:mob, hp:hp2, maxHP:hp2, lvl:lvl2, tier:tier2, slot })
-          activeMobSlots[slot] = true
-        })
-      }, i * 200)
-    })
-    _syncCombatStart(mainMob, tier, extraMobs.filter(Boolean))
-    combatSequence(mainMob, forceTier)
-    combatStarting = false
-  })
-}
-
-/* ========================= */
-/* SÉQUENCE COMBAT           */
-/* ========================= */
+function _launchCombatWithMobs(mainMob, forceTier, extraMobs) { return launchReliableCombat(mainMob, forceTier, extraMobs) }
 
 function combatSequence(mob, forceTier) {
   const tierMob = forceTier || (mobStats[mob] ? mobStats[mob].tier : "weak")
@@ -774,6 +576,8 @@ function fadeToCombat() {
     tokenZone.appendChild(mob)
     mob.style.cssText = "position:absolute;left:650px;top:180px;display:flex;z-index:200;"
   }
+  const positions=window.__combatSnapshot?.presentation?.positions || {}
+  Object.entries(positions).forEach(([id,pos])=>{const token=document.getElementById(id);if(token){token.style.left=pos.x+"px";token.style.top=pos.y+"px"}})
 }
 
 function spawnMobToken(mob) {
@@ -888,11 +692,7 @@ function spawnEloSummonToken(data) {
 function showVictory() {
   window.__combatOutcomeShowing = true
   if (typeof addSessionLog === "function") addSessionLog("🏆 Victoire !")
-  if (isGM) {
-    db.ref("game/combatOutcome").set({ type: "victory", time: Date.now() })
-    if (currentMob) db.ref("game/defeatedMobs/" + String(currentMob).toLowerCase()).set(true)
-    setTimeout(() => db.ref("game/combatOutcome").remove(), 1500)
-  }
+
   db.ref("combat/mob/victoryLootBonus").once("value", snap => {
     const bonus = snap.val()
     if (bonus && bonus.active) showNotification("Spider Sense a révélé un meilleur butin pour la victoire.")
@@ -999,29 +799,8 @@ function endCombat() {
   window.__eloSummonState = null
   const eloSummonToken = document.getElementById("eloSummonToken"); if (eloSummonToken) eloSummonToken.remove()
   if (typeof closePlayerThuumPanel === "function") closePlayerThuumPanel()
-  if (isGM) {
-    db.ref("combat/mob").remove()
-    ;["mob2","mob3"].forEach(s => db.ref("combat/" + s).remove())
-    db.ref("combat/eloSummon").remove()
-    db.ref("combat/hits").remove()
-    db.ref("combat/allyBroadcast").remove()
-    db.ref("combat/mob/playerPoison").remove()
-    db.ref("combat/mob/playerBleed").remove()
-    db.ref("combat/mob/bibiRage").remove()
-    db.ref("combat/mob/yuAggro").remove()
-    db.ref("combat/mob/yuSkipNextTurn").remove()
-    db.ref("combat/mob/spiderSenseBuff").remove()
-    db.ref("combat/mob/revealedWeakness").remove()
-    db.ref("combat/mob/victoryLootBonus").remove()
-    db.ref("combat/mob/attackMalus").remove()
-    db.ref("combat/turnState").remove()
-    db.ref("combat/usedAllies").remove()
-    db.ref("combat/usedThuum").remove()
-    db.ref("combat/playerSpecials").remove(); db.ref("combat/playerFlags").remove(); db.ref("combat/presentation").remove()
-    db.ref("game/allyPanelOpen").remove()
-    db.ref("game/playerAllyAccess").remove()
-    _syncCombatEnd()
-  }
+  if (isGM) finishReliableCombat(window.__combatSnapshot?.id).catch(error=>showNotification("Fin de combat non confirmée : "+error.message))
+
   setTimeout(() => { if (typeof updateThuumButton === "function") updateThuumButton() }, 80)
 }
 
@@ -1443,7 +1222,7 @@ document.addEventListener("DOMContentLoaded", () => {
       : null
     if (isGM && currentEntry && currentEntry.type === "player") {
       const currentToken = document.getElementById(currentEntry.id)
-      const currentIsDead = !!(currentToken && currentToken.classList.contains("playerDead"))
+      const currentIsDead = !combatActorAlive({characters:window.__publicCharacters||{},combat:window.__combatSnapshot||{}},currentEntry.id)
       if (currentIsDead) {
         if (window.__skippingDeadCombatTurn !== currentEntry.id) {
           window.__skippingDeadCombatTurn = currentEntry.id

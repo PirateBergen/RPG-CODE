@@ -307,6 +307,7 @@ async function replaceSession(state, action, operation) {
   if (lock?.id !== operation.id) throw new Error("La synchronisation a été interrompue. Réessayez le chargement.")
   const payload = {}
   SESSION_BRANCHES.forEach(key => { payload[key] = state[key] ?? null })
+  payload.combatRequests = null
   payload.sessionControl = { revision: operation.id, action, changedAt: Date.now() }
   await db.ref().update(payload) // Tous les remplacements et suppressions sont atomiques.
   operation.markCommitted()
@@ -460,7 +461,7 @@ async function awaitResumeSessionPresentation() {
     if (game.wantedBoardOpen) openWantedBoard(true)
     presentSavedCurseWheel(curseSnap.val())
     updateMadnessUI(game.groupMadness || 0); updateWorldMapFogTopLeft(); updateMapLoreBookVisibility(); updateThuumButton()
-    if (!game.combatState?.active || !combat.mob) return
+    if (!game.combatState?.active || !combat.mob || combat.phase === "finished") return
     currentMap = game.combatState.returnMap || game.map || "taverne.jpg"
     currentMob = combat.mob.name; combatActive = true; combatStarting = false
     activeMobSlots = { mob: true, mob2: !!combat.mob2, mob3: !!combat.mob3 }

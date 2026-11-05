@@ -1017,11 +1017,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!isGM) return
       const damage = parseInt(input.value)
       if (isNaN(damage) || damage <= 0) return
-      db.ref("combat/mob").once("value", snapshot => {
-        const mob = snapshot.val()
-        if (!mob) return
-        db.ref("combat/mob/hp").set(Math.max(0, mob.hp - damage))
-      })
+      submitCombatAction("manualDamage",getCurrentCombatActorId()||"greg",{amount:damage,target:livingMobs(window.__combatSnapshot)[0]}).catch(error=>showNotification(error.message))
       input.value = ""
     })
   }

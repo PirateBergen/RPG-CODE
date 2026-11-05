@@ -1,4 +1,4 @@
-﻿"use strict"
+"use strict"
 
 window.__combatOutcomeShowing = false
 window.__pendingLocalDefeat = false
@@ -117,7 +117,7 @@ function canRollInitiativeForActor(actorId, state) {
   const rolls = state.rolls || {}
   if (rolls[actor]) return false
   if (isGM) return actor === "mob" || actor === "mob2" || actor === "mob3"
-  return !!(myToken && myToken.id === actor)
+  return !!(myToken && canAccessCharacter(actor))
 }
 
 function submitInitiativeRoll(actorId) {
@@ -311,7 +311,7 @@ function renderCombatInitiativeOverlay(state) {
 
   // Joueur : pendant la phase de jet, n'affiche que sa propre carte
   if (!isGM && state.phase === "rolling" && myToken) {
-    entries = entries.filter(e => String(e.id || "") === String(myToken.id || ""))
+    entries = entries.filter(e => canAccessCharacter(String(e.id || "")))
   }
 
   entries.forEach((entry, idx) => {
@@ -515,11 +515,7 @@ function _launchCombatWithMobs(mainMob, forceTier, extraMobs) {
     const hp   = Math.round(base * mult * Math.pow(1 + effLevel * sc, 1.72))
     const lvl  = Math.max(1, level + (tierLvlOff[tier] || 0))
     db.ref("combat/mob").set({ name:mainMob, hp, maxHP:hp, lvl, tier })
-    // Si le MJ se déconnecte en plein combat, retirer l'état pour ne pas bloquer les joueurs
-    if (isGM) {
-      db.ref("combat/turnState").onDisconnect().remove()
-      db.ref("game/combatState").onDisconnect().remove()
-    }
+    // La fermeture du MJ conserve le combat pour permettre sa reprise.
 
     _state.pendingExtraMobs = {}
     extraMobs.forEach((mob, i) => {
@@ -1021,6 +1017,7 @@ function endCombat() {
     db.ref("combat/turnState").remove()
     db.ref("combat/usedAllies").remove()
     db.ref("combat/usedThuum").remove()
+    db.ref("combat/playerSpecials").remove(); db.ref("combat/playerFlags").remove(); db.ref("combat/presentation").remove()
     db.ref("game/allyPanelOpen").remove()
     db.ref("game/playerAllyAccess").remove()
     _syncCombatEnd()
@@ -1267,6 +1264,7 @@ function updateMobPreview() {
 }
 
 function _startRemoteCombat(data) {
+  if (window.__sessionBusy) return
   if (isGM || !data || !data.active) return
   if (!gameStarted) return
   if (gameState !== "GAME" && gameState !== "COMBAT") return
@@ -1426,6 +1424,7 @@ function _showCombatTurnBanner(data) {
 
 document.addEventListener("DOMContentLoaded", () => {
   db.ref("combat/turnState").on("value", snap => {
+  if (window.__sessionBusy) return
     const data = snap.val()
     window.__combatTurnState = data || null
     if (!data || !combatActive) {
@@ -1501,6 +1500,7 @@ document.addEventListener("DOMContentLoaded", () => {
   })
 
   db.ref("game/combatState").on("value", snap => {
+  if (window.__sessionBusy) return
     const data = snap.val()
 
     if (!gameStarted) return
@@ -1516,4 +1516,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!isGM) _startRemoteCombat(data)
   })
+})
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  db.ref("combat/playerSpecials").on("value", s => { window.__playerCombatSpecialsUsed = s.val() || {} })
+  db.ref("combat/playerFlags").on("value", s => { window.__playerCombatFlags = s.val() || {} })
 })

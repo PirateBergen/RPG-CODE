@@ -1,4 +1,4 @@
-﻿"use strict"
+"use strict"
 
 /* ========================= */
 /* FIREBASE INIT             */
@@ -17,6 +17,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig)
 firebase.database().goOnline()
 const db   = firebase.database()
+installSessionWriteTracking(db)
 const auth = typeof firebase.auth === "function" ? firebase.auth() : null
 
 window.__authReady        = false
@@ -38,22 +39,33 @@ function detachFirebaseAccessSync() {
   window.__authRoleRef = null; window.__authRoleCb = null
   window.__authProfileRef = null; window.__authProfileCb = null
   window.__authRole = null; window.__authPlayerId = null
+  stopCharacterSubscriptions()
+  stopPersistenceSync()
 }
 
 function syncFirebaseAccessForUser(uid) {
   detachFirebaseAccessSync()
   if (!uid) return
+  startPersistenceSync(uid)
   const roleRef = db.ref("roles/" + uid)
   const roleCb = snap => {
     const role = snap.val()
+    const previousRole = window.__authRole
     window.__authRole = typeof role === "string" ? role : null
+    if (window.__sessionBusy) recoverExpiredSessionLock().catch(error => console.warn(error))
+    if (previousRole === "gm" && window.__authRole !== "gm") resetLocalCharacterAccess()
+    syncCharacterSubscriptions()
     if (window.__authRole === "gm" && !isGM) activateGM(true)
     updateIntroLogoutBtn()
   }
   const profileRef = db.ref("profiles/" + uid + "/playerId")
   const profileCb = snap => {
     const playerId = snap.val()
-    window.__authPlayerId = typeof playerId === "string" ? playerId : null
+    const previousPlayer = window.__authPlayerId
+    const nextPlayer = typeof playerId === "string" ? playerId : null
+    if (previousPlayer && previousPlayer !== nextPlayer && window.__authRole !== "gm") resetLocalCharacterAccess()
+    window.__authPlayerId = nextPlayer
+    syncCharacterSubscriptions()
     updatePlayerAuthMenuState()
     if (window.__authPlayerId) setTimeout(() => { tryAutoSelectAuthenticatedPlayer() }, 60)
   }
@@ -65,11 +77,13 @@ function syncFirebaseAccessForUser(uid) {
 
 function initFirebaseAnonymousAuth() {
   if (!auth) return Promise.resolve(null)
+  if (auth.currentUser && window.__authReady) return Promise.resolve(auth.currentUser)
   if (window.__authLoginPromise) return window.__authLoginPromise
   window.__authLoginPromise = new Promise(resolve => {
     let resolved = false
     const finish = user => { if (resolved) return; resolved = true; resolve(user || null) }
     auth.onAuthStateChanged(user => {
+      if (window.__authUid !== (user?.uid || null)) resetLocalCharacterAccess()
       window.__authReady = !!user
       window.__authUid = user?.uid || null
       syncFirebaseAccessForUser(window.__authUid)
@@ -252,7 +266,7 @@ function handlePlayerEmailPasswordAuth(mode) {
   const password = String(passwordEl.value || "")
   const chosenPlayer = playerEl ? String(playerEl.value || "").trim().toLowerCase() : ""
   if (!email || !password) { showPlayerAuthMessage("Email et mot de passe requis", true); return }
-  if (mode === "create" && !chosenPlayer) { showPlayerAuthMessage("Choisis un personnage pour créer le compte", true); return }
+  if (mode === "create" && !PLAYABLE_HEROES.includes(chosenPlayer)) { showPlayerAuthMessage("Choisis un personnage pour créer le compte", true); return }
   window.__playerAuthBusy = true
   showPlayerAuthMessage(mode === "create" ? "Création du compte joueur..." : "Connexion joueur...")
   const action = mode === "create"
@@ -319,7 +333,7 @@ function showPlayerAuthModal() {
   const charInput = document.createElement("input")
   charInput.id = "playerAuthCharacter"; charInput.type = "hidden"; charInput.value = ""
   box.appendChild(charInput)
-  ;[{value:"greg",label:"Greg"},{value:"ju",label:"Yu"},{value:"elo",label:"Elo"},{value:"bibi",label:"Bibi"}].forEach(o => {
+  ;[{value:"greg",label:"Greg"},{value:"ju",label:"Yu"},{value:"elo",label:"Elo"}].forEach(o => {
     const btn = document.createElement("button")
     btn.type = "button"
     btn.innerText = o.label
@@ -385,6 +399,7 @@ function requestPlayerAuth() {
 function logoutPlayer() {
   if (!auth) return
   auth.signOut().then(() => {
+    resetLocalCharacterAccess()
     if (isGM) {
       isGM = false
       const gmBar = document.getElementById("gmBar"); const mjLog = document.getElementById("mjLog"); const previewBtn = document.getElementById("playerPreviewBtn")
@@ -1536,6 +1551,7 @@ function safeStartIntro(event) {
 
 document.addEventListener("DOMContentLoaded", () => {
 window.__pageLoadTime = Date.now()
+try { window.isNewGame = sessionStorage.getItem("rpg_session_transition") === "new"; sessionStorage.removeItem("rpg_session_transition") } catch (e) {}
 window.__introClickLockUntil = 0
 
 // ─── startScreen : un seul handler pointerdown, pas d'onclick inline ───
@@ -1570,6 +1586,7 @@ if (typeof resetAuroraPresentation === "function") resetAuroraPresentation()
 
 // ─── combat/hits — log des dégâts (sync tous les clients) ───
 db.ref("combat/hits").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) {
     window.__combatDamageLog = []
@@ -1583,6 +1600,7 @@ db.ref("combat/hits").on("value", snap => {
 })
 
 db.ref("combat/hits").on("child_added", snap => {
+  if (window.__sessionBusy) return
   const hit = snap.val()
   if (!hit || !hit.detail) return
   if (hit.time && hit.time < gameStartTime) return
@@ -1594,6 +1612,7 @@ db.ref("combat/hits").on("child_added", snap => {
 
 // ─── combat/mob — listener unique fusionné ───
 db.ref("combat/mob").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   activeMobSlots["mob"] = !!data
 
@@ -1664,6 +1683,7 @@ db.ref("combat/mob").on("value", snap => {
 
 // ─── diceRoll ───
 db.ref("diceRoll").on("child_added", snap => {
+  if (window.__sessionBusy) return
   const roll = snap.val()
   if (!roll || !roll.player || !roll.dice || !roll.result) return
   if (roll.time && roll.time < gameStartTime) return
@@ -1677,6 +1697,7 @@ db.ref("diceRoll").on("child_added", snap => {
 
 // ─── storyImage slots ───
 db.ref("game/storyImage").on("value", snap => {
+  if (window.__sessionBusy) return
   const image = snap.val()
   // Masquer le PNJ sur tous les écrans sauf GAME et COMBAT
   const box = document.getElementById("storyImage")
@@ -1690,6 +1711,7 @@ db.ref("game/storyImage").on("value", snap => {
 })
 
 db.ref("game/storyImage2").on("value", snap => {
+  if (window.__sessionBusy) return
   const image = snap.val()
   const box2  = document.getElementById("storyImage2")
   const img2  = document.getElementById("storyImageContent2")
@@ -1708,6 +1730,7 @@ db.ref("game/storyImage2").on("value", snap => {
 })
 
 db.ref("game/storyImage3").on("value", snap => {
+  if (window.__sessionBusy) return
   const image = snap.val()
   const box3  = document.getElementById("storyImage3")
   const img3  = document.getElementById("storyImageContent3")
@@ -1730,11 +1753,11 @@ db.ref("tokens").on("child_added",   updateTokenFromDB)
 db.ref("tokens").on("child_changed", updateTokenFromDB)
 
 // ─── characters ───
-db.ref("characters").on("child_added",   watchCharacter)
-db.ref("characters").on("child_changed", watchCharacter)
+syncCharacterSubscriptions()
 
 // ─── map ───
 db.ref("game/map").on("value", snap => {
+  if (window.__sessionBusy) return
   const mapName = snap.val()
   if (!mapName) return
   window.__latestMapValue = mapName
@@ -1803,22 +1826,19 @@ db.ref("game/map").on("value", snap => {
 
 // ─── Connexion Firebase ───
 db.ref(".info/connected").on("value", snap => {
+  if (window.__sessionBusy) return
   const connected = !!snap.val()
   const dot   = document.getElementById("firebaseDot")
   const label = document.getElementById("firebaseDotLabel")
   if (dot) { dot.style.background = connected ? "#44ff88" : "#ff4444"; dot.style.boxShadow = connected ? "0 0 6px #44ff88" : "0 0 6px #ff4444" }
   if (label) label.textContent = connected ? "connecté" : "déconnecté"
 
-  // Après une reconnexion : re-enregistrer les handlers onDisconnect GM
-  // (Firebase les annule automatiquement à chaque reconnexion)
-  if (connected && isGM && combatActive) {
-    db.ref("combat/turnState").onDisconnect().remove()
-    db.ref("game/combatState").onDisconnect().remove()
-  }
+
 })
 
 // ─── endSession — signal fin de session pour les joueurs ───
 db.ref("game/endSession").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   const snd  = document.getElementById("endingSound")
   const bg   = document.getElementById("endSessionBg")
@@ -1846,6 +1866,7 @@ db.ref("game/endSession").on("value", snap => {
 
 // ─── newGame — signal nouvelle partie ───
 db.ref("game/newGame").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.time) return
   if (data.time < (window.__pageLoadTime || 0)) return  // event antérieur au chargement, ignorer
@@ -1868,12 +1889,14 @@ db.ref("game/newGame").on("value", snap => {
 
 // ─── groupMadness — jauge folie du groupe ───
 db.ref("game/groupMadness").on("value", snap => {
+  if (window.__sessionBusy) return
   const value = Math.max(0, Math.min(100, parseInt(snap.val(), 10) || 0))
   window.groupMadness = value
   updateMadnessUI(value)
 })
 
 db.ref("game/worldMapFogTopLeftHidden").on("value", snap => {
+  if (window.__sessionBusy) return
   const prevHidden = !!window.worldMapFogTopLeftHidden
   const nextHidden = !!snap.val()
   window.worldMapFogTopLeftHidden = nextHidden
@@ -1885,6 +1908,7 @@ db.ref("game/worldMapFogTopLeftHidden").on("value", snap => {
 })
 
 db.ref("game/cameraZoom").on("value", snap => {
+  if (window.__sessionBusy) return
   const nextZoom = parseFloat(snap.val())
   if (!Number.isFinite(nextZoom)) return
   const mapEl = document.getElementById("map")
@@ -1897,16 +1921,19 @@ db.ref("game/cameraZoom").on("value", snap => {
 })
 
 db.ref("game/readLoreBooks").on("value", snap => {
+  if (window.__sessionBusy) return
   window.readLoreBooksData = snap.val() || {}
 })
 
 db.ref("game/mapLoreBook").on("value", snap => {
+  if (window.__sessionBusy) return
   window.mapLoreBookData = snap.val()
   updateMapLoreBookVisibility()
 })
 
 // ─── shop ───
 db.ref("game/shop").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   const isOpen = !!(data && data.open)
   if (!window.__shopInitDone) {
@@ -1936,6 +1963,7 @@ db.ref("game/shop").on("value", snap => {
 
 // ─── highPNJName ───
 db.ref("game/highPNJName").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.name) return
   if (gameState !== "GAME" && gameState !== "COMBAT") return
@@ -1944,6 +1972,7 @@ db.ref("game/highPNJName").on("value", snap => {
 
 // ─── fly swarm listener ───
 db.ref("events/flySwarm").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.active) {
     if (document.getElementById("flySwarmOverlay") && typeof resetFlySwarmPresentation === "function") resetFlySwarmPresentation()
@@ -1956,6 +1985,7 @@ db.ref("events/flySwarm").on("value", snap => {
 
 // ─── aurora ───
 db.ref("events/aurora").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.active) {
     if (auroraActive || document.getElementById("auroraOverlay")) {
@@ -1971,6 +2001,7 @@ db.ref("events/aurora").on("value", snap => {
 
 // ─── bifrostFlash ───
 db.ref("game/bifrostFlash").on("value", snap => {
+  if (window.__sessionBusy) return
   const d = snap.val()
   if (!d) return
   if (!d.time || d.time < (window.__pageLoadTime || 0)) { db.ref("game/bifrostFlash").remove(); return }
@@ -1980,6 +2011,7 @@ db.ref("game/bifrostFlash").on("value", snap => {
 
 // ─── odinVision ───
 db.ref("game/odinVision").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   if (!data.time || data.time < (window.__pageLoadTime || 0)) return
@@ -1988,6 +2020,7 @@ db.ref("game/odinVision").on("value", snap => {
 
 // ─── powerSound ───
 db.ref("game/powerSound").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   if (!data.time || data.time < (window.__pageLoadTime || 0)) { db.ref("game/powerSound").remove(); return }
@@ -2462,6 +2495,7 @@ function showMobSpecialAttackEvent(data) {
 
 // ─── mobAttackEvent ───
 db.ref("game/mobAttackEvent").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   // Ignorer données résiduelles (antérieures au chargement de la page ou > 8s)
@@ -2537,27 +2571,14 @@ db.ref("game/mobAttackEvent").on("value", snap => {
 
 // ─── curse/wheel ───
 db.ref("curse/wheel").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) {
     window.__curseWheelTriggeredFor = null
+    window.__activeCurseWheel = null
     return
   }
-  const startedAt = parseInt(data.time, 10) || 0
-  const ageMs = startedAt ? (Date.now() - startedAt) : 0
-  if (ageMs > 15000) {
-    const intro = document.getElementById("curseIntroScreen")
-    const wheel = document.getElementById("curseWheelScreen")
-    const result = document.getElementById("curseResultScreen")
-    if (intro) intro.remove()
-    if (wheel) wheel.remove()
-    if (result) result.remove()
-    window.__curseWheelTriggeredFor = null
-    db.ref("curse/wheel").remove()
-    return
-  }
-  if (data.state === "intro")  showCurseIntro(data.player)
-  if (data.state === "wheel")  showCurseWheelScreen(data.player)
-  if (data.state === "result") showCurseResult(data.player, data.result)
+  presentSavedCurseWheel(data)
 })
 
 function cleanupRuneChallengeUI() {
@@ -2571,6 +2592,7 @@ function cleanupRuneChallengeUI() {
 
 // ─── runeChallenge ───
 db.ref("game/runeChallenge").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   const previous = window.activeRuneChallengeData || null
   window.activeRuneChallengeData = data || null
@@ -2620,6 +2642,7 @@ function ensureCemeteryGlyphIntro() {
 
 // ─── cemeterySpell ───
 db.ref("game/cemeterySpell").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   if (gameState !== "GAME") return
@@ -2638,7 +2661,7 @@ db.ref("game/cemeterySpell").on("value", snap => {
     const mg = document.getElementById("spellMiniGame")
     if (mg) { mg.style.opacity = "0"; setTimeout(() => { if (mg.parentNode) mg.remove() }, 800) }
     if (!data.failedByZombie) showSpellFreed()
-    if (isGM) db.ref("game/cemeterySpell").remove()
+    if (isGM) { db.ref("game/completedEvents/cemetery").set(true); db.ref("game/cemeterySpell").remove() }
     return
   }
 
@@ -2647,6 +2670,7 @@ db.ref("game/cemeterySpell").on("value", snap => {
 
 // ─── playerDeath ───
 db.ref("game/playerDeath").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   if (!data.time || data.time < (window.__pageLoadTime || 0)) return
@@ -2681,6 +2705,7 @@ db.ref("game/playerDeath").on("value", snap => {
 
 // ─── combatOutcome — victoire/défaite fiable côté joueurs ───
 db.ref("game/combatOutcome").on("value", snap => {
+  if (window.__sessionBusy) return
   if (isGM) return
   const data = snap.val()
   if (!data || window.__combatOutcomeShowing) return
@@ -2704,6 +2729,7 @@ db.ref("game/combatOutcome").on("value", snap => {
 
 // ─── playerRevive ───
 db.ref("game/playerRevive").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   if (!data.time || data.time < (window.__pageLoadTime || 0)) return
@@ -2729,6 +2755,7 @@ db.ref("game/playerRevive").on("value", snap => {
 // ─── mob2 et mob3 ───
 ;["mob2", "mob3"].forEach(slot => {
   db.ref("combat/" + slot).on("value", snap => {
+  if (window.__sessionBusy) return
     const data = snap.val()
     activeMobSlots[slot] = !!data
     const existing = document.getElementById("mobToken_" + slot)
@@ -2741,6 +2768,7 @@ db.ref("game/playerRevive").on("value", snap => {
 })
 
 db.ref("combat/eloSummon").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   const wasActive = !!(window.__eloSummonState && window.__eloSummonState.active)
   window.__eloSummonState = data || null
@@ -3017,47 +3045,55 @@ function updateCombatTokenStateVisuals() {
 }
 
 db.ref("combat/mob/yuAggro").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__combatYuAggroState = snap.val() || null
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
   if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
 })
 
 db.ref("combat/mob/spiderSenseBuff").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__combatSpiderSenseBuffState = snap.val() || null
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
   if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
 })
 
 db.ref("combat/mob/revealedWeakness").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__combatRevealedWeaknessState = snap.val() || null
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
   if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
 })
 
 db.ref("game/defeatedMobs").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__defeatedMobFlags = snap.val() || {}
 })
 
 
 db.ref("combat/mob/bibiRage").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__combatBibiRageState = snap.val() || null
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
   if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
 })
 
 db.ref("combat/mob/attackMalus").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__combatAttackMalusState = snap.val() || null
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
   if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
 })
 
 db.ref("combat/mob/playerPoison").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__combatPlayerPoisonState = snap.val() || null
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
   if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
 })
 
 db.ref("combat/mob/playerBleed").on("value", snap => {
+  if (window.__sessionBusy) return
   window.__combatPlayerBleedState = snap.val() || null
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
   if (typeof updateCombatTokenStateVisuals === "function") updateCombatTokenStateVisuals()
@@ -3065,10 +3101,12 @@ db.ref("combat/mob/playerBleed").on("value", snap => {
 
 // ─── elements ───
 db.ref("elements").on("child_added", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (data && (gameState === "GAME" || gameState === "COMBAT")) renderMapElement(data)
 })
 db.ref("elements").on("child_changed", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val(); if (!data) return
   const el = document.getElementById("elem_" + data.id)
   if (el) { el.style.left = data.x + "px"; el.style.top = data.y + "px" }
@@ -3105,6 +3143,7 @@ function syncWantedStateFromDB() {
 
 // ─── wantedPosters ───
 db.ref("game/wantedPosters").on("value", snap => {
+  if (window.__sessionBusy) return
   const list = document.getElementById("wantedList")
   const data = snap.val() || null
   window.__wantedPostersData = data || {}
@@ -3121,6 +3160,7 @@ db.ref("game/wantedPosters").on("value", snap => {
 
 // ─── wantedOpen ───
 db.ref("game/wantedOpen").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   const signature = data?.poster?.id && data?.time ? (data.poster.id + ":" + data.time) : (data?.poster?.id || null)
   if (!window.__wantedOpenInitDone) {
@@ -3136,6 +3176,7 @@ db.ref("game/wantedOpen").on("value", snap => {
 
 // ─── wantedBoardOpen ───
 db.ref("game/wantedBoardOpen").on("value", snap => {
+  if (window.__sessionBusy) return
   if (isGM) return
   if (snap.val()) {
     if (typeof openWantedBoard === "function") openWantedBoard(true)
@@ -3146,6 +3187,7 @@ db.ref("game/wantedBoardOpen").on("value", snap => {
 
 // ─── simonState ───
 db.ref("game/simonState").on("value", snap => {
+  if (window.__sessionBusy) return
   const simon = snap.val(); if (!simon || gameState !== "GAME") return
   db.ref("game/cemeterySpell").once("value", s => {
     const spell = s.val()
@@ -3156,12 +3198,14 @@ db.ref("game/simonState").on("value", snap => {
 
 // ─── document — indices / notes ───
 db.ref("game/document").on("value", snap => {
+  if (window.__sessionBusy) return
   if (!gameStarted) return
   _renderDocument(snap.val())
 })
 
 // ─── playerAllyAccess — bouton invocations donné par le MJ ───
 db.ref("game/playerAllyAccess").on("value", snap => {
+  if (window.__sessionBusy) return
   if (isGM) return
   const data = snap.val()
   window.playerAllyAccessData = data || null
@@ -3173,18 +3217,21 @@ db.ref("game/playerAllyAccess").on("value", snap => {
 
 // ─── playerThuum — cris débloqués ───
 db.ref("game/playerThuum").on("value", snap => {
+  if (window.__sessionBusy) return
   window.playerThuumData = snap.val() || {}
   updateThuumButton()
   setTimeout(updateThuumButton, 150)
 })
 
 db.ref("game/playerThuumAccess").on("value", snap => {
+  if (window.__sessionBusy) return
   window.playerThuumAccessData = snap.val() || {}
   updateThuumButton()
 })
 
 // ─── usedThuum — cooldown par combat ───
 db.ref("combat/usedThuum").on("value", snap => {
+  if (window.__sessionBusy) return
   window.usedThuumData = snap.val() || {}
   updateThuumButton()
   setTimeout(updateThuumButton, 150)
@@ -3192,6 +3239,7 @@ db.ref("combat/usedThuum").on("value", snap => {
 
 // ─── thuumUnlockEvent — découverte globale ───
 db.ref("game/thuumUnlockEvent").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.time) return
   if (data.time <= window.__lastThuumUnlockTime) return
@@ -3204,6 +3252,7 @@ db.ref("game/thuumUnlockEvent").on("value", snap => {
 
 // ─── thuumCast — utilisation globale ───
 db.ref("game/thuumCast").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.time) return
   if (data.time <= window.__lastThuumCastTime) return
@@ -3213,6 +3262,7 @@ db.ref("game/thuumCast").on("value", snap => {
 
 // ─── allyBroadcast — cinématique invocation alliée (visible par tous) ───
 db.ref("combat/allyBroadcast").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   if (typeof showAllyActionResult === "function") showAllyActionResult(data)
@@ -3220,6 +3270,7 @@ db.ref("combat/allyBroadcast").on("value", snap => {
 
 // ─── allyAction — PNJ allié en combat (legacy, gardé pour compatibilité) ───
 db.ref("game/allyAction").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
   if (typeof showAllyActionResult === "function") showAllyActionResult(data)
@@ -3227,6 +3278,7 @@ db.ref("game/allyAction").on("value", snap => {
 
 // ─── mapAudio — musique spécifique à la map ───
 db.ref("game/mapAudio").on("value", snap => {
+  if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.file) return
   // Attendre que le fade de map soit terminé (1.4s) puis jouer
@@ -3276,7 +3328,8 @@ function getMaxCarryWeight(playerId, level, data = null) {
 function isCharacterOverweight(playerId, data = null) {
   const source = data || {}
   const inventoryText = String(source.inventaire || "")
-  const weight = typeof _parseInventoryWeight === "function" ? _parseInventoryWeight(inventoryText) : 0
+  const weight = Object.prototype.hasOwnProperty.call(source, "inventaire") && typeof _parseInventoryWeight === "function"
+    ? _parseInventoryWeight(inventoryText) : Math.max(0, Number(source.carriedWeight) || 0)
   const maxWeight = getMaxCarryWeight(playerId, source.lvl, source)
   return {
     overweight: weight > maxWeight,
@@ -3286,10 +3339,11 @@ function isCharacterOverweight(playerId, data = null) {
 }
 
 function updateTokenFromDB(snapshot) {
+  if (window.__sessionBusy) return
   const id   = snapshot.key
   const data = snapshot.val()
   if (!data) return
-  if (myToken && id === myToken.id) return
+  if (myToken && id === myToken.id && _state.tokenDragging) return
   const token = document.getElementById(id)
   if (!token) return
   const currentX = parseInt(token.style.left) || 0
@@ -3317,7 +3371,7 @@ function updateTokenFromDB(snapshot) {
 function updateTokenStats(id) {
   const stats = document.getElementById("stats_" + id)
   if (!stats) return
-  db.ref("characters/" + id).once("value", snapshot => {
+  readCharacter(id, snapshot => {
     const data = snapshot.val(); if (!data) return
     const hp         = data.hp || 0
     const curse      = data.curse || 0
@@ -3378,6 +3432,7 @@ function updateTokenHP() {
 /* ========================= */
 
 function watchCharacter(snapshot) {
+  if (window.__sessionBusy) return
   const playerID = snapshot.key
   const data     = snapshot.val()
   if (!data) return
@@ -3426,7 +3481,7 @@ function watchCharacter(snapshot) {
       if (myToken && myToken.id === playerID && !powerModeActive) activatePowerMode(playerID)
     } else {
       token.classList.remove("powerReady", "powerFull")
-      powerModeActive = false
+      if (myToken && myToken.id === playerID) powerModeActive = false
       const p1 = document.getElementById("power1Sound")
       if (p1 && myToken && myToken.id === playerID) { p1.pause(); p1.currentTime = 0 }
     }
@@ -3455,58 +3510,26 @@ function watchCharacter(snapshot) {
     window.__curseWheelTriggeredFor = null
   }
 
-  // Level up
-  const previousLevel = lastLevel[playerID] !== undefined ? lastLevel[playerID] : (lvl - 1)
-  let newLevel = 1
-  while (xp >= xpForLevel(newLevel + 1)) newLevel++
+  // Les mises à jour publiques ne doivent jamais modifier un autre héros.
+  if (!canAccessCharacter(playerID)) return
+  if (playerID === "bibi") _state.bibiData = { ...data }
 
-  if (newLevel > lvl) {
-    const computed     = getPlayerStatsAtLevel(playerID, newLevel)
-    const prevComputed = getPlayerStatsAtLevel(playerID, lvl)
-    const updateData   = { lvl: newLevel }
-    if (computed && prevComputed) {
-      allStats.forEach(s => {
-        updateData[s] = (parseInt(data[s]) || 0) + (computed[s] - prevComputed[s])
-      })
-      updateData.hp    = computed.hp
-      updateData.poids = computed.poids
-    } else {
-      updateData.hp = getMaxHP(playerId, newLevel)
-    }
-    db.ref("characters/" + playerID).update(updateData)
-
-    if (newLevel > previousLevel && !pendingLevelUp["_shown_" + playerID + "_" + newLevel]) {
-      pendingLevelUp["_shown_" + playerID + "_" + newLevel] = true
-      const sheet = document.getElementById("characterSheet")
-      if (sheet && sheet.style.display === "block") pendingLevelUp[playerID] = true
-      else triggerLevelUp(playerID)
-    }
-
-    // Sync Bibi si Greg
-    if (playerID === "greg") {
-      const bibiC    = getPlayerStatsAtLevel("bibi", newLevel)
-      const bibiPrev = getPlayerStatsAtLevel("bibi", lvl)
-      const bibiUp   = { lvl: newLevel }
-      if (bibiC && bibiPrev) {
-        allStats.forEach(s => { bibiUp[s] = (parseInt((_state.bibiData || {})[s]) || bibiC[s] - (bibiC[s] - bibiPrev[s])) + (bibiC[s] - bibiPrev[s]) })
-        bibiUp.hp = bibiC.hp; bibiUp.poids = bibiC.poids
-      } else { bibiUp.hp = getMaxHP('bibi', newLevel) }
-      db.ref("characters/bibi").update(bibiUp)
-    }
-  }
+  const previousLevel = lastLevel[playerID]
+  const previousXP = window.__lastProgressionXP?.[playerID]
+  if (!window.__lastProgressionXP) window.__lastProgressionXP = {}
+  window.__lastProgressionXP[playerID] = xp
   lastLevel[playerID] = lvl
+  if (isGM && previousXP !== undefined && xp > previousXP) {
+    reconcilePartyProgression().catch(error => showNotification("Progression non confirmée : " + error.message))
+  }
+  if (previousLevel !== undefined && lvl > previousLevel && !window.__sessionBusy) triggerLevelUp(playerID)
 }
 
 function triggerLevelUp(playerID) {
+  if (!canAccessCharacter(playerID) || window.__sessionBusy) return
+  // Présentation seulement : les points sont attribués une seule fois par transaction.
   showNotification(playerID.toUpperCase() + " LEVEL UP !")
-  addMJLog(playerID.toUpperCase() + " LEVEL UP")
-  showLevelUpEffect(playerID)
-  showLevelUpText(playerID)
-  playSound("levelUpSound")
-  // Donner 2 points libres à distribuer
-  db.ref("characters/" + playerID + "/freePoints").transaction(current => {
-    return (parseInt(current, 10) || 0) + 2
-  }, err => { if (err) console.error("freePoints transaction failed:", err) })
+  showLevelUpEffect(playerID); showLevelUpText(playerID); playSound("levelUpSound")
 }
 
 function updateGMStats(playerID, data) {
@@ -3640,15 +3663,22 @@ function changeMap(mapName, customAudio) {
 /* XP                        */
 /* ========================= */
 
-function giveXP(amount) {
+async function giveXP(amount) {
   if (!isGM) return
-  ;["greg", "ju", "elo"].forEach(player => {
-    db.ref("characters/" + player + "/xp").transaction(current => (parseInt(current, 10) || 0) + amount)
-  })
+  try {
+    const gain = Number(amount)
+    if (!Number.isInteger(gain) || gain <= 0 || window.__sessionBusy) return
+    await db.ref("characters").transaction(current => {
+      if (!current) return undefined
+      const next = cloneSession(current)
+      PLAYABLE_HEROES.forEach(id => { if (next[id]) next[id].xp = Math.min(999999, (Number(next[id].xp) || 0) + gain) })
+      return progressCharacters(next)
+    })
+  } catch (error) { showNotification("XP non confirmée : " + error.message); return }
   showXPMessage(amount)
   addMJLog("⭐ MJ donne " + amount + " XP au groupe")
   addSessionLog("⭐ +" + amount + " XP donné au groupe")
-  setTimeout(syncBibiLevel, 1000)
+  // Le familier suit Greg dans la même transaction de progression.
 }
 
 function syncBibiLevel() {
@@ -3668,435 +3698,7 @@ function syncBibiLevel() {
 /* SAUVEGARDE                */
 /* ========================= */
 
-function saveGame() {
-  if (!isGM) return
-  const saveName = prompt("Nom de la sauvegarde :", "Partie " + new Date().toLocaleDateString("fr-FR"))
-  if (!saveName) return
-
-  // Toutes les clés nécessaires pour une reprise complète
-  const keys = [
-    "characters",
-    "tokens",
-    "elements",
-    "game/map",
-    "game/wantedPosters",
-    "game/wantedOpen",
-    "game/runeChallenge",
-    "game/mapLoreBook",
-    "game/readLoreBooks",
-    "game/storyImage",
-    "game/storyImage2",
-    "game/storyImage3"
-  ]
-
-  const data = { _saveName: saveName, _saveDate: new Date().toLocaleString("fr-FR") }
-  let pending = keys.length
-
-  keys.forEach(key => {
-    db.ref(key).once("value", snap => {
-      const val = snap.val()
-      if (val !== null) {
-        const parts = key.split("/")
-        if (parts.length === 1) {
-          data[key] = val
-        } else {
-          if (!data[parts[0]]) data[parts[0]] = {}
-          data[parts[0]][parts[1]] = val
-        }
-      }
-      pending--
-      if (pending === 0) {
-        // Sauvegarde Firebase (source principale)
-        db.ref("saves/" + saveName).set(data).then(() => {
-          showNotification("Sauvegardé : " + saveName)
-          addMJLog("Sauvegarde : " + saveName)
-        }).catch(e => {
-          showNotification("Erreur sauvegarde Firebase")
-          console.error("Save error Firebase:", e)
-        })
-        // Sauvegarde localStorage (copie de secours locale)
-        try {
-          const saves = parseLocalStorageJSON("rpg_saves", {})
-          saves[saveName] = data
-          localStorage.setItem("rpg_saves", JSON.stringify(saves))
-          localStorage.setItem("rpg_save",  JSON.stringify(data))
-        } catch(e) {
-          console.warn("localStorage save failed:", e)
-        }
-      }
-    })
-  })
-}
-
-function _applyLoadData(data, callback) {
-  const ops = []
-  const pushOp = (label, promise) => { ops.push({ label, promise }) }
-  const normalizeLoadedCharacterData = (playerId, raw) => {
-    const level = clampInteger(raw?.lvl, 1, 99)
-    const defaults = getPlayerStatsAtLevel(playerId, level) || getPlayerStatsAtLevel(playerId, 1) || {}
-    return {
-      lvl: level,
-      xp: clampInteger(raw?.xp, 0, 999999),
-      hp: clampInteger(raw?.hp, 0, 999),
-      poids: clampInteger(raw?.poids, 0, 999),
-      force: clampInteger(raw?.force, 0, 999),
-      charme: clampInteger(raw?.charme, 0, 999),
-      perspi: clampInteger(raw?.perspi, 0, 999),
-      chance: clampInteger(raw?.chance, 0, 999),
-      defense: clampInteger(raw?.defense, 0, 999),
-      curse: clampInteger(raw?.curse, 0, 8),
-      corruption: clampInteger(raw?.corruption, 0, 10),
-      freePoints: clampInteger(raw?.freePoints, 0, 999),
-      gold: clampInteger(raw?.gold, 0, 999999),
-      inventaire: String(raw?.inventaire ?? ""),
-      notes: String(raw?.notes ?? ""),
-      cursedEffect: raw?.cursedEffect == null ? null : String(raw.cursedEffect),
-      ...Object.fromEntries(
-        Object.entries(defaults)
-          .filter(([key]) => !["lvl","xp","curse","corruption","freePoints","gold","inventaire","notes"].includes(key))
-          .filter(([key]) => raw?.[key] == null)
-      )
-    }
-  }
-  const normalizeLoadedTokenData = raw => ({
-    x: clampInteger(raw?.x, -5000, 5000),
-    y: clampInteger(raw?.y, -5000, 5000)
-  })
-
-  window.__combatOutcomeShowing = false
-  window.__pendingLocalDefeat = false
-
-  // Écriture directe sur chaque ref — pas de update() depuis la racine avec des slashes
-  if (data.characters) {
-    Object.entries(data.characters).forEach(([pid, value]) => {
-      pushOp("characters/" + pid, db.ref("characters/" + pid).set(normalizeLoadedCharacterData(pid, value)))
-    })
-  }
-  if (data.tokens) {
-    Object.entries(data.tokens).forEach(([pid, value]) => {
-      pushOp("tokens/" + pid, db.ref("tokens/" + pid).set(normalizeLoadedTokenData(value)))
-    })
-  }
-  if (data.elements)            pushOp("elements", db.ref("elements").set(data.elements))
-  else                          pushOp("elements", db.ref("elements").remove())
-  if (data.game?.map)           pushOp("game/map", db.ref("game/map").set(data.game.map))
-  if (data.game?.wantedPosters) pushOp("game/wantedPosters", db.ref("game/wantedPosters").set(data.game.wantedPosters))
-  else                          pushOp("game/wantedPosters", db.ref("game/wantedPosters").remove())
-  if (data.game?.wantedOpen)    pushOp("game/wantedOpen", db.ref("game/wantedOpen").set(data.game.wantedOpen))
-  else                          pushOp("game/wantedOpen", db.ref("game/wantedOpen").remove())
-  if (data.game?.runeChallenge) pushOp("game/runeChallenge", db.ref("game/runeChallenge").set(data.game.runeChallenge))
-  else                          pushOp("game/runeChallenge", db.ref("game/runeChallenge").remove())
-  if (data.game?.mapLoreBook)   pushOp("game/mapLoreBook", db.ref("game/mapLoreBook").set(data.game.mapLoreBook))
-  else                          pushOp("game/mapLoreBook", db.ref("game/mapLoreBook").remove())
-  if (data.game?.readLoreBooks) pushOp("game/readLoreBooks", db.ref("game/readLoreBooks").set(data.game.readLoreBooks))
-  else                          pushOp("game/readLoreBooks", db.ref("game/readLoreBooks").remove())
-  if (data.game?.storyImage)    pushOp("game/storyImage", db.ref("game/storyImage").set(data.game.storyImage))
-  else                          pushOp("game/storyImage", db.ref("game/storyImage").remove())
-  if (data.game?.storyImage2)   pushOp("game/storyImage2", db.ref("game/storyImage2").set(data.game.storyImage2))
-  else                          pushOp("game/storyImage2", db.ref("game/storyImage2").remove())
-  if (data.game?.storyImage3)   pushOp("game/storyImage3", db.ref("game/storyImage3").set(data.game.storyImage3))
-  else                          pushOp("game/storyImage3", db.ref("game/storyImage3").remove())
-  pushOp("events/aurora", db.ref("events/aurora").remove())
-
-  // Nettoyage
-  pushOp("combat", db.ref("combat").remove())
-  pushOp("game/shop", db.ref("game/shop").remove())
-  pushOp("game/cemeterySpell", db.ref("game/cemeterySpell").remove())
-  pushOp("curse/wheel", db.ref("curse/wheel").remove())
-  pushOp("game/bifrostFlash", db.ref("game/bifrostFlash").remove())
-  pushOp("game/mobAttackEvent", db.ref("game/mobAttackEvent").remove())
-  pushOp("game/combatState", db.ref("game/combatState").remove())
-  pushOp("game/combatOutcome", db.ref("game/combatOutcome").remove())
-  pushOp("game/playerDeath", db.ref("game/playerDeath").remove())
-  pushOp("game/playerRevive", db.ref("game/playerRevive").remove())
-  pushOp("game/playerAllyAccess", db.ref("game/playerAllyAccess").remove())
-  pushOp("game/playerThuum", db.ref("game/playerThuum").remove())
-  pushOp("game/playerThuumAccess", db.ref("game/playerThuumAccess").remove())
-  pushOp("game/thuumCast", db.ref("game/thuumCast").remove())
-  pushOp("game/thuumUnlockEvent", db.ref("game/thuumUnlockEvent").remove())
-  pushOp("game/allyAction", db.ref("game/allyAction").remove())
-  pushOp("game/odinVision", db.ref("game/odinVision").remove())
-  pushOp("game/powerSound", db.ref("game/powerSound").remove())
-  pushOp("game/document", db.ref("game/document").remove())
-
-  Promise.allSettled(ops.map(op => op.promise)).then(results => {
-    const failed = results
-      .map((result, idx) => ({ result, label: ops[idx].label }))
-      .filter(entry => entry.result.status === "rejected")
-
-    if (failed.length) {
-      console.error("Load error:", failed)
-      showNotification("⚠ Erreur chargement: " + failed.map(f => f.label).join(", "))
-      return
-    }
-    callback()
-  })
-}
-
-function loadGame() {
-  // Chercher la dernière sauvegarde dans Firebase, fallback localStorage
-  db.ref("saves").orderByChild("_saveDate").limitToLast(1).once("value", snap => {
-    let data = null
-    snap.forEach(child => { data = child.val() })
-    if (!data) {
-      // Fallback localStorage
-      const raw = localStorage.getItem("rpg_save")
-      if (!raw) { showNotification("Aucune sauvegarde"); return }
-      try { data = JSON.parse(raw) } catch(e) { showNotification("Sauvegarde corrompue"); return }
-    }
-    if (!data.characters && !data.tokens) { showNotification("Sauvegarde vide"); return }
-    _applyLoadData(data, () => {
-    db.ref("events/aurora").remove()
-    cleanupTransientGameUI()
-    showNotification("✅ Partie chargée")
-    }) // fin _applyLoadData
-  }) // fin Firebase once
-}
-
-function loadSave(saveName) {
-  // Chercher dans Firebase en priorité, fallback localStorage
-  db.ref("saves/" + saveName).once("value", snap => {
-    let data = snap.val()
-    if (!data) {
-      const saves = parseLocalStorageJSON("rpg_saves", {})
-      data = saves[saveName]
-    }
-    if (!data) { showNotification("Sauvegarde introuvable"); return }
-    _applyLoadData(data, () => {
-    cleanupTransientGameUI({ closeSavePanel: true })
-    showNotification("✅ Partie chargée : " + saveName)
-    addMJLog("📂 Chargement : " + saveName)
-    }) // fin _applyLoadData
-  }) // fin Firebase once
-}
-
-function deleteSave(saveName) {
-  if (!confirm("Supprimer cette sauvegarde ?")) return
-  // Supprimer dans Firebase
-  db.ref("saves/" + saveName).remove().catch(e => console.warn("Delete Firebase save error:", e))
-  // Supprimer dans localStorage
-  const saves = parseLocalStorageJSON("rpg_saves", {})
-  delete saves[saveName]
-  localStorage.setItem("rpg_saves", JSON.stringify(saves))
-  showSaveMenu()
-}
-
-function newGame() {
-  if (!confirm("Commencer une nouvelle partie ? Tout sera réinitialisé.")) return
-
-  // Attendre que Firebase Auth soit prête avant d'écrire
-  const doReset = () => {
-    const verifyResetReadback = () => {
-      const checks = [
-        { label: "game/map", promise: db.ref("game/map").once("value") },
-        { label: "game/groupMadness", promise: db.ref("game/groupMadness").once("value") },
-        { label: "game/worldMapFogTopLeftHidden", promise: db.ref("game/worldMapFogTopLeftHidden").once("value") }
-      ]
-      ;["greg", "ju", "elo", "bibi"].forEach(pid => {
-        checks.push({ label: "characters/" + pid, promise: db.ref("characters/" + pid).once("value") })
-        checks.push({ label: "tokens/" + pid, promise: db.ref("tokens/" + pid).once("value") })
-      })
-
-      return Promise.allSettled(checks.map(entry => entry.promise)).then(results => {
-        const failed = []
-        results.forEach((result, idx) => {
-          const label = checks[idx].label
-          if (result.status !== "fulfilled") {
-            failed.push(label)
-            return
-          }
-          const value = result.value && typeof result.value.val === "function" ? result.value.val() : null
-          if (label === "game/map" && value !== "taverne.jpg") failed.push(label)
-          else if (label === "game/groupMadness" && (parseInt(value, 10) || 0) !== 0) failed.push(label)
-          else if (label === "game/worldMapFogTopLeftHidden" && value !== false) failed.push(label)
-          else if (label.startsWith("characters/")) {
-            const pid = label.split("/")[1]
-            const expected = initChars[pid]
-            if (!value || !expected) { failed.push(label); return }
-            const same =
-              parseInt(value.lvl, 10) === expected.lvl &&
-              parseInt(value.xp, 10) === expected.xp &&
-              parseInt(value.hp, 10) === expected.hp &&
-              parseInt(value.poids, 10) === expected.poids &&
-              parseInt(value.force, 10) === expected.force &&
-              parseInt(value.charme, 10) === expected.charme &&
-              parseInt(value.perspi, 10) === expected.perspi &&
-              parseInt(value.chance, 10) === expected.chance &&
-              parseInt(value.defense, 10) === expected.defense &&
-              parseInt(value.curse, 10) === expected.curse &&
-              parseInt(value.corruption, 10) === expected.corruption &&
-              parseInt(value.freePoints, 10) === expected.freePoints &&
-              parseInt(value.gold, 10) === expected.gold &&
-              String(value.inventaire || "") === expected.inventaire &&
-              String(value.notes || "") === expected.notes
-            if (!same) failed.push(label)
-          } else if (label.startsWith("tokens/")) {
-            const pid = label.split("/")[1]
-            const expected = initTokens[pid]
-            if (!value || !expected || parseInt(value.x, 10) !== expected.x || parseInt(value.y, 10) !== expected.y) {
-              failed.push(label)
-            }
-          }
-        })
-        return failed
-      })
-    }
-
-    const finalizeNewGameLocally = () => {
-      if (typeof forceCloseCharacterSheetWithoutSave === "function") forceCloseCharacterSheetWithoutSave()
-      myToken = null
-      window.myToken = null
-      currentSheetPlayer = null
-      if (window._playerMaxPoids) window._playerMaxPoids = {}
-      currentMap = "taverne.jpg"
-      cameraZoom = minZoom || cameraZoom
-      cameraX = 0
-      cameraY = 0
-      const map = document.getElementById("map")
-      if (map) {
-        map.style.backgroundImage = "url('images/taverne.jpg')"
-        map.style.backgroundSize = "cover"
-        map.style.backgroundColor = ""
-      }
-      updateCamera()
-      ;["greg","ju","elo","bibi"].forEach(pid => updateTokenStats(pid))
-      updateMadnessVisibility()
-      updateThuumButton()
-    }
-
-    // Reset état local immédiat
-    gameStarted = false
-    window.isNewGame = true
-    window.__combatOutcomeShowing = false
-    window.__pendingLocalDefeat = false
-    window.__curseWheelTriggeredFor = null
-    combatActive = false
-    combatStarting = false
-    cemeteryEventDone = false
-    odinVisionShown = false
-    window.playerThuumData = {}
-    window.playerThuumAccessData = {}
-    window.mapLoreBookData = null
-    window.readLoreBooksData = {}
-    deadPlayers = {}
-    pendingLevelUp = {}
-    lastLevel = {}
-    lastHP = {}
-    resetMadnessPresentation()
-    if (typeof resetAuroraPresentation === "function") resetAuroraPresentation()
-    stopAllMusic()
-
-    // Construire les données initiales
-    const initChars = {}
-    ;["greg", "ju", "elo", "bibi"].forEach(pid => {
-      const s = getPlayerStatsAtLevel(pid, 1)
-      initChars[pid] = {
-        lvl:1, xp:0, hp:s.hp, poids:s.poids,
-        force:s.force, charme:s.charme, perspi:s.perspi,
-        chance:s.chance, defense:s.defense,
-        curse:0, corruption:0, freePoints:0,
-        gold:0, inventaire:"", notes:""
-      }
-    })
-
-    const initTokens = {
-      greg: { x:320, y:340 },
-      ju:   { x:420, y:340 },
-      elo:  { x:520, y:340 },
-      bibi: { x:620, y:340 }
-    }
-
-    const criticalWrites = [
-      { label: "game/map", promise: db.ref("game/map").set("taverne.jpg") },
-      { label: "game/groupMadness", promise: db.ref("game/groupMadness").set(0) },
-      { label: "game/worldMapFogTopLeftHidden", promise: db.ref("game/worldMapFogTopLeftHidden").set(false) },
-      { label: "game/newGame", promise: db.ref("game/newGame").set({ time: Date.now() }) },
-      { label: "game/endSession", promise: db.ref("game/endSession").remove() }
-    ]
-
-    Object.keys(initChars).forEach(pid => {
-      criticalWrites.push({ label: "characters/" + pid, promise: db.ref("characters/" + pid).set(initChars[pid]) })
-    })
-    Object.keys(initTokens).forEach(pid => {
-      criticalWrites.push({ label: "tokens/" + pid, promise: db.ref("tokens/" + pid).set(initTokens[pid]) })
-    })
-
-    // Écrire les données critiques en premier (personnages + map)
-    // puis nettoyer le reste en arrière-plan
-    Promise.allSettled(criticalWrites.map(entry => entry.promise)).then(results => {
-      const failed = results
-        .map((result, idx) => ({ result, label: criticalWrites[idx].label }))
-        .filter(entry => entry.result.status === "rejected")
-
-      if (failed.length) {
-        console.error("newGame reset failed", failed)
-        showNotification("⚠ Reset incomplet: " + failed.map(f => f.label).join(", "))
-        setGameState("MENU")
-        startIntro()
-        return
-      }
-
-      verifyResetReadback().then(readbackFailed => {
-        if (readbackFailed.length) {
-          console.error("newGame reset readback mismatch", readbackFailed)
-          showNotification("⚠ Vérification reset échouée: " + readbackFailed.join(", "))
-          setGameState("MENU")
-          startIntro()
-          return
-        }
-
-        // Nettoyage en arrière-plan (non bloquant)
-        ;[
-          db.ref("elements").remove(),
-          db.ref("combat").remove(),
-          db.ref("diceRoll").remove(),
-          db.ref("curse").remove(),
-          db.ref("events").remove(),
-          db.ref("game/storyImage").remove(),
-          db.ref("game/storyImage2").remove(),
-          db.ref("game/storyImage3").remove(),
-          db.ref("game/shop").remove(),
-          db.ref("game/combatState").remove(),
-          db.ref("game/combatOutcome").remove(),
-          db.ref("game/playerDeath").remove(),
-          db.ref("game/playerRevive").remove(),
-          db.ref("game/playerAllyAccess").remove(),
-          db.ref("game/playerThuum").remove(),
-          db.ref("game/playerThuumAccess").remove(),
-          db.ref("game/thuumCast").remove(),
-          db.ref("game/thuumUnlockEvent").remove(),
-          db.ref("game/allyAction").remove(),
-          db.ref("game/odinVision").remove(),
-          db.ref("game/powerSound").remove(),
-          db.ref("game/bifrostFlash").remove(),
-          db.ref("game/cemeterySpell").remove(),
-          db.ref("game/runeChallenge").remove(),
-          db.ref("game/mapLoreBook").remove(),
-          db.ref("game/readLoreBooks").remove(),
-          db.ref("game/wantedPosters").remove(),
-          db.ref("game/wantedOpen").remove(),
-          db.ref("game/wantedBoardOpen").remove(),
-          db.ref("game/simonState").remove(),
-          db.ref("game/document").remove(),
-          db.ref("game/mobAttackEvent").remove(),
-          db.ref("game/highPNJName").remove(),
-        ].forEach(p => p.catch(() => {}))
-
-        finalizeNewGameLocally()
-        showNotification("Nouvelle partie — Taverne de Rivebois")
-        addMJLog("Nouvelle partie lancée")
-        setGameState("MENU")
-        startIntro()
-      })
-    })
-  } // fin doReset
-
-  doReset()
-}
-
-/* ========================= */
-/* DICE                      */
-/* ========================= */
+// Sauvegarde, restauration et nouvelle partie : persistence.js
 
 function rollDice(max) {
   let playerName
@@ -4222,6 +3824,7 @@ function _buildDice3D(resultBox) {
 }
 
 function showDiceAnimation(playerName, max, final, rawRoll) {
+  window.__diceResolutionUntil = Date.now() + 2600
   const resultBox = document.getElementById("diceResult")
   resultBox.classList.remove("crit", "fail", "mjRoll")
   resultBox.style.display = "flex"
@@ -4498,6 +4101,7 @@ function openSessionLog() {
   // Mise à jour en temps réel
   if (panel.__logListener) db.ref("game/sessionLog").off("child_added", panel.__logListener)
   panel.__logListener = db.ref("game/sessionLog").orderByChild("time").startAt(Date.now()).on("child_added", snap => {
+  if (window.__sessionBusy) return
     const e = snap.val(); if (!e) return
     const row = document.createElement("div")
     row.style.cssText = "font-size:11px;color:#c8d8d0;letter-spacing:0.5px;padding:3px 0;border-bottom:1px solid rgba(30,90,102,0.15);"
@@ -4581,51 +4185,8 @@ function showIntroLayer() {
 }
 
 function startGame() {
-        db.ref("combat/mob").remove(); db.ref("combat/mob2").remove(); db.ref("combat/mob3").remove(); db.ref("combat/usedAllies").remove()
-        db.ref("combat/usedThuum").remove()
-        db.ref("game/combatState").remove(); db.ref("game/combatOutcome").remove(); db.ref("game/playerAllyAccess").remove(); db.ref("game/playerThuum").remove(); db.ref("game/playerThuumAccess").remove(); db.ref("game/thuumCast").remove(); db.ref("game/thuumUnlockEvent").remove()
-      db.ref("game/worldMapFogTopLeftHidden").set(false)
-      db.ref("game/mapLoreBook").remove(); db.ref("game/readLoreBooks").remove()
-      db.ref("events/aurora").remove()
-      auroraActive = false
-      if (typeof resetAuroraPresentation === "function") resetAuroraPresentation()
-      db.ref("game/shop").remove()
-  db.ref("game/highPNJName").remove(); db.ref("game/runeChallenge").remove()
-  db.ref("game/cemeterySpell").remove()
-  cemeteryEventDone = false
-    combatActive = false
-    combatStarting = false
-    window.__localPlayerId = ""
-    try { localStorage.removeItem("rpg_local_player") } catch (e) {}
-    if (window.__localDefeatRef && window.__localDefeatCb) {
-      window.__localDefeatRef.off("value", window.__localDefeatCb)
-      window.__localDefeatRef = null
-      window.__localDefeatCb = null
-    }
-    window.__combatOutcomeShowing = false
-    window.__pendingLocalDefeat = false
-    window.playerThuumData = {}
-    window.playerThuumAccessData = {}
-    window.usedThuumData = {}
-    window.mapLoreBookData = null
-    window.readLoreBooksData = {}
-    closeMapLoreBookOverlay()
-    window.__shopWasOpen = false
-    window.__shopInitDone = false
-    window.__lastShopSoundState = null
-    window.__lastShopSoundAt = 0
-    window.__lastShopEventSignature = null
-    window.__lastOpenedShopTime = null
-    if (window.__combatStatsRef && window.__combatStatsCb) {
-      window.__combatStatsRef.off("value", window.__combatStatsCb)
-      window.__combatStatsRef = null
-      window.__combatStatsCb = null
-    }
-    resetMadnessPresentation()
-    if (typeof resetAuroraPresentation === "function") resetAuroraPresentation()
-    updateMadnessVisibility()
-    const playerThuumBtn = document.getElementById("playerThuumBtn")
-    if (playerThuumBtn) playerThuumBtn.style.display = "none"
+  if (gameStarted || window.__sessionBusy) return
+  // Continuer ne doit jamais effacer la partie persistée.
   stopMenuSparks()
   const titleEl = document.getElementById("gameTitle")
   if (titleEl) { titleEl.classList.remove("visible"); titleEl.innerText = "" }
@@ -4695,14 +4256,15 @@ function showTavern() {
     else                            { map.style.backgroundSize = "cover";   map.style.backgroundColor = "" }
     currentMap = mapName
     calculateMinZoom(); cameraZoom = minZoom; cameraX = 0; cameraY = 0; updateCamera()
-    if (isGM) syncCameraZoomToPlayers()
-    if (isGM) maybeSpawnMapLoreBook(mapName)
+    // Le zoom sauvegardé sera restauré sans réécrire la session.
+    if (isGM && window.isNewGame) maybeSpawnMapLoreBook(mapName)
     syncMapElementsFromDB()
     syncWantedStateFromDB()
     if (mapName !== earlyMap) playInitialMapMusic(mapName)
     ensureMapMusicPlayback(mapName, 0)
     setTimeout(() => { fade.style.opacity = 0 }, 500)
     ensureMapMusicPlayback(mapName, 800)
+    awaitResumeSessionPresentation()
     setTimeout(() => { if (mapNames[mapName]) showLocation(mapNames[mapName]) }, 2000)
     // Forcer rechargement des stats et positions des tokens
     setTimeout(() => {
@@ -4880,7 +4442,7 @@ function exitPlayerPreview() {
 }
 
 function activateGM(fromFirebaseRole = false) {
-  if (isGM) return
+  if (window.__authRole !== "gm" || isGM) return
   isGM = true
   document.getElementById("gmBar").style.display     = "flex"
   document.getElementById("mjLog").style.display     = "block"
@@ -4974,34 +4536,47 @@ function watchFreePoints(playerId) {
   ref.on("value", cb)
 }
 
-function choosePlayer(id) {
-  if (isGM) {
+async function choosePlayer(id) {
+  if (!CHARACTER_IDS.includes(id)) return
+  if (isGM && window.__authRole === "gm") {
     myToken = document.getElementById(id); window.myToken = myToken
     selected = null; _state.tokenDragging = false; _state.tokenDragStart = null
     document.querySelectorAll(".token").forEach(t => t.classList.remove("selectedPlayer", "gmSelected"))
     if (myToken) myToken.classList.add("selectedPlayer")
     showNotification("MJ joue : " + id.toUpperCase())
-    watchLocalPlayerDefeat(id)
-    updateThuumButton()
-    _collapsePlayerMenu(id)
+    watchLocalPlayerDefeat(id); updateThuumButton(); _collapsePlayerMenu(id)
     setTimeout(() => openCharacterSheet(id), 50)
     return
   }
-  if (myToken) { showNotification("Personnage déjà choisi"); return }
-  document.querySelectorAll(".token").forEach(t => t.classList.remove("selectedPlayer"))
-  myToken = document.getElementById(id); window.myToken = myToken
-  myToken.classList.add("selectedPlayer")
-  showNotification("Votre héros est : " + id.toUpperCase())
-  watchLocalPlayerDefeat(id)
-  updateThuumButton()
-  watchFreePoints(id)
-  // Lier le profil anonyme au playerId pour autoriser les écritures Firebase
-  if (window.__authUid && !window.__authPlayerId) {
-    db.ref("profiles/" + window.__authUid + "/playerId").set(id).catch(() => {})
+  if (!PLAYABLE_HEROES.includes(id)) { showNotification("Bibi est le familier de Greg."); return }
+  if (myToken || window.__playerSelectionPending) return
+  const token = document.getElementById(id)
+  if (!token) return
+  window.__playerSelectionPending = true
+  try {
+    await initFirebaseAnonymousAuth()
+    const uid = auth?.currentUser?.uid || window.__authUid
+    if (!uid || uid !== window.__authUid) throw new Error("Connexion nécessaire pour choisir un héros")
+    if (window.__authPlayerId && window.__authPlayerId !== id) throw new Error("Ce compte est déjà lié à " + window.__authPlayerId.toUpperCase())
+    const result = await db.ref("profiles/" + uid + "/playerId").transaction(current => {
+      return current === null || current === id ? id : undefined
+    })
+    if (!result.committed) throw new Error("Ce compte possède déjà un autre héros")
+    if (window.__authUid !== uid) return
     window.__authPlayerId = id
+    myToken = token; window.myToken = token
+    document.querySelectorAll(".token").forEach(t => t.classList.remove("selectedPlayer"))
+    token.classList.add("selectedPlayer")
+    syncCharacterSubscriptions()
+    watchLocalPlayerDefeat(id); watchFreePoints(id); updateThuumButton()
+    updatePlayerAuthMenuState(); _collapsePlayerMenu(id)
+    showNotification("Votre héros est : " + id.toUpperCase())
+    if (window.__activeCurseWheel) presentSavedCurseWheel(window.__activeCurseWheel)
+  } catch (error) {
+    showNotification(error?.message || "Choix du héros impossible")
+  } finally {
+    window.__playerSelectionPending = false
   }
-  // Réduire le menu en mini badge
-  _collapsePlayerMenu(id)
 }
 
 function _collapsePlayerMenu(id) {
@@ -5010,7 +4585,7 @@ function _collapsePlayerMenu(id) {
   // Disparition complète après choix du personnage
   select.style.transition = "opacity 0.4s ease"
   select.style.opacity = "0"
-  setTimeout(() => { select.style.display = "none" }, 400)
+  setTimeout(() => { if (myToken?.id === id) select.style.display = "none" }, 400)
 }
 
 function togglePlayerMenu() {
@@ -5031,7 +4606,7 @@ document.querySelectorAll(".token").forEach(token => {
   token.addEventListener("contextmenu", e => {
     e.preventDefault()
     if (isGM) { openCharacterSheet(token.id); return }
-    if (myToken && token.id === myToken.id) openCharacterSheet()
+    if (myToken && canAccessCharacter(token.id)) openCharacterSheet(token.id)
   })
   token.addEventListener("mousedown", e => {
     if (e.target.closest("#playerSelect") || e.target.closest("button")) return
@@ -5039,7 +4614,7 @@ document.querySelectorAll(".token").forEach(token => {
     const now = Date.now()
     if (now - lastClickTime < 300) {
       if (isGM && token.id !== "mobToken") openCharacterSheet(token.id)
-      else if (myToken && (token.id === myToken.id || token.id === "bibi")) openCharacterSheet(token.id)
+      else if (myToken && canAccessCharacter(token.id)) openCharacterSheet(token.id)
       lastClickTime = 0; return
     }
     lastClickTime = now
@@ -5049,7 +4624,7 @@ document.querySelectorAll(".token").forEach(token => {
     if (isGM) {
       if (tokenIsDead) { showNotification(token.id.toUpperCase() + " est KO. Réanimez-le pour le déplacer."); return }
       if (token.id !== "mobToken" && !token.id.startsWith("mobToken_")) {
-        db.ref("characters/" + token.id).once("value", snap => {
+        readCharacter(token.id, snap => {
           const data = snap.val() || {}
           if (isCharacterOverweight(token.id, data).overweight) {
             showNotification(token.id.toUpperCase() + " est surchargé et ne peut pas bouger."); return
@@ -5069,8 +4644,8 @@ document.querySelectorAll(".token").forEach(token => {
     }
     if (tokenIsDead) { showNotification(token.id.toUpperCase() + " est KO et ne peut pas bouger."); return }
     const localMoveId = token.id === "bibi" ? "bibi" : (myToken ? myToken.id : "")
-    if (token.id === "bibi" || (myToken && token.id === myToken.id)) {
-      db.ref("characters/" + localMoveId).once("value", snap => {
+    if (myToken && canAccessCharacter(token.id)) {
+      readCharacter(localMoveId, snap => {
         const data = snap.val() || {}
         if (isCharacterOverweight(localMoveId, data).overweight) {
           showNotification(localMoveId.toUpperCase() + " est surchargé et ne peut pas bouger."); return
@@ -5086,6 +4661,7 @@ document.querySelectorAll(".token").forEach(token => {
 
 document.addEventListener("mousemove", e => {
   if (!selected) return
+  if (!isGM && !canAccessCharacter(selected.id) && !(selected.id === "eloSummonToken" && myToken?.id === "elo")) { selected = null; return }
   if (selected.classList && selected.classList.contains("playerDead")) {
     selected = null; _state.tokenDragging = false; _state.tokenDragStart = null; return
   }

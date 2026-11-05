@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20260415.1"</script>
+  <script>window.GAME_V = "20261105.2"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -68,7 +68,6 @@
       <button class="playerChoiceBtn" data-player-choice="greg" onmousedown="event.stopPropagation()" onclick="choosePlayer('greg')">Greg</button>
       <button class="playerChoiceBtn" data-player-choice="ju" onmousedown="event.stopPropagation()" onclick="choosePlayer('ju')">Yu</button>
       <button class="playerChoiceBtn" data-player-choice="elo" onmousedown="event.stopPropagation()" onclick="choosePlayer('elo')">Elo</button>
-      <button class="playerChoiceBtn" data-player-choice="bibi" onmousedown="event.stopPropagation()" onclick="choosePlayer('bibi')">Bibi</button>
     </div>
   </div>
 </div>
@@ -913,6 +912,9 @@
 <script>document.write('<script src="state.js?v='+GAME_V+'"><\/script>')</script>
 <!-- 3. Utilitaires (pas de dépendances Firebase) -->
 <script>document.write('<script src="utils.js?v='+GAME_V+'"><\/script>')</script>
+<!-- Accès aux fiches privées et informations de combat publiques -->
+<script>document.write('<script src="access.js?v='+GAME_V+'"><\/script>')</script>
+<script>document.write('<script src="persistence.js?v='+GAME_V+'"><\/script>')</script>
 <!-- 4. Logique principale + Firebase listeners -->
 <script>document.write('<script src="game.js?v='+GAME_V+'"><\/script>')</script>
 <!-- 5. Interface utilisateur -->

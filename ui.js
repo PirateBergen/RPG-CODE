@@ -1,4 +1,4 @@
-﻿"use strict"
+"use strict"
 
 /* ========================= */
 /* FICHE PERSONNAGE          */
@@ -45,21 +45,21 @@ function openCharacterSheet(id = null) {
   if (isGM) { if (!id) return; playerID = id }
   else {
     if (!myToken) { showNotification("Choisissez un personnage 🎭"); return }
-    playerID = id === "bibi" ? "bibi" : myToken.id
+    playerID = id || myToken.id
   }
+  if (!canAccessCharacter(playerID)) { showNotification("Cette fiche est privée."); return }
   currentSheetPlayer = playerID
   // Marquer la fiche avec l'ID du joueur pour éviter les sauvegardes croisées
   const sheet = document.getElementById("characterSheet")
   if (sheet) sheet.dataset.playerId = playerID
   const inv = document.getElementById("inventaire")
-  if (playerID === "bibi" && myToken && myToken.id !== "greg") inv.setAttribute("readonly", true)
-  else inv.removeAttribute("readonly")
-  const portraits = { greg:"gregsheet.jpg", ju:"yusheet.jpg", elo:"elosheet.jpg", bibi:"bibisheet.jpg" }
+  inv.removeAttribute("readonly")
+  const portraits = { greg:"gregsheet.jpg", ju:"jusheet.jpg", elo:"elosheet.jpg", bibi:"bibisheet.jpg" }
   document.getElementById("sheetImage").src = "images/" + (portraits[playerID] || "elosheet.jpg")
   document.getElementById("sheetTitle").innerText = playerID.toUpperCase()
   document.querySelectorAll(".playerOnly").forEach(f => { f.style.display = playerID === "bibi" ? "none" : "block" })
-  db.ref("characters/" + playerID).once("value", snapshot => {
-    const data = snapshot.val(); if (!data) return
+  readCharacter(playerID, snapshot => {
+    const data = snapshot.val(); if (!data || currentSheetPlayer !== playerID || !canAccessCharacter(playerID)) return
     window.__sheetBaseCharacterData = { ...data }
     window.__sheetInventoryModifiers = { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
     ;["lvl","xp","force","charme","perspi","chance","defense","hp"].forEach(k => { const el = document.getElementById(k); if (el) el.value = data[k] || 0 })
@@ -186,8 +186,7 @@ function forceCloseCharacterSheetWithoutSave() {
 }
 
 function saveCharacter() {
-  if (!myToken && !isGM) return Promise.resolve(false)
-  if (!isGM && currentSheetPlayer === "bibi" && myToken && myToken.id !== "greg") return Promise.resolve(false)
+  if (!canAccessCharacter(currentSheetPlayer)) return Promise.resolve(false)
   const id = currentSheetPlayer, data = {}
   const inventoryField = document.getElementById("inventaire")
   const notesField = document.getElementById("notes")
@@ -201,6 +200,8 @@ function saveCharacter() {
     }
   })
   data.inventaire = inventoryField ? inventoryField.value : ""
+  data.equipmentModifiers = getInventoryStatModifiers(data.inventaire)
+  data.carriedWeight = Math.max(0, _parseInventoryWeight(data.inventaire))
   if (notesField) data.notes = notesField.value
   if (window.__sheetBaseCharacterData) {
     INVENTORY_EFFECT_STATS.forEach(stat => {
@@ -211,13 +212,6 @@ function saveCharacter() {
   }
   return db.ref("characters/" + id).update(data)
     .then(() => {
-      const latestInventory = data.inventaire ?? ""
-      setTimeout(() => {
-        db.ref("characters/" + id + "/inventaire").set(latestInventory).catch(() => {})
-      }, 120)
-      setTimeout(() => {
-        db.ref("characters/" + id + "/inventaire").set(latestInventory).catch(() => {})
-      }, 420)
       showNotification("Fiche sauvegardée")
       return true
     })
@@ -230,7 +224,7 @@ function saveCharacter() {
 
 function autoSaveCharacter() {
   if (!myToken && !isGM) return
-  const id = currentSheetPlayer; if (!id) return
+  const id = currentSheetPlayer; if (!canAccessCharacter(id)) return
 
   // Sécurité — vérifier que l'ID de la fiche ouverte correspond bien
   const sheet = document.getElementById("characterSheet")
@@ -254,6 +248,8 @@ function autoSaveCharacter() {
     }
   })
   data.inventaire = inventoryField ? inventoryField.value : ""
+  data.equipmentModifiers = getInventoryStatModifiers(data.inventaire)
+  data.carriedWeight = Math.max(0, _parseInventoryWeight(data.inventaire))
   if (notesField) data.notes = notesField.value
   if (window.__sheetBaseCharacterData) {
     INVENTORY_EFFECT_STATS.forEach(stat => {
@@ -263,7 +259,7 @@ function autoSaveCharacter() {
     if (data.notes != null) window.__sheetBaseCharacterData.notes = data.notes
   }
   if (Object.keys(data).length > 0) {
-    db.ref("characters/" + id).update(data).then(() => ["greg","ju","elo","bibi"].forEach(p => updateTokenStats(p)))
+    return db.ref("characters/" + id).update(data).then(() => ["greg","ju","elo","bibi"].forEach(p => updateTokenStats(p)))
   }
 }
 
@@ -327,12 +323,14 @@ function updateWeightBar() {
 /* ========================= */
 
 function loadPlayerCombatStats() {
-  if (!myToken) return
+  if (!myToken || !canAccessCharacter(myToken.id)) return
   if (window.__combatStatsRef && window.__combatStatsCb) {
     window.__combatStatsRef.off("value", window.__combatStatsCb)
   }
-  const ref = db.ref("characters/" + myToken.id)
+  const playerId = myToken.id
+  const ref = db.ref("characters/" + playerId)
   const cb = snap => {
+    if (!myToken || myToken.id !== playerId || !canAccessCharacter(playerId)) return
     const raw = snap.val(); if (!raw) return
     const d = (typeof getEffectiveCharacterData === "function") ? getEffectiveCharacterData(myToken.id, raw) : raw
     window.__combatInventoryModifiers = d.__inventoryStatMods || { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
@@ -348,6 +346,7 @@ function loadPlayerCombatStats() {
 }
 
 function saveCombatStats() {
+  if (!myToken || !canAccessCharacter(myToken.id)) return
   if (!myToken) return
   const hp = parseInt(document.getElementById("combat_hp").value) || 0
   const data = {}
@@ -516,12 +515,14 @@ function hasPlayerUsedCombatSpecial(playerId) {
 function markPlayerCombatSpecialUsed(playerId) {
   if (!window.__playerCombatSpecialsUsed) window.__playerCombatSpecialsUsed = {}
   window.__playerCombatSpecialsUsed[playerId] = true
+  db.ref("combat/playerSpecials/" + playerId).set(true).catch(error => showNotification("Spéciale non enregistrée : " + error.message))
 }
 
 function markPlayerCombatTrigger(playerId, key) {
   if (!window.__playerCombatFlags) window.__playerCombatFlags = {}
   if (!window.__playerCombatFlags[playerId]) window.__playerCombatFlags[playerId] = {}
   window.__playerCombatFlags[playerId][key] = true
+  db.ref("combat/playerFlags/" + playerId + "/" + key).set(true).catch(error => console.warn(error))
 }
 
 function hasPlayerCombatTrigger(playerId, key) {
@@ -1158,6 +1159,7 @@ function buildPassTurnBlock(actorId, label) {
   appendAttackLine(block, "Effet", "Passe l'action sans attaquer")
   block.title = "Terminer le tour de " + (label || String(actorId || "").toUpperCase())
   block.onclick = () => {
+    if (!canAccessCharacter(actorId)) return
     const turnState = typeof getCombatTurnState === "function" ? getCombatTurnState() : null
     if (turnState && turnState.phase === "rolling") {
       showNotification("Terminez d'abord les jets d'initiative.")
@@ -1420,6 +1422,7 @@ function resolvePlayerAttack(attack, options = {}) {
     showNotification("Combat indisponible.")
     return
   }
+  if (!canAccessCharacter(playerId)) { showNotification("Vous ne contrôlez pas ce personnage."); return }
   const actorToken = document.getElementById(playerId)
   if (actorToken && actorToken.classList.contains("playerDead")) {
     showNotification(playerId.toUpperCase() + " est KO et ne peut plus agir.")
@@ -1452,7 +1455,7 @@ function resolvePlayerAttack(attack, options = {}) {
   const statKey = getAttackStatKey(attack.stat)
   const diceMax = Math.max(2, parseInt(attack.dice, 10) || 20)
 
-  db.ref("characters/" + playerId).once("value", charSnap => {
+  readCharacter(playerId, charSnap => {
     const rawData = charSnap.val() || {}
     const data = (typeof getEffectiveCharacterData === "function")
       ? getEffectiveCharacterData(playerId, rawData)
@@ -1491,7 +1494,7 @@ function resolvePlayerAttack(attack, options = {}) {
             window.__playerAttackResolving = false
             return
           }
-          db.ref("characters/" + targetId).once("value", targetSnap => {
+          readCharacter(targetId, targetSnap => {
             const targetData = targetSnap.val() || {}
             const maxHp = getCharacterMaxHp(targetId, targetData)
             const currentHp = parseInt(targetData.hp, 10) || 0
@@ -1529,7 +1532,7 @@ function resolvePlayerAttack(attack, options = {}) {
         }
 
         Promise.all([
-          ...["greg","ju","elo","bibi"].map(id => db.ref("characters/" + id).once("value").then(s => ({ id, data: s.val() || {} }))),
+          ...["greg","ju","elo","bibi"].map(id => readCharacter(id).then(s => ({ id, data: s.val() || {} }))),
           db.ref("combat/mob/bibiRage").once("value").then(s => ({ id: "__bibiRage", data: s.val() || null })),
           db.ref("combat/mob/yuAggro").once("value").then(s => ({ id: "__yuAggro", data: s.val() || null })),
           db.ref("combat/mob/spiderSenseBuff").once("value").then(s => ({ id: "__spiderSenseBuff", data: s.val() || null }))
@@ -1645,7 +1648,7 @@ function resolvePlayerAttack(attack, options = {}) {
 
           if (isSpecial && playerId === "elo" && specialGroupHeal > 0) {
             ;["greg","ju","elo","bibi"].forEach(id => {
-              db.ref("characters/" + id).once("value", allySnap => {
+              readCharacter(id, allySnap => {
                 const ally = allySnap.val() || {}
                 const maxHP = getCharacterMaxHp(id, ally)
                 db.ref("characters/" + id + "/hp").transaction(cur => Math.min(maxHP, safeInt(cur) + specialGroupHeal))
@@ -1723,7 +1726,7 @@ function resolvePlayerAttack(attack, options = {}) {
               db.ref("combat/mob/attackMalus").set({ source: "ju", amount: 1, turns: 1, time: Date.now() })
             } else if (playerId === "elo" && specialGroupHeal > 0) {
               ;["greg","ju","elo","bibi"].forEach(id => {
-                db.ref("characters/" + id).once("value", allySnap => {
+                readCharacter(id, allySnap => {
                   const ally = allySnap.val() || {}
                   const maxHP = getCharacterMaxHp(id, ally)
                   db.ref("characters/" + id + "/hp").transaction(cur => Math.min(maxHP, safeInt(cur) + specialGroupHeal))
@@ -2257,6 +2260,9 @@ function launchMobAttackFromSlot(attack, mobData, panel, forcedTarget, slot) {
 }
 
 function animateMobDice(cb) {
+  window.__mobAttackResolving = true
+  const resolve = cb
+  cb = () => { try { resolve() } finally { window.__mobAttackResolving = false } }
   const d20=document.getElementById("mobD20"); if(!d20){ cb(); return }
   let spins=0; const iv=setInterval(()=>{ d20.style.transform=`rotate(${Math.random()*360}deg) scale(1.3)`; if(++spins>8){ clearInterval(iv); d20.style.transform=""; cb() } },120)
 }
@@ -2732,6 +2738,7 @@ function toggleCurse(level) {
   saveCurse()
 }
 function saveCurse() {
+  if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!targetId) return
   db.ref("characters/" + targetId + "/curse").set(curseLevel)
@@ -2756,11 +2763,17 @@ function setCorruption(level) {
   saveCorruption()
 }
 function saveCorruption() {
+  if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!targetId) return
   db.ref("characters/" + targetId + "/corruption").set(corruptionLevel)
 }
-function triggerCurseWheel(playerID) { db.ref("curse/wheel").set({ player:playerID, state:"intro", time:Date.now() }) }
+function triggerCurseWheel(playerID) {
+  if (!canAccessCharacter(playerID) || window.__sessionBusy) return
+  const id = db.ref("curse/wheel").push().key
+  return db.ref("curse/wheel").transaction(current => current ? undefined : { id, player: playerID, state: "intro", time: Date.now() })
+    .catch(error => showNotification("Roue non enregistrée : " + error.message))
+}
 
 function showCurseIntro(playerID) {
   playSound("curseSound"); playSound("curse1Sound"); let s=document.getElementById("curseIntroScreen"); if(!s){ s=document.createElement("div"); s.id="curseIntroScreen"; document.body.appendChild(s) }; s.innerHTML=""; s.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:999999999;animation:cursePulse 0.5s ease-in-out infinite alternate;"
@@ -2825,9 +2838,10 @@ function drawCurseWheel(canvas, rotation) {
 
 function spinCurseWheel(playerID) {
   const canvas=document.getElementById("curseWheelCanvas"); if(!canvas) return
+  window.__curseResolving = true
   const n=curseWheelChoices.length,arc=(Math.PI*2)/n,ri=Math.floor(Math.random()*n)
   let total=(Math.PI*2*(5+Math.random()*3))+(-(ri*arc)-arc/2), start=null, cur=0
-  function animate(ts) { if(!start) start=ts; const p=Math.min((ts-start)/4000,1); cur=total*(1-Math.pow(1-p,3)); drawCurseWheel(canvas,cur); if(p<1) requestAnimationFrame(animate); else setTimeout(()=>db.ref("curse/wheel").update({ state:"result",result:ri,player:playerID }),500) }
+  function animate(ts) { if(!start) start=ts; const p=Math.min((ts-start)/4000,1); cur=total*(1-Math.pow(1-p,3)); drawCurseWheel(canvas,cur); if(p<1) requestAnimationFrame(animate); else setTimeout(()=>db.ref("curse/wheel").update({ state:"result",result:ri,player:playerID }).finally(()=>{ window.__curseResolving = false }),500) }
   requestAnimationFrame(animate)
 }
 
@@ -2859,15 +2873,12 @@ function showCurseResult(playerID, resultIndex) {
 }
 
 function applyCurseEffect(playerID, ri) {
-  db.ref("characters/"+playerID).once("value",snap=>{ const d=snap.val(); if(!d) return; const u={}
-    switch(ri){
-      case 0:{ const nh=Math.max(1,Math.floor((d.hp||100)*0.6)); u.hp=nh; const hf=document.getElementById("hp"); if(hf&&currentSheetPlayer===playerID){ hf.value=nh; updateHPBar() }; break }
-      case 1:{ const ms={greg:"force",ju:"perspi",elo:"charme",bibi:"chance"},stat=ms[playerID]; if(stat){ u[stat]=Math.max(0,(d[stat]||0)-4); const sf=document.getElementById(stat); if(sf&&currentSheetPlayer===playerID) sf.value=u[stat] }; break }
-      case 2: u.cursedEffect="critOnly"; break
-      case 3:{ const ls=(d.inventaire||"").split("\n").filter(l=>l.trim()!==""); if(ls.length>0) ls.pop(); u.inventaire=ls.join("\n"); break }
-    }
-    db.ref("characters/"+playerID).update(u)
-  })
+  if (!canAccessCharacter(playerID)) return
+  const wheel = window.__activeCurseWheel
+  const rollId = wheel && String(wheel.id || wheel.time || "")
+  if (!rollId) return
+  return db.ref("characters/" + playerID).transaction(current => resolveCharacterCurse(current, playerID, rollId, ri) || undefined)
+    .catch(error => showNotification("Effet de malédiction non enregistré : " + error.message))
 }
 
 /* ========================= */
@@ -3351,19 +3362,33 @@ function selectWantedTier(val, lbl) { const btn=document.getElementById("wantedT
 /* SAUVEGARDE UI             */
 /* ========================= */
 
-function showSaveMenu() {
-  if(!isGM) return; const old=document.getElementById("savePanel"); if(old) old.remove()
-  const saves=parseLocalStorageJSON("rpg_saves", {}), keys=Object.keys(saves)
-  const panel=document.createElement("div"); panel.id="savePanel"; panel.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.95);border:2px solid gold;border-radius:12px;padding:24px;z-index:999999999;font-family:Cinzel;color:#f5e6c8;min-width:340px;box-shadow:0 0 40px black;"; document.body.appendChild(panel)
-  const t=document.createElement("div"); t.style.cssText="text-align:center;color:gold;font-size:18px;margin-bottom:16px;"; t.innerText="Sauvegardes"; panel.appendChild(t)
-  if(!keys.length){ const e=document.createElement("div"); e.style.cssText="text-align:center;opacity:0.5;margin-bottom:12px;font-size:13px;"; e.innerText="Aucune sauvegarde"; panel.appendChild(e) }
-  keys.forEach(sn=>{ const d=String(saves[sn]?._saveDate||""); const row=document.createElement("div"); row.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;"; const lbl=document.createElement("div"); lbl.style.cssText="flex:1;font-size:13px;line-height:1.4;"; const title=document.createElement("div"); title.innerText=sn; const meta=document.createElement("small"); meta.style.opacity="0.5"; meta.innerText=d; lbl.appendChild(title); lbl.appendChild(meta); const bl=document.createElement("button"); bl.innerText="Charger"; bl.style.cssText="background:linear-gradient(#7a5533,#4b321c);color:#f5e6c8;border:1px solid #caa46b;border-radius:6px;padding:5px 10px;cursor:pointer;font-family:Cinzel;font-size:12px;"; bl.addEventListener("click",()=>loadSave(sn)); const bd=document.createElement("button"); bd.innerText="X"; bd.style.cssText="background:#3a0000;color:#ff6060;border:1px solid #660000;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px;"; bd.addEventListener("click",()=>deleteSave(sn)); row.appendChild(lbl); row.appendChild(bl); row.appendChild(bd); panel.appendChild(row) })
-  const footer=document.createElement("div"); footer.style.cssText="display:flex;gap:8px;margin-top:16px;justify-content:center;"; const bn=document.createElement("button"); bn.innerText="Nouvelle"; bn.style.cssText="background:linear-gradient(#2a7a2a,#1a4a1a);color:gold;border:2px solid gold;border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Cinzel;"; bn.addEventListener("click",()=>{ panel.remove(); saveGame() }); const bc=document.createElement("button"); bc.innerText="Fermer"; bc.style.cssText="background:#222;color:#f5e6c8;border:1px solid #555;border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Cinzel;"; bc.addEventListener("click",()=>panel.remove()); footer.appendChild(bn); footer.appendChild(bc); panel.appendChild(footer)
+async function showSaveMenu() {
+  if (!isGM || window.__authRole !== "gm") return
+  document.getElementById("savePanel")?.remove()
+  const panel = document.createElement("div"); panel.id = "savePanel"
+  panel.style.cssText = "position:fixed;inset:12% auto auto 50%;transform:translateX(-50%);max-height:75vh;overflow:auto;z-index:2000000000;background:#15110d;border:2px solid gold;border-radius:12px;padding:24px;color:#f5e6c8;width:min(520px,90vw);font:15px Georgia,serif;"
+  document.body.appendChild(panel)
+  const title = document.createElement("h2"); title.textContent = "Sauvegardes"; panel.appendChild(title)
+  const list = document.createElement("div"); list.textContent = "Chargement…"; panel.appendChild(list)
+  const button = (label, action) => { const b = document.createElement("button"); b.textContent = label; b.onclick = action; b.style.margin = "6px"; return b }
+  panel.appendChild(button("Sauvegarder maintenant", () => { panel.remove(); saveGame() }))
+  panel.appendChild(button("Charger la plus récente", loadGame))
+  panel.appendChild(button("Fermer", () => panel.remove()))
+  try {
+    const { entries, local } = await listGameSaves()
+    if (!panel.isConnected || window.__authRole !== "gm") return
+    list.replaceChildren()
+    if (local) { const info = document.createElement("p"); info.textContent = "Serveur indisponible : copies locales uniquement."; list.appendChild(info) }
+    if (!entries.length) list.textContent = "Aucune sauvegarde"
+    entries.forEach(([id, save]) => {
+      const row = document.createElement("div"); row.style.cssText = "padding:10px 0;border-bottom:1px solid #5d5038"
+      const label = document.createElement("div"); label.textContent = (save._saveName || id) + " — " + (save._saveDate || "Date inconnue"); row.appendChild(label)
+      row.appendChild(button("Charger", () => loadSave(id)))
+      row.appendChild(button("Supprimer", () => deleteSave(id)))
+      list.appendChild(row)
+    })
+  } catch (error) { list.textContent = "Impossible de lire les sauvegardes : " + error.message }
 }
-
-/* ========================= */
-/* SORT CIMETIÈRE            */
-/* ========================= */
 
 function startSpellAura() { if(document.getElementById("spellAura")) return; const a=document.createElement("div"); a.id="spellAura"; a.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5000;opacity:0;transition:opacity 2s ease;"; const v=document.createElement("div"); v.style.cssText="position:absolute;top:0;left:0;width:100%;height:100%;box-shadow:inset 0 0 80px rgba(150,0,255,0.5);animation:spellPulse 2s ease-in-out infinite alternate;"; a.appendChild(v); document.body.appendChild(a); setTimeout(()=>a.style.opacity="1",50) }
 function stopSpellAura() { const a=document.getElementById("spellAura"); if(!a) return; a.style.transition="opacity 1.5s ease"; a.style.opacity="0"; setTimeout(()=>{ if(a.parentNode) a.remove() },1500) }
@@ -3426,7 +3451,7 @@ function rollSpellDice(playerId, currentTries) {
   showSpellRollResult(roll,isCrit,isFail,playerId,()=>{
     const newTries=currentTries+1
     if(isCrit){ db.ref("game/cemeterySpell/freed_players").once("value",s=>{ const fp=s.val()||[]; if(!fp.includes(playerId)) fp.push(playerId); db.ref("game/cemeterySpell/freed_players").set(fp); const next=(SPELL_PLAYERS.indexOf(playerId)+1)%SPELL_PLAYERS.length; db.ref("game/cemeterySpell/turnIdx").set(next); db.ref("game/cemeterySpell").once("value",snap=>{ const d=snap.val(); if(SPELL_PLAYERS.every(p=>(d.freed_players||[]).includes(p))) setTimeout(()=>db.ref("game/cemeterySpell").update({ freed:true }),1000) }) }) }
-    else{ db.ref("game/cemeterySpell/tries").once("value",s=>{ const t=s.val()||{}; t[playerId]=newTries; db.ref("game/cemeterySpell/tries").set(t); if(isFail){ db.ref("characters/"+playerId).once("value",cs=>{ const cd=cs.val(); if(cd){ db.ref("characters/"+playerId+"/hp").set(Math.max(0,(cd.hp||0)-10)); showNotification(playerId.toUpperCase()+" perd 10 HP !") } }) }; const next=(SPELL_PLAYERS.indexOf(playerId)+1)%SPELL_PLAYERS.length; db.ref("game/cemeterySpell/turnIdx").set(next); if(newTries>=SPELL_MAX_TRIES){ setTimeout(()=>{ db.ref("game/cemeterySpell").once("value",snap=>{ const d=snap.val(); if(!d) return; const t2=d.tries||{}; const fp=d.freed_players||[]; const allOut=SPELL_PLAYERS.every(p=>fp.includes(p)||(t2[p]||0)>=SPELL_MAX_TRIES); if(allOut){ const anyF=SPELL_PLAYERS.some(p=>fp.includes(p)); if(!anyF&&isGM){ db.ref("game/cemeterySpell").update({ freed:true, failedByZombie:true }); setTimeout(()=>startCombat(Math.random()>0.5?"zombie":"zombie2","high"),2000) } else db.ref("game/cemeterySpell").update({ freed:true, failedByZombie:false }) } }) },500) } }) }
+    else{ db.ref("game/cemeterySpell/tries").once("value",s=>{ const t=s.val()||{}; t[playerId]=newTries; db.ref("game/cemeterySpell/tries").set(t); if(isFail){ readCharacter(playerId,cs=>{ const cd=cs.val(); if(cd){ db.ref("characters/"+playerId+"/hp").set(Math.max(0,(cd.hp||0)-10)); showNotification(playerId.toUpperCase()+" perd 10 HP !") } }) }; const next=(SPELL_PLAYERS.indexOf(playerId)+1)%SPELL_PLAYERS.length; db.ref("game/cemeterySpell/turnIdx").set(next); if(newTries>=SPELL_MAX_TRIES){ setTimeout(()=>{ db.ref("game/cemeterySpell").once("value",snap=>{ const d=snap.val(); if(!d) return; const t2=d.tries||{}; const fp=d.freed_players||[]; const allOut=SPELL_PLAYERS.every(p=>fp.includes(p)||(t2[p]||0)>=SPELL_MAX_TRIES); if(allOut){ const anyF=SPELL_PLAYERS.some(p=>fp.includes(p)); if(!anyF&&isGM){ db.ref("game/cemeterySpell").update({ freed:true, failedByZombie:true }); setTimeout(()=>startCombat(Math.random()>0.5?"zombie":"zombie2","high"),2000) } else db.ref("game/cemeterySpell").update({ freed:true, failedByZombie:false }) } }) },500) } }) }
   })
 }
 
@@ -3818,7 +3843,7 @@ function _applyAllyResult(pnj, action, roll, targetId) {
     }
     else if (action.type==="heal" && targetId) {
       const healAmt = action.healMult ? roll*action.healMult : action.healAmt||roll
-      db.ref("characters/"+targetId).once("value", s => {
+      readCharacter(targetId, s => {
         const charData = s.val() || {}
         const maxHP = getCharacterMaxHp(targetId, charData)
         db.ref("characters/"+targetId+"/hp").transaction(cur => Math.min(maxHP, safeInt(cur) + healAmt))
@@ -3982,6 +4007,7 @@ function openAllyPNJViewer() {
 /* ========================= */
 
 function showFreePointsPanel(playerID, points) {
+  if (!canAccessCharacter(playerID)) return
   const existing = document.getElementById("freePointsPanel"); if (existing) existing.remove()
   if (points <= 0) return
 
@@ -4039,29 +4065,18 @@ function showFreePointsPanel(playerID, points) {
 
   const confirmBtn = document.createElement("button"); confirmBtn.style.cssText = "width:100%;margin-top:12px;padding:10px;font-family:Cinzel,serif;font-size:13px;background:rgba(10,40,52,0.8);color:#a0c8d0;border:1px solid #1e5a66;border-radius:2px;cursor:pointer;opacity:0.4;letter-spacing:2px;transition:all 0.2s;"
   confirmBtn.innerText = "✦ Confirmer"; confirmBtn.disabled = true
-  confirmBtn.onclick = () => {
-    const updates = {}
-    Object.keys(changes).forEach(stat => { if (changes[stat]) updates[stat] = firebase.database.ServerValue }) // placeholder
-    // Lire les stats actuelles et ajouter
-    db.ref("characters/" + playerID).once("value", snap => {
-      const data = snap.val() || {}
-      const upd = {}
-      Object.keys(changes).forEach(stat => {
-        if (changes[stat]) upd[stat] = (parseInt(data[stat]) || 0) + changes[stat]
-      })
-      upd.freePoints = 0
-      db.ref("characters/" + playerID).update(upd).then(() => {
-        panel.remove()
-        showNotification("Stats améliorées !")
-        flashGold()
-        // Recharger la fiche si ouverte
-        if (currentSheetPlayer === playerID) {
-          Object.keys(changes).forEach(stat => {
-            const el = document.getElementById(stat); if (el && changes[stat]) el.value = (parseInt(el.value)||0) + changes[stat]
-          })
-        }
-      })
-    })
+  confirmBtn.onclick = async () => {
+    if (!canAccessCharacter(playerID) || remaining !== 0 || window.__sessionBusy) return
+    confirmBtn.disabled = true
+    try {
+      const result = await db.ref("characters/" + playerID).transaction(current => spendCharacterPoints(current, changes, points) || undefined)
+      if (!result.committed) { showNotification("Ces points ont déjà été utilisés. Rouvrez la fiche."); return }
+      panel.remove()
+      showNotification("Stats améliorées !")
+      flashGold()
+      if (currentSheetPlayer === playerID) openCharacterSheet(playerID)
+    } catch (error) { showNotification("Points non enregistrés : " + error.message) }
+    finally { confirmBtn.disabled = remaining > 0 }
   }
   panel.appendChild(confirmBtn)
 
@@ -4070,7 +4085,9 @@ function showFreePointsPanel(playerID, points) {
 }
 
 function checkFreePoints(playerID) {
+  if (!canAccessCharacter(playerID)) return
   db.ref("characters/" + playerID + "/freePoints").once("value", snap => {
+    if (!canAccessCharacter(playerID)) return
     const pts = parseInt(snap.val()) || 0
     if (pts > 0) showFreePointsPanel(playerID, pts)
   })
@@ -4098,6 +4115,7 @@ function toggleGoldInput() {
 }
 
 function saveGold() {
+  if (!canAccessCharacter(currentSheetPlayer)) return
   if (!currentSheetPlayer) return
   const input = document.getElementById("goldInput"); if (!input) return
   const val = parseInt(input.value) || 0
@@ -4110,7 +4128,9 @@ function saveGold() {
 }
 
 function loadGold(playerID) {
+  if (!canAccessCharacter(playerID)) return
   db.ref("characters/" + playerID + "/gold").once("value", snap => {
+    if (!canAccessCharacter(playerID) || currentSheetPlayer !== playerID) return
     const val = parseInt(snap.val()) || 0
     const input   = document.getElementById("goldInput")
     const display = document.getElementById("goldDisplay")

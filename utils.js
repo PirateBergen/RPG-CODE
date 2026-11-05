@@ -79,7 +79,9 @@ function getInventoryStatModifiers(text) {
 
 function getEffectiveCharacterData(playerId, rawData = {}) {
   const data = { ...(rawData || {}) }
-  const mods = getInventoryStatModifiers(data.inventaire || "")
+  const mods = Object.prototype.hasOwnProperty.call(data, "inventaire")
+    ? getInventoryStatModifiers(data.inventaire || "")
+    : (data.equipmentModifiers || {})
   ;["force", "charme", "perspi", "chance", "defense"].forEach(stat => {
     data[stat] = (parseInt(data[stat], 10) || 0) + (mods[stat] || 0)
   })

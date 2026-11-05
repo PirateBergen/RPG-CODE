@@ -1046,7 +1046,7 @@ function updateMobPreview() {
 
 function _startRemoteCombat(data) {
   if (window.__sessionBusy) return
-  if (isGM || !data || !data.active) return
+  if (combatStarting || !data || !data.active) return
   if (!gameStarted) return
   if (gameState !== "GAME" && gameState !== "COMBAT" && gameState !== "DIALOGUE") return
   if (combatActive && currentMob === data.mainMob) return
@@ -1296,7 +1296,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
 
-    if (!isGM) _startRemoteCombat(data)
+    _startRemoteCombat(data)
   })
 })
 

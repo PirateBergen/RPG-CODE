@@ -466,37 +466,16 @@ function shadeColor(color, percent) {
 /* CAMÉRA                    */
 /* ========================= */
 
-function calculateMinZoom() {
-  const map = document.getElementById("map")
-  const zoomX = window.innerWidth  / map.offsetWidth
-  const zoomY = window.innerHeight / map.offsetHeight
-  minZoom = Math.max(zoomX, zoomY)
-}
+function calculateMinZoom(){const map=document.getElementById("map");minZoom=map?.offsetWidth&&map?.offsetHeight?Math.max(window.innerWidth/map.offsetWidth,window.innerHeight/map.offsetHeight):1}
 
-function clampCamera() {
-  const map  = document.getElementById("map")
-  const mapW = map.offsetWidth  * cameraZoom
-  const mapH = map.offsetHeight * cameraZoom
-  const minX = window.innerWidth  - mapW
-  const minY = window.innerHeight - mapH
-  if (cameraX > 0)    cameraX = 0
-  if (cameraY > 0)    cameraY = 0
-  if (cameraX < minX) cameraX = minX
-  if (cameraY < minY) cameraY = minY
-}
+function clampCamera(){const map=document.getElementById("map");if(!map)return;const scale=cameraZoom||1;cameraX=Math.max(Math.min(0,(window.innerWidth-map.offsetWidth*scale)/scale),Math.min(0,cameraX));cameraY=Math.max(Math.min(0,(window.innerHeight-map.offsetHeight*scale)/scale),Math.min(0,cameraY))}
 
 function updateCamera() {
   clampCamera()
   document.getElementById("camera").style.transform = `scale(${cameraZoom}) translate(${cameraX}px, ${cameraY}px)`
 }
 
-function syncCameraZoomToPlayers() {
-  if (!isGM || !db) return
-  const normalized = Number(Math.max(minZoom, Math.min(2, cameraZoom)).toFixed(3))
-  if (window.__lastPublishedCameraZoom === normalized) return
-  window.__lastPublishedCameraZoom = normalized
-  db.ref("game/cameraZoom").set(normalized).catch(() => {})
-}
+function syncCameraZoomToPlayers() { /* Zoom interactif désactivé. */ }
 
 /* ========================= */
 /* AUDIO                     */

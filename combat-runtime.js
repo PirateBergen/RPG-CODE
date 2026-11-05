@@ -172,7 +172,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       extraMobs.slice(0, 2).forEach((mob, index) => { root.combat["mob" + (index + 2)] = { ...calculateCombatMob(mob, null, level), slot: "mob" + (index + 2) } })
       COMBAT_CHARACTERS.forEach((hero, index) => {
         const position = { x: Math.max(40, Math.round((width - 440) / 2)) + index * 110, y: Math.round(height * .65), facing: 0 }
-        root.tokens[hero] = position; root.combat.presentation.positions[hero] = position
+        root.tokens[hero] = {...root.tokens[hero],...position}; root.combat.presentation.positions[hero] = position
       })
       COMBAT_MOBS.forEach((slot, index) => {
         if (!root.combat[slot]) return
@@ -202,7 +202,7 @@ async function finishReliableCombat(combatId) {
   await transactCombatRoot(current => {
     if (!current?.combat || current.combat.id !== combatId || current.combat.phase !== "finished") return undefined
     const root = combatClone(current), state = root.game.combatState || {}, victory = root.game.combatOutcome?.type === "victory"
-    if (state.returnTokens) root.tokens = combatClone(state.returnTokens)
+    if (state.returnTokens) {root.tokens=combatClone(state.returnTokens);if(root.tokens.bibi)root.tokens.bibi.followGreg=current.tokens?.bibi?.followGreg!==false}
     root.game.map = victory && root.combat.mob.name === "balraug" ? "prairie.jpg" : victory && root.combat.mob.name === "kraken" ? "niflheim.jpg" : state.returnMap || root.game.map || "taverne.jpg"
     delete root.combat; delete root.game.combatState; delete root.game.playerAllyAccess
     return root

@@ -2070,22 +2070,8 @@ function showHighPNJScroll(name) {
 /* SHOP                      */
 /* ========================= */
 
-function openShop(type) {
-  if(!isGM) return
-  getPartyLevel(p=>{
-    const shopType = type || "marche"
-    const existing = document.getElementById("shopOverlay")
-    if (existing) existing.remove()
-    renderShop(p, shopType)
-    db.ref("game/shop").set({ open:true, type:shopType, partyLvl:p, time:Date.now() })
-    document.querySelectorAll(".gmSection").forEach(s=>s.style.display="none")
-  })
-}
-function closeShop() {
-  const existing = document.getElementById("shopOverlay")
-  if (existing) existing.remove()
-  db.ref("game/shop").remove()
-}
+function openShop(type){if(!isGM)return;try{requireExplorationConnection();getPartyLevel(p=>db.ref("game/shop").set({open:true,type:type||"marche",partyLvl:p,time:Date.now()}).catch(error=>showNotification(error.message)))}catch(error){showNotification(error.message)}}
+function closeShop(){if(isGM)db.ref("game/shop").remove().catch(error=>showNotification(error.message))}
 
 function renderShop(partyLvl, shopType) {
   shopType=shopType||"marche"
@@ -2184,9 +2170,9 @@ function renderRuneChallenge(data) {
   document.body.appendChild(ov); setTimeout(()=>ov.style.opacity="1",20)
 }
 
-function unlockRuneHint(hintId) { db.ref("game/runeChallenge/unlockedHints").once("value",snap=>{ const c=snap.val()||[]; if(!c.includes(hintId)){ c.push(hintId); db.ref("game/runeChallenge/unlockedHints").set(c); showNotification("Fragment runique découvert !"); flashGold() } }) }
+function unlockRuneHint(hintId) { if(!isGM)return; db.ref("game/runeChallenge/unlockedHints").once("value",snap=>{ const c=snap.val()||[]; if(!c.includes(hintId)){ c.push(hintId); db.ref("game/runeChallenge/unlockedHints").set(c); showNotification("Fragment runique découvert !"); flashGold() } }) }
 function revealRuneLetter(letter) { if(!isGM) return; db.ref("game/runeChallenge/revealedLetters").once("value",snap=>{ const c=snap.val()||[], u=letter.toUpperCase(); if(!c.includes(u)){ c.push(u); db.ref("game/runeChallenge/revealedLetters").set(c); showNotification("Lettre révélée : "+u+" = "+(runeAlphabet[u]||"?")) } }) }
-function showRuneVictory() { playSound("critSound"); flashGold(); flashGold(); screenShakeHard(); powerExplosion(); const w=document.createElement("div"); w.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Cinzel Decorative','Cinzel',serif;font-size:40px;color:gold;text-shadow:0 0 20px gold;text-align:center;pointer-events:none;z-index:99999999;"; const title=document.createElement("div"); title.innerText="⚔ MESSAGE DÉCHIFFRÉ ⚔"; const sub=document.createElement("span"); sub.style.cssText="font-size:18px;color:#c8a050;"; sub.innerText="Les runes révèlent leur secret !"; w.appendChild(title); w.appendChild(sub); document.body.appendChild(w); setTimeout(()=>{ w.style.transition="opacity 1s"; w.style.opacity="0"; setTimeout(()=>w.remove(),1000) },4000) }
+function _showRuneVictoryNow() { playSound("critSound"); flashGold(); flashGold(); screenShakeHard(); powerExplosion(); const w=document.createElement("div"); w.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Cinzel Decorative','Cinzel',serif;font-size:40px;color:gold;text-shadow:0 0 20px gold;text-align:center;pointer-events:none;z-index:99999999;"; const title=document.createElement("div"); title.innerText="⚔ MESSAGE DÉCHIFFRÉ ⚔"; const sub=document.createElement("span"); sub.style.cssText="font-size:18px;color:#c8a050;"; sub.innerText="Les runes révèlent leur secret !"; w.appendChild(title); w.appendChild(sub); document.body.appendChild(w); setTimeout(()=>{ w.style.transition="opacity 1s"; w.style.opacity="0"; setTimeout(()=>w.remove(),1000) },4000) }
 async function tryRuneEventOnDice(eventId) {
   if(!isGM || !eventId || window.__sessionBusy)return
   const box=document.getElementById("storyImage")
@@ -2406,7 +2392,7 @@ function usePower(playerID) {
 /* AURORE BORÉALE            */
 /* ========================= */
 
-function triggerAurora() { if(auroraActive) return; auroraActive=true; db.ref("events/aurora").set({ active:true, time:Date.now() }); document.querySelectorAll(".gmSection").forEach(s => s.style.display="none") }
+function triggerAurora() { if(!isGM)return; if(auroraActive) return; auroraActive=true; db.ref("events/aurora").set({ active:true, time:Date.now() }); document.querySelectorAll(".gmSection").forEach(s => s.style.display="none") }
 
 function clearAuroraTimers() {
   ;["__auroraMsgTimer", "__auroraRemoveMsgTimer", "__auroraAutoEndTimer", "__auroraFinalCleanupTimer"].forEach(key => {
@@ -2561,7 +2547,7 @@ function updateBifrostBtn() {
   else if(!should&&ex){ ex.style.transition="opacity 1s"; ex.style.opacity="0"; setTimeout(()=>{ if(ex.parentNode) ex.remove() },1000) }
 }
 
-function triggerBifrostFlash() { const btn=document.getElementById("bifrostBtn"); if(btn) btn.style.pointerEvents="none"; db.ref("game/bifrostFlash").set({ time:Date.now() }) }
+function triggerBifrostFlash() { if(!isGM)return; const btn=document.getElementById("bifrostBtn"); if(btn) btn.style.pointerEvents="none"; db.ref("game/bifrostFlash").set({ time:Date.now() }) }
 function stopBifrostFlashSound() {
   const snd = window.__bifrostFlashSound
   if (!snd) return
@@ -2582,9 +2568,23 @@ function doBifrostFlash() {
 /* ODIN VISION               */
 /* ========================= */
 
-function checkOdinVision() { if(odinVisionShown) return; db.ref("events/aurora").once("value",a=>{ if(!a.val()||!a.val().active) return; db.ref("game/runeChallenge").once("value",r=>{ const rc=r.val(); if(!rc||!rc.active) return; odinVisionShown=true; setTimeout(()=>triggerOdinVision(),2000+Math.random()*5000) }) }) }
-function triggerOdinVision() { const msg=ODIN_VISIONS[Math.floor(Math.random()*ODIN_VISIONS.length)]; db.ref("game/odinVision").set({ msg, time:Date.now() }); db.ref("game/runeChallenge/revealedLetters").once("value",snap=>{ const l=snap.val()||[], al="ABCDEFGHIJKLMNOPRSTUVWXYZ".split(""), ul=al.filter(x=>!l.includes(x)); if(ul.length){ const p=ul[Math.floor(Math.random()*ul.length)]; l.push(p); db.ref("game/runeChallenge/revealedLetters").set(l) } }) }
-function showOdinVision(msg) { const ov=document.createElement("div"); ov.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999990;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 1.5s ease;"; const bg=document.createElement("div"); bg.style.cssText="position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,rgba(30,0,80,0.7) 0%,rgba(0,0,40,0.5) 100%);"; ov.appendChild(bg); const d=document.createElement("div"); d.style.cssText="position:relative;z-index:1;text-align:center;max-width:560px;padding:36px 40px;background:rgba(10,5,30,0.75);border:1px solid rgba(160,120,255,0.3);border-radius:12px;"; const img=document.createElement("img"); img.src="images/odin.png"; img.style.cssText="width:90px;height:90px;object-fit:contain;border-radius:50%;border:2px solid rgba(180,150,255,0.4);margin-bottom:16px;opacity:0.9;"; img.onerror=()=>img.style.display="none"; d.appendChild(img); const t=document.createElement("div"); t.style.cssText="font-family:'Cinzel Decorative',serif;font-size:14px;color:rgba(220,200,255,0.7);letter-spacing:6px;margin-bottom:16px;"; t.innerText="✦ Odin vous parle ✦"; d.appendChild(t); const m=document.createElement("div"); m.style.cssText="font-family:'IM Fell English',serif;font-size:22px;color:rgba(255,245,220,0.97);font-style:italic;line-height:1.7;"; m.innerText=msg; d.appendChild(m); ov.appendChild(d); document.body.appendChild(ov); setTimeout(()=>ov.style.opacity="1",50); setTimeout(()=>{ ov.style.opacity="0"; setTimeout(()=>{ if(ov.parentNode) ov.remove() },1500); if(isGM) db.ref("game/odinVision").remove(); odinVisionShown=false },7000) }
+function checkOdinVision() { if(!isGM)return; if(odinVisionShown) return; db.ref("events/aurora").once("value",a=>{ if(!a.val()||!a.val().active) return; db.ref("game/runeChallenge").once("value",r=>{ const rc=r.val(); if(!rc||!rc.active) return; odinVisionShown=true; setTimeout(()=>triggerOdinVision(),2000+Math.random()*5000) }) }) }
+async function triggerOdinVision(){
+ if(!isGM)return
+ const seed=Math.floor(Math.random()*4294967296)
+ try{await transactCombatRoot(current=>{
+ const aurora=current?.events?.aurora,challenge=current?.game?.runeChallenge
+ if(!aurora?.active||!challenge?.active)return undefined
+ const key=aurora.time+":"+challenge.time
+ if(current.game.lastOdinVisionKey===key)return undefined
+ const root=combatClone(current),dice=combatRandom(seed)
+ root.game.lastOdinVisionKey=key;root.game.odinVision={id:key,msg:ODIN_VISIONS[dice(ODIN_VISIONS.length)-1],time:Date.now()}
+ const letters=root.game.runeChallenge.revealedLetters||[],available="ABCDEFGHIJKLMNOPRSTUVWXYZ".split("").filter(l=>!letters.includes(l))
+ if(available.length)root.game.runeChallenge.revealedLetters=[...letters,available[dice(available.length)-1]]
+ return root
+ })}catch(error){showNotification(error.message)}
+}
+function showOdinVision(msg) { document.getElementById("odinVisionOverlay")?.remove(); const ov=document.createElement("div"); ov.id="odinVisionOverlay"; ov.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;z-index:99999990;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 1.5s ease;"; const bg=document.createElement("div"); bg.style.cssText="position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center,rgba(30,0,80,0.7) 0%,rgba(0,0,40,0.5) 100%);"; ov.appendChild(bg); const d=document.createElement("div"); d.style.cssText="position:relative;z-index:1;text-align:center;max-width:560px;padding:36px 40px;background:rgba(10,5,30,0.75);border:1px solid rgba(160,120,255,0.3);border-radius:12px;"; const img=document.createElement("img"); img.src="images/odin.png"; img.style.cssText="width:90px;height:90px;object-fit:contain;border-radius:50%;border:2px solid rgba(180,150,255,0.4);margin-bottom:16px;opacity:0.9;"; img.onerror=()=>img.style.display="none"; d.appendChild(img); const t=document.createElement("div"); t.style.cssText="font-family:'Cinzel Decorative',serif;font-size:14px;color:rgba(220,200,255,0.7);letter-spacing:6px;margin-bottom:16px;"; t.innerText="✦ Odin vous parle ✦"; d.appendChild(t); const m=document.createElement("div"); m.style.cssText="font-family:'IM Fell English',serif;font-size:22px;color:rgba(255,245,220,0.97);font-style:italic;line-height:1.7;"; m.innerText=msg; d.appendChild(m); ov.appendChild(d); document.body.appendChild(ov); setTimeout(()=>ov.style.opacity="1",50); setTimeout(()=>{ ov.style.opacity="0"; setTimeout(()=>{ if(ov.parentNode) ov.remove() },1500); if(isGM) db.ref("game/odinVision").remove(); odinVisionShown=false },7000) }
 
 /* ========================= */
 /* ÉLÉMENTS MAP              */
@@ -2607,7 +2607,7 @@ function renderMapElement(data) {
   if(data.isRune){ const rs=document.createElement("div"); rs.style.cssText="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;color:#c8a050;text-shadow:0 0 15px gold;background:rgba(30,15,5,0.85);border:2px solid rgba(200,160,80,0.6);border-radius:50%;animation:tokenRingPulse 2s ease-in-out infinite;pointer-events:none;"; rs.innerText="ᚱ"; el.appendChild(rs) }
   else{ const img=document.createElement("img"); img.src="images/"+safeImage; img.style.cssText="width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.8));pointer-events:none;"; el.appendChild(img) }
   if(isGM){ const rb=document.createElement("div"); rb.style.cssText="position:absolute;top:-8px;right:-8px;width:20px;height:20px;background:#cc0000;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;cursor:pointer;box-shadow:0 0 6px black;z-index:10;"; rb.innerText="✕"; rb.onclick=e=>{ e.stopPropagation(); cleanupMapElementDragHandlers(data.id); db.ref("elements/"+data.id).remove() }; el.appendChild(rb) }
-  if(data.clickable){ el.onclick=()=>{ if(data.isRune&&data.runeHint){ unlockRuneHint(data.runeHint); flashGold(); el.style.filter="drop-shadow(0 0 20px gold) brightness(2)"; setTimeout(()=>el.style.filter="",600); cleanupMapElementDragHandlers(data.id); db.ref("elements/"+data.id).remove() } else if(!isGM){ const ov=document.createElement("div"); ov.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999999;cursor:pointer;"; const bi=document.createElement("img"); bi.src="images/"+safeImage; bi.style.cssText="max-width:80vw;max-height:80vh;object-fit:contain;"; ov.appendChild(bi); ov.onclick=()=>ov.remove(); document.body.appendChild(ov) } } }
+  if(data.clickable){ el.onclick=()=>{ if(data.isRune&&data.runeHint){ requestMapRuneHint(data.id) } else if(!isGM){ const ov=document.createElement("div"); ov.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:9999999;cursor:pointer;"; const bi=document.createElement("img"); bi.src="images/"+safeImage; bi.style.cssText="max-width:80vw;max-height:80vh;object-fit:contain;"; ov.appendChild(bi); ov.onclick=()=>ov.remove(); document.body.appendChild(ov) } } }
   if(isGM){ let dg=false,ox=0,oy=0; const onMove=e=>{ if(!dg) return; data.x=e.clientX-ox; data.y=e.clientY-oy; el.style.left=data.x+"px"; el.style.top=data.y+"px" }; const onUp=()=>{ if(!dg) return; dg=false; el.style.cursor="grab"; db.ref("elements/"+data.id+"/x").set(data.x); db.ref("elements/"+data.id+"/y").set(data.y) }; el.addEventListener("mousedown",e=>{ if(e.target===el.querySelector("div")) return; dg=true; ox=e.clientX-data.x; oy=e.clientY-data.y; el.style.cursor="grabbing"; e.stopPropagation() }); if(!window.__mapElementDragHandlers) window.__mapElementDragHandlers={}; window.__mapElementDragHandlers[data.id]={ onMove, onUp }; document.addEventListener("mousemove",onMove); document.addEventListener("mouseup",onUp) }
   document.body.appendChild(el); setTimeout(()=>el.style.opacity="1",20)
 }
@@ -2636,36 +2636,27 @@ function removeWantedPosterElement(id) {
   db.ref("elements/" + safeId).remove().catch(() => {})
 }
 
-function cleanupLegacyWantedElements() {
-  if (!isGM) return
-  db.ref("elements").once("value", snap => {
-    const data = snap.val()
-    if (!data) return
-    Object.entries(data).forEach(([id, item]) => {
-      if (!item) return
-      if (item.wantedData || String(id).startsWith("wanted_")) removeWantedPosterElement(id)
-    })
+async function cleanupLegacyWantedElements() {
+  if(!isGM)return
+  await transactCombatRoot(current=>{
+    const legacy=Object.entries(current?.elements||{}).filter(([id,item])=>item?.wantedData)
+    if(!legacy.length)return undefined
+    const root=combatClone(current);root.game ||= {};root.game.wantedPosters ||= {}
+    legacy.forEach(([id,item])=>{const poster=normalizeWantedPosterData({...item.wantedData,id});if(poster){root.game.wantedPosters[id] ||= poster;delete root.elements[id]}})
+    return root
   })
 }
 
-function publishWantedOverlay(data) {
-  const normalized = normalizeWantedPosterData(data)
-  if (!normalized) return
-  db.ref("game/wantedOpen").set({ poster:normalized, time:Date.now() })
-}
+async function publishWantedOverlay(data){if(!isGM)return;try{requireExplorationConnection();const poster=normalizeWantedPosterData(data);if(poster)await db.ref("game/wantedOpen").set({poster,time:Date.now()})}catch(error){showNotification(error.message)}}
 
-function createWantedPoster() {
-  const normalized = normalizeWantedPosterData({
-    mob: document.getElementById("wantedMobBtn")?.dataset.value || "",
-    tier: document.getElementById("wantedTierBtn")?.dataset.value || "weak",
-    reward: document.getElementById("wantedReward").value,
-    id: "wanted_" + Date.now()
-  })
-  if (!normalized) { showNotification("Affiche invalide"); return }
-  document.getElementById("wantedEditor").style.display="none"
-  db.ref("game/wantedPosters/" + normalized.id).set(normalized)
-  removeWantedPosterElement(normalized.id)
-  publishWantedOverlay(normalized)
+async function createWantedPoster(){
+ if(!isGM)return
+ try{requireExplorationConnection();const id="wanted_"+db.ref("game/wantedPosters").push().key
+ const poster=normalizeWantedPosterData({id,mob:document.getElementById("wantedMobBtn")?.dataset.value||"",tier:document.getElementById("wantedTierBtn")?.dataset.value||"weak",reward:document.getElementById("wantedReward").value})
+ if(!poster)throw new Error("Affiche invalide")
+ await db.ref("game").update({["wantedPosters/"+id]:poster,wantedOpen:{poster,time:Date.now()}})
+ document.getElementById("wantedEditor").style.display="none"
+ }catch(error){showNotification("Affiche non publiée : "+error.message)}
 }
 
 function renderWantedPoster(data) {
@@ -2700,7 +2691,7 @@ function renderWantedPoster(data) {
   const del=document.createElement("button")
   del.style.cssText="padding:2px 8px;font-size:10px;background:rgba(80,20,0,0.5);color:#ff8888;border:1px solid rgba(150,40,0,0.4);border-radius:3px;cursor:pointer;"
   del.innerText="✕"
-  del.onclick=()=>{ db.ref("game/wantedPosters/" + normalized.id).remove(); removeWantedPosterElement(normalized.id); db.ref("game/wantedOpen").once("value", snap => { const openData = snap.val(); if (openData?.poster?.id === normalized.id) db.ref("game/wantedOpen").remove() }); card.remove() }
+  del.onclick=()=>removePersistentWanted(normalized.id)
   card.appendChild(del)
   list.appendChild(card)
 }
@@ -2713,6 +2704,7 @@ function showWantedOverlay(data) {
   const safeMobImage = sanitizeAssetName(normalized.mob + ".png")
   const ov=document.createElement("div")
   ov.id = "wantedOverlay"
+  ov.dataset.posterId=normalized.id
   ov.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:99999999;cursor:pointer;"
   ov.onclick=()=>ov.remove()
   const p=document.createElement("div")
@@ -2898,45 +2890,19 @@ async function showSaveMenu() {
 function startSpellAura() { if(document.getElementById("spellAura")) return; const a=document.createElement("div"); a.id="spellAura"; a.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5000;opacity:0;transition:opacity 2s ease;"; const v=document.createElement("div"); v.style.cssText="position:absolute;top:0;left:0;width:100%;height:100%;box-shadow:inset 0 0 80px rgba(150,0,255,0.5);animation:spellPulse 2s ease-in-out infinite alternate;"; a.appendChild(v); document.body.appendChild(a); setTimeout(()=>a.style.opacity="1",50) }
 function stopSpellAura() { const a=document.getElementById("spellAura"); if(!a) return; a.style.transition="opacity 1.5s ease"; a.style.opacity="0"; setTimeout(()=>{ if(a.parentNode) a.remove() },1500) }
 
-function triggerCemeteryEvent() {
-  if(cemeteryEventDone) return; cemeteryEventDone=true
-  document.querySelectorAll(".gmSection").forEach(s => s.style.display="none")
-  const g=document.createElement("div"); g.id="glipheOverlay"; g.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:99999990;opacity:0;transition:opacity 1s ease;"; const img=document.createElement("img"); img.src="images/gliphe.png"; img.style.cssText="max-height:70vh;max-width:70vw;object-fit:contain;filter:drop-shadow(0 0 30px purple);"; g.appendChild(img); document.body.appendChild(g); setTimeout(()=>g.style.opacity="1",50)
-  db.ref("game/cemeterySpell").set({ active:true, time:Date.now() })
-  const spell=new Audio("audio/spell.mp3"); setManagedAudioBaseVolume(spell,0.9); spell.play().catch(()=>{}); const tremb=new Audio("audio/tremblement.mp3"); setManagedAudioBaseVolume(tremb,0.7); tremb.play().catch(()=>{})
-  screenShakeHard(); setTimeout(()=>screenShakeHard(),400); setTimeout(()=>screenShake(),900)
-  const launch = () => {
-    g.style.opacity = "0"
-    startSpellAura()
-    stopAllMusic()
-    setTimeout(() => {
-      let p = document.getElementById("sortPrisonMusic")
-      if (!p) {
-        p = document.createElement("audio")
-        p.id = "sortPrisonMusic"; p.loop = true
-        p.src = "audio/sortprison.mp3"; p.volume = 0
-        document.body.appendChild(p)
-      }
-      p.currentTime = 0; p.volume = 0; p.play().catch(() => {})
-      let iv = setInterval(() => {
-        if (p.volume < 0.75) p.volume = Math.min(0.75, p.volume + 0.04)
-        else clearInterval(iv)
-      }, 100)
-    }, 300)
-    setTimeout(() => {
-      if (g.parentNode) g.remove()
-      db.ref("game/cemeterySpell").update({ glipheShown: true, turnIdx: 0, tries: {}, freed_players: [], freed: false })
-    }, 800)
-  }
-  spell.onended = () => setTimeout(launch, 500)
-  setTimeout(() => { if (document.getElementById("glipheOverlay")) launch() }, 10000)
+async function triggerCemeteryEvent(){
+ if(!isGM)return
+ try{requireExplorationConnection();await transactCombatRoot(current=>{
+ if(current?.game?.completedEvents?.cemetery||current?.game?.cemeterySpell?.active)return undefined
+ const root=combatClone(current);root.game ||= {};root.game.cemeterySpell={active:true,time:Date.now(),glipheShown:false};return root
+ })}catch(error){showNotification(error.message)}
 }
 
 function renderSpellDiceGame(data) {
   const ex=document.getElementById("spellMiniGame"); if(ex) ex.remove()
   const tries=data.tries||{}, freed=data.freed_players||[], turnIdx=data.turnIdx||0
   let realCur=SPELL_PLAYERS.filter(p=>!freed.includes(p))[0]||SPELL_PLAYERS[0]
-  for(let i=0;i<SPELL_PLAYERS.length;i++){ const p=SPELL_PLAYERS[(turnIdx+i)%SPELL_PLAYERS.length]; if(!freed.includes(p)){ realCur=p; break } }
+  for(let i=0;i<SPELL_PLAYERS.length;i++){ const p=SPELL_PLAYERS[(turnIdx+i)%SPELL_PLAYERS.length]; if(!freed.includes(p)&&(tries[p]||0)<SPELL_MAX_TRIES){ realCur=p; break } }
   const ov=document.createElement("div"); ov.id="spellMiniGame"; ov.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999990;opacity:0;transition:opacity 0.8s ease;overflow:hidden;background:rgba(10,0,18,0.92);"
   const ttl=document.createElement("div"); ttl.style.cssText="position:relative;z-index:1;font-family:'Cinzel Decorative',serif;font-size:22px;color:#dd66ff;letter-spacing:5px;text-shadow:0 0 30px #aa00ff;text-align:center;margin-bottom:8px;"; ttl.innerText="⛧  SORT D'EMPRISONNEMENT  ⛧"; ov.appendChild(ttl)
   const sub=document.createElement("div"); sub.style.cssText="position:relative;z-index:1;font-family:'IM Fell English',serif;font-size:14px;color:#9944cc;font-style:italic;margin-bottom:28px;text-align:center;"; sub.innerText="Lancez un D20 — seul un coup critique peut briser les chaînes..."; ov.appendChild(sub)
@@ -2946,18 +2912,14 @@ function renderSpellDiceGame(data) {
   if(myToken&&myToken.id===realCur&&!freed.includes(myToken.id)){ const t=tries[myToken.id]||0; if(t<SPELL_MAX_TRIES){ const rb=document.createElement("div"); rb.id="spellRollBtn"; rb.style.cssText="position:relative;z-index:1;width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 40% 35%,rgba(180,0,255,0.6),rgba(80,0,150,0.3));border:3px solid rgba(200,50,255,0.8);box-shadow:0 0 30px rgba(180,0,255,0.5);cursor:pointer;margin-bottom:16px;animation:bifrostPulse 2s ease-in-out infinite alternate;"; rb.innerHTML=`<span style="font-size:36px;">🎲</span><span style="font-family:Cinzel,serif;font-size:11px;color:#cc88ff;letter-spacing:2px;margin-top:4px;">LANCER D20</span>`; rb.onclick=()=>rollSpellDice(myToken.id,t); ov.appendChild(rb); const h=document.createElement("div"); h.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:11px;color:#7733aa;font-style:italic;"; h.innerText=`Essai ${t+1} / ${SPELL_MAX_TRIES}`; ov.appendChild(h) } else { const out=document.createElement("div"); out.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:14px;color:#ff6666;text-shadow:0 0 10px red;"; out.innerText="✕ Vos essais sont épuisés..."; ov.appendChild(out) } }
   else if(myToken&&!freed.includes(myToken.id)){ const w=document.createElement("div"); w.style.cssText="position:relative;z-index:1;font-family:'IM Fell English',serif;font-size:14px;color:#9944cc;font-style:italic;"; w.innerText=`✦ Au tour de ${realCur.toUpperCase()} de briser son sort... ✦`; ov.appendChild(w) }
   else if(myToken&&freed.includes(myToken.id)){ const d=document.createElement("div"); d.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:15px;color:#44ff44;text-shadow:0 0 10px lime;"; d.innerText="✓ Vous êtes libéré — attendez les autres..."; ov.appendChild(d) }
-  if(isGM){ const gr=document.createElement("div"); gr.style.cssText="position:relative;z-index:1;display:flex;gap:8px;margin-top:16px;"; const lb=document.createElement("button"); lb.innerText="🔓 Libérer"; lb.style.cssText="padding:8px 18px;font-family:Cinzel,serif;font-size:12px;background:rgba(20,80,20,0.5);color:#88ff88;border:1px solid rgba(50,180,50,0.5);border-radius:4px;cursor:pointer;"; lb.onclick=()=>db.ref("game/cemeterySpell").update({ freed:true }); gr.appendChild(lb); ov.appendChild(gr) }
+  if(isGM){ const gr=document.createElement("div"); gr.style.cssText="position:relative;z-index:1;display:flex;gap:8px;margin-top:16px;"; const lb=document.createElement("button"); lb.innerText="🔓 Libérer"; lb.style.cssText="padding:8px 18px;font-family:Cinzel,serif;font-size:12px;background:rgba(20,80,20,0.5);color:#88ff88;border:1px solid rgba(50,180,50,0.5);border-radius:4px;cursor:pointer;"; lb.onclick=finishCemeteryByGM; gr.appendChild(lb); ov.appendChild(gr) }
   document.body.appendChild(ov); setTimeout(()=>ov.style.opacity="1",50)
 }
 
-function rollSpellDice(playerId, currentTries) {
-  const btn=document.getElementById("spellRollBtn"); if(btn) btn.style.pointerEvents="none"
-  const roll=Math.floor(Math.random()*20)+1, isCrit=roll===20, isFail=roll===1
-  showSpellRollResult(roll,isCrit,isFail,playerId,()=>{
-    const newTries=currentTries+1
-    if(isCrit){ db.ref("game/cemeterySpell/freed_players").once("value",s=>{ const fp=s.val()||[]; if(!fp.includes(playerId)) fp.push(playerId); db.ref("game/cemeterySpell/freed_players").set(fp); const next=(SPELL_PLAYERS.indexOf(playerId)+1)%SPELL_PLAYERS.length; db.ref("game/cemeterySpell/turnIdx").set(next); db.ref("game/cemeterySpell").once("value",snap=>{ const d=snap.val(); if(SPELL_PLAYERS.every(p=>(d.freed_players||[]).includes(p))) setTimeout(()=>db.ref("game/cemeterySpell").update({ freed:true }),1000) }) }) }
-    else{ db.ref("game/cemeterySpell/tries").once("value",s=>{ const t=s.val()||{}; t[playerId]=newTries; db.ref("game/cemeterySpell/tries").set(t); if(isFail){ readCharacter(playerId,cs=>{ const cd=cs.val(); if(cd){ db.ref("characters/"+playerId+"/hp").set(Math.max(0,(cd.hp||0)-10)); showNotification(playerId.toUpperCase()+" perd 10 HP !") } }) }; const next=(SPELL_PLAYERS.indexOf(playerId)+1)%SPELL_PLAYERS.length; db.ref("game/cemeterySpell/turnIdx").set(next); if(newTries>=SPELL_MAX_TRIES){ setTimeout(()=>{ db.ref("game/cemeterySpell").once("value",snap=>{ const d=snap.val(); if(!d) return; const t2=d.tries||{}; const fp=d.freed_players||[]; const allOut=SPELL_PLAYERS.every(p=>fp.includes(p)||(t2[p]||0)>=SPELL_MAX_TRIES); if(allOut){ const anyF=SPELL_PLAYERS.some(p=>fp.includes(p)); if(!anyF&&isGM){ db.ref("game/cemeterySpell").update({ freed:true, failedByZombie:true }); setTimeout(()=>startCombat(Math.random()>0.5?"zombie":"zombie2","high"),2000) } else db.ref("game/cemeterySpell").update({ freed:true, failedByZombie:false }) } }) },500) } }) }
-  })
+function rollSpellDice(playerId) {
+  const spell=window.__cemeterySpellData
+  if(!spell || (!isGM && myToken?.id!==playerId))return
+  return requestExplorationAction("spell",playerId,{eventTime:spell.time,revision:spell.revision||0})
 }
 
 function showSpellRollResult(roll, isCrit, isFail, playerId, cb) {
@@ -3530,14 +3492,10 @@ function toggleDiceLog() {
   log.style.maxHeight = collapsed ? "260px" : "auto"
 }
 
-function showDocument(image, title) {
-  if (!isGM) return
-  playSound("parcheminSound", 0.8)
-  db.ref("game/document").set({ image, title, time: Date.now() })
-  document.querySelectorAll(".gmSection").forEach(s => s.style.display = "none")
-}
+function showDocument(image,title){if(!isGM)return;db.ref("game/document").set({image,title,time:Date.now()}).catch(error=>showNotification(error.message))}
 
 function hideDocument() {
+  if(!isGM)return
   db.ref("game/document").remove()
 }
 
@@ -3737,3 +3695,5 @@ function resetFlySwarmPresentation() {
     }, 3000)
   }
 }
+
+function showRuneVictory(){if(isGM)db.ref("game/runeVictory").set({time:Date.now(),id:db.ref("game/runeVictory").push().key})}

@@ -163,9 +163,11 @@ async function flushSessionEdits(preserve = true) {
   }
   // Déplacement en cours : le figer à sa dernière position affichée avant l’instantané.
   if (selected && CHARACTER_IDS.includes(selected.id) && canAccessCharacter(selected.id)) {
-    const x = Math.round(parseFloat(selected.style.left) || 0), y = Math.round(parseFloat(selected.style.top) || 0)
-    await db.ref("tokens/" + selected.id).update({ x, y, facing: selected.classList.contains("faceLeft") ? 1 : 0 })
-    selected = null
+    const token=selected,id=token.id,x=Math.round(parseFloat(token.style.left)||0),y=Math.round(parseFloat(token.style.top)||0),facing=token.classList.contains("faceLeft")?1:0
+    await db.ref("tokens/"+id).update({x,y,facing,...(id==="bibi"&&typeof _state!=="undefined"&&_state.tokenDragging?{followGreg:false}:{})})
+    if(id==="greg"&&typeof explorationBibiPosition==="function")await db.ref("tokens/bibi").transaction(current=>explorationBibiPosition(current,{x:x+80,y,facing},false))
+    selected=null
+    if(typeof _state!=="undefined"){_state.tokenDragging=false;_state.tokenDragStart=null}
   }
   if (progressionPromise) await progressionPromise
   await drainSessionWrites()
@@ -308,6 +310,7 @@ async function replaceSession(state, action, operation) {
   const payload = {}
   SESSION_BRANCHES.forEach(key => { payload[key] = state[key] ?? null })
   payload.combatRequests = null
+  payload.explorationRequests = null
   payload.sessionControl = { revision: operation.id, action, changedAt: Date.now() }
   await db.ref().update(payload) // Tous les remplacements et suppressions sont atomiques.
   operation.markCommitted()
@@ -442,7 +445,7 @@ async function awaitResumeSessionPresentation() {
     if (window.__sessionBusy) return
     if (game.sessionView) {
       cameraX = Number(game.sessionView.cameraX) || 0; cameraY = Number(game.sessionView.cameraY) || 0
-      cameraZoom = Math.max(minZoom, Math.min(2, Number(game.sessionView.cameraZoom) || minZoom))
+      calculateMinZoom(); cameraZoom = minZoom
       clampCamera(); updateCamera()
     }
     Object.entries(tokens).forEach(([id, position]) => {
@@ -454,10 +457,10 @@ async function awaitResumeSessionPresentation() {
     window.playerAllyAccessData = game.playerAllyAccess || null
     cemeteryEventDone = !!(game.completedEvents?.cemetery || game.cemeterySpell)
     if (typeof refreshActivePNJs === "function") refreshActivePNJs()
-    if (game.shop?.open) renderShop(game.shop.partyLvl || 1, game.shop.type)
+    if(typeof syncSharedExplorationState==="function")syncSharedExplorationState(game)
     if (game.runeChallenge?.active) renderRuneChallenge(game.runeChallenge)
-    if (game.cemeterySpell?.active && game.cemeterySpell.glipheShown && !game.cemeterySpell.freed) renderSpellDiceGame(game.cemeterySpell)
-    if (game.document) _renderDocument(game.document)
+    // Épreuve restaurée par le contrôleur partagé.
+    if(typeof syncCemeteryPresentation==="function")syncCemeteryPresentation(game.cemeterySpell||null)
     if (game.wantedBoardOpen) openWantedBoard(true)
     presentSavedCurseWheel(curseSnap.val())
     updateMadnessUI(game.groupMadness || 0); updateWorldMapFogTopLeft(); updateMapLoreBookVisibility(); updateThuumButton()

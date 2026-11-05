@@ -40,6 +40,7 @@ function detachFirebaseAccessSync() {
   window.__authProfileRef = null; window.__authProfileCb = null
   window.__authRole = null; window.__authPlayerId = null
   if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
+  if(typeof syncExplorationCoordinator === "function") syncExplorationCoordinator()
   stopCharacterSubscriptions()
   stopPersistenceSync()
 }
@@ -53,11 +54,13 @@ function syncFirebaseAccessForUser(uid) {
     const role = snap.val()
     const previousRole = window.__authRole
     window.__authRole = typeof role === "string" ? role : null
+    if(typeof syncExplorationCoordinator === "function")syncExplorationCoordinator()
     if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
     if (window.__sessionBusy) recoverExpiredSessionLock().catch(error => console.warn(error))
     if (previousRole === "gm" && window.__authRole !== "gm") resetLocalCharacterAccess()
     syncCharacterSubscriptions()
     if (window.__authRole === "gm" && !isGM) activateGM(true)
+    if(window.__authRole==="gm" && typeof cleanupLegacyWantedElements==="function")cleanupLegacyWantedElements().catch(error=>console.warn(error))
     updateIntroLogoutBtn()
   }
   const profileRef = db.ref("profiles/" + uid + "/playerId")
@@ -550,12 +553,7 @@ function updateMapLoreBookVisibility() {
   token.style.bottom = pos.bottom
 }
 
-function applyMapLoreBookReward(entry, playerId) {
-  if (!entry || !entry.reward || !playerId) return
-  const reward = entry.reward
-  db.ref("characters/" + playerId + "/" + reward.stat).transaction(current => (parseInt(current, 10) || 0) + reward.amount)
-  showNotification(playerId.toUpperCase() + " gagne +" + reward.amount + " " + reward.label)
-}
+function applyMapLoreBookReward() { /* Récompense atomique attribuée par le MJ dans exploration-core.js. */ }
 
 function getLocalPlayerId() {
   if (window.__localPlayerId) return String(window.__localPlayerId).toLowerCase()
@@ -626,7 +624,7 @@ function showMapLoreBookOverlay(bookData) {
   box.style.cssText = "position:relative;width:min(760px,86vw);height:min(640px,84vh);display:flex;align-items:center;justify-content:center;"
 
   const img = document.createElement("img")
-  img.src = "images/livreouvert.png"
+  img.src = "images/paper1.png"
   img.style.cssText = "width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 18px 42px rgba(0,0,0,0.9));pointer-events:none;"
   box.appendChild(img)
 
@@ -659,28 +657,9 @@ function showMapLoreBookOverlay(bookData) {
 }
 
 function tryOpenMapLoreBook() {
-  const localPlayerId = getLocalPlayerId()
-  if (isGM || !localPlayerId || !window.mapLoreBookData || !window.mapLoreBookData.active) return
-  const localBook = window.mapLoreBookData
-  if (String(localBook.claimedBy || "").toLowerCase()) return
-  db.ref("game/mapLoreBook/claimedBy").transaction(current => {
-    if (current) return
-    return localPlayerId
-  }, (error, committed) => {
-    if (error || !committed) {
-      if (error) console.warn("Lore book claim failed:", error)
-      return
-    }
-    const claimedAt = Date.now()
-    db.ref("game/mapLoreBook/claimedAt").set(claimedAt).catch(() => {})
-    const bookData = { ...localBook, claimedBy: localPlayerId, claimedAt, active: false }
-    window.mapLoreBookData = bookData
-    updateMapLoreBookVisibility()
-    const entry = MAP_LORE_BOOK_ENTRIES[bookData.id]
-    showMapLoreBookOverlay(bookData)
-    applyMapLoreBookReward(entry, localPlayerId)
-    db.ref("game/readLoreBooks/" + bookData.id).set(true)
-  }, false)
+  const book=window.mapLoreBookData,actor=getLocalPlayerId()
+  if(isGM||!SPELL_PLAYERS.includes(actor)||!book?.active)return
+  return requestExplorationAction("book",actor,{bookId:book.id,bookTime:book.time})
 }
 
 function maybeSpawnMapLoreBook(mapName) {
@@ -1449,7 +1428,7 @@ function grantThuumToPlayer(playerId, word) {
         words: def.words || [word],
         time: Date.now()
       })
-      setTimeout(() => db.ref("game/thuumUnlockEvent").remove(), 2000)
+      setTimeout(() => void 0, 2000)
       showNotification("SKRAA donne a " + playerId.toUpperCase())
     })
   })
@@ -1532,6 +1511,7 @@ function safeStartIntro(event) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+Object.assign(window,{showMobSpecialAttackEvent,showMobAttackPresentation,cleanupRuneChallengeUI,ensureCemeteryGlyphIntro,ensureTokenStateBadgeContainer,setTokenStateBadges,clearCombatTokenStateVisuals,resetLocalCombatVisualState,cleanupTransientGameUI,finalizeNewGameLocally,updateCombatTokenStateVisuals,syncMapElementsFromDB,syncWantedStateFromDB})
 window.__pageLoadTime = Date.now()
 try { window.isNewGame = sessionStorage.getItem("rpg_session_transition") === "new"; sessionStorage.removeItem("rpg_session_transition") } catch (e) {}
 window.__introClickLockUntil = 0
@@ -1749,6 +1729,8 @@ db.ref("game/map").on("value", snap => {
   const isFirst = firstMapLoad
   if (isFirst) firstMapLoad = false
   currentMap = mapName
+  if(typeof refreshExplorationMapEvents==="function")refreshExplorationMapEvents()
+  if(typeof playSharedMapAudio==="function")playSharedMapAudio(window.__explorationState?.mapAudio)
   if (previousMap && previousMap !== mapName) { closeMapLoreBookOverlay(); if (isGM) addSessionLog("🗺 Carte : " + (mapNames[mapName] || mapName)) }
   if (typeof stopBifrostFlashSound === "function") stopBifrostFlashSound()
   updateMadnessUI(window.groupMadness || 0)
@@ -1764,7 +1746,7 @@ db.ref("game/map").on("value", snap => {
     else                            { map.style.backgroundSize = "cover";   map.style.backgroundColor = "" }
     updateWorldMapFogTopLeft()
     updateMapLoreBookVisibility()
-    if (isFirst) { calculateMinZoom(); cameraZoom = minZoom; updateCamera() }
+    calculateMinZoom(); cameraZoom = minZoom; updateCamera()
     document.querySelectorAll(".token").forEach(t => spawnPortal(t.id))
     if (mapMusic[mapName] && !_state._pendingMapAudio) {
       const shouldKeepAuroraMusic = auroraActive && mapName !== "bifrost.jpg"
@@ -1885,59 +1867,17 @@ db.ref("game/worldMapFogTopLeftHidden").on("value", snap => {
   updateWorldMapFogTopLeft()
 })
 
-db.ref("game/cameraZoom").on("value", snap => {
-  if (window.__sessionBusy) return
-  const nextZoom = parseFloat(snap.val())
-  if (!Number.isFinite(nextZoom)) return
-  const mapEl = document.getElementById("map")
-  if (!mapEl || !mapEl.offsetWidth || !mapEl.offsetHeight) return
-  calculateMinZoom()
-  const normalized = Math.max(minZoom, Math.min(2, nextZoom))
-  window.__lastPublishedCameraZoom = Number(normalized.toFixed(3))
-  cameraZoom = normalized
-  updateCamera()
-})
+// Le zoom sauvegardé n’est plus imposé aux participants.
 
 db.ref("game/readLoreBooks").on("value", snap => {
   if (window.__sessionBusy) return
   window.readLoreBooksData = snap.val() || {}
 })
 
-db.ref("game/mapLoreBook").on("value", snap => {
-  if (window.__sessionBusy) return
-  window.mapLoreBookData = snap.val()
-  updateMapLoreBookVisibility()
-})
+// game/mapLoreBook : synchronisation dans exploration.js
 
 // ─── shop ───
-db.ref("game/shop").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  const isOpen = !!(data && data.open)
-  if (!window.__shopInitDone) {
-    window.__shopWasOpen = isOpen
-    window.__lastOpenedShopTime = isOpen && data && data.time ? data.time : null
-    window.__lastShopEventSignature = isOpen && data && data.time ? ("open:" + data.time) : "init-closed"
-    window.__shopInitDone = true
-  } else if (window.__shopWasOpen !== isOpen) {
-    const now = Date.now()
-    const signature = isOpen
-      ? ("open:" + ((data && data.time) || now))
-      : ("close:" + (window.__lastOpenedShopTime || "none"))
-    if (signature !== window.__lastShopEventSignature && (window.__lastShopSoundState !== isOpen || (now - window.__lastShopSoundAt) > 700)) {
-      window.__lastShopSoundState = isOpen
-      window.__lastShopSoundAt = now
-      window.__lastShopEventSignature = signature
-    }
-    if (isOpen && data && data.time) window.__lastOpenedShopTime = data.time
-    window.__shopWasOpen = isOpen
-  }
-  const existing = document.getElementById("shopOverlay")
-  if (existing) existing.remove()
-  if (!data || !data.open) return
-  if (!gameStarted || gameState === GAME_STATE.MENU) return
-  renderShop(data.partyLvl, data.type || "marche")
-})
+// game/shop : synchronisation dans exploration.js
 
 // ─── highPNJName ───
 db.ref("game/highPNJName").on("value", snap => {
@@ -1949,42 +1889,19 @@ db.ref("game/highPNJName").on("value", snap => {
 })
 
 // ─── fly swarm listener ───
-db.ref("events/flySwarm").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  if (!data || !data.active) {
-    if (document.getElementById("flySwarmOverlay") && typeof resetFlySwarmPresentation === "function") resetFlySwarmPresentation()
-    return
-  }
-  if (gameState !== "GAME" && gameState !== "COMBAT") return
-  if (currentMap !== "epouventail.jpg") return
-  if (typeof showFlySwarmEffect === "function") showFlySwarmEffect()
-})
+// events/flySwarm : contrôleur de reprise partagé.
 
 // ─── aurora ───
-db.ref("events/aurora").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  if (!data || !data.active) {
-    if (auroraActive || document.getElementById("auroraOverlay")) {
-      showAuroraEndSequence()
-    } else if (typeof stopAuroraMusic === "function") {
-      stopAuroraMusic(false)
-    }
-    return
-  }
-  if (gameState !== "GAME" && gameState !== "COMBAT") return
-  showAuroraEvent()
-})
+// events/aurora : contrôleur de reprise partagé.
 
 // ─── bifrostFlash ───
 db.ref("game/bifrostFlash").on("value", snap => {
   if (window.__sessionBusy) return
   const d = snap.val()
   if (!d) return
-  if (!d.time || d.time < (window.__pageLoadTime || 0)) { db.ref("game/bifrostFlash").remove(); return }
+  if (!d.time || d.time < (window.__pageLoadTime || 0)) { void 0; return }
   doBifrostFlash()
-  db.ref("game/bifrostFlash").remove()
+  void 0
 })
 
 // ─── odinVision ───
@@ -2001,7 +1918,7 @@ db.ref("game/powerSound").on("value", snap => {
   if (window.__sessionBusy) return
   const data = snap.val()
   if (!data) return
-  if (!data.time || data.time < (window.__pageLoadTime || 0)) { db.ref("game/powerSound").remove(); return }
+  if (!data.time || data.time < (window.__pageLoadTime || 0)) { void 0; return }
   const pInfo = playerPowerSounds[data.player]
   if (!pInfo) return
   const snd = new Audio((typeof resolveAudioPath === "function") ? resolveAudioPath(pInfo.file) : (/^(https?:|data:|blob:|\/|audio\/)/i.test(String(pInfo.file || "")) ? String(pInfo.file || "") : "audio/" + pInfo.file))
@@ -2024,7 +1941,7 @@ db.ref("game/powerSound").on("value", snap => {
       }, 80)
     }, pInfo.fadeAt)
   }
-  db.ref("game/powerSound").remove()
+  void 0
 })
 
 function showMobSpecialAttackEvent(data) {
@@ -2617,32 +2534,7 @@ function ensureCemeteryGlyphIntro() {
 }
 
 // ─── cemeterySpell ───
-db.ref("game/cemeterySpell").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  if (!data) return
-  if (gameState !== "GAME") return
-
-  if (data.active && !data.glipheShown) {
-    ensureCemeteryGlyphIntro()
-    return
-  }
-
-  if (data.glipheShown) {
-    const g = document.getElementById("glipheOverlay")
-    if (g) { g.style.opacity = "0"; setTimeout(() => { if (g.parentNode) g.remove() }, 800) }
-  }
-
-  if (data.freed) {
-    const mg = document.getElementById("spellMiniGame")
-    if (mg) { mg.style.opacity = "0"; setTimeout(() => { if (mg.parentNode) mg.remove() }, 800) }
-    if (!data.failedByZombie) showSpellFreed()
-    if (isGM) { db.ref("game/completedEvents/cemetery").set(true); db.ref("game/cemeterySpell").remove() }
-    return
-  }
-
-  if (data.glipheShown && !data.freed) renderSpellDiceGame(data)
-})
+// game/cemeterySpell : synchronisation dans exploration.js
 
 // ─── playerDeath ───
 db.ref("game/playerDeath").on("value", snap => {
@@ -2724,7 +2616,7 @@ db.ref("game/playerRevive").on("value", snap => {
   }
   const revBtn = document.getElementById("revive_" + pid)
   if (revBtn) revBtn.remove()
-  db.ref("game/playerRevive").remove()
+  void 0
 })
 
 // ─── mob2 et mob3 ───
@@ -3104,61 +2996,17 @@ function syncMapElementsFromDB() {
 }
 
 function syncWantedStateFromDB() {
-  db.ref("game/wantedPosters").once("value", snap => {
-    const data = snap.val() || null
-    window.__wantedPostersData = data || {}
-    const list = document.getElementById("wantedList")
-    if (list && isGM) {
-      list.innerHTML = ""
-      if (data) Object.values(data).forEach(p => renderWantedPoster(p))
-    }
-    if (isGM && typeof cleanupLegacyWantedElements === "function") cleanupLegacyWantedElements()
-  })
+  return db.ref("game").once("value").then(snap=>syncSharedExplorationState(snap.val()||{}))
 }
 
 // ─── wantedPosters ───
-db.ref("game/wantedPosters").on("value", snap => {
-  if (window.__sessionBusy) return
-  const list = document.getElementById("wantedList")
-  const data = snap.val() || null
-  window.__wantedPostersData = data || {}
-  if (list && isGM) {
-    list.innerHTML = ""
-    if (data) Object.values(data).forEach(p => renderWantedPoster(p))
-  }
-  const boardContent = document.getElementById("wantedBoardContent")
-  if (boardContent && typeof buildWantedBoardContent === "function") {
-    buildWantedBoardContent(boardContent, Object.values(window.__wantedPostersData).filter(Boolean))
-  }
-  if (isGM && typeof cleanupLegacyWantedElements === "function") cleanupLegacyWantedElements()
-})
+// game/wantedPosters : synchronisation dans exploration.js
 
 // ─── wantedOpen ───
-db.ref("game/wantedOpen").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  const signature = data?.poster?.id && data?.time ? (data.poster.id + ":" + data.time) : (data?.poster?.id || null)
-  if (!window.__wantedOpenInitDone) {
-    window.__wantedOpenInitDone = true
-    window.__wantedOpenLastSignature = signature
-    return
-  }
-  if (!signature || signature === window.__wantedOpenLastSignature) return
-  window.__wantedOpenLastSignature = signature
-  if (!data || !data.poster) return
-  showWantedOverlay(data.poster)
-})
+// game/wantedOpen : synchronisation dans exploration.js
 
 // ─── wantedBoardOpen ───
-db.ref("game/wantedBoardOpen").on("value", snap => {
-  if (window.__sessionBusy) return
-  if (isGM) return
-  if (snap.val()) {
-    if (typeof openWantedBoard === "function") openWantedBoard(true)
-  } else {
-    if (typeof closeWantedBoard === "function") closeWantedBoard(true)
-  }
-})
+// game/wantedBoardOpen : synchronisation dans exploration.js
 
 // ─── simonState ───
 db.ref("game/simonState").on("value", snap => {
@@ -3167,16 +3015,12 @@ db.ref("game/simonState").on("value", snap => {
   db.ref("game/cemeterySpell").once("value", s => {
     const spell = s.val()
     if (!spell || !spell.glipheShown || spell.freed) return
-    showSimonGame(spell, simon)
+    if(typeof showSimonGame==="function")showSimonGame(spell,simon)
   })
 })
 
 // ─── document — indices / notes ───
-db.ref("game/document").on("value", snap => {
-  if (window.__sessionBusy) return
-  if (!gameStarted) return
-  _renderDocument(snap.val())
-})
+// game/document : synchronisation dans exploration.js
 
 // ─── playerAllyAccess — bouton invocations donné par le MJ ───
 db.ref("game/playerAllyAccess").on("value", snap => {
@@ -3218,7 +3062,7 @@ db.ref("game/thuumUnlockEvent").on("value", snap => {
   const data = snap.val()
   if (!data || !data.time) return
   if (data.time <= window.__lastThuumUnlockTime) return
-  if (Date.now() - data.time > 8000) { db.ref("game/thuumUnlockEvent").remove(); return } // purge donnée obsolète
+  if (Date.now() - data.time > 8000) { void 0; return } // purge donnée obsolète
   window.__lastThuumUnlockTime = data.time
   showThuumUnlockCinematic(data)
   setTimeout(updateThuumButton, 250)
@@ -3252,22 +3096,7 @@ db.ref("game/allyAction").on("value", snap => {
 })
 
 // ─── mapAudio — musique spécifique à la map ───
-db.ref("game/mapAudio").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  if (!data || !data.file) return
-  // Attendre que le fade de map soit terminé (1.4s) puis jouer
-  setTimeout(() => {
-    _musicTransitioning = false; _pendingMusic = null
-    if (musicFadeInterval) { clearInterval(musicFadeInterval); musicFadeInterval = null }
-    stopAllMusic()
-    setTimeout(() => {
-      crossfadeMusic("" + data.file + ".mp3")
-      _state._pendingMapAudio = false
-    }, 300)
-  }, 1400)
-  db.ref("game/mapAudio").remove()
-})
+// game/mapAudio : contrôleur de reprise partagé.
 
 }) // fin DOMContentLoaded
 
@@ -3276,11 +3105,13 @@ db.ref("game/mapAudio").on("value", snap => {
 /* ========================= */
 
 function triggerFlySwarm() {
+  if(!isGM)return
   db.ref("events/flySwarm").set({ active: true, time: Date.now() })
   document.querySelectorAll(".gmSection").forEach(s => s.style.display = "none")
 }
 
 function stopFlySwarm() {
+  if(!isGM)return
   db.ref("events/flySwarm").remove()
 }
 
@@ -3318,12 +3149,14 @@ function updateTokenFromDB(snapshot) {
   const id   = snapshot.key
   const data = snapshot.val()
   if (!data) return
-  if (myToken && id === myToken.id && _state.tokenDragging) return
+  window.__tokenPositions ||= {}; window.__tokenPositions[id]=data
+  if (selected?.id === id && _state.tokenDragging) return
   const token = document.getElementById(id)
   if (!token) return
   const currentX = parseInt(token.style.left) || 0
   const currentY = parseInt(token.style.top)  || 0
-  if (currentX === data.x && currentY === data.y) return
+  if (id === "bibi") { tokenFollowLabel(data) }
+  if(!Number.isFinite(data.x)||!Number.isFinite(data.y))return
   token.style.left = data.x + "px"
   token.style.top  = data.y + "px"
   if (data.facing === 1) token.classList.add("faceLeft")
@@ -3618,21 +3451,16 @@ function revivePlayer(playerId) {
 /* MAP                       */
 /* ========================= */
 
-function changeMap(mapName, customAudio) {
-  if (!isGM) return
-  _musicTransitioning = false; _pendingMusic = null
-  if (musicFadeInterval) { clearInterval(musicFadeInterval); musicFadeInterval = null }
-  maybeSpawnMapLoreBook(mapName)
-  // Un seul set — pas de set(null) puis set(valeur)
-  db.ref("game/map").set(mapName)
-  // Audio spécifique à la map si fourni
-  if (customAudio) {
-    _state._pendingMapAudio = true
-    db.ref("game/mapAudio").set({ file: customAudio, time: Date.now() })
-  } else {
-    _state._pendingMapAudio = false
-  }
-  document.querySelectorAll(".gmSection").forEach(sec => { sec.style.display = "none" })
+async function changeMap(mapName,customAudio){
+ if(!isGM)return
+ try{
+ requireExplorationConnection();_musicTransitioning=false;_pendingMusic=null
+ if(musicFadeInterval){clearInterval(musicFadeInterval);musicFadeInterval=null}
+ _state._pendingMapAudio=!!customAudio
+ await db.ref("game").update({map:mapName,mapAudio:customAudio?{file:customAudio,map:mapName,time:Date.now()}:null})
+ maybeSpawnMapLoreBook(mapName)
+ document.querySelectorAll(".gmSection").forEach(sec=>{sec.style.display="none"})
+ }catch(error){showNotification("Carte non changée : "+error.message)}
 }
 
 /* ========================= */
@@ -4574,126 +4402,56 @@ function openPlayerMenuOnStart() {
 /* DRAG TOKENS               */
 /* ========================= */
 
-document.querySelectorAll(".token").forEach(token => {
-  token.addEventListener("contextmenu", e => {
+document.querySelectorAll(".token").forEach(token=>{
+  token.addEventListener("dblclick",e=>{if(isGM||canAccessCharacter(token.id)){e.preventDefault();openCharacterSheet(token.id)}})
+  token.addEventListener("contextmenu",e=>{e.preventDefault();if(isGM||canAccessCharacter(token.id))openCharacterSheet(token.id)})
+  token.addEventListener("mousedown",e=>{
+    if(e.button!==0||e.target.closest("button")||e.target.closest("#playerSelect"))return
+    if(!isGM&&!canAccessCharacter(token.id))return
+    try{requireExplorationConnection()}catch(error){showNotification(error.message);return}
+    if(token.classList.contains("playerDead")){showNotification("Ce personnage est KO.");return}
+    const pointer={x:e.clientX,y:e.clientY,tokenId:token.id,moved:false}
+    _state.tokenDragStart=pointer;_state.tokenDragging=false
+    const rect=token.getBoundingClientRect(),scale=cameraZoom||1
+    const select=()=>{if(_state.tokenDragStart!==pointer)return;selected=token;lastX=token.offsetLeft;_dragOffsetX=(e.clientX-rect.left)/scale;_dragOffsetY=(e.clientY-rect.top)/scale;lastSentX=NaN;lastSentY=NaN}
+    if(token.id==="mobToken"||token.id.startsWith("mobToken_")||token.id==="eloSummonToken")select()
+    else readCharacter(token.id,snap=>{if(_state.tokenDragStart!==pointer)return;if(isCharacterOverweight(token.id,snap.val()||{}).overweight){showNotification("Ce personnage est surchargé.");return}select()})
     e.preventDefault()
-    if (isGM) { openCharacterSheet(token.id); return }
-    if (myToken && canAccessCharacter(token.id)) openCharacterSheet(token.id)
-  })
-  token.addEventListener("mousedown", e => {
-    if (e.target.closest("#playerSelect") || e.target.closest("button")) return
-    const tokenIsDead = token.classList.contains("playerDead")
-    const now = Date.now()
-    if (now - lastClickTime < 300) {
-      if (isGM && token.id !== "mobToken") openCharacterSheet(token.id)
-      else if (myToken && canAccessCharacter(token.id)) openCharacterSheet(token.id)
-      lastClickTime = 0; return
-    }
-    lastClickTime = now
-    const tr = token.getBoundingClientRect()
-    const grabOffX = e.clientX - tr.left
-    const grabOffY = e.clientY - tr.top
-    if (isGM) {
-      if (tokenIsDead) { showNotification(token.id.toUpperCase() + " est KO. Réanimez-le pour le déplacer."); return }
-      if (token.id !== "mobToken" && !token.id.startsWith("mobToken_")) {
-        readCharacter(token.id, snap => {
-          const data = snap.val() || {}
-          if (isCharacterOverweight(token.id, data).overweight) {
-            showNotification(token.id.toUpperCase() + " est surchargé et ne peut pas bouger."); return
-          }
-          document.querySelectorAll(".token").forEach(t => t.classList.remove("gmSelected"))
-          token.classList.add("gmSelected")
-          selected = token; lastX = selected.offsetLeft
-          _dragOffsetX = grabOffX; _dragOffsetY = grabOffY
-        })
-        e.preventDefault(); return
-      }
-      document.querySelectorAll(".token").forEach(t => t.classList.remove("gmSelected"))
-      token.classList.add("gmSelected")
-      selected = token; lastX = selected.offsetLeft
-      _dragOffsetX = grabOffX; _dragOffsetY = grabOffY
-      e.preventDefault(); return
-    }
-    if (tokenIsDead) { showNotification(token.id.toUpperCase() + " est KO et ne peut pas bouger."); return }
-    const localMoveId = token.id === "bibi" ? "bibi" : (myToken ? myToken.id : "")
-    if (myToken && canAccessCharacter(token.id)) {
-      readCharacter(localMoveId, snap => {
-        const data = snap.val() || {}
-        if (isCharacterOverweight(localMoveId, data).overweight) {
-          showNotification(localMoveId.toUpperCase() + " est surchargé et ne peut pas bouger."); return
-        }
-        selected = token; lastX = selected.offsetLeft
-        _dragOffsetX = grabOffX; _dragOffsetY = grabOffY
-        if (token.id === "bibi") { bibiMoved = true; tryBark() }
-      })
-      e.preventDefault()
-    }
   })
 })
-
-document.addEventListener("mousemove", e => {
-  if (!selected) return
-  if (!isGM && !canAccessCharacter(selected.id) && !(selected.id === "eloSummonToken" && myToken?.id === "elo")) { selected = null; return }
-  if (selected.classList && selected.classList.contains("playerDead")) {
-    selected = null; _state.tokenDragging = false; _state.tokenDragStart = null; return
-  }
-  if (!isGM && (!myToken || (selected.id !== myToken.id && selected.id !== "bibi" && !(selected.id === "eloSummonToken" && myToken.id === "elo")))) return
-  const map = document.getElementById("map"); const rect = map.getBoundingClientRect()
-  const gx = Math.floor((e.clientX - rect.left) / grid) * grid
-  const gy = Math.floor((e.clientY - rect.top)  / grid) * grid
-  const freeX = (e.clientX - rect.left) - _dragOffsetX
-  const freeY = (e.clientY - rect.top)  - _dragOffsetY
-  let facing = null
-  if (gx < lastX) { selected.classList.add("faceLeft"); facing = 1 }
-  if (gx > lastX) { selected.classList.remove("faceLeft"); facing = 0 }
-  lastX = gx
-  selected.style.left = freeX + "px"; selected.style.top = freeY + "px"
-  const now = Date.now()
-  if (now - lastSend > sendDelay && (gx !== lastSentX || gy !== lastSentY)) {
-    if (selected.id === "eloSummonToken") db.ref("combat/eloSummon").update({ x: gx, y: gy })
-    else if (selected._fbSlot) db.ref("combat/"+selected._fbSlot).update({x:gx,y:gy})
-    else if (!selected._fbSlot) {
-      const upd = { x: gx, y: gy }
-      if (facing !== null) upd.facing = facing
-      db.ref("tokens/" + selected.id).update(upd)
-    }
-    lastSentX = gx; lastSentY = gy; lastSend = now
-  }
-  if (selected.id === "greg") {
-    const bibi = document.getElementById("bibi")
-    if (bibi) {
-      if (facing === 1) bibi.classList.add("faceLeft")
-      else if (facing === 0) bibi.classList.remove("faceLeft")
-      bibi.style.left = (gx + 80) + "px"; bibi.style.top = gy + "px"
-      const bibiFacing = bibi.classList.contains("faceLeft") ? 1 : 0
-      db.ref("tokens/bibi").update({ x: gx + 80, y: gy, facing: bibiFacing })
-      tryBark()
-    }
+function persistDraggedToken(token,position){
+  if(token.id==="eloSummonToken")return db.ref("combat/eloSummon").update(position)
+  if(token._fbSlot)return db.ref("combat/"+token._fbSlot).update(position)
+  return writeExplorationPosition(token.id,position,token.id==="bibi")
+}
+document.addEventListener("mousemove",e=>{
+  if(!selected||!window.__explorationOnline)return
+  if(!isGM&&!canAccessCharacter(selected.id)&&!(selected.id==="eloSummonToken"&&myToken?.id==="elo"))return
+  const origin=_state.tokenDragStart
+  if(origin&&!origin.moved&&Math.hypot(e.clientX-origin.x,e.clientY-origin.y)<4)return
+  if(origin)origin.moved=true
+  _state.tokenDragging=true
+  const rect=document.getElementById("map").getBoundingClientRect(),scale=cameraZoom||1
+  const x=(e.clientX-rect.left)/scale-_dragOffsetX,y=(e.clientY-rect.top)/scale-_dragOffsetY
+  const gx=Math.round(x/grid)*grid,gy=Math.round(y/grid)*grid
+  if(gx<lastX)selected.classList.add("faceLeft");else if(gx>lastX)selected.classList.remove("faceLeft")
+  lastX=gx;selected.style.left=x+"px";selected.style.top=y+"px"
+  if(Date.now()-lastSend>sendDelay&&(gx!==lastSentX||gy!==lastSentY)){
+    const token=selected
+    persistDraggedToken(token,{x:gx,y:gy,facing:token.classList.contains("faceLeft")?1:0}).catch(error=>showMovementError(error,token.id))
+    lastSentX=gx;lastSentY=gy;lastSend=Date.now()
   }
 })
-
-document.addEventListener("mouseup", () => {
-  if (selected) {
-    const snapX = Math.round(parseFloat(selected.style.left) / grid) * grid
-    const snapY = Math.round(parseFloat(selected.style.top)  / grid) * grid
-    selected.style.left = snapX + "px"; selected.style.top = snapY + "px"
-    if (snapX !== lastSentX || snapY !== lastSentY) {
-      const facing = selected.classList.contains("faceLeft") ? 1 : 0
-      if (selected.id === "eloSummonToken") db.ref("combat/eloSummon").update({ x: snapX, y: snapY })
-      else if (selected._fbSlot) db.ref("combat/"+selected._fbSlot).update({x:snapX,y:snapY,facing})
-      else if (!selected._fbSlot) db.ref("tokens/" + selected.id).update({ x: snapX, y: snapY, facing })
-      if (selected.id === "greg") {
-        const bibi = document.getElementById("bibi")
-        if (bibi) {
-          const bx = snapX + 80
-          bibi.style.left = bx + "px"; bibi.style.top = snapY + "px"
-          db.ref("tokens/bibi").update({ x: bx, y: snapY, facing })
-        }
-      }
-    }
+document.addEventListener("mouseup",()=>{
+  const token=selected,origin=_state.tokenDragStart
+  selected=null;_state.tokenDragging=false;_state.tokenDragStart=null
+  if(origin?.tokenId==="bibi"&&!origin.moved)resumeBibiFollowing()
+  if(token&&(!origin||origin.moved)){
+    const position=explorationPosition({x:Math.round(parseFloat(token.style.left)/grid)*grid,y:Math.round(parseFloat(token.style.top)/grid)*grid,facing:token.classList.contains("faceLeft")?1:0})
+    token.style.left=position.x+"px";token.style.top=position.y+"px"
+    persistDraggedToken(token,position).catch(error=>showMovementError(error,token.id))
+    if(token.id==="bibi")tryBark()
   }
-  if (bibiMoved) { tryBark(); bibiMoved = false }
-  _state.tokenDragging = false; _state.tokenDragStart = null; selected = null
 })
 
 /* ========================= */
@@ -4701,7 +4459,6 @@ document.addEventListener("mouseup", () => {
 /* ========================= */
 
 document.addEventListener("mousedown", e => {
-  if (!isGM) return
   if (e.target.closest("button") || e.target.closest("input") ||
       e.target.closest("#playerSelect") || e.target.closest("#gmBar") ||
       e.target.closest(".gmSection") || e.target.closest("#diceBar") ||
@@ -4722,21 +4479,7 @@ document.addEventListener("mousemove", e => {
 
 document.addEventListener("mouseup", () => { cameraDragging = false; document.body.style.cursor = "default" })
 
-document.addEventListener("wheel", e => {
-  if (!isGM) return
-  let target = e.target
-  while (target && target !== document.body) {
-    const style = window.getComputedStyle(target)
-    if ((style.overflowY === "auto" || style.overflowY === "scroll") && target.scrollHeight > target.clientHeight) return
-    if (target.id === "gmBar" || target.classList.contains("gmSection") || target.classList.contains("mapCategory") ||
-        target.classList.contains("pnjTabContent") || target.id === "diceLog" || target.id === "mjLog") return
-    target = target.parentElement
-  }
-  e.preventDefault()
-  cameraZoom = Math.max(minZoom, Math.min(2, cameraZoom + (e.deltaY < 0 ? 0.1 : -0.1)))
-  updateCamera()
-  syncCameraZoomToPlayers()
-}, { passive: false })
+// Aucun zoom interactif sur la carte.
 
 document.addEventListener("contextmenu", e => { if (isGM) e.preventDefault() })
 
@@ -4819,32 +4562,7 @@ if (_camera) {
   }, { passive: true })
 }
 
-// Zoom pinch-to-zoom (MJ uniquement)
-let _lastPinchDist = null
-if (_camera) {
-  _camera.addEventListener("touchstart", e => {
-    if (e.touches.length === 2) _lastPinchDist = null
-  }, { passive: true })
-
-  _camera.addEventListener("touchmove", e => {
-    if (!isGM || e.touches.length !== 2) { _lastPinchDist = null; return }
-    const dx = e.touches[0].clientX - e.touches[1].clientX
-    const dy = e.touches[0].clientY - e.touches[1].clientY
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    if (_lastPinchDist !== null) {
-      const delta = (dist - _lastPinchDist) * 0.005
-      cameraZoom = Math.max(minZoom, Math.min(2, cameraZoom + delta))
-      updateCamera()
-      syncCameraZoomToPlayers()
-    }
-    _lastPinchDist = dist
-    e.preventDefault()
-  }, { passive: false })
-
-  _camera.addEventListener("touchend", e => {
-    if (e.touches.length < 2) _lastPinchDist = null
-  }, { passive: true })
-}
+// Aucun zoom par pincement.
 
 /* ========================= */
 /* TOUCHES CLAVIER           */

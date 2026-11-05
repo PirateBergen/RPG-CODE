@@ -1815,7 +1815,7 @@ function tickTimedCombatMobState() {}
 
 function applyMobDamageToPlayer(pid, dmg, attack, mobData, slot) {
   db.ref("characters/" + pid + "/hp").transaction(cur => Math.max(0, safeInt(cur) - dmg))
-  if (attack.effect === "curse") {
+  if (pid !== "bibi" && attack.effect === "curse") {
     db.ref("characters/" + pid + "/curse").transaction(cur => Math.min(8, safeInt(cur) + 1))
   }
   if (attack.special && attack.healSelfRatio && slot) {
@@ -2199,7 +2199,7 @@ function showRuneBubble(dialogue, letter, rune) { const ex=document.getElementBy
 function toggleCurse(level) {
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!isGM && targetId !== (myToken && myToken.id)) return
-  if (!targetId) return
+  if (!targetId || targetId === "bibi") return
   const previousLevel = curseLevel
   if (level === 8) addMJLog("☠ Malédiction complète !")
   curseLevel = level
@@ -2229,6 +2229,7 @@ function toggleCurse(level) {
   saveCurse()
 }
 function saveCurse() {
+  if((currentSheetPlayer || myToken?.id)==="bibi")return
   if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!targetId) return
@@ -2238,6 +2239,7 @@ function setCorruption(level) {
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!isGM && targetId !== (myToken && myToken.id)) return
   if (!targetId) return
+  if(targetId === "bibi")return
   corruptionLevel = level
   document.querySelectorAll(".corruptionPoint").forEach((b, i) => b.classList.toggle("active", i < level))
   const targetToken = document.getElementById(targetId)
@@ -2254,6 +2256,7 @@ function setCorruption(level) {
   saveCorruption()
 }
 function saveCorruption() {
+  if((currentSheetPlayer || myToken?.id)==="bibi")return
   if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!targetId) return

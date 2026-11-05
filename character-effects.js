@@ -21,7 +21,7 @@ async function tickCharacterEffects(){
  }
 }
 async function requestCharacterEffect(kind,actor,payload={}){
- if(!canAccessCharacter(actor)||window.__sessionBusy||!window.__explorationOnline)return showNotification("Connexion et accès au personnage nécessaires")
+ if(!COMBAT_HEROES.includes(actor)||!canAccessCharacter(actor)||window.__sessionBusy||!window.__explorationOnline)return showNotification("Connexion et accès au personnage nécessaires")
  const key=kind+actor;if(characterEffectRequests.has(key))return
  characterEffectRequests.add(key)
  const ref=db.ref("characterRequests").push()
@@ -39,6 +39,7 @@ async function spinCurseWheel(player){
  if(["intro","wheel"].includes(window.__activeCurseWheel?.state)){window.__cursePresented=null;presentSavedCurseWheel(window.__activeCurseWheel)}
 }
 function activatePowerMode(player){
+ if(!COMBAT_HEROES.includes(player))return
  const token=document.getElementById(player);if(token)token.classList.add("powerReady","powerFull")
  if(myToken?.id!==player)return
  if(!powerModeActive)playSound("powerSound",.75)
@@ -47,6 +48,7 @@ function activatePowerMode(player){
 }
 function usePower(player){return requestCharacterEffect("power",player)}
 function presentSavedCurseWheel(wheel){
+ if(wheel?.player==="bibi")wheel=null
  window.__activeCurseWheel=wheel||null
  if(!wheel){for(const id of ["curseIntroScreen","curseWheelScreen","curseResultScreen"])document.getElementById(id)?.remove();window.__cursePresented=null;return}
  if(!gameStarted||window.__sessionBusy)return
@@ -63,7 +65,7 @@ function presentSavedCurseWheel(wheel){
  }
 }
 function presentCharacterPower(event){
- if(!event?.id||seenPowerEvents.has(event.id)||event.time<(window.__pageLoadTime||0)||!gameStarted)return
+ if(!COMBAT_HEROES.includes(event?.player)||!event?.id||seenPowerEvents.has(event.id)||event.time<(window.__pageLoadTime||0)||!gameStarted)return
  seenPowerEvents.add(event.id)
  enqueueSharedVisual("power-"+event.id,()=>{
   playSound("powerSound",.9);powerExplosion();flashGold();screenShakeHard();showNotification(event.player.toUpperCase()+" LIBÈRE SON POUVOIR !")

@@ -198,9 +198,9 @@ function resolveHeroCombatAction(root, request, dice) {
   const max = Math.max(2, combatInt(attack.dice, 20)), roll = dice(max), crit = roll === max, fail = roll === 1
   const stat = combatInt(data[getAttackStatKey(attack.stat)])
   const power = getPlayerAttackPower(attack, roll, stat, { playerId: actor, charData: data, isSpecial: special })
-  if (crit) raw.corruption = Math.min(10, combatInt(raw.corruption) + 1)
-  if (fail) raw.curse = Math.min(8, combatInt(raw.curse) + 1)
-  if(raw.cursedEffect==="critOnly"&&raw.cursedCombatId===c.id&&!crit){
+  if (actor !== "bibi" && crit) raw.corruption = Math.min(10, combatInt(raw.corruption) + 1)
+  if (actor !== "bibi" && fail) raw.curse = Math.min(8, combatInt(raw.curse) + 1)
+  if(actor!=="bibi"&&raw.cursedEffect==="critOnly"&&raw.cursedCombatId===c.id&&!crit){
     if(special){c.playerSpecials ||= {};c.playerSpecials[actor]=true}
     nextCombatTurn(root,request)
     return {actor,attack:attack.name,roll,dice:max,crit,fail,amount:0,mode:"curse-blocked",special,target:slot,message:"Malédiction : seul un critique produit un effet"}
@@ -268,7 +268,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   targets.forEach(id => {
     const before = combatInt(root.characters[id].hp)
     root.characters[id].hp = Math.max(0, before - damage); applied += before - root.characters[id].hp
-    if (attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
+    if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
     if (attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
     if (attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
     combatRecord(root, request, mob.name.toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", mob.name + " — " + attack.name + " → " + id.toUpperCase() + " : -" + (before - root.characters[id].hp) + " PV")

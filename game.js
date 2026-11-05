@@ -3165,7 +3165,7 @@ function updateTokenStats(id) {
     const { weight, maxWeight, overweight } = isCharacterOverweight(id, data)
     if (token) {
       token.classList.toggle("overweight", overweight)
-      if ((data.curse || 0) >= 8) { token.classList.add("cursed");    startBloodEffect(token) }
+      if (id !== "bibi" && (data.curse || 0) >= 8) { token.classList.add("cursed");    startBloodEffect(token) }
       else                        { token.classList.remove("cursed"); stopBloodEffect(token)  }
     }
 
@@ -3217,7 +3217,8 @@ function updateTokenHP() {
 function watchCharacter(snapshot) {
   if (window.__sessionBusy) return
   const playerID = snapshot.key
-  const data     = snapshot.val()
+  const rawData  = snapshot.val()
+  const data = rawData && (playerID === "bibi" ? {...rawData,curse:0,corruption:0} : rawData)
   if (!data) return
   window.__publicCharacters ||= {}; window.__publicCharacters[playerID] = {hp:data.hp,lvl:data.lvl}
 
@@ -3317,6 +3318,7 @@ function triggerLevelUp(playerID) {
 function updateGMStats(playerID, data) {
   const box = document.getElementById("gmStats_" + playerID)
   if (!box) return
+  if(playerID === "bibi")data={...data,curse:0,corruption:0}
   let curseIcons = ""
   for (let i = 0; i < (data.curse || 0); i++) curseIcons += "☠"
   box.innerHTML = `<div class="gmMiniHPText">❤️ ${data.hp || 0}</div><div class="gmMiniCurse">${curseIcons}</div><div class="gmMiniPower">${(data.corruption || 0) >= 10 ? "✨" : ""}</div>`

@@ -423,7 +423,7 @@
       ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
-        ".write": "auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && (newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() || (newData.child('actor').val() === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg')) && newData.child('status').val() === 'queued'",
+        ".write": "auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && newData.child('status').val() === 'queued'",
         ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'power' || newData.child('kind').val() === 'curse-spin'))",
         "status": {
           ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"

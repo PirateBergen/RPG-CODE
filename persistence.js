@@ -512,7 +512,7 @@ async function recoverExpiredSessionLock() {
 }
 
 function resolveCharacterCurse(character, playerId, rollId, resultIndex) {
-  if (!character || !rollId || character.lastCurseResolution?.id === rollId) return null
+  if (playerId === "bibi" || !character || !rollId || character.lastCurseResolution?.id === rollId) return null
   const next = cloneSession(character)
   switch (resultIndex) {
     case 0: { const hp = Number.isFinite(Number(next.hp)) ? Math.max(0, Number(next.hp)) : 0; next.hp = hp === 0 ? 0 : Math.max(1, Math.floor(hp * 0.6)); break }

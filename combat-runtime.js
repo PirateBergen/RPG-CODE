@@ -189,7 +189,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       })
       root.combat.turnState = { phase: "rolling", round: 1, sequence: 0, currentIndex: 0, currentActorId: "", participants: combatParticipants(root), rolls: {}, order: [] }
       root.game.combatState = { active: true, id, mainMob, tier, extraMobs: extraMobs.slice(0, 2), returnMap: root.game.map || currentMap || "taverne.jpg", returnTokens, returnAudio:root.game.mapAudio||null, time: now }
-      for(const hero of COMBAT_CHARACTERS)if(root.characters?.[hero]?.cursedEffect==="critOnly")root.characters[hero].cursedCombatId=id
+      for(const hero of COMBAT_HEROES)if(root.characters?.[hero]?.cursedEffect==="critOnly")root.characters[hero].cursedCombatId=id
       delete root.game.combatOutcome
       ;["storyImage", "storyImage2", "storyImage3", "highPNJName"].forEach(key => delete root.game[key])
       return root
@@ -236,7 +236,7 @@ async function requestPlayerThuumAction(word) {
 }
 
 function applyFreeDiceConsequences(player, max, roll) {
-  if (!canAccessCharacter(player) || !COMBAT_CHARACTERS.includes(player)) return
+  if (!canAccessCharacter(player) || !COMBAT_HEROES.includes(player)) return
   const stat = roll === 1 ? "curse" : roll === max ? "corruption" : null
   if (stat) return db.ref("characters/"+player+"/"+stat).transaction(value=>Math.min(stat==="curse"?8:10,combatInt(value)+1)).catch(error=>showNotification("Jet non enregistré : "+error.message))
 }

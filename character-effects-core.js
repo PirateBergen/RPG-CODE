@@ -1,5 +1,5 @@
 "use strict"
-function ownsCharacterRequest(root,request){return COMBAT_CHARACTERS.includes(request.actor)&&(root.roles?.[request.uid]==="gm"||root.profiles?.[request.uid]?.playerId===combatOwner(request.actor))}
+function ownsCharacterRequest(root,request){return COMBAT_HEROES.includes(request.actor)&&(root.roles?.[request.uid]==="gm"||root.profiles?.[request.uid]?.playerId===combatOwner(request.actor))}
 function reduceCharacterRequest(current,id,seed){
  const queued=current?.characterRequests?.[id];if(!queued||queued.status!=="queued")return undefined
  const root=combatClone(current),r=root.characterRequests[id]
@@ -24,6 +24,7 @@ function reduceCharacterRequest(current,id,seed){
 function advanceCharacterState(current){
  if(!current||current.sessionControl?.phase)return undefined
  const root=combatClone(current);root.curse ||= {};let changed=false,w=root.curse.wheel
+ if(w?.player==="bibi"){delete root.curse.wheel;w=null;changed=true}
  if(w?.state==="result"&&!w.applied){
   const next=resolveCharacterCurse(root.characters?.[w.player],w.player,String(w.id||w.time),w.result)
   if(next){next.curse=0;root.characters[w.player]=next}w.applied=true;w.resultAt=Date.now();changed=true
@@ -33,6 +34,6 @@ function advanceCharacterState(current){
   if(next){next.curse=0;root.characters[w.player]=next}w.state="result";w.applied=true;w.resultAt=Date.now();changed=true
  }
  if(w?.state==="result"&&w.applied&&Date.now()>=(w.resultAt||w.time||0)+5000){delete root.curse.wheel;w=null;changed=true}
- if(!w){const player=COMBAT_CHARACTERS.find(id=>combatInt(root.characters?.[id]?.curse)>=8);if(player){const id="curse-"+player+"-"+Date.now();root.curse.wheel={id,player,state:"wheel",time:Date.now()};changed=true}}
+ if(!w){const player=COMBAT_HEROES.find(id=>combatInt(root.characters?.[id]?.curse)>=8);if(player){const id="curse-"+player+"-"+Date.now();root.curse.wheel={id,player,state:"wheel",time:Date.now()};changed=true}}
  return changed?root:undefined
 }

@@ -143,6 +143,6 @@ function resetLocalCharacterAccess() {
     if (el) el.style.display = "none"
   })
   const select = document.getElementById("playerSelect")
-  if (select) { select.style.display = "block"; select.style.opacity = "1" }
+  if (select) { select.style.display = "none"; select.style.opacity = "1" }
   isGM = false
 }

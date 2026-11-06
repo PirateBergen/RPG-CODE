@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261106.6"</script>
+  <script>window.GAME_V = "20261106.7"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -24,19 +24,31 @@
   </style>
 </head>
 
-<body tabindex="0">
+<body tabindex="0" data-entry-stage="choice" data-entry-role="player">
 
 <div id="gameWrapper">
-  <div id="startScreen">Cliquer pour commencer</div>
+  <div id="startScreen">
+    <section id="entranceSelection" aria-labelledby="entranceTitle">
+      <h1 id="entranceTitle">Choisissez votre personnage</h1>
+      <div class="entranceChoices">
+        <button onclick="chooseEntrance('greg')"><img src="images/greg.png" alt=""><span>Greg</span></button>
+        <button onclick="chooseEntrance('ju')"><img src="images/ju.png" alt=""><span>Yu</span></button>
+        <button onclick="chooseEntrance('elo')"><img src="images/elo.png" alt=""><span>Elo</span></button>
+        <button onclick="chooseEntrance('gm')"><span class="entranceDice" aria-hidden="true">⚄</span><span>MJ</span></button>
+      </div>
+      <p id="entranceFeedback" role="status" aria-live="polite"></p>
+      <div class="entranceAccounts"><button onclick="entranceAccount()">Se connecter à un compte joueur</button><button id="entranceSignOut" onclick="logoutPlayer()" hidden>Se déconnecter</button></div>
+    </section>
+  </div>
 
   <div id="intro">
     <div id="gameTitle"></div>
+    <p id="lobbyWaiting" role="status">Veuillez patienter</p>
     <div id="introBox">
       <button id="startButton" onclick="startGame()"><span class="btn-inner">CONTINUER</span></button>
       <div class="intro-actions">
         <button class="menuButton" onclick="newGame()"><span class="btn-inner">NOUVELLE PARTIE</span></button>
         <button class="menuButton" onclick="loadGame()"><span class="btn-inner">CHARGER PARTIE</span></button>
-        <button class="menuButton" onclick="requestPlayerAuth()"><span class="btn-inner">CONNEXION JOUEUR</span></button>
         <button class="menuButton" id="introLogoutBtn" onclick="logoutPlayer()" style="display:none;"><span class="btn-inner">SE DÉCONNECTER</span></button>
       </div>
     </div>
@@ -58,18 +70,7 @@
     </div>
   </div>
 
-  <div id="playerSelect">
-    <button id="playerToggle" onclick="togglePlayerMenu()">🎭</button>
-    <div id="playerMenu">
-      <button onclick="requestGM()">🎲 MJ</button>
-      <button onclick="requestPlayerAuth()">🔑 Connexion</button>
-      <div id="playerAuthStatus" class="menuLabel" style="display:none;"></div>
-      <div class="menuLabel">Choose :</div>
-      <button class="playerChoiceBtn" data-player-choice="greg" onmousedown="event.stopPropagation()" onclick="choosePlayer('greg')">Greg</button>
-      <button class="playerChoiceBtn" data-player-choice="ju" onmousedown="event.stopPropagation()" onclick="choosePlayer('ju')">Yu</button>
-      <button class="playerChoiceBtn" data-player-choice="elo" onmousedown="event.stopPropagation()" onclick="choosePlayer('elo')">Elo</button>
-    </div>
-  </div>
+  <div id="playerSelect" hidden aria-hidden="true"><div id="playerMenu"></div></div>
 </div>
 
 <!-- CAMÉRA -->
@@ -940,5 +941,6 @@
 <script>document.write('<script src="character-effects.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="session-view.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="gm-arbitration.js?v='+GAME_V+'"><\/script>')</script>
+<script>document.write('<script src="entrance.js?v='+GAME_V+'"><\/script>')</script>
 </body>
 </html>

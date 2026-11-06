@@ -1,4 +1,4 @@
-﻿/* ============================================================ */
+/* ============================================================ */
 /* PROPHÉTIE DES MOUCHES — UI STYLE "TALES OF SYMPHONIA"       */
 /* Palette : teal sombre, bordeaux, or, ivoire                 */
 /* ============================================================ */
@@ -6258,3 +6258,24 @@ body.in-combat #audioSliders {
   right: auto !important;
   left: 18px;
 }
+
+/* Entry: choose a role before showing the title menu. */
+#playerSelect { display:none !important; }
+#startScreen { cursor:default; align-items:flex-start; overflow-y:auto; padding:32px 18px; box-sizing:border-box; }
+#entranceSelection { margin:auto; flex-shrink:0; width:min(850px,100%); text-align:center; font:18px Cinzel,Georgia,serif; }
+#entranceTitle { font-size:clamp(23px,4vw,38px); font-weight:normal; color:#ead5a4; margin:0 0 34px; }
+.entranceChoices { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:20px; }
+.entranceChoices button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:22px 12px; background:#090909; color:#f4e3bc; border:1px solid #6e5935; border-radius:10px; font:21px Cinzel,Georgia,serif; cursor:pointer; min-height:200px; }
+.entranceChoices button:hover,.entranceChoices button:focus-visible { border-color:#ebc570; background:#211b10; outline:2px solid #ebc570; outline-offset:3px; }
+.entranceChoices img { width:100%; height:130px; object-fit:contain; }
+.entranceDice { font:110px Georgia,serif; height:130px; }
+#entranceFeedback { min-height:2.8em; font:15px/1.5 Georgia,serif; color:#e5c68c; }
+.entranceAccounts { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; }
+.entranceAccounts button { background:none; border:1px solid #55482f; border-radius:6px; padding:10px 15px; color:#c8baa0; cursor:pointer; font:14px Georgia,serif; }
+.entranceAccounts [hidden] { display:none; }
+#lobbyWaiting { display:none; font:clamp(19px,3vw,28px) Cinzel,Georgia,serif; letter-spacing:2px; color:#f0dfb3; text-align:center; }
+body[data-entry-stage="choice"] #introBox,body[data-entry-role="player"] #introBox { display:none !important; }
+body[data-entry-stage="lobby"][data-entry-role="player"] #lobbyWaiting { display:block; }
+body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playing"]) #mjLog,body:not([data-entry-stage="playing"]) #playerPreviewBtn { visibility:hidden !important; }
+body[data-entry-stage="choice"] #intro { display:none !important; }
+@media(max-width:600px){.entranceChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.entranceChoices button{min-height:150px;padding:14px 8px}.entranceChoices img,.entranceDice{height:90px}.entranceDice{font-size:80px}#entranceTitle{margin-bottom:22px}}

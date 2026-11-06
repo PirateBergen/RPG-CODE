@@ -332,38 +332,15 @@ function showPlayerAuthModal() {
   password.id = "playerAuthPassword"; password.type = "password"; password.placeholder = "Mot de passe joueur"; password.autocomplete = "current-password"
   password.style.cssText = "width:100%;padding:12px 14px;margin-bottom:10px;background:rgba(8,8,8,0.92);border:1px solid rgba(120,160,210,0.45);border-radius:8px;color:#f5e6c8;font-family:Cinzel,serif;font-size:14px;box-sizing:border-box;"
   box.appendChild(password)
-  // Choix du personnage (pour création de compte) — boutons tactiles, pas de <select>
+  // Le personnage est choisi sur le premier écran.
   const charLabel = document.createElement("div")
   charLabel.style.cssText = "font-size:11px;color:#8aabcf;margin-bottom:6px;letter-spacing:1px;"
-  charLabel.innerText = "Personnage (création uniquement)"
+  charLabel.innerText = window.__entryChoice && PLAYABLE_HEROES.includes(window.__entryChoice) ? "Personnage : " + (window.__entryChoice === "ju" ? "Yu" : window.__entryChoice.toUpperCase()) : "Choisissez d’abord votre personnage sur l’écran d’accueil"
   box.appendChild(charLabel)
-  const charRow = document.createElement("div")
-  charRow.style.cssText = "display:flex;gap:8px;margin-bottom:14px;justify-content:center;"
-  box.appendChild(charRow)
   // champ caché qui stocke la valeur sélectionnée
   const charInput = document.createElement("input")
-  charInput.id = "playerAuthCharacter"; charInput.type = "hidden"; charInput.value = ""
+  charInput.id = "playerAuthCharacter"; charInput.type = "hidden"; charInput.value = PLAYABLE_HEROES.includes(window.__entryChoice) ? window.__entryChoice : ""
   box.appendChild(charInput)
-  ;[{value:"greg",label:"Greg"},{value:"ju",label:"Yu"},{value:"elo",label:"Elo"}].forEach(o => {
-    const btn = document.createElement("button")
-    btn.type = "button"
-    btn.innerText = o.label
-    btn.dataset.charValue = o.value
-    btn.style.cssText = "flex:1;padding:12px 8px;background:rgba(20,30,50,0.9);border:1px solid rgba(120,160,210,0.35);border-radius:8px;color:#c7d3e8;font-family:Cinzel,serif;font-size:13px;cursor:pointer;transition:background 0.15s,border-color 0.15s;"
-    btn.addEventListener("pointerdown", e => {
-      e.stopPropagation()
-      charRow.querySelectorAll("button").forEach(b => {
-        b.style.background = "rgba(20,30,50,0.9)"
-        b.style.borderColor = "rgba(120,160,210,0.35)"
-        b.style.color = "#c7d3e8"
-      })
-      btn.style.background = "rgba(40,80,140,0.85)"
-      btn.style.borderColor = "#89a9cf"
-      btn.style.color = "#fff"
-      charInput.value = o.value
-    })
-    charRow.appendChild(btn)
-  })
   const feedback = document.createElement("div")
   feedback.id = "playerAuthFeedback"
   feedback.style.cssText = "display:none;min-height:20px;margin-bottom:12px;font-size:12px;line-height:1.4;"
@@ -377,6 +354,7 @@ function showPlayerAuthModal() {
   loginBtn.onclick = () => handlePlayerEmailPasswordAuth("login")
   row.appendChild(loginBtn)
   const createBtn = document.createElement("button")
+  createBtn.id = "playerAuthCreate"
   createBtn.innerText = "Créer compte joueur"
   createBtn.style.cssText = "padding:10px 18px;background:linear-gradient(#3d5d44,#233526);color:#e8f4e0;border:1px solid #87aa86;border-radius:8px;cursor:pointer;font-family:Cinzel,serif;"
   createBtn.onclick = () => handlePlayerEmailPasswordAuth("create")
@@ -3766,7 +3744,7 @@ function refreshActivePNJs() {
       document.getElementById("camera").style.display = "block"
       document.body.classList.remove("in-combat")
       // Ne montrer le menu de sélection que si le joueur n'a pas encore choisi
-      if (!myToken) document.getElementById("playerSelect").style.display = "block"
+      if (!myToken) document.getElementById("playerSelect").style.display = "none"
       setTimeout(updateThuumButton, 500)
       setTimeout(refreshActivePNJs, 150)
       break
@@ -4028,7 +4006,7 @@ function showTavern() {
   tryAutoSelectAuthenticatedPlayer()
   // Ne montrer le menu de sélection que si le joueur n'a pas encore choisi
   if (!myToken) {
-    document.getElementById("playerSelect").style.display = "block"
+    document.getElementById("playerSelect").style.display = "none"
     setTimeout(openPlayerMenuOnStart, 100)
   }
   // Lire la vraie map depuis Firebase plutôt que forcer la taverne
@@ -4057,14 +4035,16 @@ function showTavern() {
 }
 
 function startIntro() {
+  const entranceEpoch=window.__entranceEpoch
   startMenuSparks()
   stopAllMusic()
   preloadAssets()
   setGameState("INTRO")
-  setTimeout(animateGameTitle, 2000)
+  setTimeout(()=>{if(window.__entranceEpoch===entranceEpoch)animateGameTitle()}, 2000)
   const start = document.getElementById("startScreen")
   start.classList.add("fadeOut")
   setTimeout(() => {
+    if(window.__entranceEpoch!==entranceEpoch)return
     start.style.display = "none"
     start.style.pointerEvents = "none"
     start.style.visibility = "hidden"

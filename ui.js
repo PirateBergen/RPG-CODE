@@ -2034,15 +2034,15 @@ function showStoryImage(image) {
       snd = document.createElement("audio")
       snd.id = sid
       snd.src = "audio/" + pnjSounds[soundKey]
-      snd.volume = 1.0
+      setManagedAudioBaseVolume(snd,1)
       document.body.appendChild(snd)
     }
     snd.currentTime = 0
     snd.play().catch(() => {})
     setTimeout(() => {
       let iv = setInterval(() => {
-        if (snd.volume > 0.05) snd.volume -= 0.05
-        else { snd.pause(); snd.volume = 1.0; clearInterval(iv) }
+        if (snd.__baseVolume > 0.05) setManagedAudioBaseVolume(snd,Math.max(0,snd.__baseVolume-0.05))
+        else { snd.pause(); setManagedAudioBaseVolume(snd,1); clearInterval(iv) }
       }, 100)
     }, 2000)
   }
@@ -2415,10 +2415,10 @@ function startAuroraMusic() {
   }
   try { aurora.pause() } catch (_) {}
   aurora.currentTime = 0
-  aurora.volume = 0
+  setManagedAudioBaseVolume(aurora,0,"music")
   aurora.play().catch(()=>{})
   window.__auroraFadeInInterval = setInterval(() => {
-    if (aurora.volume < 0.35) aurora.volume = Math.min(0.35, aurora.volume + 0.03)
+    if (aurora.__baseVolume < 0.35) setManagedAudioBaseVolume(aurora,Math.min(0.35,aurora.__baseVolume+0.03),"music")
     else {
       clearInterval(window.__auroraFadeInInterval)
       window.__auroraFadeInInterval = null
@@ -2439,18 +2439,18 @@ function stopAuroraMusic(fade, onDone) {
   if (!fade) {
     try { aurora.pause() } catch (_) {}
     aurora.currentTime = 0
-    aurora.volume = 0
+    setManagedAudioBaseVolume(aurora,0,"music")
     if (onDone) onDone()
     return
   }
   window.__auroraFadeOutInterval = setInterval(() => {
-    if (aurora.volume > 0.04) aurora.volume = Math.max(0, aurora.volume - 0.04)
+    if (aurora.__baseVolume > 0.04) setManagedAudioBaseVolume(aurora,Math.max(0,aurora.__baseVolume-0.04),"music")
     else {
       clearInterval(window.__auroraFadeOutInterval)
       window.__auroraFadeOutInterval = null
       try { aurora.pause() } catch (_) {}
       aurora.currentTime = 0
-      aurora.volume = 0
+      setManagedAudioBaseVolume(aurora,0,"music")
       if (onDone) onDone()
     }
   }, 100)
@@ -3618,9 +3618,9 @@ function showFlySwarmEffect() {
   // Son
   const snd = document.getElementById("flySwarmSound")
   if (snd) {
-    snd.currentTime = 0; snd.volume = 0; snd.play().catch(() => {})
+    snd.currentTime = 0; setManagedAudioBaseVolume(snd,0); snd.play().catch(() => {})
     let v = 0
-    const fade = setInterval(() => { v = Math.min(v + 0.05, 0.75); snd.volume = v; if (v >= 0.75) clearInterval(fade) }, 100)
+    const fade = setInterval(() => { v = Math.min(v + 0.05, 0.75); setManagedAudioBaseVolume(snd,v); if (v >= 0.75) clearInterval(fade) }, 100)
   }
 
 }
@@ -3640,7 +3640,7 @@ function resetFlySwarmPresentation() {
   // 2. pow.mp3 + message style Thu'um exact
   setTimeout(() => {
     const pow = new Audio("audio/pow.mp3")
-    pow.volume = 0.85
+    setManagedAudioBaseVolume(pow,.85)
     pow.play().catch(() => {})
 
     const screen = document.getElementById("thuumUnlockScreen")
@@ -3685,8 +3685,8 @@ function resetFlySwarmPresentation() {
   const snd = document.getElementById("flySwarmSound")
   if (snd) {
     setTimeout(() => {
-      let v = snd.volume
-      const fade = setInterval(() => { v = Math.max(v - 0.03, 0); snd.volume = v; if (v <= 0) { clearInterval(fade); snd.pause(); snd.currentTime = 0 } }, 100)
+      let v = snd.__baseVolume || 0
+      const fade = setInterval(() => { v = Math.max(v - 0.03, 0); setManagedAudioBaseVolume(snd,v); if (v <= 0) { clearInterval(fade); snd.pause(); snd.currentTime = 0 } }, 100)
     }, 3000)
   }
 }

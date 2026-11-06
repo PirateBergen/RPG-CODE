@@ -170,7 +170,7 @@ function scheduleCemeteryOpening(data){
  try{await transactCombatRoot(current=>{const spell=current?.game?.cemeterySpell;if(!spell||spell.time!==data.time||spell.glipheShown||spell.freed||current.game.combatState?.active)return undefined;const root=combatClone(current);Object.assign(root.game.cemeterySpell,{glipheShown:true,turnIdx:0,revision:0});return root})}catch(error){showNotification(error.message)}
  },Math.max(1000,10000-(Date.now()-data.time)))
 }
-function ensureCemeteryMusic(){let music=document.getElementById("sortPrisonMusic");if(!music){music=document.createElement("audio");music.id="sortPrisonMusic";music.src="audio/sortprison.mp3";music.loop=true;document.body.appendChild(music);setManagedAudioBaseVolume(music,.75);music.play().catch(()=>{})}}
+function ensureCemeteryMusic(){let music=document.getElementById("sortPrisonMusic");if(!music){music=document.createElement("audio");music.id="sortPrisonMusic";music.src="audio/sortprison.mp3";music.loop=true;document.body.appendChild(music);setManagedAudioBaseVolume(music,.75,"music");music.play().catch(()=>{})}}
 
 window.addEventListener("resize",()=>{calculateMinZoom();cameraZoom=minZoom;updateCamera()})
 

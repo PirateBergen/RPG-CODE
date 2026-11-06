@@ -520,7 +520,9 @@ function setUserAudioVolume(volume) {
 function getScaledAudioVolume(volume = 1, channel = "effects") {
   const base = Number.isFinite(parseFloat(volume)) ? Math.max(0, Math.min(1, parseFloat(volume))) : 1
   const userVolume = channel === "music" ? getUserMusicVolume() : getUserEffectsVolume()
-  return Math.max(0, Math.min(1, base * userVolume))
+  // Effects are deliberately quieter, including with previously saved sliders.
+  const mixGain = channel === "music" ? 1 : 0.35
+  return Math.max(0, Math.min(1, base * userVolume * mixGain))
 }
 
 function setManagedAudioBaseVolume(audio, volume = 1, channel = "effects") {
@@ -596,7 +598,7 @@ function crossfadeMusic(newMusic) {
 
   const next = currentMusic === "A" ? musicB : musicA
   next.pause()
-  next.volume = 0
+  next.__baseVolume=1;next.__audioChannel="music";next.volume = 0
 
   const fadeOutIv = setInterval(() => {
     if (active.volume > 0.06) {
@@ -607,7 +609,7 @@ function crossfadeMusic(newMusic) {
       clearInterval(fadeOutIv)
       next.src = normalizedMusic
       next.loop = false
-      next.volume = 0
+      next.__baseVolume=1;next.__audioChannel="music";next.volume = 0
       next.currentTime = 0
       next.play().catch(() => {})
 
@@ -623,11 +625,11 @@ function crossfadeMusic(newMusic) {
             } else {
               clearInterval(fadeIv)
               next.currentTime = 0
-              next.volume = 0
+              next.__baseVolume=1;next.__audioChannel="music";next.volume = 0
               next._fading = false
               next.play().catch(() => {})
               const fi = setInterval(() => {
-                if (next.volume < targetVolume) next.volume = Math.min(targetVolume, next.volume + 0.05)
+                if (next.volume < getUserMusicVolume()) next.volume = Math.min(getUserMusicVolume(), next.volume + 0.05)
                 else clearInterval(fi)
               }, 100)
             }
@@ -636,8 +638,8 @@ function crossfadeMusic(newMusic) {
       })
 
       musicFadeInterval = setInterval(() => {
-        if (next.volume < targetVolume) {
-          next.volume = Math.min(targetVolume, next.volume + 0.05)
+        if (next.volume < getUserMusicVolume()) {
+          next.volume = Math.min(getUserMusicVolume(), next.volume + 0.05)
         } else {
           clearInterval(musicFadeInterval)
           musicFadeInterval = null

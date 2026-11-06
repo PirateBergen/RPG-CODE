@@ -759,7 +759,7 @@ function playMadnessLoopForTier(tier, value) {
   const targetVolume = Math.min(0.85, (0.18 + value / 180) * getMadnessZoneFactor())
 
   if (window.currentMadnessLoopId === targetId && !audio.paused) {
-    audio.volume = targetVolume
+    setManagedAudioBaseVolume(audio,targetVolume,"effects")
     return
   }
 
@@ -767,7 +767,7 @@ function playMadnessLoopForTier(tier, value) {
   window.currentMadnessLoopId = targetId
   audio.currentTime = 0
   audio.loop = true
-  audio.volume = targetVolume
+  setManagedAudioBaseVolume(audio,targetVolume,"effects")
   audio.play().catch(() => {})
 }
 
@@ -775,7 +775,7 @@ function playMadnessHit() {
   const hit = document.getElementById("whisperHit")
   if (!hit || combatActive || gameState !== "GAME") return
   hit.currentTime = 0
-  hit.volume = Math.min(0.95, 0.45 * getMadnessZoneFactor())
+  setManagedAudioBaseVolume(hit,Math.min(0.95, 0.45 * getMadnessZoneFactor()),"effects")
   hit.play().catch(() => {})
 }
 
@@ -1314,7 +1314,7 @@ function showThuumUnlockCinematic(data) {
   const snd = document.getElementById("thuumSound")
   if (snd) {
     snd.currentTime = 0
-    snd.volume = 0.85
+    setManagedAudioBaseVolume(snd,0.85,"effects")
     snd.play().catch(() => {})
   }
 
@@ -1334,7 +1334,7 @@ function playThuumCastEffect(data) {
   const snd = document.getElementById("criSound")
   if (snd) {
     snd.currentTime = 0
-    snd.volume = 0.85
+    setManagedAudioBaseVolume(snd,0.85,"effects")
     snd.play().catch(() => {})
   }
   const flash = document.createElement("div")

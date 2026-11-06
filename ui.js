@@ -2966,10 +2966,11 @@ function toggleGMShortcutHelp() {
 
   const title = document.createElement("div")
   title.style.cssText = "font-size:10px;letter-spacing:3px;color:#1e8a9a;margin-bottom:8px;border-bottom:1px solid rgba(30,90,102,0.3);padding-bottom:6px;"
-  title.innerText = "RACCOURCIS MJ"
+  title.innerText = isGM ? "RACCOURCIS MJ" : "RACCOURCIS JOUEUR"
   overlay.appendChild(title)
 
   const shortcuts = [
+    ...(isGM ? [
     { key:"M",   label:"Maps" },
     { key:"P",   label:"Personnages" },
     { key:"R",   label:"PNJ / High PNJ" },
@@ -2977,8 +2978,10 @@ function toggleGMShortcutHelp() {
     { key:"X",   label:"XP" },
     { key:"E",   label:"Éléments" },
     { key:"S",   label:"Sauvegarder" },
-    { key:"J",   label:"Fiche joueur sélectionné" },
-    { key:"B",   label:"Fiche Bibi" },
+    { key:"A",   label:"Alliés (en combat)" },
+    ] : []),
+    { key:"I / J", label:isGM ? "Fiche / inventaire du personnage sélectionné" : "Ma fiche / mon inventaire" },
+    ...(canAccessCharacter("bibi") ? [{ key:"B", label:"Fiche / inventaire de Bibi" }] : []),
     { key:"Esc", label:"Fermer / Retour" },
     { key:"?",   label:"Cette aide" },
   ]

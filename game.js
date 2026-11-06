@@ -4529,17 +4529,23 @@ if (_camera) {
 /* TOUCHES CLAVIER           */
 /* ========================= */
 
-document.addEventListener("keydown", e => {
+function handleGameShortcut(e) {
+  if (e.defaultPrevented || e.isComposing || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return
   const key    = e.key.toLowerCase()
   const active = document.activeElement
-  if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) {
-    if (key !== "j" && key !== "b" && key !== "escape") return
+  if (active && (active.matches("input, textarea, select") || active.isContentEditable)) {
+    if (key !== "escape") return
     active.blur(); document.body.focus()
   }
 
   if (key === "escape") {
     const gmAuthModal = document.getElementById("gmAuthModal"); if (gmAuthModal) { closeGMAuthModal(); return }
     const playerAuthModal = document.getElementById("playerAuthModal"); if (playerAuthModal) { closePlayerAuthModal(); return }
+    e.preventDefault()
+    const notesEditor = document.getElementById("notesEditorPanel"); if (notesEditor) { notesEditor.remove(); return }
+    const shortcutHelp = document.getElementById("gmShortcutHelp"); if (shortcutHelp) { shortcutHelp.remove(); return }
+    const privateSheet = document.getElementById("characterSheet")
+    if (privateSheet && privateSheet.style.display !== "none" && privateSheet.style.display !== "") { closeCharacterSheet(); return }
     const diceLogContent = document.getElementById("diceLogContent")
     if (diceLogContent && diceLogContent.style.display !== "none") { if (typeof toggleDiceLog === "function") toggleDiceLog(); return }
     const savePanel = document.getElementById("savePanel"); if (savePanel) { savePanel.remove(); return }
@@ -4596,10 +4602,13 @@ document.addEventListener("keydown", e => {
     if (key === "t") { toggleGMSection("mobMenu2"); return }
     if (key === "a" && combatActive) { openAllyPNJPanel(); return }
     if (key === "s" && !e.ctrlKey) { showSaveMenu(); return }
-    if (key === "?") { toggleGMShortcutHelp(); return }
+
   }
 
+  if (key === "?") { toggleGMShortcutHelp(); return }
+
   if (key === "b") {
+    if (!canAccessCharacter("bibi")) return
     const sheet = document.getElementById("characterSheet")
     if (sheet && sheet.style.display === "block") closeCharacterSheet()
     else {
@@ -4609,7 +4618,7 @@ document.addEventListener("keydown", e => {
     return
   }
 
-  if (key === "j") {
+  if (key === "i" || key === "j") {
     const sheet = document.getElementById("characterSheet")
     if (sheet && sheet.style.display === "block") { closeCharacterSheet(); return }
     if (isGM) {
@@ -4621,4 +4630,5 @@ document.addEventListener("keydown", e => {
     if (myToken) { openCharacterSheet(); return }
     showNotification("Choisissez un personnage 🎭")
   }
-})
+}
+document.addEventListener("keydown", handleGameShortcut)

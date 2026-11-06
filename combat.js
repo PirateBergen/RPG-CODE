@@ -105,6 +105,7 @@ async function finalizeCombatInitiativeIfReady(state) {
       const dice=combatRandom(seed); ts.rolls ||= {}
       ts.participants.filter(p=>p.type==="mob").forEach(p=>{ if(ts.rolls[p.id]==null) ts.rolls[p.id]=dice(12) })
       const ready=finalizedInitiative(ts); if(!ready) return undefined
+      for(const hero of heroes)if(root.characters?.[hero.id]?.hp>0)recordHeroCritical(root,hero.id,ts.rolls[hero.id]===12,ts.rolls[hero.id]===1)
       root.combat.turnState=ready
       return root
     })

@@ -21,7 +21,7 @@ async function tickCharacterEffects(){
  }
 }
 async function requestCharacterEffect(kind,actor,payload={}){
- if(!COMBAT_HEROES.includes(actor)||!canAccessCharacter(actor)||window.__sessionBusy||!window.__explorationOnline)return showNotification("Connexion et accès au personnage nécessaires")
+ if(window.__authRole==="gm"||window.__authPlayerId!==actor||!COMBAT_HEROES.includes(actor)||!canAccessCharacter(actor)||window.__sessionBusy||!window.__explorationOnline)return showNotification("Connexion et accès au personnage nécessaires")
  const key=kind+actor;if(characterEffectRequests.has(key))return
  characterEffectRequests.add(key)
  const ref=db.ref("characterRequests").push()
@@ -41,7 +41,7 @@ async function spinCurseWheel(player){
 function activatePowerMode(player){
  if(!COMBAT_HEROES.includes(player))return
  const token=document.getElementById(player);if(token)token.classList.add("powerReady","powerFull")
- if(myToken?.id!==player)return
+ if(window.__authRole==="gm"||window.__authPlayerId!==player||myToken?.id!==player)return
  if(!powerModeActive)playSound("powerSound",.75)
  powerModeActive=true
  if(!document.getElementById("usePowerBtn"))showUsePowerBtn(player)

@@ -28,6 +28,12 @@ function sealCombatOutcome(root,type,request={}){
 const COMBAT_HEROES = ["greg", "ju", "elo"]
 const COMBAT_MOBS = ["mob", "mob2", "mob3"]
 const COMBAT_CHARACTERS = [...COMBAT_HEROES, "bibi"]
+function recordHeroCritical(root,actor,crit,fail){
+ if(!COMBAT_HEROES.includes(actor)||!root.characters?.[actor])return
+ const c=root.characters[actor]
+ if(crit)c.corruption=Math.min(10,combatInt(c.corruption)+1)
+ if(fail)c.curse=Math.min(8,combatInt(c.curse)+1)
+}
 const combatClone = value => JSON.parse(JSON.stringify(value))
 const combatInt = (value, fallback = 0) => Number.isFinite(Number(value)) ? Math.trunc(Number(value)) : fallback
 const combatOwner = id => id === "bibi" ? "greg" : id
@@ -198,8 +204,7 @@ function resolveHeroCombatAction(root, request, dice) {
   const max = Math.max(2, combatInt(attack.dice, 20)), roll = dice(max), crit = roll === max, fail = roll === 1
   const stat = combatInt(data[getAttackStatKey(attack.stat)])
   const power = getPlayerAttackPower(attack, roll, stat, { playerId: actor, charData: data, isSpecial: special })
-  if (actor !== "bibi" && crit) raw.corruption = Math.min(10, combatInt(raw.corruption) + 1)
-  if (actor !== "bibi" && fail) raw.curse = Math.min(8, combatInt(raw.curse) + 1)
+  recordHeroCritical(root,actor,crit,fail)
   if(actor!=="bibi"&&raw.cursedEffect==="critOnly"&&raw.cursedCombatId===c.id&&!crit){
     if(special){c.playerSpecials ||= {};c.playerSpecials[actor]=true}
     nextCombatTurn(root,request)

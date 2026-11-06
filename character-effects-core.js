@@ -1,5 +1,5 @@
 "use strict"
-function ownsCharacterRequest(root,request){return COMBAT_HEROES.includes(request.actor)&&(root.roles?.[request.uid]==="gm"||root.profiles?.[request.uid]?.playerId===combatOwner(request.actor))}
+function ownsCharacterRequest(root,request){return COMBAT_HEROES.includes(request.actor)&&(root.roles?.[request.uid]!=="gm"&&root.profiles?.[request.uid]?.playerId===request.actor)}
 function reduceCharacterRequest(current,id,seed){
  const queued=current?.characterRequests?.[id];if(!queued||queued.status!=="queued")return undefined
  const root=combatClone(current),r=root.characterRequests[id]

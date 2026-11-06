@@ -3260,7 +3260,7 @@ function watchCharacter(snapshot) {
     }
     if (corruption >= 10) {
       token.classList.add("powerReady")
-      if (myToken && myToken.id === playerID && !powerModeActive) activatePowerMode(playerID)
+      if (myToken && myToken.id === playerID && (!powerModeActive || !document.getElementById("usePowerBtn"))) activatePowerMode(playerID)
     } else {
       token.classList.remove("powerReady", "powerFull")
       if (myToken && myToken.id === playerID) powerModeActive = false

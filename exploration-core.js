@@ -43,6 +43,7 @@ function reduceExplorationRequest(current,id,seed) {
       if(!spell?.active || !spell.glipheShown || spell.freed || spell.time!==request.payload?.eventTime || combatInt(spell.revision)!==combatInt(request.payload?.revision))throw new Error("Cette épreuve a changé")
       if(nextSpellPlayer(spell)!==request.actor)throw new Error("Ce n’est pas votre tour")
       const roll=combatRandom(seed)(20),crit=roll===20,fail=roll===1
+      recordHeroCritical(root,request.actor,crit,fail)
       spell.tries ||= {};spell.tries[request.actor]=(spell.tries[request.actor]||0)+1
       spell.freed_players ||= [];if(crit&&!spell.freed_players.includes(request.actor))spell.freed_players.push(request.actor)
       if(fail)root.characters[request.actor].hp=Math.max(0,(root.characters[request.actor].hp||0)-10)

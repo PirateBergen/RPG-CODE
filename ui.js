@@ -3536,6 +3536,9 @@ function toggleCollapsiblePanel(contentId, buttonId, panelId) {
   content.style.display = collapsed ? "block" : "none"
   btn.innerText = collapsed ? "▼" : "▲"
   panel.style.maxHeight = collapsed ? "260px" : "auto"
+  btn.title = collapsed ? "Réduire" : "Déplier"
+  btn.setAttribute("aria-expanded", String(collapsed))
+  try { localStorage.setItem("rpg.panel." + panelId, collapsed ? "open" : "closed") } catch (_) {}
 }
 
 toggleMJLog = function () {
@@ -3692,3 +3695,35 @@ function resetFlySwarmPresentation() {
 }
 
 function showRuneVictory(){if(isGM)db.ref("game/runeVictory").set({time:Date.now(),id:db.ref("game/runeVictory").push().key})}
+
+
+// Local display preferences never change the shared game state.
+function initializeMenuBehaviour() {
+  for (const [panelId, contentId, buttonId] of [["diceLog", "diceLogContent", "diceLogToggle"], ["mjLog", "mjLogContent", "mjLogToggle"]]) {
+    const panel = document.getElementById(panelId), content = document.getElementById(contentId), button = document.getElementById(buttonId)
+    if (!panel || !content || !button) continue
+    let preference = null
+    try { preference = localStorage.getItem("rpg.panel." + panelId) } catch (_) {}
+    const open = preference ? preference === "open" : content.style.display !== "none"
+    content.style.display = open ? "block" : "none"
+    panel.style.maxHeight = open ? "260px" : "auto"
+    button.innerText = open ? "▼" : "▲"
+    button.title = open ? "Réduire" : "Déplier"
+    button.setAttribute("aria-expanded", String(open))
+  }
+  document.querySelectorAll(".gmSection").forEach(section => {
+    if (section.dataset.autoCloseBound) return
+    section.dataset.autoCloseBound = "true"
+    section.addEventListener("click", event => {
+      const button = event.target.closest("button")
+      if (!button || button.disabled || !section.contains(button)) return
+      const action = button.getAttribute("onclick") || ""
+      // Navigation and placement settings are preparation, not final choices.
+      if (button.matches(".pnjTab, .mapCategoryButton") || /^\s*(openPNJTab|toggleCategory|setPNJSlot)\s*\(/.test(action)) return
+      if (!action) return
+      // Run after the action, including handlers that stop event propagation.
+      queueMicrotask(() => { section.style.display = "none" })
+    }, true)
+  })
+}
+initializeMenuBehaviour()

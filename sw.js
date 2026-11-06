@@ -1,4 +1,4 @@
-const CACHE="rpg-code-20261106.9"
+const CACHE="rpg-code-20261106.10"
 const BASE=new URL("./",self.location.href)
 const PRECACHE=["./","index.html","style.css","config.js","state.js","utils.js","access.js","persistence.js","presentation.js","game.js","ui.js","combat.js","combat-core.js","combat-runtime.js","exploration-core.js","exploration.js","combat-exit.js","character-effects-core.js","character-effects.js","session-view.js","gm-arbitration.js","entrance.js","reliability.js","manifest.json","fonts/fonts.css"].map(file=>new URL(file,BASE).href)
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(PRECACHE.map(url=>cache.add(url)))).then(()=>self.skipWaiting())))

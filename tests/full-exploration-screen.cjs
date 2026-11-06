@@ -1,5 +1,6 @@
 const fs=require('fs'),path=require('path'),vm=require('vm');
 const {JSDOM}=require('jsdom');
+const {createMockUserToken}=require('@firebase/util');
 const FakeTimers=require('@sinonjs/fake-timers');
 const base=path.resolve(__dirname,'..');
 function fullScreen(database,uid,hero,options={}){
@@ -12,11 +13,13 @@ function fullScreen(database,uid,hero,options={}){
  const gradient={addColorStop(){}};w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({measureText:()=>({width:10}),createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,getImageData:()=>({data:[]})},{get:(o,k)=>o[k]||(()=>{})});
  w.HTMLMediaElement.prototype.play=function(){sounds.push(this.getAttribute('src')||this.id);return Promise.resolve()};w.HTMLMediaElement.prototype.pause=function(){};
  w.Audio=function(src){const a=w.document.createElement('audio');if(src)a.src=src;return a};
- const auth={currentUser:{uid},onAuthStateChanged(cb){Promise.resolve().then(()=>cb(this.currentUser));return()=>{}},signInAnonymously(){return Promise.resolve({user:this.currentUser})}};
+ const project=database._delegate._repoInternal.repoInfo_.namespace;w.fetch=(input,init)=>{const url=new URL(input);url.searchParams.set("ns",project);return global.fetch(url,init).then(async response=>{if(!response.ok&&response.status!==412){let error;try{error=(await response.clone().json()).error}catch(e){}w.__httpDiagnostics||=[];w.__httpDiagnostics.push({path:url.pathname,method:init?.method||"GET",status:response.status,error})}return response})};w.AbortController=global.AbortController;
+ const auth={currentUser:{uid,getIdToken:async()=>createMockUserToken({sub:uid,iat:Math.floor(Date.now()/1000),firebase:{sign_in_provider:"anonymous",identities:{}}},project)},onAuthStateChanged(cb){Promise.resolve().then(()=>cb(this.currentUser));return()=>{}},signInAnonymously(){return Promise.resolve({user:this.currentUser})}};
  w.firebase={initializeApp(){},database:()=>database,auth:()=>auth};w.firebase.database.ServerValue={TIMESTAMP:Date.now()};
  for(const id of ['map','camera']){const el=w.document.getElementById(id);Object.defineProperty(el,'offsetWidth',{value:1600});Object.defineProperty(el,'offsetHeight',{value:1000});el.getBoundingClientRect=()=>({left:0,top:0,width:1600,height:1000})}
  for(const el of w.document.querySelectorAll('.token')){Object.defineProperty(el,'offsetLeft',{get:()=>parseFloat(el.style.left)||0});Object.defineProperty(el,'offsetTop',{get:()=>parseFloat(el.style.top)||0});el.getBoundingClientRect=()=>({left:(parseFloat(el.style.left)||0)*evaluate('cameraZoom'),top:(parseFloat(el.style.top)||0)*evaluate('cameraZoom'),width:80,height:80})}
- for(const n of ['config.js','state.js','utils.js','access.js','persistence.js','presentation.js','game.js','ui.js','combat.js','combat-core.js','combat-runtime.js','exploration-core.js','exploration.js','combat-exit.js','character-effects-core.js','character-effects.js','session-view.js','gm-arbitration.js','entrance.js'])evaluate(fs.readFileSync(path.join(base,n),'utf8'));
+ for(const n of ['config.js','state.js','utils.js','access.js','persistence.js','presentation.js','game.js','ui.js','combat.js','combat-core.js','combat-runtime.js','exploration-core.js','exploration.js','combat-exit.js','character-effects-core.js','character-effects.js','session-view.js','gm-arbitration.js','entrance.js','reliability.js'])evaluate(fs.readFileSync(path.join(base,n),'utf8'));
+ w.reliableActionNow=()=>Date.now();
  const originalDice=w.addDiceLog;w.addDiceLog=(...args)=>{dice.push(args);return originalDice(...args)};const runeVictory=w._showRuneVictoryNow;w._showRuneVictoryNow=(...args)=>{visuals.push('runeVictory');return runeVictory(...args)};
  for(const [name,type]of [['_showVictoryNow','victory'],['_showDefeatNow','defeat']]){const original=w[name];w[name]=(...args)=>{endings.push({type,id:args[0]?.combatId,time:w.Date.now()});return original(...args)}}const complete=w.completeCombatReturn;w.completeCombatReturn=(...args)=>{returns.push({id:args[0]?.combatId,time:w.Date.now()});return complete(...args)};
  for(const name of ['startMenuSparks','startSnow','preloadAssets'])if(w[name])w[name]=()=>{};

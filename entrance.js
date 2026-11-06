@@ -12,7 +12,7 @@ function renderEntrance(){
  if(!window.__entryConfirmed){
   document.getElementById("introBox").style.setProperty("display","none","important")
   if(window.__entryChoice==="gm"&&gm)confirmEntrance("gm")
-  else if(PLAYABLE_HEROES.includes(window.__entryChoice)&&window.__authPlayerId===window.__entryChoice&&!gm)confirmEntrance(window.__entryChoice)
+  else if(PLAYABLE_HEROES.includes(window.__entryChoice)&&window.__authPlayerId===window.__entryChoice&&!gm&&ownsReservedHero(window.__entryChoice))confirmEntrance(window.__entryChoice)
   return
  }
  if(entranceIdentity!==window.__authUid||(!gm&&window.__authPlayerId!==window.__entryChoice))return resetEntrance()
@@ -30,7 +30,7 @@ function resetEntrance(){
 function confirmEntrance(choice){
  if(window.__entryConfirmed)return
  const gm=choice==="gm"
- if(gm?window.__authRole!=="gm":window.__authRole==="gm"||window.__authPlayerId!==choice)return
+ if(gm?window.__authRole!=="gm":window.__authRole==="gm"||window.__authPlayerId!==choice||!ownsReservedHero(choice))return
  window.__entranceAccountRequested=false;window.__entranceEpoch++;window.__entryConfirmed=true;window.__entryChoice=choice;entranceIdentity=window.__authUid
  document.body.dataset.entryStage="lobby";document.body.dataset.entryRole=gm?"gm":"player"
  document.getElementById("startScreen").style.pointerEvents="none"
@@ -53,8 +53,7 @@ async function chooseEntrance(choice){
   const uid=window.__authUid
   if(!uid)throw Error("Connexion indisponible. Réessayez.")
   if(window.__authPlayerId&&window.__authPlayerId!==choice)throw Error("Ce compte est lié à "+entranceLabel(window.__authPlayerId)+". Choisissez ce héros, ou déconnectez-vous pour changer de compte.")
-  const result=await db.ref("profiles/"+uid+"/playerId").transaction(current=>current===null||current===choice?choice:undefined,undefined,false)
-  if(!result.committed)throw Error("Ce compte est déjà lié à un autre héros.")
+  await claimReservedHero(choice,uid)
   if(window.__authUid!==uid)return
   window.__authPlayerId=choice;syncCharacterSubscriptions();confirmEntrance(choice)
  }catch(e){entranceMessage(e.message||"Connexion impossible")}
@@ -89,6 +88,7 @@ startIntro=function(){if(!window.__entryConfirmed){renderEntrance();return}const
 const entranceOriginalStartGame=startGame
 startGame=async function(){
  if(window.__sessionBusy||gameStarted)return
+ try{requireActionConnection()}catch(e){showNotification(e.message);return}
  if(window.__authRole!=="gm"){queueEntranceJoin();return}
  if(!window.__entryConfirmed)return
  const revision=persistenceRevision||"initial",id=db.ref().push().key,introduction=!!window.isNewGame

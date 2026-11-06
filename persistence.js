@@ -269,8 +269,9 @@ async function withSessionOperation(phase, action) {
 
 function cacheSave(id, save) {
   try {
-    const records = parseLocalStorageJSON("rpg_saves", {})
-    records[id] = save
+    const records = {current:save}
+    const old=sortedSaveEntries(parseLocalStorageJSON("rpg_saves",{})).find(([,entry])=>entry._savedAt!==save._savedAt)?.[1]
+    if(old)records.previous=old
     localStorage.setItem("rpg_saves", JSON.stringify(records))
     localStorage.setItem("rpg_save", JSON.stringify(save))
   } catch (error) { console.warn("Copie locale indisponible ; sauvegarde en ligne conservée", error) }
@@ -294,10 +295,13 @@ async function saveGame() {
       await drainSessionWrites()
       const state = captureSession((await db.ref().once("value")).val() || {})
       sessionFromSave(state)
-      const now = Date.now(), id = db.ref("saves").push().key
+      const records=(await db.ref("saves").once("value")).val()||{},previous=sortedSaveEntries(records)[0]?.[1]
+      const now = Math.max(Date.now(),saveTimestamp(previous)+1), id = "current"
       const save = { ...state, _schemaVersion: SAVE_SCHEMA_VERSION, _savedAt: now, _saveName: name.trim(), _saveDate: new Date(now).toLocaleString("fr-FR") }
-      await db.ref("saves/" + id).set(save)
-      cacheSave(id, save)
+      const next={current:save,...(previous?{previous}:{})}
+      if(typeof reliablePut==="function")await reliablePut("saves",next,undefined,true)
+      else await db.ref("saves").set(next)
+      try{localStorage.setItem("rpg_saves",JSON.stringify(next));localStorage.setItem("rpg_save",JSON.stringify(save))}catch(e){console.warn("Copie locale indisponible",e)}
       showNotification("Sauvegardé : " + save._saveName)
       return true
     })
@@ -313,7 +317,10 @@ async function replaceSession(state, action, operation) {
   payload.explorationRequests = null
   payload.characterRequests = null
   payload.sessionControl = { revision: operation.id, action, changedAt: Date.now() }
-  await db.ref().update(payload) // Tous les remplacements et suppressions sont atomiques.
+  if(typeof reliableRootTransaction==="function"){
+    const result=await reliableRootTransaction(current=>{if(current?.sessionControl?.id!==operation.id)throw Error("Le chargement a été interrompu");return {...current,...payload}},true)
+    if(!result.committed)throw Error("Chargement non confirmé")
+  }else await db.ref().update(payload) // Remplacement atomique, sans file d’attente hors ligne.
   operation.markCommitted()
   try { sessionStorage.setItem("rpg_session_transition", action) } catch (e) {}
   window.location.reload() // Seulement après confirmation serveur pour le MJ initiateur.

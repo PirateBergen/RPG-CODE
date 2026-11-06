@@ -1,79 +1,16 @@
-const CACHE = "rpg-v1"
-
-// Assets critiques à précacher au démarrage
-const PRECACHE = [
-  "/",
-  "/index.html",
-  "/style.css",
-
-  "/game.js",
-  "/ui.js",
-  "/combat.js",
-  "/config.js",
-  "/state.js",
-  "/utils.js",
-  "/manifest.json",
-  "/fonts/fonts.css"
-]
-
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE)
-      .then(cache => cache.addAll(PRECACHE))
-      .then(() => self.skipWaiting())
-      .catch(() => self.skipWaiting()) // Ne pas bloquer si un asset manque
-  )
-})
-
-self.addEventListener("activate", e => {
-  e.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
-  )
-})
-
-self.addEventListener("fetch", e => {
-  const url = new URL(e.request.url)
-
-  // Ne pas intercepter les requêtes externes
-  if (url.origin !== self.location.origin) return
-
-  // HTML → Network first (pour avoir toujours le dernier index.html)
-  if (url.pathname === "/" || url.pathname.endsWith(".html")) {
-    e.respondWith(
-      fetch(e.request)
-        .then(resp => {
-          if (resp.ok) {
-            const clone = resp.clone()
-            caches.open(CACHE).then(c => c.put(e.request, clone))
-          }
-          return resp
-        })
-        .catch(() => caches.match(e.request))
-    )
-    return
-  }
-
-  // Audio → ne pas cacher (range requests 206 incompatibles avec Cache API)
-  const ext = url.pathname.split(".").pop().toLowerCase()
-  if (ext === "mp3" || ext === "ogg" || ext === "wav") {
-    return // laisse le navigateur gérer
-  }
-
-  // Tout le reste → Cache first, puis réseau
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached
-      return fetch(e.request).then(resp => {
-        if (resp.ok && resp.status === 200) {
-          const clone = resp.clone()
-          caches.open(CACHE).then(c => c.put(e.request, clone))
-        }
-        return resp
-      }).catch(() => new Response("Offline", { status: 503 }))
-    })
-  )
+const CACHE="rpg-code-20261106.9"
+const BASE=new URL("./",self.location.href)
+const PRECACHE=["./","index.html","style.css","config.js","state.js","utils.js","access.js","persistence.js","presentation.js","game.js","ui.js","combat.js","combat-core.js","combat-runtime.js","exploration-core.js","exploration.js","combat-exit.js","character-effects-core.js","character-effects.js","session-view.js","gm-arbitration.js","entrance.js","reliability.js","manifest.json","fonts/fonts.css"].map(file=>new URL(file,BASE).href)
+self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(PRECACHE.map(url=>cache.add(url)))).then(()=>self.skipWaiting())))
+self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>(k.startsWith("rpg-code-")||k==="rpg-v1")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())))
+self.addEventListener("fetch",e=>{
+ const url=new URL(e.request.url)
+ if(e.request.method!=="GET"||url.origin!==BASE.origin||!url.pathname.startsWith(BASE.pathname))return
+ const ext=url.pathname.split(".").pop().toLowerCase()
+ if(["mp3","ogg","wav","mp4","m4a","webm"].includes(ext))return
+ const store=async response=>{if(response.ok&&response.status===200){const cache=await caches.open(CACHE);await cache.put(e.request,response.clone())}return response}
+ if(e.request.mode==="navigate"||url.pathname===BASE.pathname||["html","js","css","json"].includes(ext)){
+  e.respondWith(fetch(e.request).then(store).catch(async()=>await (await caches.open(CACHE)).match(e.request,{ignoreSearch:["js","css"].includes(ext)})||new Response("Connexion nécessaire pour ouvrir cette version du jeu.",{status:503,headers:{"Content-Type":"text/plain;charset=utf-8"}})));return
+ }
+ e.respondWith(caches.match(e.request).then(cached=>cached||fetch(e.request).then(store).catch(()=>new Response("Ressource indisponible hors connexion",{status:503}))))
 })

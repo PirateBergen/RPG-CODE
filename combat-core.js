@@ -335,15 +335,19 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
   if(options.decision)Object.defineProperty(root,"__arbitration",{value:options.decision,configurable:true})
   const fail = error => { const unchanged = combatClone(current); unchanged.combatRequests[id] = { ...queued, status: "failed", error: String(error.message || error).slice(0, 300) }; return unchanged }
   try {
+    if(typeof validateReliableRequest==="function")validateReliableRequest(root,request)
     if (root.sessionControl?.phase) throw new Error("La session est en cours de sauvegarde ou de chargement")
     if (!root.combat || root.combat.id !== request.combatId) throw new Error("Ce combat est terminé ou a changé")
-    if (!Number.isFinite(request.time) || Date.now() - request.time > 120000) throw new Error("Cette action a expiré")
+    if (!Number.isFinite(request.time) || (typeof reliableActionNow==="function"?reliableActionNow():Date.now()) - request.time > 120000) throw new Error("Cette action a expiré")
     const gm = root.roles?.[request.uid] === "gm", profile = root.profiles?.[request.uid]?.playerId
     if (!gm && (profile !== combatOwner(request.actor) || !COMBAT_CHARACTERS.includes(request.actor))) throw new Error("Vous ne contrôlez pas cet acteur")
     normalizeCombatTurns(root)
     const dice = combatRandom(seed)
     let result
-    if(request.kind === "free"){if(!gm)throw Error("Action réservée au MJ");result=resolveGMFreeAction(root,request,dice)}
+    if(request.kind === "initiative"){
+      const ts=root.combat.turnState;if(ts?.phase!=="rolling"||!ts.participants?.some(p=>p.id===request.actor)||ts.rolls?.[request.actor]!=null)throw Error("Initiative déjà enregistrée ou combat changé");ts.rolls||={};ts.rolls[request.actor]=dice(12);result={mode:"control",message:"Initiative enregistrée"}
+    }
+    else if(request.kind === "free"){if(!gm)throw Error("Action réservée au MJ");result=resolveGMFreeAction(root,request,dice)}
     else if (request.kind === "hero") result = resolveHeroCombatAction(root, request, dice)
     else if (request.kind === "enemy") { if (!gm || !COMBAT_MOBS.includes(request.actor)) throw new Error("Action réservée au MJ"); result = resolveEnemyCombatAction(root, request, dice) }
     else if (request.kind === "ally") result = resolveAllyCombatAction(root, request, dice)
@@ -445,7 +449,7 @@ function arbitrationReplay(root,pending,uid,id,decision){
     const target=decision.targets[0],old=pending.source.payload.target
     if(COMBAT_MOBS.includes(target)===COMBAT_MOBS.includes(old))base.__redirectTarget=target
   }
-  base.combatRequests||={};base.combatRequests[id]={...combatClone(pending.source),uid,status:"queued",combatId:base.combat.id,time:Date.now()};delete base.combatRequests[id].seed
+  base.combatRequests||={};base.combatRequests[id]={...combatClone(pending.source),uid,status:"queued",combatId:base.combat.id,protocol:2,sessionRevision:base.sessionControl?.revision||"initial",expiresAt:(typeof reliableActionNow==="function"?reliableActionNow():Date.now())+15000,time:Date.now()};delete base.combatRequests[id].seed
   if(base.__redirectTarget){base.combatRequests[id].payload.target=base.__redirectTarget;delete base.__redirectTarget}
   return reduceCombatRequestNow(base,id,pending.source.seed,{decision})
 }
@@ -453,9 +457,10 @@ function reduceCombatRequest(current,id,seed){
   const q=current?.combatRequests?.[id];if(!q||q.status!=="queued")return null
   const fail=message=>{const r=combatClone(current);r.combatRequests[id]={...q,status:"failed",error:String(message).slice(0,300)};return r}
   try{
+    if(typeof validateReliableRequest==="function")validateReliableRequest(current,q)
     if(current.sessionControl?.phase)throw Error("La session est en cours de synchronisation")
     if(!current.combat||current.combat.id!==q.combatId)throw Error("Ce combat a changé")
-    if(!Number.isFinite(q.time)||Date.now()-q.time>120000)throw Error("Cette action a expiré")
+    if(!Number.isFinite(q.time)||(typeof reliableActionNow==="function"?reliableActionNow():Date.now())-q.time>120000)throw Error("Cette action a expiré")
     const gm=current.roles?.[q.uid]==="gm",pending=current.combat.pendingResolution
     if(["armIntervention","resolveIntervention","refreshIntervention","dismissIntervention","free"].includes(q.kind)&&!gm)throw Error("Action réservée au MJ")
     if(q.kind==="armIntervention"){

@@ -517,19 +517,75 @@ function setUserAudioVolume(volume) {
   return setUserEffectsVolume(volume)
 }
 
-function getScaledAudioVolume(volume = 1, channel = "effects") {
+const EFFECTS_CLIP_GAINS={
+  "spébibi.mp3": 0.5,
+  "fart.mp3": 0.5,
+  "krakenspé.mp3": 0.5,
+  "whip.mp3": 0.5,
+  "jormspé.mp3": 0.5,
+  "spéju.mp3": 0.5,
+  "roi.mp3": 0.5,
+  "melenchon1.mp3": 0.5,
+  "bombe.mp3": 0.5,
+  "diceinv.mp3": 0.5,
+  "pow.mp3": 0.5,
+  "witch1.mp3": 0.5,
+  "draugr.mp3": 0.5,
+  "vampire spé.mp3": 0.5,
+  "bandit.mp3": 0.5,
+  "fantome.mp3": 0.5,
+  "spéelo.mp3": 0.5,
+  "victoire.mp3": 0.5,
+  "combat.mp3": 0.5,
+  "garde.mp3": 0.5,
+  "fenrir.mp3": 0.5,
+  "gobelinspé.mp3": 0.5,
+  "generalmelenchon.mp3": 0.5,
+  "crit.mp3": 0.5,
+  "balrog.mp3": 0.5,
+  "chnaws.mp3": 0.55,
+  "curse1.mp3": 0.55,
+  "cri.mp3": 0.55,
+  "lvlup.mp3": 0.57,
+  "jupower.mp3": 0.58,
+  "impact.mp3": 0.58,
+  "trine.mp3": 0.59,
+  "gregpower.mp3": 0.6,
+  "liquorice.mp3": 0.61,
+  "curse.mp3": 0.61,
+  "spell_cast.mp3": 0.64,
+  "ogre.mp3": 0.66,
+  "thuum.mp3": 0.66,
+  "bark.mp3": 0.69,
+  "dragonspé.mp3": 0.7,
+  "pork.mp3": 0.7,
+  "spell.mp3": 0.71,
+  "ah.mp3": 0.71,
+  "crit_player.mp3": 0.73,
+  "nispé.mp3": 0.75,
+  "curse2.mp3": 0.77,
+  "defaite.mp3": 0.79,
+  "power.mp3": 0.81
+}
+function getEffectsClipGain(audio){
+ if(!audio)return 1
+ const src=audio.currentSrc||audio.src||audio.querySelector?.('source')?.src||""
+ let file=String(src).split(/[?#]/)[0].split('/').pop()||"";try{file=decodeURIComponent(file)}catch(e){}
+ return EFFECTS_CLIP_GAINS[file.toLowerCase().normalize('NFC')]||1
+}
+function getScaledAudioVolume(volume = 1, channel = "effects", audio = null) {
   const base = Number.isFinite(parseFloat(volume)) ? Math.max(0, Math.min(1, parseFloat(volume))) : 1
   const userVolume = channel === "music" ? getUserMusicVolume() : getUserEffectsVolume()
   // Effects are deliberately quieter, including with previously saved sliders.
   const mixGain = channel === "music" ? 1 : 0.35
-  return Math.max(0, Math.min(1, base * userVolume * mixGain))
+  return Math.max(0, Math.min(1, base * userVolume * mixGain * (channel === "music" ? 1 : getEffectsClipGain(audio))))
 }
 
 function setManagedAudioBaseVolume(audio, volume = 1, channel = "effects") {
   if (!audio) return audio
   audio.__baseVolume = Number.isFinite(parseFloat(volume)) ? Math.max(0, Math.min(1, parseFloat(volume))) : 1
   audio.__audioChannel = channel === "music" ? "music" : "effects"
-  audio.volume = getScaledAudioVolume(audio.__baseVolume, audio.__audioChannel)
+  audio.volume = getScaledAudioVolume(audio.__baseVolume, audio.__audioChannel,audio)
   if (!window.__managedAudioInstances) window.__managedAudioInstances = new Set()
   window.__managedAudioInstances.add(audio)
   return audio
@@ -547,7 +603,7 @@ function syncManagedAudioVolumes() {
     const channel = s.__audioChannel || inferAudioChannel(s)
     s.__baseVolume = base
     s.__audioChannel = channel
-    s.volume = getScaledAudioVolume(base, channel)
+    s.volume = getScaledAudioVolume(base, channel,s)
   })
   if (!window.__managedAudioInstances) return
   Array.from(window.__managedAudioInstances).forEach(audio => {
@@ -708,7 +764,7 @@ function playSound(id, volume = 0.8) {
   snd.currentTime = 0
   snd.__baseVolume = volume
   snd.__audioChannel = "effects"
-  snd.volume = getScaledAudioVolume(volume, "effects")
+  snd.volume = getScaledAudioVolume(volume, "effects",snd)
   snd.play().catch(() => {})
 }
 
@@ -768,7 +824,7 @@ function tryBark() {
   if (Math.floor(Math.random() * 10) !== 0) return
   lastBarkTime = now
   const bark = document.getElementById("bark")
-  if (bark) { bark.currentTime = 0; bark.__baseVolume = 0.35; bark.__audioChannel = "effects"; bark.volume = getScaledAudioVolume(0.35, "effects"); bark.play().catch(() => {}) }
+  if (bark) { bark.currentTime = 0; bark.__baseVolume = 0.35; bark.__audioChannel = "effects"; bark.volume = getScaledAudioVolume(0.35, "effects",bark); bark.play().catch(() => {}) }
   const barks = ["Wouf !", "Rrr !", "Snif !", "Miii !"]
   showBibiSpeech(barks[Math.floor(Math.random() * barks.length)])
 }

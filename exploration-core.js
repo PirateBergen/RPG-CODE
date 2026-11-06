@@ -15,14 +15,22 @@ function nextSpellPlayer(spell) {
 function reduceExplorationRequest(current,id,seed) {
   const queued=current?.explorationRequests?.[id]
   if(!queued || queued.status!=="queued")return undefined
-  const root=combatClone(current),request=root.explorationRequests[id],now=Date.now()
+  const root=combatClone(current),request=root.explorationRequests[id],now=typeof reliableActionNow==="function"?reliableActionNow():Date.now()
   try{
+    if(typeof validateReliableRequest==="function")validateReliableRequest(root,request)
     if(root.sessionControl?.phase)throw new Error("La partie est en cours de synchronisation")
     if(!Number.isFinite(request.time)||now-request.time>120000)throw new Error("Cette demande a expiré")
-    if(!SPELL_PLAYERS.includes(request.actor)||(root.roles?.[request.uid]!=="gm"&&root.profiles?.[request.uid]?.playerId!==request.actor))throw new Error("Ce héros ne vous appartient pas")
+    if(!(request.kind==="dice"&&root.roles?.[request.uid]==="gm")&&(!SPELL_PLAYERS.includes(request.actor)||(root.roles?.[request.uid]!=="gm"&&root.profiles?.[request.uid]?.playerId!==request.actor)))throw new Error("Ce héros ne vous appartient pas")
     root.game ||= {}
     let result
-    if(request.kind==="book"){
+    if(request.kind==="dice"){
+      const max=Number(request.payload?.max);if(![4,6,8,10,12,20,100].includes(max))throw Error("Dé invalide")
+      const roll=combatRandom(seed)(max),stat=request.payload?.stat
+      if(stat&&!['force','charme','perspi','chance','defense'].includes(stat))throw Error("Statistique invalide")
+      const value=stat?combatInt(getEffectiveCharacterData(request.actor,root.characters?.[request.actor]||{})[stat]):0
+      recordHeroCritical(root,request.actor,roll===max,roll===1);root.diceRoll||={};root.diceRoll[id]={player:request.actor,dice:max,result:roll+value,...(stat?{rawRoll:roll}:{}),time:now,sender:request.actor}
+      const entries=Object.keys(root.diceRoll);entries.slice(0,Math.max(0,entries.length-80)).forEach(key=>delete root.diceRoll[key]);result={mode:"dice",roll,dice:max}
+    }else if(request.kind==="book"){
       const book=root.game.mapLoreBook,entry=MAP_LORE_BOOK_ENTRIES[book?.id]
       if(!book?.active || book.claimedBy || !entry || book.id!==request.payload?.bookId || book.time!==request.payload?.bookTime || book.map!==root.game.map)throw new Error("Ce livre n’est plus disponible")
       if(root.game.readLoreBooks?.[book.id])throw new Error("Ce livre a déjà été lu")

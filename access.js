@@ -11,6 +11,7 @@ let characterAccessSubscriptions = []
 function canAccessCharacter(id) {
   if (!CHARACTER_IDS.includes(id)) return false
   if (window.__authRole === "gm") return true
+  if(typeof ownsReservedHero==="function"&&!ownsReservedHero(id))return false
   const owner = window.__authPlayerId
   return !!(window.__authUid && PLAYABLE_HEROES.includes(owner) &&
     (id === owner || (id === "bibi" && owner === "greg")))

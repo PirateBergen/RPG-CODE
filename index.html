@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261106.8"</script>
+  <script>window.GAME_V = "20261106.9"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -45,6 +45,7 @@
     <div id="gameTitle"></div>
     <p id="lobbyWaiting" role="status">Veuillez patienter</p>
     <div id="introBox">
+      <button class="menuButton" onclick="openHeroManagement()">ATTRIBUTION DES HÉROS</button>
       <button id="startButton" onclick="startGame()"><span class="btn-inner">CONTINUER</span></button>
       <div class="intro-actions">
         <button class="menuButton" onclick="newGame()"><span class="btn-inner">NOUVELLE PARTIE</span></button>
@@ -293,6 +294,7 @@
 
 <!-- SECTIONS MJ -->
 <div id="gmCharacters" class="gmSection">
+  <button onclick="openHeroManagement()">Attribution des héros</button>
   <button onclick="openCharacterSheet('greg')">Greg</button>
   <button onclick="openCharacterSheet('ju')">Yu</button>
   <button onclick="openCharacterSheet('elo')">Elo</button>
@@ -933,7 +935,7 @@
 
 <script>
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/sw.js").catch(() => {})
+    navigator.serviceWorker.register("./sw.js", {scope:"./"}).catch(() => {})
   }
 </script>
 
@@ -942,5 +944,6 @@
 <script>document.write('<script src="session-view.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="gm-arbitration.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="entrance.js?v='+GAME_V+'"><\/script>')</script>
+<script>document.write('<script src="reliability.js?v='+GAME_V+'"><\/script>')</script>
 </body>
 </html>

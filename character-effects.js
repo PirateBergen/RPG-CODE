@@ -10,7 +10,7 @@ function syncCharacterEffects(){
  for(const branch of ["characters","curse/wheel","sessionControl",".info/connected"]){const ref=db.ref(branch);ref.on("value",schedule);characterEffectsRefs.push([ref,"value",schedule])}
 }
 async function tickCharacterEffects(){
- if(window.__authRole!=="gm")return
+ if(window.__authRole!=="gm"||(typeof requireActionConnection==="function"&&!window.__actionOnline))return
  try{await transactCombatRoot(advanceCharacterState)}catch(error){console.error("Malédiction non synchronisée",error)}
  if(window.__authRole==="gm"){
   const w=window.__activeCurseWheel
@@ -21,16 +21,12 @@ async function tickCharacterEffects(){
  }
 }
 async function requestCharacterEffect(kind,actor,payload={}){
- if(window.__authRole==="gm"||window.__authPlayerId!==actor||!COMBAT_HEROES.includes(actor)||!canAccessCharacter(actor)||window.__sessionBusy||!window.__explorationOnline)return showNotification("Connexion et accès au personnage nécessaires")
  const key=kind+actor;if(characterEffectRequests.has(key))return
- characterEffectRequests.add(key)
- const ref=db.ref("characterRequests").push()
- let timer,listener
- try{
-  await ref.set({uid:window.__authUid,actor,kind,payload:{version:1,...payload},status:"queued",time:Date.now()})
-  await new Promise((resolve,reject)=>{listener=s=>{const r=s.val();if(r?.status==="done")resolve();if(["failed","cancelled"].includes(r?.status))reject(new Error(r.error||"Demande annulée"))};timer=setTimeout(async()=>{try{const r=await ref.child("status").transaction(v=>v==="queued"?"cancelled":undefined);if(r.committed)reject(new Error("Le MJ doit être connecté pour confirmer cette action"));else listener(await ref.once("value"))}catch(e){reject(e)}},15000);ref.on("value",listener,reject)})
- }catch(error){showNotification(error.message)}finally{clearTimeout(timer);if(listener)ref.off("value",listener);characterEffectRequests.delete(key)}
+ try{requireActionConnection();if(window.__authRole==="gm"||window.__authPlayerId!==actor||!COMBAT_HEROES.includes(actor)||!canAccessCharacter(actor))throw Error("Accès au héros nécessaire")
+  characterEffectRequests.add(key);return await submitReliableAction("characterRequests",{actor,kind,payload:{version:1,...payload}})
+ }catch(e){showNotification(e.message)}finally{characterEffectRequests.delete(key)}
 }
+
 function showCurseIntro(player){showNotification(player.toUpperCase()+" : malédiction complète, en attente de la roue du MJ…")}
 function triggerCurseWheel(){ /* Le MJ coordonne automatiquement les personnages à huit points. */ }
 function applyCurseEffect(){ /* L’effet est appliqué une seule fois dans la transaction du MJ. */ }

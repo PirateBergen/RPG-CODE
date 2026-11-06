@@ -287,7 +287,7 @@ function handlePlayerEmailPasswordAuth(mode) {
     try { localStorage.setItem("rpg_player_email", email) } catch (e) {}
     if (mode === "create") {
       const uid = cred?.user?.uid || window.__authUid || ""
-      return db.ref("profiles/" + uid + "/playerId").set(chosenPlayer).then(() => {
+      return claimReservedHero(chosenPlayer,uid).then(() => {
         showPlayerAuthMessage("Compte joueur créé et lié à " + chosenPlayer.toUpperCase())
         showNotification("Compte joueur créé : " + chosenPlayer.toUpperCase())
       })
@@ -4321,10 +4321,8 @@ async function choosePlayer(id) {
     const uid = auth?.currentUser?.uid || window.__authUid
     if (!uid || uid !== window.__authUid) throw new Error("Connexion nécessaire pour choisir un héros")
     if (window.__authPlayerId && window.__authPlayerId !== id) throw new Error("Ce compte est déjà lié à " + window.__authPlayerId.toUpperCase())
-    const result = await db.ref("profiles/" + uid + "/playerId").transaction(current => {
-      return current === null || current === id ? id : undefined
-    })
-    if (!result.committed) throw new Error("Ce compte possède déjà un autre héros")
+    if(typeof claimReservedHero==="function")await claimReservedHero(id,uid)
+    else {const result=await db.ref("profiles/"+uid+"/playerId").transaction(current=>current===null||current===id?id:undefined);if(!result.committed)throw Error("Ce compte possède déjà un autre héros")}
     if (window.__authUid !== uid) return
     window.__authPlayerId = id
     myToken = token; window.myToken = token

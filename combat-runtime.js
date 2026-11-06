@@ -8,6 +8,7 @@ let lastCombatPresentationId = null
 window.__combatSnapshot = null
 
 async function transactCombatRoot(update) {
+  if(typeof reliableRootTransaction==="function")return reliableRootTransaction(update)
   const ref = db.ref()
   // Firebase appelle d’abord la transaction avec le cache local, parfois vide.
   // Lire la racine évite d’abandonner une action valide sur ce premier null.
@@ -40,7 +41,7 @@ function syncCombatCoordinator() {
 }
 
 async function migrateSharedFamiliarTurn() {
-  if (window.__authRole !== "gm") return
+  if (window.__authRole !== "gm" || (typeof requireActionConnection==="function"&&!window.__actionOnline)) return
   await transactCombatRoot(current => {
     if (!current?.combat?.mob || !current.game?.combatState?.active || current.sessionControl?.phase) return undefined
     if (current.combat.id && !current.combat.turnState?.participants?.some(p => p.id === "bibi") && !current.combat.turnState?.order?.some(p => p.id === "bibi")) return undefined
@@ -52,36 +53,11 @@ async function migrateSharedFamiliarTurn() {
   })
 }
 
-async function submitCombatAction(kind, actor, payload = {}) {
-  if (window.__sessionBusy) throw new Error("La partie est en cours de synchronisation")
-  if (!window.__authUid || !window.__combatSnapshot?.id) throw new Error("Attendez la synchronisation du combat et la connexion du MJ")
-  if(Array.isArray(payload.decision?.targets))payload={...payload,decision:{...payload.decision,targetsSpecified:true}}
-  const state = getCombatTurnState()
-  const ref = db.ref("combatRequests").push()
-  const request = { uid: window.__authUid, actor, kind, payload: { ...payload, version: 1 }, status: "queued", combatId: window.__combatSnapshot.id,
-    sequence: combatInt(state?.sequence), time: Date.now() }
-  await ref.set(request)
-  return new Promise((resolve, reject) => {
-    let finished = false
-    const finish = (error, result) => {
-      if (finished) return
-      finished = true; clearTimeout(timer); ref.off("value", listener)
-      error ? reject(error) : resolve(result)
-    }
-    const listener = snap => {
-      const value = snap.val()
-      if (value?.status === "done") finish(null, value.result)
-      else if (value?.status === "failed" || value?.status === "cancelled") finish(new Error(value.error || "Action annulée"))
-    }
-    const timer = setTimeout(async () => {
-      try {
-        const result = await ref.child("status").transaction(status => status === "queued" ? "cancelled" : undefined)
-        if (result.committed) finish(new Error("Aucun MJ n’a confirmé l’action ; elle a été annulée. Réessayez une fois le MJ connecté."))
-        else listener(await ref.once("value"))
-      } catch (error) { finish(new Error("Statut de l’action inconnu : reconnectez-vous avant de réessayer")) }
-    }, 15000)
-    ref.on("value", listener, error => finish(error))
-  })
+async function submitCombatAction(kind,actor,payload={}){
+ requireActionConnection()
+ if(!window.__authUid||!window.__combatSnapshot?.id)throw Error("Attendez la synchronisation du combat")
+ if(Array.isArray(payload.decision?.targets))payload={...payload,decision:{...payload.decision,targetsSpecified:true}}
+ return submitReliableAction("combatRequests",{actor,kind,payload:{...payload,version:1},combatId:window.__combatSnapshot.id,sequence:combatInt(getCombatTurnState()?.sequence)})
 }
 
 function chooseEnemyCombatTarget() {

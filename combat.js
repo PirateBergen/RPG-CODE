@@ -73,13 +73,9 @@ function canRollInitiativeForActor(actorId, state) {
   return isGM || !!(myToken && myToken.id === actorId && canAccessCharacter(actorId))
 }
 
-async function submitInitiativeRoll(actorId) {
-  if (!canRollInitiativeForActor(actorId, getCombatTurnState())) return
-  const roll = Math.floor(Math.random()*12)+1
-  try {
-    const result = await db.ref("combat/turnState/rolls/"+actorId).transaction(current => current == null ? roll : undefined)
-    // Le listener partagé affiche le jet confirmé sur tous les écrans.
-  } catch(error) { showNotification("Initiative non enregistrée : "+error.message) }
+async function submitInitiativeRoll(actorId){
+ if(!canRollInitiativeForActor(actorId,getCombatTurnState()))return
+ try{return await submitCombatAction("initiative",actorId)}catch(e){showNotification(e.message)}
 }
 
 function submitInitiativeRollForGMTest(actorId) { if(isGM) return submitInitiativeRoll(actorId) }

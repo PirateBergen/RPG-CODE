@@ -23,20 +23,11 @@ function syncExplorationCoordinator(){
   }
   explorationCoordinatorRef.on("child_added",explorationCoordinatorCb)
 }
-async function submitExplorationAction(kind,actor,payload){
-  requireExplorationConnection()
-  if(!window.__authUid)throw new Error("Connectez-vous avec votre héros")
-  const ref=db.ref("explorationRequests").push()
-  const request={uid:window.__authUid,actor,kind,payload,status:"queued",time:Date.now()}
-  await ref.set(request)
-  return new Promise((resolve,reject)=>{
-    let finished=false
-    const finish=(error,result)=>{if(finished)return;finished=true;clearTimeout(timer);ref.off("value",listener);error?reject(error):resolve(result)}
-    const listener=snap=>{const r=snap.val();if(r?.status==="done")finish(null,r.result);else if(["failed","cancelled"].includes(r?.status))finish(new Error(r.error||"Action annulée"))}
-    const timer=setTimeout(async()=>{try{const r=await ref.child("status").transaction(s=>s==="queued"?"cancelled":undefined);if(r.committed)finish(new Error("Le MJ n’a pas confirmé l’action. Elle a été annulée."));else listener(await ref.once("value"))}catch(error){finish(new Error("Statut inconnu : reconnectez-vous avant de réessayer."))}},15000)
-    ref.on("value",listener,finish)
-  })
+async function submitExplorationAction(kind,actor,payload={}){
+ requireExplorationConnection();requireActionConnection()
+ return submitReliableAction("explorationRequests",{actor,kind,payload:{...payload,version:1}})
 }
+
 async function requestExplorationAction(kind,actor,payload){
   if(explorationPending.has(kind))return
   explorationPending.add(kind)

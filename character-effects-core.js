@@ -4,8 +4,9 @@ function reduceCharacterRequest(current,id,seed){
  const queued=current?.characterRequests?.[id];if(!queued||queued.status!=="queued")return undefined
  const root=combatClone(current),r=root.characterRequests[id]
  try{
+  if(typeof validateReliableRequest==="function")validateReliableRequest(root,r)
   if(root.sessionControl?.phase)throw new Error("La partie est en cours de synchronisation")
-  if(!Number.isFinite(r.time)||Math.abs(Date.now()-r.time)>120000)throw new Error("Demande expirée")
+  if(!Number.isFinite(r.time)||Math.abs((typeof reliableActionNow==="function"?reliableActionNow():Date.now())-r.time)>120000)throw new Error("Demande expirée")
   if(!ownsCharacterRequest(root,r))throw new Error("Ce personnage ne vous appartient pas")
   const c=root.characters?.[r.actor];if(!c)throw new Error("Personnage introuvable")
   root.game ||= {}

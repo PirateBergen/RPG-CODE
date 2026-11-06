@@ -14,7 +14,7 @@
         ".read": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'gm')",
         ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && newData.exists() && (!data.child('playerId').exists() || newData.child('playerId').val() === data.child('playerId').val())))",
         "playerId": {
-          ".validate": "newData.isString() && (newData.val() === data.val() || newData.val() === 'greg' || newData.val() === 'ju' || newData.val() === 'elo')"
+          ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && (newData.val() === 'greg' || newData.val() === 'ju' || newData.val() === 'elo') && root.child('heroAssignments').child(newData.val()).child('uid').val() === auth.uid)"
         }
       }
     },
@@ -22,7 +22,7 @@
       ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
       "$playerId": {
-        ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+        ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
         ".validate": "newData.hasChildren()",
         "lvl": {
           ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99",
@@ -82,7 +82,7 @@
         "$other": {
           ".validate": true
         },
-        ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))",
+        ".read": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
         "equipmentModifiers": {
           ".read": "auth != null",
           ".validate": "newData.hasChildren(['force','charme','perspi','chance','defense'])",
@@ -115,7 +115,7 @@
       ".read": "auth != null",
       ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
       "$playerId": {
-        ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+        ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
         "x": {
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         },
@@ -127,7 +127,7 @@
         }
       },
       "bibi": {
-        ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || root.child('profiles').child(auth.uid).child('playerId').val() === 'greg')) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+        ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || root.child('profiles').child(auth.uid).child('playerId').val() === 'greg')) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
         "x": {
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         },
@@ -152,7 +152,7 @@
       "turnState": {
         "rolls": {
           "$actorId": {
-            ".write": "auth != null && ($actorId === 'greg' || $actorId === 'ju' || $actorId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $actorId && root.child('combat').child('turnState').child('phase').val() === 'rolling' && !data.exists() && !root.child('sessionControl').child('phase').exists()",
+            ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
             ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 12 && newData.val() % 1 === 0"
           }
         },
@@ -210,11 +210,11 @@
       "eloSummon": {
         ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
         "x": {
-          ".write": "auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()",
+          ".write": "(auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         },
         "y": {
-          ".write": "auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()",
+          ".write": "(auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         }
       },
@@ -247,13 +247,13 @@
       ".read": "auth != null",
       ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
       "wheel": {
-        ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || ((!root.child('sessionControl').child('phase').exists() || root.child('sessionControl').child('phase').val() === 'saving') && ((data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === data.child('player').val()) || (!data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('player').val()))))"
+        ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || ((!root.child('sessionControl').child('phase').exists() || root.child('sessionControl').child('phase').val() === 'saving') && ((data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === data.child('player').val()) || (!data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('player').val()))))) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
       }
     },
     "diceRoll": {
       ".read": "auth != null",
       "$entry": {
-        ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
         ".validate": "newData.hasChildren(['player', 'dice', 'result', 'time', 'sender']) && newData.child('result').isNumber() && newData.child('result').val() >= 1 && newData.child('time').isNumber()"
       }
     },
@@ -262,13 +262,13 @@
       "playerThuum": {
         ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
         "$playerId": {
-          ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
         }
       },
       "playerThuumAccess": {
         ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
         "$playerId": {
-          ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+          ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
         }
       },
       "thuumCast": {
@@ -399,8 +399,8 @@
       ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
-        ".write": "auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'queued' && newData.child('combatId').val() === root.child('combat').child('id').val() && (root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('actor').val() || (root.child('profiles').child(auth.uid).child('playerId').val() === 'greg' && newData.child('actor').val() === 'bibi'))",
-        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','status','combatId','sequence','time']) && newData.child('sequence').isNumber() && newData.child('sequence').val() >= 0 && newData.child('sequence').val() % 1 === 0 && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'hero' || newData.child('kind').val() === 'pass' || newData.child('kind').val() === 'ally' || newData.child('kind').val() === 'thuum'))",
+        ".write": "(auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'queued' && newData.child('combatId').val() === root.child('combat').child('id').val() && (root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('actor').val() || (root.child('profiles').child(auth.uid).child('playerId').val() === 'greg' && newData.child('actor').val() === 'bibi'))) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','status','combatId','sequence','time']) && newData.child('sequence').isNumber() && newData.child('sequence').val() >= 0 && newData.child('sequence').val() % 1 === 0 && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && ((newData.child('kind').val() === 'hero' || newData.child('kind').val() === 'initiative') || newData.child('kind').val() === 'pass' || newData.child('kind').val() === 'ally' || newData.child('kind').val() === 'thuum'))))",
         "status": {
           ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
         }
@@ -411,8 +411,8 @@
       ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
-        ".write": "auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && (newData.child('actor').val() === 'greg' || newData.child('actor').val() === 'ju' || newData.child('actor').val() === 'elo') && newData.child('status').val() === 'queued'",
-        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'book' || newData.child('kind').val() === 'spell' || newData.child('kind').val() === 'hint'))",
+        ".write": "(auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && (newData.child('actor').val() === 'greg' || newData.child('actor').val() === 'ju' || newData.child('actor').val() === 'elo') && newData.child('status').val() === 'queued') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && ((newData.child('kind').val() === 'book' || newData.child('kind').val() === 'dice') || newData.child('kind').val() === 'spell' || newData.child('kind').val() === 'hint'))))",
         "status": {
           ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
         }
@@ -423,12 +423,22 @@
       ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
-        ".write": "auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && newData.child('status').val() === 'queued'",
-        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'power' || newData.child('kind').val() === 'curse-spin'))",
+        ".write": "(auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && newData.child('status').val() === 'queued') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'power' || newData.child('kind').val() === 'curse-spin'))))",
         "status": {
           ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
         }
       }
+    },
+    "heroAssignments": {
+      ".read": "auth != null",
+      "$hero": {
+        ".write": "root.child('securityVersion').val() === 2 && (auth != null && ($hero === 'greg' || $hero === 'ju' || $hero === 'elo') && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('claimedAt').val() >= now - 15000 && (!root.child('profiles').child(auth.uid).child('playerId').exists() || root.child('profiles').child(auth.uid).child('playerId').val() === $hero) && root.child('heroAssignments').child('greg').child('uid').val() !== auth.uid && root.child('heroAssignments').child('ju').child('uid').val() !== auth.uid && root.child('heroAssignments').child('elo').child('uid').val() !== auth.uid)",
+        ".validate": "($hero === 'greg' || $hero === 'ju' || $hero === 'elo') && newData.hasChildren(['uid','claimedAt']) && newData.child('uid').isString() && newData.child('claimedAt').isNumber()"
+      }
+    },
+    "securityVersion": {
+      ".read": "auth != null"
     }
   }
 }

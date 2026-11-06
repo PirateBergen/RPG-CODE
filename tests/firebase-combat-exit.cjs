@@ -38,7 +38,7 @@ async function scenario({label,map,mob='gobelins',tier='weak',type='victory',tar
  })
 }
 await scenario({label:'Victoire à trois ennemis : animation unique et retour des cinq sessions',map:'prairie.jpg',extras:['loup','garde']});
-await scenario({label:'Bibi seule peut continuer ; quatre KO terminent le combat et ramènent tout le monde',map:'prairie.jpg',type:'defeat',solo:true});
+await scenario({label:'Bibi seule peut continuer ; quatre KO terminent le combat et ramènent tout le monde',map:'prairie.jpg',mob:'golem',tier:'high',type:'defeat',solo:true});
 await scenario({label:'Attaque de zone du dragon : quatre KO, défaite et carte restaurée',map:'prairie.jpg',mob:'dragon',tier:'boss',type:'defeat',aoe:true});
 await scenario({label:'Victoire Balraug : tous reviennent dans la prairie, même avec un écran en retard',map:'balraug.jpg',mob:'balraug',tier:'boss',target:'prairie.jpg',slow:true});
 await scenario({label:'Défaite Balraug : retour au lieu du combat, aucune transition de victoire',map:'balraug.jpg',mob:'balraug',tier:'boss',type:'defeat'});

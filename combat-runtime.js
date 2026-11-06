@@ -151,16 +151,7 @@ async function requestAllyCombatAction(pnj, action, targetId, panel) {
   finally { window.__playerAttackResolving = false }
 }
 
-function calculateCombatMob(mobName, tier, partyLevel) {
-  const base = mobStats[mobName]?.baseHP || 10
-  const chosenTier = tier || mobStats[mobName]?.tier || "weak"
-  let bonus = 0
-  for (let level = 2; level <= partyLevel; level++) bonus += level >= 15 ? 4 : level >= 10 ? 3 : level >= 5 ? 2 : 1
-  let effective = partyLevel + bonus * .42
-  if (chosenTier === "boss" && effective > 10) effective = 10 + (effective - 10) * .65
-  const hp = Math.min(50000, Math.round(base * ({ weak: 1.3, medium: 2, high: 3.4, boss: 6.1 }[chosenTier] || 1.3) * Math.pow(1 + effective * ({ weak: .15, medium: .22, high: .30, boss: .41 }[chosenTier] || .15), 1.72)))
-  return { name: mobName, hp, maxHP: hp, lvl: Math.max(1, partyLevel + ({ weak: -1, medium: 1, high: 3, boss: 8 }[chosenTier] || 0)), tier: chosenTier }
-}
+function calculateCombatMob(mobName,tier,partyLevel,enemyCount=1){return balancedCombatMob(mobName,tier,partyLevel,enemyCount)}
 
 async function launchReliableCombat(mainMob, forceTier, extraMobs) {
   if (!isGM || window.__authRole !== "gm" || combatStarting || window.__sessionBusy) return
@@ -171,11 +162,11 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
     const result = await transactCombatRoot(current => {
       if (!current || current.sessionControl?.phase || (current.combat?.mob && current.combat.phase !== "finished")) return undefined
       const root = combatClone(current), level = Math.max(1, Math.round(COMBAT_HEROES.reduce((sum, hero) => sum + combatInt(root.characters?.[hero]?.lvl, 1), 0) / 3))
-      const tier = forceTier || mobStats[mainMob].tier
+      const tier = WORLD_BOSS_NAMES.includes(mainMob)?"boss":forceTier || (CLASSIC_BOSS_NAMES.includes(mainMob)?"boss":mobStats[mainMob].tier)
       root.game ||= {}; root.tokens ||= {}
       const returnTokens = combatClone(root.tokens)
-      root.combat = { id, phase: "active", createdAt: now, mob: calculateCombatMob(mainMob, tier, level), presentation: { positions: {} } }
-      extraMobs.slice(0, 2).forEach((mob, index) => { root.combat["mob" + (index + 2)] = { ...calculateCombatMob(mob, null, level), slot: "mob" + (index + 2) } })
+      root.combat = { id, phase: "active", createdAt: now, mob: calculateCombatMob(mainMob, tier, level,1+extraMobs.slice(0,2).length), presentation: { positions: {} } }
+      extraMobs.slice(0, 2).forEach((mob, index) => { root.combat["mob" + (index + 2)] = { ...calculateCombatMob(mob, null, level,1+extraMobs.slice(0,2).length), slot: "mob" + (index + 2) } })
       COMBAT_CHARACTERS.forEach((hero, index) => {
         const position = { x: Math.max(40, Math.round((width - 440) / 2)) + index * 110, y: Math.round(height * .65), facing: 0 }
         root.tokens[hero] = {...root.tokens[hero],...position}; root.combat.presentation.positions[hero] = position
@@ -200,7 +191,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
     COMBAT_MOBS.forEach(slot => { activeMobSlots[slot] = !!result.snapshot.child("combat/" + slot).val() })
     document.querySelectorAll(".gmSection").forEach(section => { section.style.display = "none" })
     window.__localCombatId=id; window.__completedCombatExitId=null
-    setGameState("COMBAT"); combatSequence(mainMob, forceTier)
+    setGameState("COMBAT"); combatSequence(mainMob, result.snapshot.child("combat/mob/tier").val() || forceTier)
     setTimeout(() => { combatStarting = false }, 8000)
   } catch (error) { combatStarting = false; combatActive = false; showNotification("Combat non démarré : " + error.message) }
 }
@@ -249,7 +240,7 @@ async function addReliableCombatMob(name, tier) {
     const slot=COMBAT_MOBS.find(s=>!current.combat[s] || combatInt(current.combat[s].hp)<=0)
     if(!slot) return undefined
     const root=combatClone(current), level=Math.max(1,Math.round(COMBAT_HEROES.reduce((sum,id)=>sum+combatInt(root.characters[id].lvl,1),0)/3))
-    root.combat[slot]={...calculateCombatMob(name,tier,level),slot,x:600+COMBAT_MOBS.indexOf(slot)*100,y:180}
+    root.combat[slot]={...calculateCombatMob(name,tier,level,COMBAT_MOBS.filter(s=>current.combat[s]?.hp>0).length+1),slot,x:600+COMBAT_MOBS.indexOf(slot)*100,y:180}
     const entry={id:slot,type:"mob",label:name.toUpperCase(),image:name+".png"},ts=root.combat.turnState
     if(ts){
       ts.participants=(ts.participants||[]).filter(p=>p.id!==slot);ts.participants.push(entry)

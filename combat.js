@@ -198,7 +198,7 @@ function renderCombatInitiativeOverlay(state) {
   sub.style.cssText = "text-align:center;font-size:14px;color:#c7b088;margin-bottom:20px;letter-spacing:0.5px;"
   sub.innerText = state.phase === "rolling"
     ? "Chaque combattant lance un D12. Le MJ lance pour les mobs."
-    : "Round " + (state.round || 1) + " — tour actuel : " + String(state.currentActorId || "").toUpperCase()
+    : "Round " + (state.round || 1) + " — tour actuel : " + String(state.currentActorId || "").toUpperCase() + (window.__combatSnapshot?.[state.currentActorId]?.actionsPerTurn>1?" — action "+((state.actorActionIndex||0)+1)+"/2":"")
   box.appendChild(sub)
 
   const grid = document.createElement("div")
@@ -937,12 +937,13 @@ function openMobDiff(mobId, event) {
   const nameEl = document.getElementById("mobDiffName")
   if (!popup) return
 
-  const bossMobs = ["balraug","fenrir","jormungand","kraken","nhiddog","roi","odin","thor","freya"]
+  const bossMobs = [...CLASSIC_BOSS_NAMES,...WORLD_BOSS_NAMES]
   const noWeak   = ["golem","pretre","zombie","zombie2","maire","intendantbrume","conseillerroinord","generalmelenchon","jarl baldur","garde baldur"]
 
   popup.querySelectorAll("button").forEach(btn => {
     const match = btn.getAttribute("onclick")?.match(/launchMobDiff\('(\w+)'\)/)
     const tier  = match?.[1]; if (!tier) return
+    if(tier==="boss")btn.textContent=WORLD_BOSS_NAMES.includes(mobId)?"🌍 World boss":"⚡ Boss"
     if (bossMobs.includes(mobId))    btn.style.display = tier === "boss" ? "block" : "none"
     else if (noWeak.includes(mobId)) btn.style.display = tier === "weak" ? "none"  : "block"
     else                             btn.style.display = "block"

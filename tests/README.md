@@ -14,3 +14,5 @@ Fins de combat : node tests/combat-exit.cjs ; puis tests/firebase-combat-exit.cj
 Malédictions et pouvoirs : node tests/character-effects.cjs ; tests/firebase-character-effects.cjs nécessite l’émulateur local sur 127.0.0.1:9005 (projet demo-rpg-effects). Les cinq sessions sont simulées ; les sons ne sont pas écoutés.
 
 Redémarrage MJ : tests/firebase-session-view.cjs avec l’émulateur Realtime Database local. Le test crée une nouvelle partie dans la base isolée puis des documents neufs pour simuler le rechargement (JSDOM ne navigue pas). Vérifie cartes, PNJ, pions, introduction, commandes MJ et changements rapides de carte.
+
+Équilibrage : node tests/mob-balance.cjs ; tests/firebase-mob-balance.cjs utilise la base locale sur 127.0.0.1:9005 et vérifie les cinq sessions, les aperçus de dégâts, les actions des world boss, l’annonce de leur spéciale et la conservation des métadonnées dans une sauvegarde.

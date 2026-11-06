@@ -1635,7 +1635,7 @@ function buildMobSubPanel(mobData, slot) {
   const header = document.createElement("div"); header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"
   const titleWrap = document.createElement("div"); titleWrap.style.cssText = "display:flex;align-items:center;gap:8px;min-width:0;"
   const portrait = document.createElement("img"); portrait.src = "images/" + sanitizeAssetName((mobData.name || "gobelins") + ".png"); portrait.style.cssText = "width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));"; portrait.onerror = () => portrait.style.display = "none"; titleWrap.appendChild(portrait)
-  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = (mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); titleWrap.appendChild(tEl); header.appendChild(titleWrap)
+  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = (mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=" · World boss · 2 actions"+(mobData.hp<=mobData.maxHP*.5?" · Furie +15 %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
 
   if (isGM) {
     const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = "—"
@@ -1650,7 +1650,7 @@ function buildMobSubPanel(mobData, slot) {
 
   const tier = mobData.tier||"weak", atks = typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
   const getRange = (attack, lvl, mobTier) => {
-    if (typeof getMobDamageRange === "function") return getMobDamageRange(attack, lvl, mobTier)
+    if (typeof getMobDamageRange === "function") return getMobDamageRange(attack, lvl, mobTier,mobData)
     const factor = 1 + Math.max(0, (lvl || 1) - 1) * 0.15
     return {
       min: Math.round((attack?.dmgMin || 0) * factor),
@@ -1728,6 +1728,12 @@ function buildMobSubPanel(mobData, slot) {
           panel._currentTarget = target === "all" ? null : target
           launchMobAttackFromSlotV2(specialAtk, mobData, panel, target, slot)
         }
+      }
+      if(mobData.balanceClass==="world"&&!specialUsed){
+        const charge=mobData.chargingSpecial,round=window.__combatSnapshot?.turnState?.round||1
+        sName.innerText+=charge?(round<charge.readyRound?" — EN PRÉPARATION":" — PRÊTE"):" — ANNONCER"
+        sFlavor.innerText+=" Annoncée un round avant son déclenchement."
+        if(charge&&round<charge.readyRound){sBtn.onclick=null;sBtn.style.cursor="not-allowed";sBtn.style.opacity="0.5"}
       }
       panel.appendChild(sBtn)
     }

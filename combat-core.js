@@ -140,10 +140,13 @@ function tickCombatRound(root, request) {
   if (summon && (--summon.turnsLeft <= 0 || combatInt(summon.hp) <= 0)) delete root.combat.eloSummon
 }
 
-function nextCombatTurn(root, request) {
+function nextCombatTurn(root, request, skipRemaining = false) {
   const state = root.combat.turnState
   const order = state.order || []
   if (!order.length || combatOutcome(root, request)) return
+  const current=state.currentActorId,mob=root.combat[current]
+  if(!skipRemaining&&request.kind!=="pass"&&COMBAT_MOBS.includes(current)&&mob?.hp>0&&(state.actorActionIndex||0)+1<Math.min(2,mob.actionsPerTurn||1)){state.actorActionIndex=(state.actorActionIndex||0)+1;state.sequence=combatInt(state.sequence)+1;return}
+  state.actorActionIndex=0
   for (let attempts = 0; attempts < order.length; attempts++) {
     state.currentIndex = (combatInt(state.currentIndex) + 1) % order.length
     if (state.currentIndex === 0) { tickCombatRound(root, request); state.round = Math.max(1, combatInt(state.round, 1)) + 1 }
@@ -257,15 +260,21 @@ function resolveEnemyCombatAction(root, request, dice) {
   let attack = payload.random ? null : [...normal, ...(special ? [special] : [])].find(a => a.name === payload.attack)
   if (payload.random) {
     specialRoll = dice(20)
-    const choices = specialRoll === 20 && special && !mob.specialUsed ? [special] : normal.filter(a => normal.length === 1 || a.name !== mob.lastAttack)
+    const charged=mob.chargingSpecial&&c.turnState.round>=mob.chargingSpecial.readyRound
+    const choices = (charged || (!mob.chargingSpecial&&specialRoll === 20)) && special && !mob.specialUsed ? [special] : normal.filter(a => normal.length === 1 || a.name !== mob.lastAttack)
     attack = choices[dice(choices.length) - 1]
   }
   if (!attack) throw new Error("Attaque ennemie inconnue")
   if (!attack.special && normal.length > 1 && mob.lastAttack === attack.name) throw new Error("Cette attaque recharge ; choisissez-en une autre ou passez le tour")
   if (attack.special && mob.specialUsed) throw new Error("Spéciale déjà utilisée")
-  if (mob.yuSkipNextTurn?.active) { delete mob.yuSkipNextTurn; nextCombatTurn(root, request); return { actor: slot, mode: "skip", message: "L’ennemi est neutralisé pour cette action" } }
+  if (mob.yuSkipNextTurn?.active) { delete mob.yuSkipNextTurn; nextCombatTurn(root, request,true); return { actor: slot, mode: "skip", message: "L’ennemi est neutralisé pour cette action" } }
+  if(attack.special&&mob.balanceClass==="world"){
+    if(!mob.chargingSpecial){mob.chargingSpecial={name:attack.name,readyRound:(c.turnState.round||1)+1};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:mob.name.toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !"}}
+    if(c.turnState.round<mob.chargingSpecial.readyRound)throw new Error("La spéciale se prépare pour le prochain round ; choisissez une autre action")
+    delete mob.chargingSpecial
+  }
   const targets = chooseEnemyTarget(root, slot, attack, payload.target, dice)
-  const range = getMobDamageRange(attack, mob.lvl || 1, mob.tier || "weak")
+  const range = getMobDamageRange(attack, mob.lvl || 1, mob.tier || "weak",mob)
   let damage = range.min + dice(range.max - range.min + 1) - 1
   if (mob.attackMalus) damage = Math.max(0, damage - (mob.attackMalus.amount || 0))
   if (mob.malus?.source === "La Sorcière") damage = Math.round(damage * .75)
@@ -281,7 +290,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (attack.special) mob.specialUsed = true
   if (attack.healSelfRatio) mob.hp = Math.min(mob.maxHP, mob.hp + Math.round(applied * attack.healSelfRatio))
   mob.lastAttack = attack.name
-  const presentation = { attackName: attack.name, icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : targets[0].toUpperCase(), mobName: mob.name.toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
+  const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : targets[0].toUpperCase(), mobName: mob.name.toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
   nextCombatTurn(root, request)
   return { actor: slot, attack: attack.name, amount: damage, targets, mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}) }
 }

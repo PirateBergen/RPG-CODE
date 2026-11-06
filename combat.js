@@ -46,7 +46,7 @@ function getCombatActorLabel(actorId) {
   const entry = order.find(e => String(e.id || "") === id) || participants.find(e => String(e.id || "") === id)
   if (entry && entry.label) return entry.label
   if (id === "greg") return "Greg"
-  if (id === "ju") return "Yu"
+  if (id === "ju") return "Pika"
   if (id === "elo") return "Elo"
   if (id === "bibi") return "Bibi"
   if (id === "mob") return String(currentMob || "Mob").toUpperCase()
@@ -194,7 +194,7 @@ function renderCombatInitiativeOverlay(state) {
   sub.style.cssText = "text-align:center;font-size:14px;color:#c7b088;margin-bottom:20px;letter-spacing:0.5px;"
   sub.innerText = state.phase === "rolling"
     ? "Chaque combattant lance un D12. Le MJ lance pour les mobs."
-    : "Round " + (state.round || 1) + " — tour actuel : " + String(state.currentActorId || "").toUpperCase() + (window.__combatSnapshot?.[state.currentActorId]?.actionsPerTurn>1?" — action "+((state.actorActionIndex||0)+1)+"/2":"")
+    : "Round " + (state.round || 1) + " — tour actuel : " + heroDisplayName(state.currentActorId).toUpperCase() + (window.__combatSnapshot?.[state.currentActorId]?.actionsPerTurn>1?" — action "+((state.actorActionIndex||0)+1)+"/2":"")
   box.appendChild(sub)
 
   const grid = document.createElement("div")

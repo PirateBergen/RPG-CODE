@@ -56,7 +56,7 @@ function openCharacterSheet(id = null) {
   inv.removeAttribute("readonly")
   const portraits = { greg:"gregsheet.jpg", ju:"yusheet.jpg", elo:"elosheet.jpg", bibi:"bibisheet.jpg" }
   document.getElementById("sheetImage").src = "images/" + (portraits[playerID] || "elosheet.jpg")
-  document.getElementById("sheetTitle").innerText = playerID.toUpperCase()
+  document.getElementById("sheetTitle").innerText = playerID === "ju" ? "PIKA — Elfe · Barde · Don : Appétit abyssal" : heroDisplayName(playerID).toUpperCase()
   document.querySelectorAll(".playerOnly").forEach(f => { f.style.display = playerID === "bibi" ? "none" : "block" })
   readCharacter(playerID, snapshot => {
     const data = snapshot.val(); if (!data || currentSheetPlayer !== playerID || !canAccessCharacter(playerID)) return
@@ -616,7 +616,7 @@ function chooseCombatTarget(playerIds, titleText) {
     playerIds.forEach(pid => {
       const btn = document.createElement("button")
       btn.style.cssText = "display:block;width:100%;padding:8px;margin-bottom:6px;font-family:Cinzel,serif;font-size:12px;background:rgba(10,30,38,0.8);color:#e0f0f4;border:1px solid rgba(30,90,102,0.5);border-radius:2px;cursor:pointer;text-align:left;"
-      btn.innerText = pid.toUpperCase()
+      btn.innerText = heroDisplayName(pid).toUpperCase()
       btn.onclick = () => {
         picker.remove()
         resolve(pid)
@@ -1090,7 +1090,7 @@ function applyPlayerSpecialModifiers(playerId, state) {
     if (state.fail) {
       next.damage = Math.max(0, Math.round(state.basePower * 0.4))
       next.flatBonus = 0
-      next.failEffectText = "Le plan s'effondre et Yu dévoile trop tôt son jeu."
+      next.failEffectText = "Le plan s'effondre et Pika dévoile trop tôt son jeu."
     }
   } else if (pid === "elo") {
     next.damage += 9 + scaling.damageFlat
@@ -1215,7 +1215,7 @@ function getCombatStatusEntries() {
   const currentActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
   const actorLabelMap = {
     greg: "Greg",
-    ju: "Yu",
+    ju: "Pika",
     elo: "Elo",
     bibi: "Bibi",
     mob: String(currentMob || "Mob").toUpperCase(),
@@ -1237,8 +1237,8 @@ function getCombatStatusEntries() {
     entries.push({
       kind: "warn",
       icon: "impact_ring.png",
-      title: "Aggro de Yu",
-      text: "Le mob doit viser Yu sur ses attaques ciblées.",
+      title: "Aggro de Pika",
+      text: "Le mob doit viser Pika sur ses attaques ciblées.",
       meta: parseInt(yuAggro.turns, 10) + " round(s) restant(s)"
     })
   }
@@ -1334,8 +1334,8 @@ function getCombatStatusEntries() {
     })
   }
 
-  Object.entries(window.__combatSnapshot?.heroDebuffs||{}).forEach(([id,e])=>entries.push({kind:"warn",title:id.toUpperCase()+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s)"}))
-  Object.entries(window.__combatSnapshot?.heroStuns||{}).filter(([,n])=>n>0).forEach(([id])=>entries.push({kind:"warn",title:id.toUpperCase()+" étourdi",text:"Prochaine action sautée",meta:"Une action"}))
+  Object.entries(window.__combatSnapshot?.heroDebuffs||{}).forEach(([id,e])=>entries.push({kind:"warn",title:heroDisplayName(id).toUpperCase()+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s)"}))
+  Object.entries(window.__combatSnapshot?.heroStuns||{}).filter(([,n])=>n>0).forEach(([id])=>entries.push({kind:"warn",title:heroDisplayName(id).toUpperCase()+" étourdi",text:"Prochaine action sautée",meta:"Une action"}))
   return entries
 }
 
@@ -1448,7 +1448,7 @@ function showCombatHUD() {
   const currentActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
   const meta = document.getElementById("combatHUDMeta")
   document.getElementById("combatHUDPortrait").src   = "images/" + player + ".png"
-  document.getElementById("combatHUDName").innerText  = player.toUpperCase()
+  document.getElementById("combatHUDName").innerText  = heroDisplayName(player).toUpperCase()
   if (meta) {
     meta.replaceChildren()
     const rolePill = document.createElement("div")
@@ -1495,7 +1495,7 @@ function showCombatHUD() {
       box.appendChild(bibiBlock)
     }
   }
-  box.appendChild(buildPassTurnBlock(player, player.toUpperCase()))
+  box.appendChild(buildPassTurnBlock(player, heroDisplayName(player).toUpperCase()))
   // Greg et Bibi partagent le même tour et une seule action.
   renderCombatStatusPanel()
   if (hud) hud.style.display = "none"
@@ -1744,7 +1744,7 @@ function buildMobSubPanel(mobData, slot) {
     const label = document.createElement("div"); label.style.cssText = "width:100%;font-family:Cinzel,serif;font-size:9px;color:#5a3a3a;margin-bottom:3px;"; label.innerText = "Forcer la cible :"
     targetRow.appendChild(label)
     ;["greg","ju","elo","bibi"].forEach(pid => {
-      const btn = document.createElement("button"); btn.dataset.target=pid; btn.style.cssText = "padding:2px 6px;font-family:Cinzel,serif;font-size:9px;border-radius:2px;cursor:pointer;border:1px solid rgba(180,40,40,0.4);background:rgba(60,10,10,0.6);color:#ffaaaa;"; btn.innerText = pid.toUpperCase()
+      const btn = document.createElement("button"); btn.dataset.target=pid; btn.style.cssText = "padding:2px 6px;font-family:Cinzel,serif;font-size:9px;border-radius:2px;cursor:pointer;border:1px solid rgba(180,40,40,0.4);background:rgba(60,10,10,0.6);color:#ffaaaa;"; btn.innerText = heroDisplayName(pid).toUpperCase()
       btn.onclick=()=>{ targetRow.querySelectorAll("button[data-target]").forEach(b=>{ b.style.background=b.dataset.target===pid?"rgba(180,40,40,0.6)":"rgba(60,10,10,0.6)" }); panel._currentTarget=pid; panel._manualTarget=pid }
       targetRow.appendChild(btn)
     })
@@ -2278,7 +2278,7 @@ function triggerCurseWheel(playerID) {
 function showCurseIntro(playerID) {
   playSound("curseSound"); playSound("curse1Sound"); let s=document.getElementById("curseIntroScreen"); if(!s){ s=document.createElement("div"); s.id="curseIntroScreen"; document.body.appendChild(s) }; s.innerHTML=""; s.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:999999999;animation:cursePulse 0.5s ease-in-out infinite alternate;"
   const t=document.createElement("div"); t.innerText="VOUS ETES MAUDIT"; t.style.cssText="font-family:Cinzel;font-size:60px;color:#ff0000;text-shadow:0 0 20px red;animation:curseShake 0.1s infinite;text-align:center;margin-bottom:30px;"; s.appendChild(t)
-  const sub=document.createElement("div"); sub.innerText=playerID.toUpperCase()+" doit affronter son destin..."; sub.style.cssText="font-family:IM Fell English;font-size:24px;color:#cc4444;text-align:center;opacity:0.8;"; s.appendChild(sub)
+  const sub=document.createElement("div"); sub.innerText=heroDisplayName(playerID).toUpperCase()+" doit affronter son destin..."; sub.style.cssText="font-family:IM Fell English;font-size:24px;color:#cc4444;text-align:center;opacity:0.8;"; s.appendChild(sub)
   screenShakeHard(); flashRed()
   setTimeout(() => {
     if (s && s.parentNode) s.remove()
@@ -2315,7 +2315,7 @@ function showCurseWheelScreen(playerID) {
   const btn = document.createElement("button")
   btn.id = "curseWheelBtn"
   btn.disabled = !isCursed
-  btn.innerText = isCursed ? "Tourner la roue" : "En attente de " + playerID.toUpperCase() + "..."
+  btn.innerText = isCursed ? "Tourner la roue" : "En attente de " + heroDisplayName(playerID).toUpperCase() + "..."
   btn.style.cssText = "padding:16px 44px;font-family:Cinzel;font-size:clamp(14px,2vw,18px);background:linear-gradient(#5a0000,#2a0000);color:#ff6060;border:2px solid #aa0000;border-radius:8px;cursor:" + (isCursed ? "pointer" : "default") + ";opacity:" + (isCursed ? "1" : "0.4") + ";touch-action:manipulation;flex-shrink:0;-webkit-appearance:none;"
   if (isCursed) {
     btn.addEventListener("click", () => {
@@ -2372,13 +2372,13 @@ function applyCurseEffect(playerID, ri) {
 /* ========================= */
 
 function activatePowerMode(playerID) { if(powerModeActive) return; powerModeActive=true; playSound("powerSound",0.75); const tok=document.getElementById(playerID); if(tok) tok.classList.add("powerReady","powerFull"); if(myToken&&myToken.id===playerID) showUsePowerBtn(playerID) }
-function showUsePowerBtn(playerID) { const ex=document.getElementById("usePowerBtn"); if(ex) ex.remove(); const btn=document.createElement("button"); btn.id="usePowerBtn"; btn.dataset.playerId=playerID; btn.innerText="LIBERER LE POUVOIR"; btn.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 40px;font-family:Cinzel;font-size:20px;letter-spacing:2px;background:linear-gradient(180deg,#8a6000,#4a3000);color:gold;border:2px solid gold;border-radius:10px;cursor:pointer;z-index:999999999;box-shadow:0 0 20px gold,0 0 40px orange;animation:powerBtnPulse 1s ease-in-out infinite alternate;text-shadow:0 0 10px gold;"; btn.onclick=()=>usePower(playerID); document.body.appendChild(btn) }
+function showUsePowerBtn(playerID) { const ex=document.getElementById("usePowerBtn"); if(ex) ex.remove(); const btn=document.createElement("button"); btn.id="usePowerBtn"; btn.dataset.playerId=playerID; btn.innerText=playerID==="ju"?"APPÉTIT ABYSSAL":"LIBERER LE POUVOIR"; btn.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 40px;font-family:Cinzel;font-size:20px;letter-spacing:2px;background:linear-gradient(180deg,#8a6000,#4a3000);color:gold;border:2px solid gold;border-radius:10px;cursor:pointer;z-index:999999999;box-shadow:0 0 20px gold,0 0 40px orange;animation:powerBtnPulse 1s ease-in-out infinite alternate;text-shadow:0 0 10px gold;"; btn.onclick=()=>usePower(playerID); document.body.appendChild(btn) }
 
 function usePower(playerID) {
   const btn=document.getElementById("usePowerBtn"); if(btn) btn.remove()
   db.ref("game/powerSound").set({ player:playerID, time:Date.now() }); playSound("powerSound",0.9); powerExplosion(); powerExplosion(); flashGold(); flashGold(); screenShakeHard()
   for(let i=0;i<30;i++) setTimeout(()=>{ const p=document.createElement("div"); p.style.cssText=`position:fixed;width:${4+Math.random()*8}px;height:${4+Math.random()*8}px;border-radius:50%;background:gold;left:${Math.random()*100}%;top:${Math.random()*100}%;pointer-events:none;z-index:9999998;box-shadow:0 0 8px gold;animation:goldRise 1.5s ease-out forwards;`; document.body.appendChild(p); setTimeout(()=>p.remove(),1500) },i*60)
-  showNotification(playerID.toUpperCase()+" LIBERE SON POUVOIR !"); addMJLog(playerID.toUpperCase()+" utilise son pouvoir !"); db.ref("characters/"+playerID+"/corruption").set(0); powerModeActive=false
+  showNotification(heroDisplayName(playerID).toUpperCase()+" LIBERE SON POUVOIR !"); addMJLog(heroDisplayName(playerID).toUpperCase()+" utilise son pouvoir !"); db.ref("characters/"+playerID+"/corruption").set(0); powerModeActive=false
   const tok=document.getElementById(playerID); if(tok) setTimeout(()=>tok.classList.remove("powerReady","powerFull"),2000)
   if(currentSheetPlayer===playerID){ corruptionLevel=0; document.querySelectorAll(".corruptionPoint").forEach(pt=>pt.classList.remove("active")) }
 }
@@ -2902,7 +2902,7 @@ function renderSpellDiceGame(data) {
   const ttl=document.createElement("div"); ttl.style.cssText="position:relative;z-index:1;font-family:'Cinzel Decorative',serif;font-size:22px;color:#dd66ff;letter-spacing:5px;text-shadow:0 0 30px #aa00ff;text-align:center;margin-bottom:8px;"; ttl.innerText="⛧  SORT D'EMPRISONNEMENT  ⛧"; ov.appendChild(ttl)
   const sub=document.createElement("div"); sub.style.cssText="position:relative;z-index:1;font-family:'IM Fell English',serif;font-size:14px;color:#9944cc;font-style:italic;margin-bottom:28px;text-align:center;"; sub.innerText="Lancez un D20 — seul un coup critique peut briser les chaînes..."; ov.appendChild(sub)
   const sr=document.createElement("div"); sr.style.cssText="position:relative;z-index:1;display:flex;gap:20px;margin-bottom:28px;flex-wrap:wrap;justify-content:center;"
-  SPELL_PLAYERS.forEach(pid=>{ const t=tries[pid]||0,iF=freed.includes(pid),isOut=t>=SPELL_MAX_TRIES&&!iF,isCur=pid===realCur&&!iF; const card=document.createElement("div"); card.style.cssText=`display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 20px;border-radius:10px;border:2px solid ${iF?"#44ff44":isOut?"#ff4444":isCur?"#cc44ff":"rgba(150,0,255,0.4)"};background:${isCur?"rgba(120,0,180,0.3)":"rgba(0,0,0,0.3)"};min-width:100px;text-align:center;`; const n=document.createElement("div"); n.style.cssText=`font-family:Cinzel,serif;font-size:13px;letter-spacing:2px;color:${iF?"#44ff44":isOut?"#ff6666":isCur?"#dd88ff":"#9955cc"};`; n.innerText=(iF?"✓ ":isOut?"✕ ":isCur?"▶ ":"")+pid.toUpperCase(); card.appendChild(n); const dr=document.createElement("div"); dr.style.cssText="display:flex;gap:4px;"; for(let i=0;i<SPELL_MAX_TRIES;i++){ const d=document.createElement("div"); d.style.cssText="width:12px;height:12px;border-radius:2px;border:1px solid rgba(150,0,255,0.5);background:"+(i<t?(iF?"#44ff44":"rgba(180,0,80,0.6)"):"transparent")+";"; dr.appendChild(d) }; card.appendChild(dr); sr.appendChild(card) })
+  SPELL_PLAYERS.forEach(pid=>{ const t=tries[pid]||0,iF=freed.includes(pid),isOut=t>=SPELL_MAX_TRIES&&!iF,isCur=pid===realCur&&!iF; const card=document.createElement("div"); card.style.cssText=`display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 20px;border-radius:10px;border:2px solid ${iF?"#44ff44":isOut?"#ff4444":isCur?"#cc44ff":"rgba(150,0,255,0.4)"};background:${isCur?"rgba(120,0,180,0.3)":"rgba(0,0,0,0.3)"};min-width:100px;text-align:center;`; const n=document.createElement("div"); n.style.cssText=`font-family:Cinzel,serif;font-size:13px;letter-spacing:2px;color:${iF?"#44ff44":isOut?"#ff6666":isCur?"#dd88ff":"#9955cc"};`; n.innerText=(iF?"✓ ":isOut?"✕ ":isCur?"▶ ":"")+heroDisplayName(pid).toUpperCase(); card.appendChild(n); const dr=document.createElement("div"); dr.style.cssText="display:flex;gap:4px;"; for(let i=0;i<SPELL_MAX_TRIES;i++){ const d=document.createElement("div"); d.style.cssText="width:12px;height:12px;border-radius:2px;border:1px solid rgba(150,0,255,0.5);background:"+(i<t?(iF?"#44ff44":"rgba(180,0,80,0.6)"):"transparent")+";"; dr.appendChild(d) }; card.appendChild(dr); sr.appendChild(card) })
   ov.appendChild(sr)
   if(myToken&&myToken.id===realCur&&!freed.includes(myToken.id)){ const t=tries[myToken.id]||0; if(t<SPELL_MAX_TRIES){ const rb=document.createElement("div"); rb.id="spellRollBtn"; rb.style.cssText="position:relative;z-index:1;width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 40% 35%,rgba(180,0,255,0.6),rgba(80,0,150,0.3));border:3px solid rgba(200,50,255,0.8);box-shadow:0 0 30px rgba(180,0,255,0.5);cursor:pointer;margin-bottom:16px;animation:bifrostPulse 2s ease-in-out infinite alternate;"; rb.innerHTML=`<span style="font-size:36px;">🎲</span><span style="font-family:Cinzel,serif;font-size:11px;color:#cc88ff;letter-spacing:2px;margin-top:4px;">LANCER D20</span>`; rb.onclick=()=>rollSpellDice(myToken.id,t); ov.appendChild(rb); const h=document.createElement("div"); h.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:11px;color:#7733aa;font-style:italic;"; h.innerText=`Essai ${t+1} / ${SPELL_MAX_TRIES}`; ov.appendChild(h) } else { const out=document.createElement("div"); out.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:14px;color:#ff6666;text-shadow:0 0 10px red;"; out.innerText="✕ Vos essais sont épuisés..."; ov.appendChild(out) } }
   else if(myToken&&!freed.includes(myToken.id)){ const w=document.createElement("div"); w.style.cssText="position:relative;z-index:1;font-family:'IM Fell English',serif;font-size:14px;color:#9944cc;font-style:italic;"; w.innerText=`✦ Au tour de ${realCur.toUpperCase()} de briser son sort... ✦`; ov.appendChild(w) }
@@ -3140,7 +3140,7 @@ function _allyChooseTarget(pnj, action, panel) {
     img.src = "images/" + sanitizeAssetName(pid + ".png")
     img.style.cssText = "width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:8px;"
     btn.appendChild(img)
-    btn.appendChild(document.createTextNode(pid.toUpperCase()))
+    btn.appendChild(document.createTextNode(heroDisplayName(pid).toUpperCase()))
     btn.onclick=()=>{ picker.remove(); _executeAllyAction(pnj, action, pid, panel) }
     picker.appendChild(btn)
   })

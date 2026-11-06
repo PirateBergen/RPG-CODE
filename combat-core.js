@@ -51,7 +51,7 @@ function combatActorAlive(root, id) {
 }
 
 function combatParticipants(root) {
-  const list = COMBAT_HEROES.filter(id => combatActorAlive(root, id)).map(id => ({ id, type: "player", label: id === "greg" ? "Greg / Bibi" : id === "ju" ? "Yu" : "Elo", image: id + ".png" }))
+  const list = COMBAT_HEROES.filter(id => combatActorAlive(root, id)).map(id => ({ id, type: "player", label: id === "greg" ? "Greg / Bibi" : id === "ju" ? "Pika" : "Elo", image: id + ".png" }))
   livingMobs(root.combat).forEach(slot => list.push({ id: slot, type: "mob", label: root.combat[slot].name.toUpperCase(), image: root.combat[slot].name + ".png" }))
   return list
 }

@@ -61,6 +61,7 @@ function initialSession() {
       freePoints: 0, gold: 0, inventaire: "", notes: "", progressionRewardedLevel: 1,
       equipmentModifiers: { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }, carriedWeight: 0 }
   })
+  Object.assign(characters.ju, {name:"Pika",race:"Elfe",class:"Barde",gift:"Appétit abyssal",buildVersion:"pika-bard-v1"})
   return { characters, tokens: { greg: { x: 320, y: 340, facing: 0 }, ju: { x: 420, y: 340, facing: 0 },
     elo: { x: 520, y: 340, facing: 0 }, bibi: { x: 620, y: 340, facing: 0 } },
     game: { map: "taverne.jpg", groupMadness: 0, worldMapFogTopLeftHidden: false },
@@ -313,6 +314,7 @@ async function replaceSession(state, action, operation) {
   if (lock?.id !== operation.id) throw new Error("La synchronisation a été interrompue. Réessayez le chargement.")
   const payload = {}
   SESSION_BRANCHES.forEach(key => { payload[key] = state[key] ?? null })
+  if (typeof migratePikaCharacter === "function") migratePikaCharacter(payload.characters?.ju)
   payload.combatRequests = null
   payload.explorationRequests = null
   payload.characterRequests = null

@@ -18,12 +18,12 @@ const GAME_STATE = {
 
 const playerBaseStats = {
   greg: { force:6, charme:4, perspi:4, chance:4, defense:5, hp:120, poids:100 },
-  ju:   { force:4, charme:5, perspi:7, chance:5, defense:4, hp:110, poids:100 },
+  ju:   { force:3, charme:7, perspi:6, chance:5, defense:4, hp:100, poids:100 },
   elo:  { force:4, charme:7, perspi:5, chance:5, defense:4, hp:110, poids:100 },
   bibi: { force:5, charme:4, perspi:4, chance:6, defense:4, hp:110, poids:100 }
 }
 
-const playerMainStat = { greg:"force", ju:"perspi", elo:"charme", bibi:"chance" }
+const playerMainStat = { greg:"force", ju:"charme", elo:"charme", bibi:"chance" }
 
 const allStats = ["force","charme","perspi","chance","defense"]
 
@@ -37,9 +37,9 @@ function _getLevelUpGains(lvl) {
   else                return { main:5, secCount:2, secAmt:3, hp:18 }
 }
 
-function getPlayerStatsAtLevel(playerId, level) {
-  const base = playerBaseStats[playerId]
-  const main = playerMainStat[playerId]
+function getPlayerStatsAtLevel(playerId, level, build = null) {
+  const base = build?.base || playerBaseStats[playerId]
+  const main = build?.main || playerMainStat[playerId]
   if (!base) return null
   const stats = {}
   allStats.forEach(s => { stats[s] = base[s] })
@@ -144,7 +144,7 @@ const attacks = {
     { name:"I know Frank (si arc)",type:"Distance", dice:12, stat:"Perspicacité", effect:"Tir précis arc",                                              crit:"Dégâts x2 et saignement, -1 HP pendant 2 tours" }
   ],
   ju: [
-    { name:"Dépêche-toi !!!",  type:"Charme",  dice:12, stat:"Perspicacité", effect:"L'ennemi cible Ju. Alliés +1 dégats",                        crit:"Mobs n'attaquent pas au prochain tour" },
+    { name:"Dépêche-toi !!!",  type:"Charme",  dice:12, stat:"Charme", effect:"L'ennemi cible Pika. Alliés +1 dégats",                        crit:"Mobs n'attaquent pas au prochain tour" },
     { name:"Spider Sense",     type:"Analyse", dice:10, stat:"Perspicacité", effect:"Révèle les faiblesses",                                      crit:"Augmente le loot de la victoire" },
     { name:"Petite merde",     type:"Attaque", dice:12, stat:"Force",        effect:"Attaque humiliante. Si utilisé après Spider sense, dégâts x2", crit:"l'ennemi est humilié, -1 attaque pendant 2 tours" }
   ],
@@ -174,12 +174,12 @@ const playerSpecialAttacks = {
     name: "Plan qui tourne trop bien",
     type: "Spécial",
     dice: 20,
-    stat: "Perspicacité",
+    stat: "Charme",
     effect: "Riposte de précision après la spéciale ennemie",
     crit: "Rupture totale des défenses",
-    fail: "Le plan s'effondre et Yu révèle trop tôt son jeu.",
+    fail: "Le plan s'effondre et Pika révèle trop tôt son jeu.",
     conditionText: "La cible a déjà utilisé sa spéciale",
-    flavor: "Ju attend exactement le moment où l'ennemi se croit intouchable.",
+    flavor: "Pika attend exactement le moment où l'ennemi se croit intouchable.",
     icon: "rune_glow.png",
     rule: "mob_used_special",
     damageBonus: 1.8
@@ -1412,3 +1412,27 @@ const ALLY_PNJS = [
     ]
   }
 ]
+
+
+function heroDisplayName(id) { return id === "ju" ? "Pika" : String(id || "").toUpperCase() }
+function migratePikaCharacter(character) {
+  if (!character || character.buildVersion === "pika-bard-v1") return false
+  const level = Math.max(1, parseInt(character.lvl, 10) || 1)
+  const previous = getPlayerStatsAtLevel("ju", level, { base:{force:4,charme:5,perspi:7,chance:5,defense:4,hp:110,poids:100}, main:"perspi" })
+  const next = getPlayerStatsAtLevel("ju", level)
+  for (const stat of allStats) {
+    const value = Number(character[stat])
+    character[stat] = Math.max(0, (Number.isFinite(value) ? value : previous[stat]) + next[stat] - previous[stat])
+  }
+  const hp = Number(character.hp)
+  character.hp = Number.isFinite(hp) ? (hp <= 0 ? 0 : Math.max(1, hp + next.hp - previous.hp)) : next.hp
+  character.name = "Pika"; character.race = "Elfe"; character.class = "Barde"; character.gift = "Appétit abyssal"
+  character.buildVersion = "pika-bard-v1"
+  return true
+}
+function migratePikaRoot(root) {
+  if (!root?.characters?.ju || root.characters.ju.buildVersion === "pika-bard-v1") return undefined
+  const next = JSON.parse(JSON.stringify(root)); migratePikaCharacter(next.characters.ju)
+  for (const key of ["participants", "order"]) for (const actor of next.combat?.turnState?.[key] || []) if (actor.id === "ju") actor.label = "Pika"
+  return next
+}

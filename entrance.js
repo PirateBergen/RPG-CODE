@@ -59,7 +59,7 @@ async function chooseEntrance(choice){
  }catch(e){entranceMessage(e.message||"Connexion impossible")}
  finally{entranceBusy=false}
 }
-function entranceLabel(id){return id==="ju"?"Yu":id==="greg"?"Greg":id==="elo"?"Elo":"MJ"}
+function entranceLabel(id){return id==="ju"?"Pika":id==="greg"?"Greg":id==="elo"?"Elo":"MJ"}
 const entranceOriginalClosePlayerAuth=closePlayerAuthModal
 closePlayerAuthModal=function(...args){window.__entranceAccountRequested=false;return entranceOriginalClosePlayerAuth(...args)}
 const entranceOriginalPlayerAuth=showPlayerAuthModal

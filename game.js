@@ -240,7 +240,7 @@ function updatePlayerAuthMenuState() {
   const authButton = document.querySelector("#playerMenu button[onclick=\"requestPlayerAuth()\"]")
   const authPlayer = window.__authPlayerId
   if (status) {
-    if (authPlayer) { status.style.display = "block"; status.innerText = "Connecté en tant que " + authPlayer.toUpperCase() }
+    if (authPlayer) { status.style.display = "block"; status.innerText = "Connecté en tant que " + heroDisplayName(authPlayer).toUpperCase() }
     else { status.style.display = "none"; status.innerText = "" }
   }
   if (authButton) authButton.innerText = authPlayer ? "🔑 Reconnexion" : "🔑 Connexion"
@@ -288,8 +288,8 @@ function handlePlayerEmailPasswordAuth(mode) {
     if (mode === "create") {
       const uid = cred?.user?.uid || window.__authUid || ""
       return claimReservedHero(chosenPlayer,uid).then(() => {
-        showPlayerAuthMessage("Compte joueur créé et lié à " + chosenPlayer.toUpperCase())
-        showNotification("Compte joueur créé : " + chosenPlayer.toUpperCase())
+        showPlayerAuthMessage("Compte joueur créé et lié à " + heroDisplayName(chosenPlayer).toUpperCase())
+        showNotification("Compte joueur créé : " + heroDisplayName(chosenPlayer).toUpperCase())
       })
     }
     showPlayerAuthMessage("Connexion joueur réussie")
@@ -335,7 +335,7 @@ function showPlayerAuthModal() {
   // Le personnage est choisi sur le premier écran.
   const charLabel = document.createElement("div")
   charLabel.style.cssText = "font-size:11px;color:#8aabcf;margin-bottom:6px;letter-spacing:1px;"
-  charLabel.innerText = window.__entryChoice && PLAYABLE_HEROES.includes(window.__entryChoice) ? "Personnage : " + (window.__entryChoice === "ju" ? "Yu" : window.__entryChoice.toUpperCase()) : "Choisissez d’abord votre personnage sur l’écran d’accueil"
+  charLabel.innerText = window.__entryChoice && PLAYABLE_HEROES.includes(window.__entryChoice) ? "Personnage : " + (window.__entryChoice === "ju" ? "Pika" : window.__entryChoice.toUpperCase()) : "Choisissez d’abord votre personnage sur l’écran d’accueil"
   box.appendChild(charLabel)
   // champ caché qui stocke la valeur sélectionnée
   const charInput = document.createElement("input")
@@ -380,7 +380,7 @@ function requestPlayerAuth() {
   if (window.__authRole === "gm") { activateGM(true); return }
   if (window.__authPlayerId) {
     if (tryAutoSelectAuthenticatedPlayer()) return
-    showNotification("Compte joueur déjà connecté : " + window.__authPlayerId.toUpperCase()); return
+    showNotification("Compte joueur déjà connecté : " + heroDisplayName(window.__authPlayerId).toUpperCase()); return
   }
   showPlayerAuthModal()
 }
@@ -1306,7 +1306,7 @@ function showThuumUnlockCinematic(data) {
     if (image) image.src = "images/thuum.png"
     title.innerText = "Nouveau Cri de Mouches appris : " + data.word
     words.innerText = (data.words && data.words.length ? data.words.join(" • ") : ((def && def.words) ? def.words.join(" • ") : data.word))
-    player.innerText = data.playerId ? ("Porteur choisi : " + data.playerId.toUpperCase()) : ""
+    player.innerText = data.playerId ? ("Porteur choisi : " + heroDisplayName(data.playerId).toUpperCase()) : ""
   if (myToken && data.playerId && String(myToken.id).toLowerCase() === String(data.playerId).toLowerCase()) {
     showNotification((data.word || "Cri") + " est maintenant a vous")
   }
@@ -1371,7 +1371,7 @@ function playThuumCastEffect(data) {
       }, 1700)
     }
   }
-  showNotification("ᚦ " + (data.word || "SKRAA") + " - " + (data.playerId || "").toUpperCase())
+  showNotification("ᚦ " + (data.word || "SKRAA") + " - " + heroDisplayName(data.playerId).toUpperCase())
 }
 
 function grantThuumToPlayer(playerId, word) {
@@ -1387,7 +1387,7 @@ function grantThuumToPlayer(playerId, word) {
   db.ref("game/playerThuum/" + playerId + "/" + word).once("value", snap => {
     const existing = snap.val()
     if (existing && existing.unlocked) {
-      showNotification(word + " deja appris par " + playerId.toUpperCase())
+      showNotification(word + " deja appris par " + heroDisplayName(playerId).toUpperCase())
       return
     }
 
@@ -1404,7 +1404,7 @@ function grantThuumToPlayer(playerId, word) {
         time: Date.now()
       })
       setTimeout(() => void 0, 2000)
-      showNotification("SKRAA donne a " + playerId.toUpperCase())
+      showNotification("SKRAA donne a " + heroDisplayName(playerId).toUpperCase())
     })
   })
 }
@@ -1416,7 +1416,7 @@ function grantThuumUseToPlayer(playerId, word) {
     allowed: true,
     time: Date.now()
   }).then(() => {
-    showNotification(word + " autorise hors combat pour " + playerId.toUpperCase())
+    showNotification(word + " autorise hors combat pour " + heroDisplayName(playerId).toUpperCase())
   })
 }
 
@@ -1448,7 +1448,7 @@ function usePlayerThuum(forcedWord) {
       outsideCombat: true
     })
     setTimeout(() => db.ref("game/thuumCast").remove(), 1500)
-    addSessionLog("ᚱ " + playerId.toUpperCase() + " utilise " + activeWord + " (hors combat)")
+    addSessionLog("ᚱ " + heroDisplayName(playerId).toUpperCase() + " utilise " + activeWord + " (hors combat)")
     showNotification(def.outsideCombatMessage || (activeWord + " retentit hors combat"))
     closePlayerPowersPanel()
     updateThuumButton()
@@ -2765,7 +2765,7 @@ function updateCombatTokenStateVisuals() {
       yuBadges.push({
         kind: "warn",
         label: "AGGRO " + aggroTurns,
-        title: "Yu attire le mob pendant encore " + aggroTurns + " tour(s)"
+        title: "Pika attire le mob pendant encore " + aggroTurns + " tour(s)"
       })
     }
     if (spiderSense) {
@@ -2779,7 +2779,7 @@ function updateCombatTokenStateVisuals() {
       yuBadges.unshift({
         kind: "buff",
         label: "TOUR",
-        title: "C'est le tour de Yu"
+        title: "C'est le tour de Pika"
       })
     }
     setTokenStateBadges("ju", yuBadges)
@@ -3401,7 +3401,7 @@ function revivePlayer(playerId) {
     const skull = document.getElementById("skull_" + playerId)
     if (skull) skull.remove()
   }
-  showNotification(playerId.toUpperCase() + " revient à la vie !")
+  showNotification(heroDisplayName(playerId).toUpperCase() + " revient à la vie !")
   db.ref("game/playerRevive").set({ player: playerId, time: Date.now() })
 }
 
@@ -4151,7 +4151,7 @@ function enterPlayerPreview(playerId) {
 
   // Bandeau
   const banner = document.getElementById("playerPreviewBanner")
-  const names  = { greg:"Greg", ju:"Yu", elo:"Elo", bibi:"Bibi" }
+  const names  = { greg:"Greg", ju:"Pika", elo:"Elo", bibi:"Bibi" }
   document.getElementById("previewPlayerName").innerText = names[playerId] || playerId
   banner.style.display = "flex"
 
@@ -4320,7 +4320,7 @@ async function choosePlayer(id) {
     await initFirebaseAnonymousAuth()
     const uid = auth?.currentUser?.uid || window.__authUid
     if (!uid || uid !== window.__authUid) throw new Error("Connexion nécessaire pour choisir un héros")
-    if (window.__authPlayerId && window.__authPlayerId !== id) throw new Error("Ce compte est déjà lié à " + window.__authPlayerId.toUpperCase())
+    if (window.__authPlayerId && window.__authPlayerId !== id) throw new Error("Ce compte est déjà lié à " + heroDisplayName(window.__authPlayerId).toUpperCase())
     if(typeof claimReservedHero==="function")await claimReservedHero(id,uid)
     else {const result=await db.ref("profiles/"+uid+"/playerId").transaction(current=>current===null||current===id?id:undefined);if(!result.committed)throw Error("Ce compte possède déjà un autre héros")}
     if (window.__authUid !== uid) return

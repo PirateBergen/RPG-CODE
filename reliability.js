@@ -122,7 +122,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   refreshHeroAvailability()
   renderHeroManagement();restoreReservedPlayerSelection()
  })
- const startMaintenance=()=>{clearInterval(reliabilityCleanupTimer);if(window.__authRole!=="gm"||!window.__actionOnline)return;transactCombatRoot(migrateHeroAssignments).catch(e=>console.warn("Attribution à synchroniser",e));cleanupCompletedActionRequests().catch(()=>{});trimSaveHistory().catch(e=>console.warn("Anciennes sauvegardes conservées",e));reliabilityCleanupTimer=setInterval(()=>cleanupCompletedActionRequests().catch(()=>{}),60000)}
+ const startMaintenance=()=>{clearInterval(reliabilityCleanupTimer);if(window.__authRole!=="gm"||!window.__actionOnline)return;transactCombatRoot(root=>{const assigned=migrateHeroAssignments(root),current=assigned||root;return (typeof migratePikaRoot==="function"&&migratePikaRoot(current))||assigned}).catch(e=>console.warn("Attribution à synchroniser",e));cleanupCompletedActionRequests().catch(()=>{});trimSaveHistory().catch(e=>console.warn("Anciennes sauvegardes conservées",e));reliabilityCleanupTimer=setInterval(()=>cleanupCompletedActionRequests().catch(()=>{}),60000)}
  window.__startReliabilityMaintenance=startMaintenance
  const original=updateIntroLogoutBtn;updateIntroLogoutBtn=function(...args){const r=original(...args);refreshHeroAvailability();startMaintenance();return r};startMaintenance()
  for(const type of ["pointerdown","mousedown","click","change","keydown"])document.addEventListener(type,e=>{if(window.__actionOnline||document.body.dataset.entryStage!=="playing"||e.target.closest?.("#musicVolumeSlider,#effectsVolumeSlider,#heroManagementPanel"))return;e.preventDefault();e.stopImmediatePropagation();renderReliableNetwork()},true)

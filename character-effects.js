@@ -27,7 +27,7 @@ async function requestCharacterEffect(kind,actor,payload={}){
  }catch(e){showNotification(e.message)}finally{characterEffectRequests.delete(key)}
 }
 
-function showCurseIntro(player){showNotification(player.toUpperCase()+" : malédiction complète, en attente de la roue du MJ…")}
+function showCurseIntro(player){showNotification(heroDisplayName(player).toUpperCase()+" : malédiction complète, en attente de la roue du MJ…")}
 function triggerCurseWheel(){ /* Le MJ coordonne automatiquement les personnages à huit points. */ }
 function applyCurseEffect(){ /* L’effet est appliqué une seule fois dans la transaction du MJ. */ }
 async function spinCurseWheel(player){
@@ -64,7 +64,7 @@ function presentCharacterPower(event){
  if(!COMBAT_HEROES.includes(event?.player)||!event?.id||seenPowerEvents.has(event.id)||event.time<(window.__pageLoadTime||0)||!gameStarted)return
  seenPowerEvents.add(event.id)
  enqueueSharedVisual("power-"+event.id,()=>{
-  playSound("powerSound",.9);powerExplosion();flashGold();screenShakeHard();showNotification(event.player.toUpperCase()+" LIBÈRE SON POUVOIR !")
+  playSound("powerSound",.9);powerExplosion();flashGold();screenShakeHard();showNotification(event.player==="ju"?"PIKA — APPÉTIT ABYSSAL !":heroDisplayName(event.player).toUpperCase()+" LIBÈRE SON POUVOIR !")
   const info=playerPowerSounds[event.player];if(info){const audio=new Audio(resolveAudioPath(info.file));setManagedAudioBaseVolume(audio,.85);audio.play().catch(()=>{});if(info.fadeAt)setTimeout(()=>audio.pause(),info.fadeAt)}
  },3000)
 }

@@ -40,6 +40,7 @@ function detachFirebaseAccessSync() {
   window.__authProfileRef = null; window.__authProfileCb = null
   window.__authRole = null; window.__authPlayerId = null
   if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
+  if(typeof syncGMArbitration === "function")syncGMArbitration()
   if(typeof syncCombatExitCoordinator==="function")syncCombatExitCoordinator()
   if(typeof syncCharacterEffects==="function")syncCharacterEffects()
   if(typeof syncExplorationCoordinator === "function") syncExplorationCoordinator()
@@ -58,6 +59,7 @@ function syncFirebaseAccessForUser(uid) {
     window.__authRole = typeof role === "string" ? role : null
     if(typeof syncExplorationCoordinator === "function")syncExplorationCoordinator()
     if (typeof syncCombatCoordinator === "function") syncCombatCoordinator()
+  if(typeof syncGMArbitration === "function")syncGMArbitration()
     if(typeof syncCombatExitCoordinator==="function")syncCombatExitCoordinator()
   if(typeof syncCharacterEffects==="function")syncCharacterEffects()
     if (window.__sessionBusy) recoverExpiredSessionLock().catch(error => console.warn(error))

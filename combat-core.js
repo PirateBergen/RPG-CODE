@@ -103,7 +103,8 @@ function combatHeal(root, request, from, id, amount, resurrect = false) {
   const c = root.characters?.[id]
   if (!c || (!resurrect && combatInt(c.hp) <= 0)) throw new Error("La cible est KO ; une résurrection est nécessaire")
   const before = combatInt(c.hp), max = getCharacterMaxHp(id, c)
-  c.hp = resurrect && before <= 0 ? max : Math.min(max, before + Math.max(0, combatInt(amount)))
+  const adjusted=arbitrationAmount(root,id,resurrect&&before<=0?max:amount)
+  c.hp = Math.min(max,before+adjusted)
   combatRecord(root, request, from, id, c.hp - before, "heal", from + " → " + id.toUpperCase() + " : +" + (c.hp - before) + " PV")
   return c.hp - before
 }
@@ -112,7 +113,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg") {
   const target = root.combat[slot]
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
-  target.hp = Math.max(0, before - Math.max(0, combatInt(amount)))
+  target.hp = Math.max(0, before - arbitrationAmount(root,slot,amount))
   combatRecord(root, request, from, target.name.toUpperCase(), before - target.hp, type, from + " → " + target.name.toUpperCase() + " : -" + (before - target.hp) + " PV")
   return before - target.hp
 }
@@ -141,6 +142,7 @@ function tickCombatRound(root, request) {
 }
 
 function nextCombatTurn(root, request, skipRemaining = false) {
+  delete root.__arbitration
   const state = root.combat.turnState
   const order = state.order || []
   if (!order.length || combatOutcome(root, request)) return
@@ -229,10 +231,11 @@ function resolveHeroCombatAction(root, request, dice) {
   if (!fail && mob.yuAggro?.turns > 0) damage += mob.yuAggro.allyBonus || 1
   if (!fail && mob.spiderSenseBuff?.active) damage = Math.round(damage * (mob.spiderSenseBuff.damageMult || 1.1))
   if (attack.name === "Je vais te raconter une histoire" && /foret|mine/i.test(root.game.combatState?.returnMap || root.game.map || "")) damage *= 2
-  if (attack.name === "Spider Sense" && !fail) { damage = Math.round(damage * .65); c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
+  if(attack.name === "Spider Sense" && !fail)damage=Math.round(damage*.65)
+  if (attack.name === "Spider Sense" && !fail && arbitrationEffects(root,slot)) { c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
   if (attack.name === "Petite merde" && c.playerFlags?.[actor]?.spiderSense) damage *= 2
   const amount = combatDamage(root, request, actor.toUpperCase() + " — " + attack.name, slot, Math.round(damage))
-  if (!fail) {
+  if (!fail && arbitrationEffects(root,slot)) {
     if ((actor === "greg" || actor === "bibi") && attack.name === "Le Bibi" && crit) mob.bibiRage = { damage: 2, turns: 3 }
     if (actor === "greg" && attack.name === "I know Frank (si arc)" && crit) mob.playerBleed = { damage: 1, turns: 2 }
     if (actor === "ju" && getPlayerAttackTypeKey(attack) === "charm") { mob.yuAggro = { turns: 3, allyBonus: 1 }; if (crit) mob.yuSkipNextTurn = { active: true } }
@@ -273,7 +276,8 @@ function resolveEnemyCombatAction(root, request, dice) {
     if(c.turnState.round<mob.chargingSpecial.readyRound)throw new Error("La spéciale se prépare pour le prochain round ; choisissez une autre action")
     delete mob.chargingSpecial
   }
-  const targets = chooseEnemyTarget(root, slot, attack, payload.target, dice)
+  let targets = chooseEnemyTarget(root, slot, attack, payload.target, dice)
+  if(root.__arbitration?.targets)targets=root.__arbitration.targets.filter(id=>livingHeroes(root).includes(id))
   const range = getMobDamageRange(attack, mob.lvl || 1, mob.tier || "weak",mob)
   let damage = range.min + dice(range.max - range.min + 1) - 1
   if (mob.attackMalus) damage = Math.max(0, damage - (mob.attackMalus.amount || 0))
@@ -281,16 +285,16 @@ function resolveEnemyCombatAction(root, request, dice) {
   let applied = 0
   targets.forEach(id => {
     const before = combatInt(root.characters[id].hp)
-    root.characters[id].hp = Math.max(0, before - damage); applied += before - root.characters[id].hp
-    if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
-    if (attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
-    if (attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
+    root.characters[id].hp = Math.max(0, before - arbitrationAmount(root,id,damage)); applied += before - root.characters[id].hp
+    if (arbitrationEffects(root,id) && id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
+    if (arbitrationEffects(root,id) && attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
+    if (arbitrationEffects(root,id) && attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
     combatRecord(root, request, mob.name.toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", mob.name + " — " + attack.name + " → " + id.toUpperCase() + " : -" + (before - root.characters[id].hp) + " PV")
   })
   if (attack.special) mob.specialUsed = true
   if (attack.healSelfRatio) mob.hp = Math.min(mob.maxHP, mob.hp + Math.round(applied * attack.healSelfRatio))
   mob.lastAttack = attack.name
-  const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : targets[0].toUpperCase(), mobName: mob.name.toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
+  const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : (targets[0]||"AUCUNE").toUpperCase(), mobName: mob.name.toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
   nextCombatTurn(root, request)
   return { actor: slot, attack: attack.name, amount: damage, targets, mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}) }
 }
@@ -307,11 +311,11 @@ function resolveAllyCombatAction(root, request, dice) {
     amount = Math.round((action.dmgBase + roll * action.dmgBonus) * (crit && action.critMult ? action.critMult : 1) * (fail ? .2 : 1))
     ;(action.chainMin && roll >= action.chainMin ? livingMobs(root.combat) : [payload.target || livingMobs(root.combat)[0]]).forEach(slot => { if (!livingMobs(root.combat).includes(slot)) throw new Error("Choisissez un ennemi vivant"); combatDamage(root, request, pnj.name, slot, amount) })
   } else if (action.type === "heal") amount = combatHeal(root, request, pnj.name, payload.target, roll * (action.healMult || 1), crit)
-  else if (action.type === "buff") {
+  else if (action.type === "buff" && arbitrationEffects(root,payload.target)) {
     const target = root.characters[payload.target]; if (!target || target.hp <= 0) throw new Error("Choisissez un héros vivant")
     const stat = playerMainStat[payload.target]; amount = roll * (action.buffMult || 1); target[stat] = Math.min(999, combatInt(target[stat]) + amount)
     combatRecord(root, request, pnj.name, payload.target.toUpperCase(), amount, "buff", pnj.name + " renforce " + payload.target)
-  } else if (action.type === "malus" && roll >= (action.threshold || 10)) {
+  } else if (action.type === "malus" && arbitrationEffects(root,payload.target||livingMobs(root.combat)[0]) && roll >= (action.threshold || 10)) {
     const slot = payload.target || livingMobs(root.combat)[0]; if (!livingMobs(root.combat).includes(slot)) throw new Error("Choisissez un ennemi vivant")
     if (pnj.id === "odin") root.combat[slot].attackMalus = { amount: 15 }
     root.combat[slot].malus = { label: action.label, source: pnj.name, roll }
@@ -323,11 +327,12 @@ function resolveAllyCombatAction(root, request, dice) {
   return { actor: request.actor, attack: action.label, pnjId: pnj.id, actionId: action.id, target: payload.target || "", roll, dice: action.dice, crit, fail, amount, mode: "ally" }
 }
 
-function reduceCombatRequest(current, id, seed) {
+function reduceCombatRequestNow(current, id, seed, options = {}) {
   const queued = current?.combatRequests?.[id]
   if (!queued || queued.status !== "queued") return null
   const root = combatClone(current), request = root.combatRequests[id]
   request.id = id
+  if(options.decision)Object.defineProperty(root,"__arbitration",{value:options.decision,configurable:true})
   const fail = error => { const unchanged = combatClone(current); unchanged.combatRequests[id] = { ...queued, status: "failed", error: String(error.message || error).slice(0, 300) }; return unchanged }
   try {
     if (root.sessionControl?.phase) throw new Error("La session est en cours de sauvegarde ou de chargement")
@@ -338,7 +343,8 @@ function reduceCombatRequest(current, id, seed) {
     normalizeCombatTurns(root)
     const dice = combatRandom(seed)
     let result
-    if (request.kind === "hero") result = resolveHeroCombatAction(root, request, dice)
+    if(request.kind === "free"){if(!gm)throw Error("Action réservée au MJ");result=resolveGMFreeAction(root,request,dice)}
+    else if (request.kind === "hero") result = resolveHeroCombatAction(root, request, dice)
     else if (request.kind === "enemy") { if (!gm || !COMBAT_MOBS.includes(request.actor)) throw new Error("Action réservée au MJ"); result = resolveEnemyCombatAction(root, request, dice) }
     else if (request.kind === "ally") result = resolveAllyCombatAction(root, request, dice)
     else if (request.kind === "pass") { requireCombatTurn(root, request, request.actor); if(COMBAT_MOBS.includes(request.actor)) delete root.combat[request.actor].lastAttack; nextCombatTurn(root, request); result = { actor: request.actor, mode: "pass", message: "Tour passé" } }
@@ -360,12 +366,13 @@ function reduceCombatRequest(current, id, seed) {
       if (!livingMobs(root.combat).includes(target)) throw new Error("Choisissez une cible vivante")
       const amounts = def.combatDamageByRank(learned.rank || 1)
       livingMobs(root.combat).forEach(slot => combatDamage(root, request, word, slot, slot === target ? amounts.main : amounts.splash))
-      if (word === "REIHKT") root.combat[target].attackMalus = { amount: Math.max(1, (learned.rank || 1) * 2), turns: 2 }
+      if (word === "REIHKT" && arbitrationEffects(root,target)) root.combat[target].attackMalus = { amount: Math.max(1, (learned.rank || 1) * 2), turns: 2 }
       root.combat.usedThuum ||= {}; root.combat.usedThuum[request.actor] ||= {}; root.combat.usedThuum[request.actor][word] = true
       delete root.game.playerThuumAccess[request.actor][word]
       // Le cri et ses effets visuels sont transmis avec le résultat de cette action.
       nextCombatTurn(root, request); result = { actor: request.actor, mode: "thuum", word, amount: amounts.main }
     } else throw new Error("Action inconnue")
+    delete root.__arbitration
     request.status = "done"; request.result = result
     const visual={id,combatId:root.combat.id,time:Date.now(),result,nextTurn:combatClone(root.combat.turnState)}
     root.combat.lastAction = visual
@@ -378,3 +385,139 @@ function reduceCombatRequest(current, id, seed) {
 }
 
 function getCombatHeroAttack(actor,name,special=false){if(special)return getPlayerSpecialAttack(actor);const list=actor==="bibi"?[attacks.greg.find(a=>a.name==="Le Bibi")]:attacks[actor]||[];return list.find(a=>a?.name===name)}
+
+// Decisions are replayed with the original seed. No preview mutation is committed.
+function arbitrationAmount(root, target, amount) {
+  const d=root.__arbitration
+  if(!d)return Math.max(0,combatInt(amount))
+  const rule=d.perTarget?.[target]||d
+  if(d.cancel||rule.mode==="none"||(Array.isArray(d.targets)&&!d.targets.includes(target)))return 0
+  if(rule.mode==="half")return Math.floor(Math.max(0,amount)/2)
+  if(rule.mode==="custom")return Math.max(0,Math.min(50000,combatInt(rule.amount)))
+  return Math.max(0,combatInt(amount))
+}
+function arbitrationEffects(root,target){const d=root.__arbitration;return !d||(!d.cancel&&d.effects!==false&&d.mode!=="none"&&(!Array.isArray(d.targets)||d.targets.includes(target))&&d.perTarget?.[target]?.mode!=="none")}
+function arbitrationCanonical(value){return JSON.stringify(value,(key,v)=>{if(key==="time")return undefined;if(Array.isArray(v))return v;if(v&&typeof v==="object")return Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>[k,v[k]]));return v})}
+function arbitrationComparable(preview){return arbitrationCanonical({result:preview.result,changes:preview.changes||[]})}
+function arbitrationFrame(root){
+  const c=combatClone(root.combat||{});for(const k of ["pendingResolution","interventionArmed","visualEvents","lastAction","hits","presentation"])delete c[k]
+  return arbitrationCanonical({combat:c,characters:Object.fromEntries(COMBAT_CHARACTERS.map(id=>[id,{hp:root.characters?.[id]?.hp||0,lvl:root.characters?.[id]?.lvl||1}])),map:root.game?.map||""})
+}
+function arbitrationChanges(before,after){return [...COMBAT_CHARACTERS,...COMBAT_MOBS].flatMap(id=>{const a=COMBAT_MOBS.includes(id)?before.combat?.[id]:before.characters?.[id],b=COMBAT_MOBS.includes(id)?after.combat?.[id]:after.characters?.[id];return a&&b&&a.hp!==b.hp?[{target:id,before:a.hp,after:b.hp,delta:b.hp-a.hp}]:[]})}
+function arbitrationLog(root,id,text){root.game||={};root.game.sessionLog||={};root.game.sessionLog["decision-"+id]={text:String(text).slice(0,1500),time:Date.now(),display:new Date().toTimeString().slice(0,5)}}
+function resolveGMFreeAction(root,request,dice,inCombat=true){
+  const p=request.payload||{},label=String(p.label||"").trim().slice(0,180),actor=request.actor
+  if(!label)throw Error("Décrivez l’action libre")
+  if(![...COMBAT_CHARACTERS,...COMBAT_MOBS,"mj"].includes(actor))throw Error("Acteur invalide")
+  if(inCombat&&p.consumeAction!==false)requireCombatTurn(root,request,actor)
+  const targets=[...new Set(root.__arbitration?.targets||p.targets||[])];if(targets.some(id=>!COMBAT_CHARACTERS.includes(id)&&!(inCombat&&COMBAT_MOBS.includes(id))))throw Error("Cible invalide")
+  const amount=Number(p.amount||0),max=Number(p.die||0)
+  if(!Number.isInteger(amount)||amount<0||amount>50000||![0,4,6,8,10,12,20,100].includes(max))throw Error("Montant ou dé invalide")
+  if(!["none","damage","heal"].includes(p.hpMode||"none"))throw Error("Conséquence invalide")
+  if(!["none","stun","debuff"].includes(p.effect||"none")||(!inCombat&&p.effect&&p.effect!=="none"))throw Error("Effet invalide hors combat")
+  const result={actor,mode:"free",attack:label,message:label}
+  if(max){const roll=dice(max);Object.assign(result,{roll,dice:max,crit:roll===max,fail:roll===1});recordHeroCritical(root,actor,roll===max,roll===1)}
+  targets.forEach(id=>{
+    const c=COMBAT_MOBS.includes(id)?root.combat?.[id]:root.characters?.[id];if(!c)throw Error("Cible absente")
+    const value=arbitrationAmount(root,id,amount),before=c.hp
+    if(p.hpMode==="damage")c.hp=Math.max(0,before-value)
+    if(p.hpMode==="heal"){
+      if(before<=0&&value>0)throw Error("Un soin ne ressuscite pas une cible KO")
+      c.hp=Math.min(COMBAT_MOBS.includes(id)?c.maxHP:getCharacterMaxHp(id,c),before+value)
+    }
+    if(inCombat&&arbitrationEffects(root,id)&&p.effect!=="none"){
+      if(p.effect==="stun"){if(COMBAT_MOBS.includes(id))throw Error("Étourdissement réservé aux héros ; utilisez un malus pour un ennemi");root.combat.heroStuns||={};root.combat.heroStuns[combatOwner(id)]=1}
+      if(p.effect==="debuff"){const effect={amount:Math.max(1,Math.min(50,combatInt(p.effectAmount,2))),turns:Math.max(1,Math.min(10,combatInt(p.turns,2)))};if(COMBAT_MOBS.includes(id))c.attackMalus=effect;else{root.combat.heroDebuffs||={};root.combat.heroDebuffs[id]=effect}}
+    }
+    if(inCombat)combatRecord(root,request,label,id,Math.abs(c.hp-before),p.hpMode==="heal"?"heal":"manual",label+" → "+id+" : "+(c.hp-before)+" PV")
+  })
+  if(inCombat){if(p.consumeAction!==false)nextCombatTurn(root,request);else combatOutcome(root,request)}
+  return result
+}
+function arbitrationSource(request,seed){
+  const allowed=["attack","special","target","random","pnjId","actionId","word","label","targets","die","amount","hpMode","effect","effectAmount","turns","consumeAction"]
+  const payload={};for(const k of allowed)if(request.payload?.[k]!==undefined)payload[k]=combatClone(request.payload[k])
+  return {kind:request.kind,actor:request.actor,payload,sequence:request.sequence,seed}
+}
+function arbitrationReplay(root,pending,uid,id,decision){
+  const base=combatClone(root);delete base.combat.pendingResolution;delete base.combat.interventionArmed
+  if(decision?.targets?.length===1&&pending.source.kind!=="enemy"&&pending.source.kind!=="free"){
+    const target=decision.targets[0],old=pending.source.payload.target
+    if(COMBAT_MOBS.includes(target)===COMBAT_MOBS.includes(old))base.__redirectTarget=target
+  }
+  base.combatRequests||={};base.combatRequests[id]={...combatClone(pending.source),uid,status:"queued",combatId:base.combat.id,time:Date.now()};delete base.combatRequests[id].seed
+  if(base.__redirectTarget){base.combatRequests[id].payload.target=base.__redirectTarget;delete base.__redirectTarget}
+  return reduceCombatRequestNow(base,id,pending.source.seed,{decision})
+}
+function reduceCombatRequest(current,id,seed){
+  const q=current?.combatRequests?.[id];if(!q||q.status!=="queued")return null
+  const fail=message=>{const r=combatClone(current);r.combatRequests[id]={...q,status:"failed",error:String(message).slice(0,300)};return r}
+  try{
+    if(current.sessionControl?.phase)throw Error("La session est en cours de synchronisation")
+    if(!current.combat||current.combat.id!==q.combatId)throw Error("Ce combat a changé")
+    if(!Number.isFinite(q.time)||Date.now()-q.time>120000)throw Error("Cette action a expiré")
+    const gm=current.roles?.[q.uid]==="gm",pending=current.combat.pendingResolution
+    if(["armIntervention","resolveIntervention","refreshIntervention","dismissIntervention","free"].includes(q.kind)&&!gm)throw Error("Action réservée au MJ")
+    if(q.kind==="armIntervention"){
+      if(pending)throw Error("Une décision est déjà en attente")
+      const r=combatClone(current);r.combat.interventionArmed=!r.combat.interventionArmed;r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"control",message:r.combat.interventionArmed?"La prochaine attaque attendra la décision du MJ":"Intervention désactivée"};return r
+    }
+    if(["resolveIntervention","refreshIntervention","dismissIntervention"].includes(q.kind)){
+      if(!pending||pending.id!==q.payload?.pendingId||pending.revision!==q.payload?.revision)throw Error("Cette décision a changé ; rouvrez-la")
+      if(q.kind==="dismissIntervention"){const r=combatClone(current);delete r.combat.pendingResolution;r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"control",message:"Préparation abandonnée, action non consommée"};return r}
+      if(q.kind==="refreshIntervention"){
+        const preview=arbitrationReplay(current,pending,q.uid,id)
+        if(preview.combatRequests[id].status!=="done")throw Error(preview.combatRequests[id].error)
+        const r=combatClone(current);r.combat.pendingResolution={...pending,revision:pending.revision+1,frame:arbitrationFrame(current),preview:{result:preview.combatRequests[id].result,changes:arbitrationChanges(current,preview)}};r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"control",message:"Prévision actualisée avec le même jet"};return r
+      }
+      if(pending.frame!==arbitrationFrame(current))throw Error("L’état de la partie a changé. Actualisez la prévision avant de confirmer")
+      const d={...(q.payload.decision||{})};if(d.targetsSpecified&&!d.targets)d.targets=[];if(!["normal","half","none","custom"].includes(d.mode||"normal"))throw Error("Décision invalide")
+      const recheck=arbitrationReplay(current,pending,q.uid,id)
+      if(recheck.combatRequests[id].status!=="done")throw Error(recheck.combatRequests[id].error)
+      if(arbitrationComparable({result:recheck.combatRequests[id].result,changes:arbitrationChanges(current,recheck)})!==arbitrationComparable(pending.preview))throw Error("La prévision a changé. Actualisez avant de confirmer")
+      const r=arbitrationReplay(current,pending,q.uid,id,d)
+      if(r.combatRequests[id].status!=="done")throw Error(r.combatRequests[id].error)
+      const original=r.combatRequests[id].result,changes=arbitrationChanges(current,r)
+      const message=(String(d.narrative||"").trim()||original.attack||"Décision du MJ")+(d.cancel?" — attaque annulée (action consommée)":d.mode==="none"?" — esquive totale":"")+(changes.length?" · "+changes.map(c=>c.target.toUpperCase()+" "+(c.delta>0?"+":"")+c.delta+" PV").join(" ; "):" · aucun changement de PV")
+      const result={...original,mode:"arbitrated",message:message.slice(0,1500),changes}
+      r.combatRequests[id].result=result;r.combat.lastAction.result=result;r.combat.visualEvents[id].result=result
+      if(r.game.combatOutcome?.combatId===r.combat.id)r.game.combatOutcome.finalAction=combatClone(r.combat.lastAction)
+      arbitrationLog(r,id,message);return r
+    }
+    if(pending)throw Error("Décision du MJ en attente : les actions sont suspendues")
+    const preview=reduceCombatRequestNow(current,id,seed)
+    if(preview?.combatRequests[id].status!=="done")return preview
+    const result=preview.combatRequests[id].result
+    const intercepted=(current.combat.interventionArmed&&["hero","enemy","ally","thuum"].includes(q.kind)&&!["warning","skip"].includes(result.mode))||(q.kind==="enemy"&&(current.combat[q.actor]?.balanceClass==="world"||WORLD_BOSS_NAMES.includes(current.combat[q.actor]?.name))&&result.mode==="enemy"&&result.special)||q.kind==="free"
+    if(!intercepted)return preview
+    const r=combatClone(current);delete r.combat.interventionArmed
+    r.combat.pendingResolution={id,revision:0,frame:arbitrationFrame(current),source:arbitrationSource(q,seed),preview:{result,changes:arbitrationChanges(current,preview)}}
+    r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"pending",message:"Décision du MJ en attente"};return r
+  }catch(e){return fail(e.message||e)}
+}
+
+// Outside combat, the MJ uses the same preview/confirmation in one root transaction.
+function reduceSceneGMAction(current,uid,id,payload,seed){
+  if(current?.roles?.[uid]!=="gm")throw Error("Action réservée au MJ")
+  if(current.sessionControl?.phase)throw Error("Synchronisation en cours")
+  if(current.game?.combatState?.active)throw Error("Un combat est en cours ; utilisez l’action libre de combat")
+  const r=combatClone(current);r.game||={};r.game.gmActionEvents||={}
+  if(r.game.gmActionEvents[id])return r
+  if(payload.kind==="prepare"){
+    if(r.game.pendingGMAction)throw Error("Une décision est déjà en attente")
+    const request={id,actor:payload.actor,payload:payload.action,time:Date.now()},preview=combatClone(r),result=resolveGMFreeAction(preview,request,combatRandom(seed),false)
+    r.game.pendingGMAction={id,revision:0,frame:arbitrationFrame(r),source:arbitrationSource({...request,kind:"free",sequence:0},seed),preview:{result,changes:arbitrationChanges(r,preview)}};return r
+  }
+  const p=r.game.pendingGMAction
+  if(!p||p.id!==payload.pendingId||p.revision!==payload.revision)throw Error("Cette décision a changé")
+  if(payload.kind==="dismiss"){delete r.game.pendingGMAction;return r}
+  if(payload.kind!=="refresh"&&p.frame!==arbitrationFrame(r))throw Error("La partie a changé ; actualisez la prévision")
+  const request={id,actor:p.source.actor,payload:p.source.payload,time:Date.now()},preview=combatClone(r)
+  if(payload.kind==="resolve")Object.defineProperty(preview,"__arbitration",{value:{...(payload.decision||{}),...(payload.decision?.targetsSpecified&&!payload.decision.targets?{targets:[]}:{} )},configurable:true})
+  const result=resolveGMFreeAction(preview,request,combatRandom(p.source.seed),false),changes=arbitrationChanges(r,preview)
+  if(payload.kind==="refresh"){r.game.pendingGMAction={...p,revision:p.revision+1,frame:arbitrationFrame(r),preview:{result,changes}};return r}
+  if(payload.kind!=="resolve")throw Error("Commande invalide")
+  delete preview.__arbitration;delete preview.game.pendingGMAction
+  result.message=(String(payload.decision?.narrative||"").trim()||result.attack)+(changes.length?" · "+changes.map(c=>c.target.toUpperCase()+" "+(c.delta>0?"+":"")+c.delta+" PV").join(" ; "):" · aucun changement de PV")
+  preview.game.gmActionEvents[id]={id,time:Date.now(),result};const entries=Object.keys(preview.game.gmActionEvents);entries.slice(0,Math.max(0,entries.length-80)).forEach(key=>delete preview.game.gmActionEvents[key]);arbitrationLog(preview,id,result.message);return preview
+}

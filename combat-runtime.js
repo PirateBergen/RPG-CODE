@@ -55,6 +55,7 @@ async function migrateSharedFamiliarTurn() {
 async function submitCombatAction(kind, actor, payload = {}) {
   if (window.__sessionBusy) throw new Error("La partie est en cours de synchronisation")
   if (!window.__authUid || !window.__combatSnapshot?.id) throw new Error("Attendez la synchronisation du combat et la connexion du MJ")
+  if(Array.isArray(payload.decision?.targets))payload={...payload,decision:{...payload.decision,targetsSpecified:true}}
   const state = getCombatTurnState()
   const ref = db.ref("combatRequests").push()
   const request = { uid: window.__authUid, actor, kind, payload: { ...payload, version: 1 }, status: "queued", combatId: window.__combatSnapshot.id,
@@ -160,7 +161,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
   const id = db.ref("combatRequests").push().key, now = Date.now(), width = window.innerWidth, height = window.innerHeight
   try {
     const result = await transactCombatRoot(current => {
-      if (!current || current.sessionControl?.phase || (current.combat?.mob && current.combat.phase !== "finished")) return undefined
+      if (!current || current.sessionControl?.phase || current.game?.pendingGMAction || (current.combat?.mob && current.combat.phase !== "finished")) return undefined
       const root = combatClone(current), level = Math.max(1, Math.round(COMBAT_HEROES.reduce((sum, hero) => sum + combatInt(root.characters?.[hero]?.lvl, 1), 0) / 3))
       const tier = WORLD_BOSS_NAMES.includes(mainMob)?"boss":forceTier || (CLASSIC_BOSS_NAMES.includes(mainMob)?"boss":mobStats[mainMob].tier)
       root.game ||= {}; root.tokens ||= {}

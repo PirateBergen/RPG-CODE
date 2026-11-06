@@ -54,7 +54,7 @@ function openCharacterSheet(id = null) {
   if (sheet) sheet.dataset.playerId = playerID
   const inv = document.getElementById("inventaire")
   inv.removeAttribute("readonly")
-  const portraits = { greg:"gregsheet.jpg", ju:"jusheet.jpg", elo:"elosheet.jpg", bibi:"bibisheet.jpg" }
+  const portraits = { greg:"gregsheet.jpg", ju:"yusheet.jpg", elo:"elosheet.jpg", bibi:"bibisheet.jpg" }
   document.getElementById("sheetImage").src = "images/" + (portraits[playerID] || "elosheet.jpg")
   document.getElementById("sheetTitle").innerText = playerID.toUpperCase()
   document.querySelectorAll(".playerOnly").forEach(f => { f.style.display = playerID === "bibi" ? "none" : "block" })

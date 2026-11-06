@@ -2063,7 +2063,7 @@ function showHighPNJScroll(name) {
   const old=document.getElementById("highPNJScroll"); if(old) old.remove()
   const scroll=document.createElement("div"); scroll.id="highPNJScroll"; scroll.style.cssText="position:fixed;bottom:8%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:99999999;"
   const el=document.createElement("div"); el.innerText=name; el.style.cssText="font-family:'Cinzel Decorative','Cinzel',serif;font-size:32px;letter-spacing:4px;font-weight:900;color:#f5e6c8;text-shadow:0 0 10px rgba(0,0,0,0.9),2px 2px 4px black;text-align:center;opacity:0;transition:opacity 0.5s ease;"; scroll.appendChild(el); document.body.appendChild(scroll)
-  setTimeout(()=>el.style.opacity="1",20); setTimeout(()=>{ el.style.opacity="0"; setTimeout(()=>{ scroll.remove(); db.ref("game/highPNJName").remove() },500) },5000)
+  setTimeout(()=>el.style.opacity="1",20); setTimeout(()=>{ el.style.opacity="0"; setTimeout(()=>{ scroll.remove(); if(isGM)db.ref("game/highPNJName").remove().catch(error=>console.warn(error)) },500) },5000)
 }
 
 /* ========================= */

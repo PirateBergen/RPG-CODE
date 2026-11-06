@@ -1717,7 +1717,7 @@ db.ref("game/map").on("value", snap => {
 
   const map  = document.getElementById("map")
   const fade = document.getElementById("fadeScreen")
-  if (parseFloat(fade.style.opacity) >= 1) return
+  const transition = window.__mapTransitionSequence = (window.__mapTransitionSequence || 0) + 1
 
   const previousMap = currentMap
   const isFirst = firstMapLoad
@@ -1735,6 +1735,7 @@ db.ref("game/map").on("value", snap => {
   fade.style.transition = "opacity 0.8s ease"; fade.style.opacity = 1; fade.style.pointerEvents = "none"
 
   setTimeout(() => {
+    if(transition !== window.__mapTransitionSequence)return
     map.style.backgroundImage = "url('images/" + mapName + "')"
     if (mapName === "MAPMONDE.jpg") { map.style.backgroundSize = "contain"; map.style.backgroundColor = "#0a0a1a" }
     else                            { map.style.backgroundSize = "cover";   map.style.backgroundColor = "" }
@@ -1767,11 +1768,13 @@ db.ref("game/map").on("value", snap => {
   }, 800)
 
   setTimeout(() => {
+    if(transition !== window.__mapTransitionSequence)return
     fade.style.transition = "opacity 1s ease"; fade.style.opacity = 0; fade.style.pointerEvents = "none"
     setTimeout(() => document.body.focus(), 100)
   }, 1200)
 
   setTimeout(() => {
+    if(transition !== window.__mapTransitionSequence)return
     if (mapNames[mapName]) showLocation(mapNames[mapName])
     if (isGM && !auroraActive && Math.random() < 0.03) triggerAurora()
     if (isGM && mapName === "cimetiere.jpg" && !cemeteryEventDone) setTimeout(() => triggerCemeteryEvent(), 1500)
@@ -3978,11 +3981,12 @@ function startGame() {
     const mapName = snapshot.val()
     if (mapName) {
       const map = document.getElementById("map")
-      map.style.backgroundImage = "url('" + mapName + "')"
+      map.style.backgroundImage = "url('images/" + mapName + "')"
       calculateMinZoom(); cameraZoom = minZoom; cameraX = 0; cameraY = 0; updateCamera()
     }
   })
   setTimeout(() => {
+    if(gameState !== GAME_STATE.INTRO)return
     if (isGM) {
       // MJ : cinématique si newGame() vient d'être appelé
       if (window.isNewGame) {

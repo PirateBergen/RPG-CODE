@@ -12,3 +12,5 @@ Exploration : node tests/exploration.cjs. Pour le parcours complet, lancer tests
 Fins de combat : node tests/combat-exit.cjs ; puis tests/firebase-combat-exit.cjs avec le même émulateur local (namespace demo-rpg-exit). Vérifie les cinq rôles, les animations et retours de boss, les KO collectifs, Bibi seule, un écran retardé et une reconnexion.
 
 Malédictions et pouvoirs : node tests/character-effects.cjs ; tests/firebase-character-effects.cjs nécessite l’émulateur local sur 127.0.0.1:9005 (projet demo-rpg-effects). Les cinq sessions sont simulées ; les sons ne sont pas écoutés.
+
+Redémarrage MJ : tests/firebase-session-view.cjs avec l’émulateur Realtime Database local. Le test crée une nouvelle partie dans la base isolée puis des documents neufs pour simuler le rechargement (JSDOM ne navigue pas). Vérifie cartes, PNJ, pions, introduction, commandes MJ et changements rapides de carte.

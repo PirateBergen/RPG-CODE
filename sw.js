@@ -1,6 +1,6 @@
-const CACHE="rpg-code-20261107.20"
+const CACHE="rpg-code-20261107.21"
 const BASE=new URL("./",self.location.href)
-const PRECACHE=["./","index.html","style.css","config.js","state.js","utils.js","access.js","persistence.js","presentation.js","game.js","ui.js","combat.js","combat-core.js","pika-combat.js","combat-runtime.js","exploration-core.js","exploration.js","combat-exit.js","character-effects-core.js","character-effects.js","session-view.js","gm-arbitration.js","entrance.js","reliability.js","local-test-mode.js","manifest.json","fonts/fonts.css"].map(file=>new URL(file,BASE).href)
+const PRECACHE=["./","index.html","style.css","config.js","state.js","utils.js","access.js","persistence.js","presentation.js","game.js","ui.js","character-sheet.js","shops.js","combat.js","combat-core.js","pika-combat.js","combat-runtime.js","exploration-core.js","exploration.js","combat-exit.js","character-effects-core.js","character-effects.js","session-view.js","gm-arbitration.js","entrance.js","reliability.js","local-test-mode.js","manifest.json","fonts/fonts.css"].map(file=>new URL(file,BASE).href)
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(cache=>Promise.allSettled(PRECACHE.map(url=>cache.add(url)))).then(()=>self.skipWaiting())))
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>(k.startsWith("rpg-code-")||k==="rpg-v1")&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())))
 self.addEventListener("fetch",e=>{

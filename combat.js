@@ -216,7 +216,7 @@ function renderCombatInitiativeOverlay(state) {
     card.style.cssText = "padding:14px 12px;border:1px solid " + (isCurrent ? "rgba(255,215,130,0.72)" : "rgba(80,120,150,0.22)") + ";border-radius:16px;background:" + (isCurrent ? "linear-gradient(180deg,rgba(72,50,18,0.94),rgba(18,14,10,0.98))" : "linear-gradient(180deg,rgba(12,22,28,0.9),rgba(7,14,18,0.95))") + ";text-align:center;box-shadow:" + (isCurrent ? "0 16px 32px rgba(0,0,0,0.26), 0 0 22px rgba(214,164,90,0.12)" : "0 12px 24px rgba(0,0,0,0.16)") + ";"
 
     const portrait = document.createElement("img")
-    portrait.src = "images/" + sanitizeAssetName(entry.image || "")
+    portrait.src = "images/" + sanitizeAssetName(entry.id === "ju" ? heroPortraitFile("ju") : entry.image || "")
     portrait.style.cssText = "width:74px;height:74px;object-fit:contain;border-radius:50%;border:2px solid rgba(214,172,96,0.45);margin-bottom:10px;background:rgba(0,0,0,0.22);box-shadow:0 0 0 2px rgba(63,117,136,0.18);"
     portrait.onerror = () => { portrait.style.display = "none" }
     card.appendChild(portrait)

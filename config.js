@@ -1415,7 +1415,7 @@ const ALLY_PNJS = [
 
 
 function heroDisplayName(id) { return ["ju","yu","yulian","ju pion","yu pion"].includes(String(id || "").toLowerCase()) ? "Pika" : String(id || "").toUpperCase() }
-function heroPortraitFile(id) { return id === "ju" ? "pika.png" : id + ".png" }
+function heroPortraitFile(id) { return id === "ju" ? "pika-token.svg" : id + ".png" }
 function migratePikaCharacter(character) {
   if (!character || character.buildVersion === "pika-bard-v1") return false
   const level = Math.max(1, parseInt(character.lvl, 10) || 1)

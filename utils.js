@@ -130,7 +130,7 @@ function getObjectValueLoose(obj, wantedKey) {
 }
 
 function resolveImagePath(path) {
-  if (/(?:^|\/)(?:ju(?: pion)?\.png|yusheet\.jpg)$/i.test(String(path || ""))) return /yusheet/i.test(path) ? "images/pika-sheet.svg" : "images/pika.png"
+  if (/(?:^|\/)(?:ju(?: pion)?\.png|yusheet\.jpg)$/i.test(String(path || ""))) return /yusheet/i.test(path) ? "images/pika-sheet.svg" : /ju pion/i.test(path) ? "images/pika-full.png" : "images/pika-token.svg"
   const src = String(path || "")
   if (!src) return ""
   if (/^(https?:|data:|blob:|\/|images\/)/i.test(src)) return src
@@ -952,7 +952,7 @@ function preloadAssets() {
 
 function scanAssets() {
   const images = Object.keys(mapMusic).concat([
-    "greg.png","pika.png","elo.png","bibi.png",
+    "greg.png","pika.png","pika-token.svg","pika-full.png","elo.png","bibi.png",
     "gregsheet.jpg","pika-sheet.svg","elosheet.jpg","bibisheet.jpg",
     "paper.png","paper1.png"
   ])

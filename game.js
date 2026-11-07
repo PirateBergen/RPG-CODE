@@ -2437,14 +2437,7 @@ db.ref("curse/wheel").on("value", snap => {
   if(typeof presentSavedCurseWheel==="function")presentSavedCurseWheel(data)
 })
 
-function cleanupRuneChallengeUI() {
-  const overlay = document.getElementById("runeChallengeOverlay")
-  if (overlay) overlay.remove()
-  const playerBtn = document.getElementById("playerCodeBtn")
-  if (playerBtn) playerBtn.remove()
-  window.activeRuneChallengeData = null
-  _state.runeJustOpened = false
-}
+
 
 // ─── runeChallenge ───
 db.ref("game/runeChallenge").on("value", snap => {

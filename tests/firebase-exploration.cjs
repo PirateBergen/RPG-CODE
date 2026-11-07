@@ -7,6 +7,7 @@ const list=[];let env;const all=fn=>list.every(fn),tick=ms=>list.forEach(s=>{s.c
  await env.withSecurityRulesDisabled(c=>c.database().ref().set(fixture));
  for(const [uid,hero]of [['gm',null],['g','greg'],['y','ju'],['e','elo'],['gm2',null]])list.push(fullScreen(env.authenticatedContext(uid).database(),uid,hero));
  await until(()=>all(s=>s.w.__authReady&&(s.hero?s.w.__authPlayerId===s.hero:s.w.__authRole==='gm')));for(const s of list)s.start();await delay(250);tick(3000);await delay(300);
+ await until(()=>all(s=>!s.hero||s.evaluate('myToken?.id')===s.hero));
  const [gm,greg,yu,elo,gm2]=list,read=async p=>(await gm.database.ref(p).once('value')).val();
  await test('Démarrage réel des scripts : cinq sessions sans erreur ni lecture privée refusée',()=>{for(const s of list){assert.deepEqual(s.errors,[]);assert.deepEqual(s.warnings,[]);if(s.hero)assert.equal(s.evaluate('myToken?.id'),s.hero)}});
  await test('Déplacement de Greg : Bibi suit par défaut et positions reçues sur les cinq écrans',async()=>{await greg.w.writeExplorationPosition('greg',{x:250,y:300,facing:1});await until(()=>all(s=>s.w.__tokenPositions.bibi?.x===330));for(const s of list){assert.equal(s.w.document.getElementById('greg').style.left,'250px');assert.equal(s.w.document.getElementById('bibi').style.left,'330px')}});

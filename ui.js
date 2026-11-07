@@ -2312,9 +2312,6 @@ function toggleMJLog() {
   log.style.maxHeight = collapsed ? "260px" : "auto"
 }
 
-/* ========================= */
-/* DOCUMENTS / INDICES       */
-/* ========================= */
 
 function toggleDiceLog() {
   const content = document.getElementById("diceLogContent")
@@ -2327,36 +2324,6 @@ function toggleDiceLog() {
   log.style.maxHeight = collapsed ? "260px" : "auto"
 }
 
-function showDocument(image,title){if(!isGM)return;db.ref("game/document").set({image,title,time:Date.now()}).catch(error=>showNotification(error.message))}
-
-function hideDocument() {
-  if(!isGM)return
-  db.ref("game/document").remove()
-}
-
-function _renderDocument(data) {
-  const existing = document.getElementById("documentOverlay"); if (existing) existing.remove()
-  if (!data) return
-
-  const overlay = document.createElement("div"); overlay.id = "documentOverlay"
-  overlay.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;z-index:9999995;opacity:0;transition:opacity 0.8s ease;"
-
-  const img = document.createElement("img"); img.src = (typeof resolveImagePath === "function") ? resolveImagePath(data.image) : (/^(https?:|data:|blob:|\/|images\/)/i.test(String(data.image || "")) ? String(data.image || "") : "images/" + data.image)
-  img.style.cssText = "max-height:80vh;max-width:80vw;object-fit:contain;filter:drop-shadow(0 20px 50px rgba(0,0,0,0.9));animation:pnjIdle 3s ease-in-out infinite;pointer-events:none;"
-  img.onerror = () => img.style.opacity = "0.3"
-  overlay.appendChild(img)
-
-  // Bouton fermer — visible pour tous (tablettes sans Echap)
-  const closeBtn = document.createElement("button")
-  closeBtn.innerText = "✕"
-  closeBtn.style.cssText = "position:fixed;top:18px;right:18px;width:42px;height:42px;border-radius:50%;background:rgba(20,12,8,0.95);border:1px solid rgba(212,168,53,0.6);color:#d4a835;font-size:20px;cursor:pointer;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.7);touch-action:manipulation;"
-  closeBtn.onclick = () => { if (isGM) hideDocument(); else overlay.remove() }
-  overlay.appendChild(closeBtn)
-
-  document.body.appendChild(overlay)
-  setTimeout(() => overlay.style.opacity = "1", 30)
-  playSound("parcheminSound", 0.7)
-}
 
 function grantAllyActionToPlayers(pnj, action) {
   db.ref("game/playerAllyAccess").set({

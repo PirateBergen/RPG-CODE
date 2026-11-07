@@ -6306,3 +6306,7 @@ body[data-entry-stage="choice"] #intro { display:none !important; }
 .entranceAccounts button{border-color:transparent;color:#c1ad81;text-decoration:underline;text-underline-offset:4px;}
 @media(max-width:650px){.entranceChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entranceChoices .heroCard{min-height:220px}.heroCard .heroArt{height:130px}.heroCard .heroName{font-size:18px}.entranceEyebrow{letter-spacing:2px;font-size:9px}.entranceGMActions button{width:100%}#entranceSelection{padding-top:10px}}
 @media(prefers-reduced-motion:reduce){.entranceChoices .heroCard{transition:none}.entranceChoices .heroCard:hover:not(:disabled){transform:none}}
+
+body:not([data-entry-stage="playing"]) #diceBar,body:not([data-entry-stage="playing"]) #diceLog{display:none!important;}
+body[data-test-mode="true"] #startScreen{padding-top:68px;}
+body[data-test-mode="true"] #audioSliders{top:48px;}

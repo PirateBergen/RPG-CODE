@@ -1,5 +1,6 @@
 "use strict"
 window.__isolatedTestMode = new URLSearchParams(location.search).get("test") === "1"
+if (window.__isolatedTestMode) document.body.dataset.testMode = "true"
 function rpgStorageKey(key) { return window.__isolatedTestMode ? "test." + key : key }
 function createIsolatedTestDatabase(live) {
   const storageKey = "rpg.test.session.v1", clone = value => value == null ? null : JSON.parse(JSON.stringify(value))

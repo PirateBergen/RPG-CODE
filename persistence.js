@@ -507,12 +507,6 @@ async function awaitResumeSessionPresentation() {
   if (window.__sessionBusy) { event.preventDefault(); event.stopImmediatePropagation() }
 }, true))
 
-function presentSavedCurseWheel(wheel) {
-  window.__activeCurseWheel = wheel || null
-  if (!wheel || !gameStarted || window.__sessionBusy) return
-  if (wheel.state === "intro" || wheel.state === "wheel") showCurseWheelScreen(wheel.player)
-  if (wheel.state === "result" && !document.getElementById("curseResultScreen")) showCurseResult(wheel.player, wheel.result)
-}
 
 async function recoverExpiredSessionLock() {
   if (window.__authRole !== "gm" || persistenceOperation) return false

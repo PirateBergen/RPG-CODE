@@ -12,20 +12,6 @@ function _getCombatArenaMap(mob, tier) {
   return tier === "boss" ? "arenefinal.jpg" : "arene.jpg"
 }
 
-function _syncCombatStart(mainMob, tier, extraMobs) {
-  return db.ref("game/combatState").set({
-    active: true,
-    mainMob,
-    tier,
-    extraMobs: extraMobs || [],
-    returnMap: currentMap || "taverne.jpg",
-    time: Date.now()
-  })
-}
-
-function _syncCombatEnd() {
-  return db.ref("game/combatState").remove()
-}
 
 function getCombatTurnState() {
   return window.__combatTurnState || null
@@ -53,7 +39,6 @@ function getCombatActorLabel(actorId) {
   return id.toUpperCase()
 }
 
-function getInitiativeParticipants() { return combatParticipants({ characters: window.__publicCharacters || {}, combat: window.__combatSnapshot || {} }) }
 
 async function initCombatTurnState() {
   if (!isGM || window.__sessionBusy) return

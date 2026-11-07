@@ -28,8 +28,8 @@ async function requestCharacterEffect(kind,actor,payload={}){
 }
 
 function showCurseIntro(player){showNotification(heroDisplayName(player).toUpperCase()+" : malédiction complète, en attente de la roue du MJ…")}
-function triggerCurseWheel(){ /* Le MJ coordonne automatiquement les personnages à huit points. */ }
-function applyCurseEffect(){ /* L’effet est appliqué une seule fois dans la transaction du MJ. */ }
+
+
 async function spinCurseWheel(player){
  await requestCharacterEffect("curse-spin",player,{wheelId:window.__activeCurseWheel?.id||""})
  if(["intro","wheel"].includes(window.__activeCurseWheel?.state)){window.__cursePresented=null;presentSavedCurseWheel(window.__activeCurseWheel)}

@@ -517,18 +517,6 @@ function hasPlayerUsedCombatSpecial(playerId) {
   return !!(window.__playerCombatSpecialsUsed && window.__playerCombatSpecialsUsed[playerId])
 }
 
-function markPlayerCombatSpecialUsed(playerId) {
-  if (!window.__playerCombatSpecialsUsed) window.__playerCombatSpecialsUsed = {}
-  window.__playerCombatSpecialsUsed[playerId] = true
-  db.ref("combat/playerSpecials/" + playerId).set(true).catch(error => showNotification("Spéciale non enregistrée : " + error.message))
-}
-
-function markPlayerCombatTrigger(playerId, key) {
-  if (!window.__playerCombatFlags) window.__playerCombatFlags = {}
-  if (!window.__playerCombatFlags[playerId]) window.__playerCombatFlags[playerId] = {}
-  window.__playerCombatFlags[playerId][key] = true
-  db.ref("combat/playerFlags/" + playerId + "/" + key).set(true).catch(error => console.warn(error))
-}
 
 function hasPlayerCombatTrigger(playerId, key) {
   return !!(window.__playerCombatFlags && window.__playerCombatFlags[playerId] && window.__playerCombatFlags[playerId][key])
@@ -590,9 +578,6 @@ function getDistanceBetweenTokens(idA, idB) {
   return Math.sqrt(dx * dx + dy * dy)
 }
 
-function isGregNearMobForBite() {
-  return getDistanceBetweenTokens("greg", "mobToken") <= 185
-}
 
 function isPhysicalMobAttack(attack) {
   const effect = String(attack?.effect || "").toLowerCase()
@@ -710,34 +695,6 @@ function closeCombatPreviewHUD() {
   document.querySelectorAll(".gmPlayerTestBtn").forEach(btn => btn.classList.remove("active"))
 }
 
-function renderPlayerAttackResolution(playerId, attack, roll, total, outcome) {
-  const statKey = getAttackStatKey(attack.stat)
-  const statLabel = String(attack.stat || statKey).toUpperCase()
-  const verb = outcome.mode === "heal" ? "restaure" : "inflige"
-  const target = outcome.mode === "heal" ? heroDisplayName(playerId).toUpperCase() : (outcome.targetName || "MOB")
-  const amount = outcome.amount || 0
-  showNotification(
-    attack.name + " — d" + attack.dice + ": " + roll + " + " + statLabel + " (" + (total - roll) + ") • " +
-    verb + " " + amount + (outcome.mode === "heal" ? " PV" : " dégâts") + " à " + target
-  )
-}
-
-function renderPlayerAttackResolutionV2(playerId, attack, roll, total, outcome) {
-  const statKey = getAttackStatKey(attack.stat)
-  const statLabel = String(attack.stat || statKey).toUpperCase()
-  const verb = outcome.mode === "heal" ? "restaure" : "inflige"
-  const target = outcome.mode === "heal" ? heroDisplayName(playerId).toUpperCase() : (outcome.targetName || "MOB")
-  const amount = outcome.amount || 0
-  const parts = ["d" + attack.dice + ": " + roll]
-  const statBonus = outcome.statBonus != null ? outcome.statBonus : (total - roll)
-  if (statBonus) parts.push(statLabel + " +" + statBonus)
-  if (outcome.flatBonus) parts.push("Bonus +" + outcome.flatBonus)
-  if (outcome.multiplier && outcome.multiplier !== 1) parts.push("x" + outcome.multiplier)
-  showNotification(
-    attack.name + " — " + parts.join(" • ") + " • " +
-    verb + " " + amount + (outcome.mode === "heal" ? " PV" : " dégâts") + " à " + target
-  )
-}
 
 function getPlayerSpecialPresentation(playerId) {
   const key = String(playerId || "").toLowerCase()
@@ -1429,12 +1386,6 @@ function _renderCombatStatusPanelNow() {
 
 function resolvePlayerAttack(attack, options = {}) { return requestHeroCombatAction(attack, options) }
 
-function cleanupGMPlayerSheetListener(playerID) {
-  if (!window.__gmMiniRefs || !window.__gmMiniRefs[playerID]) return
-  const binding = window.__gmMiniRefs[playerID]
-  binding.ref.off("value", binding.cb)
-  delete window.__gmMiniRefs[playerID]
-}
 
 function showCombatHUD() {
   const player = getCombatHUDPlayerId()
@@ -1544,66 +1495,7 @@ function openGMPlayerSheet(playerID) {
 /* ========================= */
 
 // Ciblage intelligent selon le type d'attaque
-function _smartTarget(attack) {
-  const players = ["greg","ju","elo","bibi"]
-  const alivePlayers = players.filter(p => {
-    const tok = document.getElementById(p)
-    return tok && !tok.classList.contains("playerDead")
-  })
-  if (!alivePlayers.length) return players[0]
 
-  const effect = attack.effect || ""
-  const name   = (attack.name || "").toLowerCase()
-
-  // Attaque de zone — tous les joueurs
-  if (effect === "all") return "all"
-
-  // Attaque corps à corps — joueur le plus proche du token mob
-  if (isPhysicalMobAttack(attack)) {
-    const mobTok = document.getElementById("mobToken")
-    if (mobTok) {
-      const mobX = parseInt(mobTok.style.left)||600, mobY = parseInt(mobTok.style.top)||200
-      const ranked = []
-      alivePlayers.forEach(pid => {
-        const tok = document.getElementById(pid); if (!tok) return
-        const dx = (parseInt(tok.style.left)||0) - mobX
-        const dy = (parseInt(tok.style.top)||0)  - mobY
-        const dist = Math.sqrt(dx*dx + dy*dy)
-        ranked.push({ pid, dist })
-      })
-      ranked.sort((a, b) => a.dist - b.dist)
-      if (!ranked.length) return alivePlayers[0]
-      if (ranked.length === 1) return ranked[0].pid
-      const proximityRoll = Math.random()
-      if (proximityRoll < 0.68) return ranked[0].pid
-      if (proximityRoll < 0.9) return ranked[1].pid
-      return ranked[Math.floor(Math.random() * ranked.length)].pid
-    }
-  }
-
-  // Attaque de malédiction — joueur avec le moins de malédictions actives
-  if (effect === "curse") {
-    // Cibler celui qui a le moins de malédictions (pire cible = celle qu'on veut affaiblir)
-    return alivePlayers[Math.floor(Math.random() * alivePlayers.length)]
-  }
-
-  // Attaque à distance / magie — joueur avec le plus de HP (menace principale)
-  if (effect === "ranged" || effect === "magic" || name.includes("flèche") || name.includes("magie") || name.includes("sort")) {
-    // Lecture des HP depuis les tokens stats si dispo, sinon aléatoire
-    const hpEls = alivePlayers.map(pid => {
-      const el = document.querySelector("#stats_" + pid + " .hpText, #stats_" + pid + " .lowHPText")
-      const txt = el ? el.innerText : ""
-      const m = txt.match(/(\d+)\//)
-      return { pid, hp: m ? parseInt(m[1]) : 50 }
-    })
-    hpEls.sort((a,b) => b.hp - a.hp)
-    // 60% chance de cibler le plus fort, 40% aléatoire
-    return Math.random() < 0.6 ? hpEls[0].pid : alivePlayers[Math.floor(Math.random()*alivePlayers.length)]
-  }
-
-  // Par défaut — aléatoire avec légère préférence pour les HP bas
-  return alivePlayers[Math.floor(Math.random() * alivePlayers.length)]
-}
 
 function renderAllMobPanels() {
   const ex=document.getElementById("mobAttackPanel"); if(ex) ex.remove()
@@ -1699,7 +1591,7 @@ function buildMobSubPanel(mobData, slot) {
         btn.onclick=()=>{
           const target = panel._manualTarget || null
           panel._currentTarget = target === "all" ? null : target
-          launchMobAttackFromSlotV2(atk, mobData, panel, target, slot)
+          launchMobAttackFromSlot(atk, mobData, panel, target, slot)
         }
       }
       bindCombatActionState(btn,slot,atk,false,true)
@@ -1733,7 +1625,7 @@ function buildMobSubPanel(mobData, slot) {
         sBtn.onclick=()=>{
           const target = specialAtk.effect === "all" ? "all" : (panel._manualTarget || null)
           panel._currentTarget = target === "all" ? null : target
-          launchMobAttackFromSlotV2(specialAtk, mobData, panel, target, slot)
+          launchMobAttackFromSlot(specialAtk, mobData, panel, target, slot)
         }
       }
       if(mobData.balanceClass==="world"&&!specialUsed){
@@ -1821,38 +1713,8 @@ function buildMobSubPanel(mobData, slot) {
   return panel
 }
 
-function tickMobPlayerPoison() {}
-
-function tickMobPlayerBleed() {}
-
-function tickTimedCombatMobState() {}
-
-function applyMobDamageToPlayer(pid, dmg, attack, mobData, slot) {
-  db.ref("characters/" + pid + "/hp").transaction(cur => Math.max(0, safeInt(cur) - dmg))
-  if (pid !== "bibi" && attack.effect === "curse") {
-    db.ref("characters/" + pid + "/curse").transaction(cur => Math.min(8, safeInt(cur) + 1))
-  }
-  if (attack.special && attack.healSelfRatio && slot) {
-    const heal = Math.max(1, Math.round(dmg * attack.healSelfRatio))
-    db.ref("combat/" + slot).once("value", mobSnap => {
-      const mob = mobSnap.val()
-      if (!mob) return
-      db.ref("combat/" + slot + "/hp").set(Math.min(mob.maxHP || mob.hp || 0, (mob.hp || 0) + heal))
-    })
-  }
-}
 
 function launchMobAttackFromSlot(attack, mobData, panel, forcedTarget, slot) { return requestEnemyCombatAction(attack,mobData,panel,forcedTarget,slot) }
-
-function animateMobDice(cb) {
-  window.__mobAttackResolving = true
-  const resolve = cb
-  cb = () => { try { resolve() } finally { window.__mobAttackResolving = false } }
-  const d20=document.getElementById("mobD20"); if(!d20){ cb(); return }
-  let spins=0; const iv=setInterval(()=>{ d20.style.transform=`rotate(${Math.random()*360}deg) scale(1.3)`; if(++spins>8){ clearInterval(iv); d20.style.transform=""; cb() } },120)
-}
-
-function launchMobAttackFromSlotV2(attack, mobData, panel, forcedTarget, slot) { return requestEnemyCombatAction(attack,mobData,panel,forcedTarget,slot) }
 
 function addMobToFight(mobId, forceTier) { return addReliableCombatMob(mobId, forceTier) }
 
@@ -2327,7 +2189,7 @@ function toggleCurse(level) {
     if (previousLevel < 8) {
       window.__curseWheelTriggeredFor = String(targetId).toLowerCase()
       showCurseIntro(targetId)
-      triggerCurseWheel(targetId)
+
     }
   }
   if (level < 8 && targetToken) {
@@ -2373,29 +2235,7 @@ function saveCorruption() {
   if (!targetId) return
   db.ref("characters/" + targetId + "/corruption").set(corruptionLevel)
 }
-function triggerCurseWheel(playerID) {
-  if (!canAccessCharacter(playerID) || window.__sessionBusy) return
-  const id = db.ref("curse/wheel").push().key
-  return db.ref("curse/wheel").transaction(current => current ? undefined : { id, player: playerID, state: "intro", time: Date.now() })
-    .catch(error => showNotification("Roue non enregistrée : " + error.message))
-}
 
-function showCurseIntro(playerID) {
-  playSound("curseSound"); playSound("curse1Sound"); let s=document.getElementById("curseIntroScreen"); if(!s){ s=document.createElement("div"); s.id="curseIntroScreen"; document.body.appendChild(s) }; s.innerHTML=""; s.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:999999999;animation:cursePulse 0.5s ease-in-out infinite alternate;"
-  const t=document.createElement("div"); t.innerText="VOUS ETES MAUDIT"; t.style.cssText="font-family:Cinzel;font-size:60px;color:#ff0000;text-shadow:0 0 20px red;animation:curseShake 0.1s infinite;text-align:center;margin-bottom:30px;"; s.appendChild(t)
-  const sub=document.createElement("div"); sub.innerText=heroDisplayName(playerID).toUpperCase()+" doit affronter son destin..."; sub.style.cssText="font-family:IM Fell English;font-size:24px;color:#cc4444;text-align:center;opacity:0.8;"; s.appendChild(sub)
-  screenShakeHard(); flashRed()
-  setTimeout(() => {
-    if (s && s.parentNode) s.remove()
-    // GM met à jour Firebase pour les autres clients
-    if (isGM) {
-      db.ref("curse/wheel/state").set("wheel")
-    } else {
-      // Le joueur maudit affiche la roue directement (sans dépendre d'un write Firebase)
-      showCurseWheelScreen(playerID)
-    }
-  }, 3000)
-}
 
 function showCurseWheelScreen(playerID) {
   const isCursed = window.__authRole !== "gm" && window.__authPlayerId === playerID
@@ -2442,14 +2282,6 @@ function drawCurseWheel(canvas, rotation) {
   ctx.save(); ctx.translate(cx,cy-radius-20); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-16,-26); ctx.lineTo(16,-26); ctx.closePath(); ctx.fillStyle="#cc0000"; ctx.fill(); ctx.restore()
 }
 
-function spinCurseWheel(playerID) {
-  const canvas=document.getElementById("curseWheelCanvas"); if(!canvas) return
-  window.__curseResolving = true
-  const n=curseWheelChoices.length,arc=(Math.PI*2)/n,ri=Math.floor(Math.random()*n)
-  let total=(Math.PI*2*(5+Math.random()*3))+(-(ri*arc)-arc/2), start=null, cur=0
-  function animate(ts) { if(!start) start=ts; const p=Math.min((ts-start)/4000,1); cur=total*(1-Math.pow(1-p,3)); drawCurseWheel(canvas,cur); if(p<1) requestAnimationFrame(animate); else setTimeout(()=>db.ref("curse/wheel").update({ state:"result",result:ri,player:playerID }).finally(()=>{ window.__curseResolving = false }),500) }
-  requestAnimationFrame(animate)
-}
 
 function showCurseResult(playerID, resultIndex) {
   const safeIndex = Math.max(0, Math.min(curseWheelChoices.length - 1, parseInt(resultIndex, 10) || 0))
@@ -2458,35 +2290,18 @@ function showCurseResult(playerID, resultIndex) {
   const ic=document.createElement("div"); ic.innerText=ch.icon; ic.style.cssText="font-size:clamp(60px,12vmin,100px);margin-bottom:16px;animation:curseResultPop 0.5s ease-out;"; s.appendChild(ic)
   const t=document.createElement("div"); t.innerText=ch.label; t.style.cssText="font-family:Cinzel;font-size:clamp(28px,6vw,56px);color:#ff0000;text-shadow:0 0 20px red;margin-bottom:12px;text-align:center;animation:curseResultPop 0.6s ease-out;"; s.appendChild(t)
   const d=document.createElement("div"); d.innerText=ch.description; d.style.cssText="font-family:IM Fell English;font-size:clamp(16px,2.5vw,22px);color:#cc6666;text-align:center;margin-bottom:30px;"; s.appendChild(d)
-  if (isGM) applyCurseEffect(playerID,safeIndex)
-  else if (myToken && myToken.id===playerID) applyCurseEffect(playerID,safeIndex)
+
 
 }
 
-function applyCurseEffect(playerID, ri) {
-  if (!canAccessCharacter(playerID)) return
-  const wheel = window.__activeCurseWheel
-  const rollId = wheel && String(wheel.id || wheel.time || "")
-  if (!rollId) return
-  return db.ref("characters/" + playerID).transaction(current => resolveCharacterCurse(current, playerID, rollId, ri) || undefined)
-    .catch(error => showNotification("Effet de malédiction non enregistré : " + error.message))
-}
 
 /* ========================= */
 /* POUVOIR                   */
 /* ========================= */
 
-function activatePowerMode(playerID) { if(powerModeActive) return; powerModeActive=true; playSound("powerSound",0.75); const tok=document.getElementById(playerID); if(tok) tok.classList.add("powerReady","powerFull"); if(myToken&&myToken.id===playerID) showUsePowerBtn(playerID) }
+
 function showUsePowerBtn(playerID) { const ex=document.getElementById("usePowerBtn"); if(ex) ex.remove(); const btn=document.createElement("button"); btn.id="usePowerBtn"; btn.dataset.playerId=playerID; btn.innerText=playerID==="ju"?"APPÉTIT ABYSSAL":"LIBERER LE POUVOIR"; btn.style.cssText="position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:14px 40px;font-family:Cinzel;font-size:20px;letter-spacing:2px;background:linear-gradient(180deg,#8a6000,#4a3000);color:gold;border:2px solid gold;border-radius:10px;cursor:pointer;z-index:999999999;box-shadow:0 0 20px gold,0 0 40px orange;animation:powerBtnPulse 1s ease-in-out infinite alternate;text-shadow:0 0 10px gold;"; btn.onclick=()=>usePower(playerID); document.body.appendChild(btn) }
 
-function usePower(playerID) {
-  const btn=document.getElementById("usePowerBtn"); if(btn) btn.remove()
-  db.ref("game/powerSound").set({ player:playerID, time:Date.now() }); playSound("powerSound",0.9); powerExplosion(); powerExplosion(); flashGold(); flashGold(); screenShakeHard()
-  for(let i=0;i<30;i++) setTimeout(()=>{ const p=document.createElement("div"); p.style.cssText=`position:fixed;width:${4+Math.random()*8}px;height:${4+Math.random()*8}px;border-radius:50%;background:gold;left:${Math.random()*100}%;top:${Math.random()*100}%;pointer-events:none;z-index:9999998;box-shadow:0 0 8px gold;animation:goldRise 1.5s ease-out forwards;`; document.body.appendChild(p); setTimeout(()=>p.remove(),1500) },i*60)
-  showNotification(heroDisplayName(playerID).toUpperCase()+" LIBERE SON POUVOIR !"); addMJLog(heroDisplayName(playerID).toUpperCase()+" utilise son pouvoir !"); db.ref("characters/"+playerID+"/corruption").set(0); powerModeActive=false
-  const tok=document.getElementById(playerID); if(tok) setTimeout(()=>tok.classList.remove("powerReady","powerFull"),2000)
-  if(currentSheetPlayer===playerID){ corruptionLevel=0; document.querySelectorAll(".corruptionPoint").forEach(pt=>pt.classList.remove("active")) }
-}
 
 /* ========================= */
 /* AURORE BORÉALE            */
@@ -3331,7 +3146,6 @@ function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
 
 // Aucun jet local après une invocation : le résultat partagé est présenté par presentation.js.
 
-function _applyAllyResult() { /* Présentation uniquement ; la résolution est centralisée. */ }
 
 function _playAllyAnim(animType, color, isCrit) {
   // Animation solennelle — voile coloré + particules lentes

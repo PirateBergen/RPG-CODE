@@ -3,6 +3,7 @@ const results=[],screens=[],delay=ms=>new Promise(r=>setTimeout(r,ms));async fun
 let env;(async()=>{try{
  env=await initializeTestEnvironment({projectId:'demo-rpg-arbitration',database:{host:'127.0.0.1',port:9005,rules:fs.readFileSync(path.resolve(__dirname,'../firebase.database.rules.json'),'utf8')}});
  await env.withSecurityRulesDisabled(c=>c.database().ref().set({roles:{gm:'gm',gm2:'gm'},profiles:{g:{playerId:'greg'},y:{playerId:'ju'},e:{playerId:'elo'}},characters:Object.fromEntries(['greg','ju','elo','bibi'].map(id=>[id,{hp:100,lvl:5,force:10,perspi:10,charme:10,chance:10,defense:10,curse:0,corruption:0,inventaire:'Arc',notes:'SECRET '+id}])),tokens:{greg:{x:100,y:100},ju:{x:300,y:100},elo:{x:400,y:100},bibi:{x:180,y:100}},game:{map:'prairie.jpg'}}));
+ await env.withSecurityRulesDisabled(c=>c.database().ref('characters/ju/buildVersion').set('pika-bard-v1'));
  for(const [uid,hero]of [['gm',null],['g','greg'],['y','ju'],['e','elo'],['gm2',null]]){const s=fullScreen(env.authenticatedContext(uid).database(),uid,hero);s.messages=[];const original=s.w.showNotification;s.w.showNotification=(m,...a)=>{s.messages.push(String(m));return original(m,...a)};screens.push(s)}
  await until(()=>screens.every(s=>s.w.__authReady&&(s.hero?s.w.__authPlayerId===s.hero:s.w.__authRole==='gm')));screens.forEach(s=>s.start());await pump(3000);
  const gm=screens[0],g=screens[1],gm2=screens[4],read=async p=>(await gm.database.ref(p).once('value')).val();
@@ -10,7 +11,7 @@ let env;(async()=>{try{
  async function decision(d,id){const p=await read('combat/pendingResolution');return gm.w.submitCombatAction('resolveIntervention','mj',{pendingId:p.id,revision:p.revision,decision:d})}
  await test('Action libre hors combat : prévision partagée, joueurs spectateurs',async()=>{
    gm.w.openGMFreeAction();assert(gm.w.document.getElementById('gmArbitrationModal').textContent.includes('Action libre'));
-   await gm.w.gmArbitrationSend('free',{kind:'prepare',actor:'greg',action:{label:'Greg soigne Yu grâce à sa stratégie',targets:['ju'],hpMode:'heal',amount:5,die:20,effect:'none'}});
+   await gm.w.gmArbitrationSend('free',{kind:'prepare',actor:'greg',action:{label:'Greg soigne Pika grâce à sa stratégie',targets:['ju'],hpMode:'heal',amount:5,die:20,effect:'none'}});
    await until(()=>screens.every(s=>s.w.gmArbitrationPending()));for(const s of screens){const modal=s.w.document.getElementById('gmArbitrationModal');assert(modal);assert(modal.textContent.includes('Jet conservé'));if(s.hero)assert.equal(modal.querySelectorAll('select,textarea,input').length,0)}assert.equal(await read('characters/ju/hp'),100);
    const p=await read('game/pendingGMAction');await gm.w.gmArbitrationSend('resolveIntervention',{kind:'resolve',pendingId:p.id,revision:0,decision:{mode:'normal',narrative:'Le bandage improvisé fonctionne.'}});
    await until(async()=>await read('characters/ju/hp')===105);await pump(16000);for(const s of screens)assert(s.messages.some(m=>m.includes('Le bandage improvisé fonctionne.')))

@@ -2434,7 +2434,7 @@ db.ref("curse/wheel").on("value", snap => {
     if(typeof presentSavedCurseWheel==="function")presentSavedCurseWheel(null)
     return
   }
-  presentSavedCurseWheel(data)
+  if(typeof presentSavedCurseWheel==="function")presentSavedCurseWheel(data)
 })
 
 function cleanupRuneChallengeUI() {
@@ -3251,7 +3251,7 @@ function watchCharacter(snapshot) {
     !window.__curseWheelTriggeredFor
   ) {
     window.__curseWheelTriggeredFor = localId
-    triggerCurseWheel(playerID)
+
   } else if (
     localId &&
     String(playerID).toLowerCase() === localId &&

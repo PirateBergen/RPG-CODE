@@ -1,5 +1,5 @@
 "use strict"
-function isPikaCombatNpc(name) { return /^(?:ju\s*pion|yu\s*pion|you\s*pion|pika)$/i.test(String(name || "")) }
+
 function pikaHypnosisThreshold(mob) {
   const kind = mob.balanceClass || getMobBalanceClass(mob.name, mob.tier)
   return ({weak:2,normal:2,strong:7,boss:10,world:12})[kind] || 7

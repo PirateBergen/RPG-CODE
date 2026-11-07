@@ -437,9 +437,8 @@ const mobAttackOverrides = {
     { name:"Coup de diagonale", icon:"✨", dmgMin:3, dmgMax:7, effect:null, desc:"Presque élégant, pas vraiment" }
   ],
   "ju pion": [
-    {name:"French cancan",icon:"👢",dice:12,pikaKind:"cancan",dmgMin:6,dmgMax:12,effect:null,desc:"Coups de pied au contact : 1 à 4 selon le dé."},
-    {name:"Je suis une fille",icon:"✧",dice:12,pikaKind:"hypnosis",dmgMin:0,dmgMax:0,effect:"stun",desc:"Hypnotise un héros 1 tour (2 en critique). Réussite sur 4+. Recharge : 3 tours."},
-    {name:"Rire KRRKRR",icon:"✨",dice:12,pikaKind:"laugh",dmgMin:7,dmgMax:13,effect:"magic",desc:"Un rire bizarre et magique. En critique, ricochet ou dégâts renforcés."}
+    {name:"Pirouette piquante",icon:"💃",dmgMin:6,dmgMax:10,effect:null,desc:"Un pas de danse trompeur suivi d’un coup unique bien placé."},
+    {name:"Couplet déroutant",icon:"🎵",dmgMin:4,dmgMax:8,effect:"debuff",desc:"Un refrain qui brouille les idées : dégâts et −2 en Force et Défense pendant 2 rounds, sans hypnose."}
   ],
   "greg pion": [
     { name:"Morsure de pion", icon:"♟", dmgMin:5, dmgMax:9, effect:null, desc:"Une agressivité disproportionnée" },
@@ -515,13 +514,13 @@ function _getFallbackMobSpecialAttack(mobName, mobTier) {
 }
 
 function getMobSpecialAttack(mobName, mobTier) {
-  const key = String(mobName || "").toLowerCase()
+  const key = /^(?:(?:ju|yu|you)\s*pion|pika|you|yu)$/i.test(String(mobName || "").trim()) ? "ju pion" : String(mobName || "").toLowerCase()
   const attack = mobSpecialAttacks[key] || _getFallbackMobSpecialAttack(mobName, mobTier)
   return attack ? { ...attack, special:true, oncePerCombat:true } : null
 }
 
 function getMobAttacksForMob(mobName, mobTier) {
-  const key = String(mobName || "").toLowerCase()
+  const key = /^(?:(?:ju|yu|you)\s*pion|pika|you|yu)$/i.test(String(mobName || "").trim()) ? "ju pion" : String(mobName || "").toLowerCase()
   const attacks = mobAttackOverrides[key]
   if (attacks && attacks.length) return attacks.map(attack => ({ ...attack }))
   return (mobAttacks[mobTier] || mobAttacks.weak).map(attack => ({ ...attack }))
@@ -678,12 +677,12 @@ const mobThemes = {
 }
 
 function getMobTheme(mobName) {
-  const key = String(mobName || "").toLowerCase()
+  const key = /^(?:(?:ju|yu|you)\s*pion|pika|you|yu)$/i.test(String(mobName || "").trim()) ? "ju pion" : String(mobName || "").toLowerCase()
   return mobThemes[key] || null
 }
 
 function getMobWeakness(mobName, mobTier = "weak") {
-  const key = String(mobName || "").toLowerCase()
+  const key = /^(?:(?:ju|yu|you)\s*pion|pika|you|yu)$/i.test(String(mobName || "").trim()) ? "ju pion" : String(mobName || "").toLowerCase()
   const weakness = mobWeaknesses[key]
   if (weakness) {
     const rawPool = Array.isArray(weakness)
@@ -938,7 +937,7 @@ const mobSpecialPresentations = {
 }
 
 function getMobSpecialPresentation(mobName) {
-  const key = String(mobName || "").toLowerCase()
+  const key = /^(?:(?:ju|yu|you)\s*pion|pika|you|yu)$/i.test(String(mobName || "").trim()) ? "ju pion" : String(mobName || "").toLowerCase()
   const presentation = mobSpecialPresentations[key]
   return presentation ? { ...presentation } : null
 }
@@ -1404,7 +1403,7 @@ const ALLY_PNJS = [
 ]
 
 
-function heroDisplayName(id) { return ["ju","yu","yulian","ju pion","yu pion","jupion","yupion","youpion","you pion"].includes(String(id || "").toLowerCase()) ? "Pika" : String(id || "").toUpperCase() }
+function heroDisplayName(id) { return ["ju","yu","you","yulian","ju pion","yu pion","jupion","yupion","youpion","you pion"].includes(String(id || "").trim().toLowerCase()) ? "Pika" : String(id || "").toUpperCase() }
 function heroPortraitFile(id) { return id === "ju" ? "pika-token.svg" : id + ".png" }
 function migratePikaCharacter(character) {
   if (!character || character.buildVersion === "pika-bard-v1") return false
@@ -1428,7 +1427,7 @@ function migratePikaRoot(root) {
   return next
 }
 
-function pikaDisplayText(text) { return String(text || "").replace(/\b(?:Yu|Yulian|Ju)\b/gi, "Pika") }
+function pikaDisplayText(text) { return String(text || "").replace(/\b(?:You|Yu|Yulian|Ju)\b/gi, "Pika") }
 
 
 function parseInventoryWeight(text) {
@@ -1455,4 +1454,4 @@ function parseInventoryWeight(text) {
   return { total:Math.round(total * 1000) / 1000, warnings, entries }
 }
 
-mobSpecialAttacks["ju pion"]={name:"Endikaki",icon:"💥",dice:20,pikaKind:"endikaki",dmgMin:20,dmgMax:30,effect:"magic",animation:"arcane",flavor:"Une invocation-bombe. Nécessite un autre allié de Pika PNJ sous 20 % de PV."};
+mobSpecialAttacks["ju pion"]={name:"Rappel tonitruant",icon:"🎭",dmgMin:10,dmgMax:16,effect:"all",animation:"arcane",flavor:"Pika conclut son spectacle par un accord magique qui frappe tout le groupe. Une seule fois par combat."};

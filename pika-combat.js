@@ -54,40 +54,6 @@ function resolvePikaHeroAction(root,request,attack,dice) {
   }
   nextCombatTurn(root,request);return result
 }
-function pikaNpcSpecialReady(root,actor) {
-  return COMBAT_MOBS.some(id=>id!==actor&&root.combat[id]&&Number(root.combat[id].hp)>=0&&Number(root.combat[id].hp)*5<Math.max(1,root.combat[id].maxHP||1))
-}
-function resolvePikaNpcAction(root,request,dice) {
-  const c=root.combat,slot=request.actor,mob=c[slot],payload=request.payload||{}
-  requireCombatTurn(root,request,slot)
-  const normals=getMobAttacksForMob(mob.name,mob.tier),special=getMobSpecialAttack(mob.name,mob.tier)
-  let attack=[...normals,...(special?[special]:[])].find(a=>a.name===payload.attack),randomRoll=null
-  if(payload.random){randomRoll=dice(20);const hint=payload.target||livingHeroes(root)[0];let choices=randomRoll===20&&!mob.specialUsed&&pikaNpcSpecialReady(root,slot)?[special]:normals.filter(a=>a.name!==mob.lastAttack&&(a.pikaKind!=="hypnosis"||!pikaRechargeLeft(c,slot))&&(a.pikaKind!=="cancan"||pikaAtContact(root,slot,hint)));if(!choices.length)choices=normals.filter(a=>a.pikaKind==="laugh");attack=choices[dice(choices.length)-1]}
-  if(!attack)throw Error("Attaque de Pika inconnue")
-  if(attack.special&&(mob.specialUsed||!pikaNpcSpecialReady(root,slot)))throw Error("Endikaki nécessite un autre allié de Pika PNJ sous 20 % et ne sert qu’une fois par combat")
-  if(attack.pikaKind==="hypnosis"&&pikaRechargeLeft(c,slot)>0)throw Error("Je suis une fille recharge encore")
-  const targets=root.__arbitration?.targets?.filter(id=>livingHeroes(root).includes(id))||chooseEnemyTarget(root,slot,attack,payload.target,dice),target=targets[0]
-  if(!livingHeroes(root).includes(target))throw Error("Choisissez un héros vivant")
-  if(attack.pikaKind==="cancan"&&!pikaAtContact(root,slot,target))throw Error("French cancan nécessite le contact avec la cible")
-  const max=attack.special?20:12,roll=dice(max),crit=roll===max,fail=roll===1,range=getMobDamageRange(attack,mob.lvl,mob.tier,mob)
-  const result={actor:slot,attack:attack.name,target,targetName:heroDisplayName(target),targets:[target],roll,dice:max,crit,fail,special:!!attack.special,pikaKind:attack.pikaKind,mode:"enemy",amount:0}
-  const hit=(id,amount)=>{const character=root.characters[id],before=character.hp;character.hp=Math.max(0,before-arbitrationAmount(root,id,amount));combatRecord(root,request,"PIKA",heroDisplayName(id),before-character.hp,"mob",attack.name);return before-character.hp}
-  if(attack.pikaKind==="hypnosis"){
-    mob.pikaHypnosisReadyRound=(c.turnState.round||1)+3;result.hypnotized=!fail&&roll>=4&&arbitrationEffects(root,target);result.hypnosisTurns=result.hypnotized?(crit?2:1):0
-    if(result.hypnotized){c.heroStuns||={};c.heroHypnosis||={};const owner=combatOwner(target);c.heroStuns[owner]=Math.max(c.heroStuns[owner]||0,result.hypnosisTurns);c.heroHypnosis[owner]=result.hypnosisTurns}
-    result.message=result.hypnotized?heroDisplayName(target)+" hypnotisé pendant "+result.hypnosisTurns+" tour(s)":"La séduction échoue."
-  }else{
-    let damage=fail?0:Math.round(range.min+(range.max-range.min)*(roll-2)/Math.max(1,max-2))
-    if(attack.pikaKind==="cancan"){result.kicks=pikaKickCount(roll);damage=Math.round((range.min+range.max)/2*result.kicks*.5)}
-    if(attack.pikaKind==="endikaki"&&crit)damage*=2
-    if(attack.pikaKind==="laugh"&&crit){const other=livingHeroes(root).find(id=>id!==target);if(other){result.bounceTarget=other;result.bounceAmount=hit(other,Math.floor(damage*.5))}else damage=Math.round(damage*1.5)}
-    if(mob.attackMalus)damage=Math.max(0,damage-(mob.attackMalus.amount||0))
-    if(mob.malus?.source==="La Sorcière")damage=Math.round(damage*.75)
-    result.amount=hit(target,Math.max(0,damage));result.message=attack.pikaKind==="endikaki"?"Endikaki explose !":attack.pikaKind==="cancan"?result.kicks+" coup(s) de pied":"Un rire tellement bizarre que l’adversaire en reste sans voix."
-  }
-  if(attack.special)mob.specialUsed=true;mob.lastAttack=attack.name
-  nextCombatTurn(root,request);return result
-}
 function presentPikaAttack(result) {
   showNotification(result.message||result.attack)
   if(result.mode==="curse-blocked")return

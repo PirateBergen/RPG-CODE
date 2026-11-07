@@ -114,7 +114,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg") {
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
   target.hp = Math.max(0, before - arbitrationAmount(root,slot,amount))
-  combatRecord(root, request, from, target.name.toUpperCase(), before - target.hp, type, from + " → " + target.name.toUpperCase() + " : -" + (before - target.hp) + " PV")
+  combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
   return before - target.hp
 }
 
@@ -252,14 +252,13 @@ function resolveHeroCombatAction(root, request, dice) {
   if (groupHeal > 0) COMBAT_CHARACTERS.filter(id => root.characters[id].hp > 0).forEach(id => combatHeal(root, request, "ELO", id, groupHeal))
   if (special) { c.playerSpecials ||= {}; c.playerSpecials[actor] = true }
   nextCombatTurn(root, request)
-  return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, mode: "damage", special, target: slot, targetName: mob.name.toUpperCase() }
+  return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, mode: "damage", special, target: slot, targetName: heroDisplayName(mob.name).toUpperCase() }
 }
 
 function resolveEnemyCombatAction(root, request, dice) {
   const slot = request.actor, c = root.combat, mob = c[slot], payload = request.payload || {}
   requireCombatTurn(root, request, slot)
   if (!mob) throw new Error("Ennemi introuvable")
-  if(isPikaCombatNpc(mob.name))return resolvePikaNpcAction(root,request,dice)
   const special = getMobSpecialAttack(mob.name, mob.tier || "weak")
   const normal = getMobAttacksForMob(mob.name, mob.tier || "weak")
   let specialRoll = null
@@ -275,7 +274,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (attack.special && mob.specialUsed) throw new Error("Spéciale déjà utilisée")
   if (mob.yuSkipNextTurn?.active) { delete mob.yuSkipNextTurn; nextCombatTurn(root, request,true); return { actor: slot, mode: "skip", message: "L’ennemi est neutralisé pour cette action" } }
   if(attack.special&&mob.balanceClass==="world"){
-    if(!mob.chargingSpecial){mob.chargingSpecial={name:attack.name,readyRound:(c.turnState.round||1)+1};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:mob.name.toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !"}}
+    if(!mob.chargingSpecial){mob.chargingSpecial={name:attack.name,readyRound:(c.turnState.round||1)+1};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:heroDisplayName(mob.name).toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !"}}
     if(c.turnState.round<mob.chargingSpecial.readyRound)throw new Error("La spéciale se prépare pour le prochain round ; choisissez une autre action")
     delete mob.chargingSpecial
   }
@@ -292,12 +291,12 @@ function resolveEnemyCombatAction(root, request, dice) {
     if (arbitrationEffects(root,id) && id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
     if (arbitrationEffects(root,id) && attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
     if (arbitrationEffects(root,id) && attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
-    combatRecord(root, request, mob.name.toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", mob.name + " — " + attack.name + " → " + id.toUpperCase() + " : -" + (before - root.characters[id].hp) + " PV")
+    combatRecord(root, request, heroDisplayName(mob.name).toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", heroDisplayName(mob.name) + " — " + attack.name + " → " + id.toUpperCase() + " : -" + (before - root.characters[id].hp) + " PV")
   })
   if (attack.special) mob.specialUsed = true
   if (attack.healSelfRatio) mob.hp = Math.min(mob.maxHP, mob.hp + Math.round(applied * attack.healSelfRatio))
   mob.lastAttack = attack.name
-  const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : (targets[0]||"AUCUNE").toUpperCase(), mobName: mob.name.toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
+  const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: damage, target: targets.length > 1 ? "TOUS" : (targets[0]||"AUCUNE").toUpperCase(), mobName: heroDisplayName(mob.name).toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
   nextCombatTurn(root, request)
   return { actor: slot, attack: attack.name, amount: damage, targets, mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}) }
 }

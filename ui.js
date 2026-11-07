@@ -1861,7 +1861,7 @@ function spawnExtraMobToken(mobData, slot) {
   tok.style.cssText=`position:absolute;width:70px;height:70px;left:${startX+(idx+4)*90}px;top:${Math.round(window.innerHeight*0.25)}px;z-index:200;display:flex;flex-direction:column;align-items:center;cursor:pointer;`
   const img=document.createElement("img"); img.style.cssText="width:60px;height:60px;object-fit:contain;border-radius:50%;border:2px solid #cc2200;box-shadow:0 0 10px rgba(200,0,0,0.5);"; img.src="images/"+mobData.name+".png"; img.onerror=()=>img.style.display="none"; tok.appendChild(img)
   const label=document.createElement("div"); label.style.cssText="font-family:Cinzel,serif;font-size:9px;color:#ff8888;margin-top:2px;text-align:center;background:rgba(0,0,0,0.7);padding:1px 4px;border-radius:2px;"; label.innerText=heroDisplayName(mobData.name||"MOB").toUpperCase()+" "+mobData.hp+"/"+mobData.maxHP; tok.appendChild(label)
-  const slotRef=db.ref("combat/"+slot); const slotCb=s=>{ const d=s.val(); if(d&&label) label.innerText=(d.name||"MOB").toUpperCase()+" "+d.hp+"/"+d.maxHP }; slotRef.on("value",slotCb); tok._slotRef=slotRef; tok._slotRefCb=slotCb
+  const slotRef=db.ref("combat/"+slot); const slotCb=s=>{ const d=s.val(); if(d&&label) label.innerText=heroDisplayName(d.name||"MOB").toUpperCase()+" "+d.hp+"/"+d.maxHP }; slotRef.on("value",slotCb); tok._slotRef=slotRef; tok._slotRefCb=slotCb
   tok.addEventListener("mousedown",e=>{ if(!isGM) return; selected=tok; lastX=tok.offsetLeft; _state.tokenDragStart={x:e.clientX,y:e.clientY}; _state.tokenDragging=false; tok._fbSlot=slot; e.preventDefault() })
   container.appendChild(tok)
 }

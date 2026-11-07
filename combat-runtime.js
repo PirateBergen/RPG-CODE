@@ -73,7 +73,7 @@ function chooseEnemyCombatTarget() {
     const finish = value => { overlay.remove(); combatTargetCancellation = null; resolve(value) }
     slots.forEach(slot => {
       const mob = window.__combatSnapshot[slot], button = document.createElement("button")
-      button.textContent = mob.name.toUpperCase() + " — " + mob.hp + " / " + mob.maxHP + " PV"
+      button.textContent = heroDisplayName(mob.name).toUpperCase() + " — " + mob.hp + " / " + mob.maxHP + " PV"
       button.style.cssText = "display:block;margin:10px 0;padding:12px;width:100%;cursor:pointer;"
       button.onclick = () => finish(slot); panel.appendChild(button)
     })
@@ -218,7 +218,7 @@ async function addReliableCombatMob(name, tier) {
     if(!slot) return undefined
     const root=combatClone(current), level=Math.max(1,Math.round(COMBAT_HEROES.reduce((sum,id)=>sum+combatInt(root.characters[id].lvl,1),0)/3))
     root.combat[slot]={...calculateCombatMob(name,tier,level,COMBAT_MOBS.filter(s=>current.combat[s]?.hp>0).length+1),slot,x:600+COMBAT_MOBS.indexOf(slot)*100,y:180}
-    const entry={id:slot,type:"mob",label:name.toUpperCase(),image:name+".png"},ts=root.combat.turnState
+    const entry={id:slot,type:"mob",label:heroDisplayName(name).toUpperCase(),image:name+".png"},ts=root.combat.turnState
     if(ts){
       ts.participants=(ts.participants||[]).filter(p=>p.id!==slot);ts.participants.push(entry)
       if(ts.phase==="active"){

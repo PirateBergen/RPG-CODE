@@ -268,11 +268,11 @@
       "playerThuumAccess": {
         ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
         "$playerId": {
-          ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
+          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm' && !root.child('sessionControl').child('phase').exists()"
         }
       },
       "thuumCast": {
-        ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": false
       },
       "readLoreBooks": {
         ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
@@ -424,7 +424,7 @@
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
         ".write": "(auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && newData.child('status').val() === 'queued') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
-        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'power' || newData.child('kind').val() === 'curse-spin'))))",
+        ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'power' || newData.child('kind').val() === 'curse-spin' || newData.child('kind').val() === 'thuum-outside'))))",
         "status": {
           ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
         }

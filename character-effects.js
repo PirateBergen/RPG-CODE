@@ -42,7 +42,7 @@ function activatePowerMode(player){
  powerModeActive=true
  if(!document.getElementById("usePowerBtn"))showUsePowerBtn(player)
 }
-function usePower(player){return requestCharacterEffect("power",player)}
+async function usePower(player){const button=document.getElementById("usePowerBtn");if(button?.disabled)return;try{if(button)button.disabled=true;return await requestCharacterEffect("power",player)}finally{if(button?.isConnected)button.disabled=false}}
 function presentSavedCurseWheel(wheel){
  if(wheel?.player==="bibi")wheel=null
  window.__activeCurseWheel=wheel||null

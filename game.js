@@ -1032,7 +1032,7 @@ function updateThuumButton() {
   const img = btn.querySelector("img")
 
   const isPlayer = !isGM && !!myToken
-  if (!isPlayer) {
+  if (!isPlayer || !getAvailablePlayerPowerTabs().length) {
     btn.style.display = "none"
     btn.disabled = false
     btn.dataset.word = ""
@@ -1045,17 +1045,9 @@ function updateThuumButton() {
   if (img) img.src = (activeDef && activeDef.buttonImage) ? activeDef.buttonImage : "images/runeskraa.png"
   btn.style.display = "block"
   btn.disabled = false
-  if (activeWord && !combatActive) {
-    const allowedOutside = hasThuumUseAccess(activeWord)
-    btn.title = allowedOutside ? activeWord + " autorise par le MJ hors combat" : activeWord + " disponible en combat ou avec autorisation MJ"
-  } else if (activeWord) {
-    const used = isThuumUsedThisCombat(activeWord)
-    btn.title = used ? activeWord + " deja utilise pour ce combat" : activeWord + " pret a etre lance"
-  } else if (hasPlayerAllyAccess()) {
-    btn.title = "Pouvoirs : invocation autorisee"
-  } else {
-    btn.title = "Pouvoirs : runes"
-  }
+  if (activeWord) {
+    btn.title = combatActive && isThuumUsedThisCombat(activeWord) ? activeWord + " déjà utilisé pour ce combat" : hasThuumUseAccess(activeWord) ? activeWord + " — utilisation autorisée par le MJ" : activeWord + " — autorisation MJ nécessaire, en combat ou hors combat"
+  } else btn.title = hasPlayerAllyAccess() ? "Cris et invocations : intervention autorisée par le MJ" : "Défi de runes actif"
   renderPlayerPowersPanel()
 }
 
@@ -1235,7 +1227,7 @@ function renderPlayerPowersPanel() {
 
   const title = document.createElement("div")
   title.id = "playerThuumPanelTitle"
-  title.innerText = "Pouvoirs"
+  title.innerText = "Cris, invocations et runes"
   panel.appendChild(title)
 
   const tabRow = document.createElement("div")
@@ -1418,11 +1410,11 @@ function grantThuumUseToPlayer(playerId, word) {
     allowed: true,
     time: Date.now()
   }).then(() => {
-    showNotification(word + " autorise hors combat pour " + heroDisplayName(playerId).toUpperCase())
+    showNotification(word + " autorisé pour une utilisation, en combat ou hors combat : " + heroDisplayName(playerId).toUpperCase())
   })
 }
 
-function usePlayerThuum(forcedWord) {
+async function usePlayerThuum(forcedWord) {
   if (!myToken) return
   const activeWord = forcedWord || getPrimaryThuumWord()
   const def = activeWord ? getThuumDef(activeWord) : null
@@ -1442,18 +1434,8 @@ function usePlayerThuum(forcedWord) {
       showNotification("Le MJ doit autoriser " + activeWord + " hors combat")
       return
     }
-    db.ref("game/playerThuumAccess/" + playerId + "/" + activeWord).remove()
-    db.ref("game/thuumCast").set({
-      playerId,
-      word: activeWord,
-      time: Date.now(),
-      outsideCombat: true
-    })
-    setTimeout(() => db.ref("game/thuumCast").remove(), 1500)
-    addSessionLog("ᚱ " + heroDisplayName(playerId).toUpperCase() + " utilise " + activeWord + " (hors combat)")
-    showNotification(def.outsideCombatMessage || (activeWord + " retentit hors combat"))
-    closePlayerPowersPanel()
-    updateThuumButton()
+    const result = await requestCharacterEffect("thuum-outside", playerId, {word:activeWord})
+    if (result) { closePlayerPowersPanel(); updateThuumButton() }
     return
   }
 
@@ -3033,7 +3015,7 @@ db.ref("game/thuumCast").on("value", snap => {
   if (window.__sessionBusy) return
   const data = snap.val()
   if (!data || !data.time) return
-  if (data.time <= window.__lastThuumCastTime) return
+  if (data.time < (window.__pageLoadTime || 0) || data.time <= window.__lastThuumCastTime) return
   window.__lastThuumCastTime = data.time
   if(data.outsideCombat !== false)enqueueSharedVisual("thuum-"+data.time,()=>playThuumCastEffect(data),2000)
 })

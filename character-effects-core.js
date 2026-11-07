@@ -10,7 +10,14 @@ function reduceCharacterRequest(current,id,seed){
   if(!ownsCharacterRequest(root,r))throw new Error("Ce personnage ne vous appartient pas")
   const c=root.characters?.[r.actor];if(!c)throw new Error("Personnage introuvable")
   root.game ||= {}
-  if(r.kind==="power"){
+  if(r.kind==="thuum-outside"){
+   if(root.combat)throw Error("Attendez la fin du combat pour un cri hors combat")
+   const word=r.payload?.word,definition=window.THUUMS?.[word]
+   if(!definition||!root.game.playerThuum?.[r.actor]?.[word]?.unlocked)throw Error("Ce cri n’est pas appris")
+   if(!root.game.playerThuumAccess?.[r.actor]?.[word]?.allowed)throw Error("Le MJ doit autoriser ce cri, en combat comme hors combat")
+   delete root.game.playerThuumAccess[r.actor][word]
+   root.game.thuumCast={playerId:r.actor,word,time:Date.now(),outsideCombat:true,requestId:id}
+  }else if(r.kind==="power"){
    if(combatInt(c.corruption)<10)throw new Error("Le pouvoir nécessite dix points")
    c.corruption=0;root.game.powerEvents ||= {};root.game.powerEvents[id]={id,player:r.actor,time:Date.now()}
    const old=Object.keys(root.game.powerEvents);old.slice(0,Math.max(0,old.length-80)).forEach(k=>delete root.game.powerEvents[k])

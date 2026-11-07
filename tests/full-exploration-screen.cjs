@@ -10,6 +10,7 @@ function fullScreen(database,uid,hero,options={}){
  if(options.transition)w.sessionStorage.setItem("rpg_session_transition",options.transition);
  const clock=FakeTimers.withGlobal(w).install({now:Date.now(),toFake:['Date','setTimeout','clearTimeout','setInterval','clearInterval','requestAnimationFrame','cancelAnimationFrame']});
  w.Math.random=()=>0.5;
+ if(options.observeWindow)options.observeWindow(w);
  const nativeAdd=w.document.addEventListener.bind(w.document);w.document.addEventListener=(name,cb,opts)=>name==='DOMContentLoaded'?callbacks.push(cb):nativeAdd(name,cb,opts);
  w.console={log(){},warn(...e){warnings.push(e.map(String).join(' '))},error(...e){errors.push(e.map(x=>x?.stack||String(x)).join(' '))}};w.addEventListener('error',e=>{errors.push(e.error?.stack||e.message);e.preventDefault()});
  const gradient={addColorStop(){}};w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({measureText:()=>({width:10}),createLinearGradient:()=>gradient,createRadialGradient:()=>gradient,getImageData:()=>({data:[]})},{get:(o,k)=>o[k]||(()=>{})});

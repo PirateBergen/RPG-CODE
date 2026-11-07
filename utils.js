@@ -579,13 +579,27 @@ function getScaledAudioVolume(volume = 1, channel = "effects", audio = null) {
   return Math.max(0, Math.min(1, base * userVolume * mixGain * (channel === "music" ? 1 : getEffectsClipGain(audio))))
 }
 
+const managedAudioReferences=new WeakMap()
+function trackManagedAudio(audio){
+  window.__managedAudioInstances ||= new Set()
+  let entry=managedAudioReferences.get(audio)
+  if(!entry){
+    entry=typeof WeakRef==="function"?new WeakRef(audio):audio;managedAudioReferences.set(audio,entry)
+    const release=()=>window.__managedAudioInstances.delete(entry)
+    audio.addEventListener?.("ended",release);audio.addEventListener?.("error",release)
+    audio.addEventListener?.("pause",()=>{if(!audio.isConnected)release()})
+    audio.addEventListener?.("play",()=>{window.__managedAudioInstances.add(entry);audio.volume=getScaledAudioVolume(audio.__baseVolume,audio.__audioChannel,audio)})
+  }
+  for(const item of window.__managedAudioInstances)if(typeof item?.deref==="function"&&!item.deref())window.__managedAudioInstances.delete(item)
+  window.__managedAudioInstances.add(entry)
+}
+
 function setManagedAudioBaseVolume(audio, volume = 1, channel = "effects") {
   if (!audio) return audio
   audio.__baseVolume = Number.isFinite(parseFloat(volume)) ? Math.max(0, Math.min(1, parseFloat(volume))) : 1
   audio.__audioChannel = channel === "music" ? "music" : "effects"
   audio.volume = getScaledAudioVolume(audio.__baseVolume, audio.__audioChannel,audio)
-  if (!window.__managedAudioInstances) window.__managedAudioInstances = new Set()
-  window.__managedAudioInstances.add(audio)
+  trackManagedAudio(audio)
   return audio
 }
 
@@ -604,17 +618,17 @@ function syncManagedAudioVolumes() {
     s.volume = getScaledAudioVolume(base, channel,s)
   })
   if (!window.__managedAudioInstances) return
-  Array.from(window.__managedAudioInstances).forEach(audio => {
-    if (!audio) return
-    if (audio.ended) {
-      window.__managedAudioInstances.delete(audio)
+  Array.from(window.__managedAudioInstances).forEach(entry => {
+    const audio=typeof entry?.deref==="function"?entry.deref():entry
+    if (!audio || audio.ended) {
+      window.__managedAudioInstances.delete(entry)
       return
     }
     const base = Number.isFinite(parseFloat(audio.__baseVolume)) ? parseFloat(audio.__baseVolume) : audio.volume
     const channel = audio.__audioChannel || inferAudioChannel(audio)
     audio.__baseVolume = base
     audio.__audioChannel = channel
-    audio.volume = getScaledAudioVolume(base, channel)
+    audio.volume = getScaledAudioVolume(base, channel,audio)
   })
 }
 

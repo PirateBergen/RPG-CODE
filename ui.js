@@ -1185,24 +1185,25 @@ function renderAllMobPanels() {
 
   // Grab & drop pour le MJ
   if (isGM) {
-    let dragging=false, ox=0, oy=0
-    container.style.cursor = "grab"
-    container.addEventListener("mousedown", e => {
-      if (e.target.tagName==="BUTTON"||e.target.tagName==="DIV"&&e.target.onclick) return
-      dragging=true; ox=e.clientX-container.offsetLeft; oy=e.clientY-container.offsetTop
-      container.style.cursor="grabbing"; e.preventDefault()
+    let pointer=null,ox=0,oy=0
+    container.style.cursor="grab"
+    container.addEventListener("pointerdown",e=>{
+      if(e.button!==0||e.pointerType==="touch"||e.target.closest("button,input,select,textarea,[role=button]")||e.target.closest("[onclick]"))return
+      pointer=e.pointerId;const rect=container.getBoundingClientRect();ox=e.clientX-rect.left;oy=e.clientY-rect.top
+      container.setPointerCapture?.(pointer);container.style.cursor="grabbing";e.preventDefault()
     })
-    document.addEventListener("mousemove", e => {
-      if (!dragging) return
-      container.style.left=Math.max(0,Math.min(window.innerWidth-280,e.clientX-ox))+"px"
-      container.style.top=Math.max(0,Math.min(window.innerHeight-200,e.clientY-oy))+"px"
-      container.style.bottom="auto"; container.style.right="auto"
+    container.addEventListener("pointermove",e=>{
+      if(pointer!==e.pointerId)return
+      container.style.left=Math.max(0,Math.min(window.innerWidth-container.offsetWidth,e.clientX-ox))+"px"
+      container.style.top=Math.max(0,Math.min(window.innerHeight-container.offsetHeight,e.clientY-oy))+"px"
+      container.style.bottom="auto";container.style.right="auto"
     })
-    document.addEventListener("mouseup", () => { dragging=false; container.style.cursor="grab" })
+    const stop=e=>{if(pointer!==e.pointerId)return;pointer=null;container.style.cursor="grab"}
+    for(const event of ["pointerup","pointercancel","lostpointercapture"])container.addEventListener(event,stop)
   }
 
-  active.forEach(slot => { db.ref("combat/"+slot).once("value", snap => { const md=snap.val(); if(md) container.appendChild(buildMobSubPanel(md,slot)) }) })
   document.body.appendChild(container)
+  active.forEach(slot => { db.ref("combat/"+slot).once("value", snap => { if(!container.isConnected||document.getElementById("mobAttackPanel")!==container)return;const md=snap.val(); if(md) container.appendChild(buildMobSubPanel(md,slot)) }) })
 }
 
 function buildMobSubPanel(mobData, slot) {

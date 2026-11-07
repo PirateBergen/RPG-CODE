@@ -278,6 +278,7 @@
         ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
       },
       "sessionLog": {
+        ".indexOn": "time",
         ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
       },
       "combatState": {

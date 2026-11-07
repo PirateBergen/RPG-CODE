@@ -534,3 +534,70 @@ function resolveCharacterCurse(character, playerId, rollId, resultIndex) {
   next.lastCurseResolution = { id: rollId, result: resultIndex }
   return next
 }
+
+// Portable copies contain game state only, never accounts or hero ownership.
+const SAVE_FILE_MAX_BYTES = 20 * 1024 * 1024
+async function saveFileDigest(text) {
+  if (!globalThis.crypto?.subtle) throw Error("La vérification des fichiers nécessite une connexion HTTPS et un navigateur récent")
+  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text))
+  return Array.from(new Uint8Array(hash), byte => byte.toString(16).padStart(2,"0")).join("")
+}
+function portableSaveData(save) {
+  const state = sessionFromSave(save)
+  return {...state, _schemaVersion:SAVE_SCHEMA_VERSION, _savedAt:saveTimestamp(save), _saveName:String(save._saveName || "Copie de partie").slice(0,120), _saveDate:String(save._saveDate || "")}
+}
+async function encodeSaveFile(save) {
+  const payload=JSON.stringify(portableSaveData(save))
+  if(new TextEncoder().encode(payload).length>SAVE_FILE_MAX_BYTES)throw Error("Sauvegarde trop volumineuse pour un fichier (20 Mo maximum)")
+  const file=JSON.stringify({format:"prophetie-des-mouches",version:1,mode:window.__isolatedTestMode?"test":"campaign",checksum:await saveFileDigest(payload),payload},null,2)
+  if(new TextEncoder().encode(file).length>SAVE_FILE_MAX_BYTES)throw Error("Sauvegarde trop volumineuse pour un fichier (20 Mo maximum)")
+  return file
+}
+async function decodeSaveFile(text) {
+  if(typeof text!=="string"||new TextEncoder().encode(text).length>SAVE_FILE_MAX_BYTES)throw Error("Fichier trop volumineux (20 Mo maximum)")
+  const safeParse=value=>JSON.parse(value,(key,child)=>{if(["__proto__","prototype","constructor"].includes(key))throw Error("Clé de fichier interdite");return child})
+  let file
+  try{file=safeParse(text)}catch(error){throw Error("Fichier JSON invalide ou non autorisé")}
+  if(file?.format!=="prophetie-des-mouches"||file.version!==1||typeof file.payload!=="string"||typeof file.checksum!=="string")throw Error("Ce fichier n’est pas une copie de sauvegarde reconnue")
+  const mode=window.__isolatedTestMode?"test":"campaign"
+  if(file.mode!==mode)throw Error(mode==="campaign"?"Ce fichier provient d’un essai local. Importez-le dans une partie test.":"Ce fichier provient de la campagne. Revenez à la campagne pour l’importer.")
+  if(await saveFileDigest(file.payload)!==file.checksum)throw Error("Le fichier est endommagé ou a été modifié : import refusé")
+  let save
+  try{save=safeParse(file.payload)}catch(error){throw Error("Contenu de sauvegarde invalide")}
+  return portableSaveData(save)
+}
+async function exportSaveFile(id) {
+  try{
+    requirePersistenceGM()
+    if(!validSaveId(id))throw Error("Sauvegarde invalide")
+    const {entries}=await listGameSaves(),save=entries.find(([key])=>key===id)?.[1]
+    if(!save)throw Error("Sauvegarde introuvable")
+    const text=await encodeSaveFile(save),blob=new Blob([text],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a")
+    link.href=url;link.download="prophetie-"+(window.__isolatedTestMode?"test-":"campagne-")+new Date().toISOString().replace(/[:.]/g,"-")+".json";document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)
+    showNotification("Copie de sauvegarde téléchargée. Conservez ce fichier : il contient les fiches et notes privées.")
+    return true
+  }catch(error){showNotification("Export impossible : "+error.message);return false}
+}
+async function importSaveFile(file) {
+  try{
+    requirePersistenceGM()
+    if(!file||file.size>SAVE_FILE_MAX_BYTES)throw Error("Fichier trop volumineux (20 Mo maximum)")
+    const save=await decodeSaveFile(await file.text())
+    requirePersistenceGM()
+    const message="Copie vérifiée : "+save._saveName+"\n"+(save._saveDate||"Date inconnue")+"\nCarte : "+save.game.map+(save.combat?.id?"\nCombat en cours":"")+"\n\nAjouter cette copie aux sauvegardes ? La sauvegarde actuelle deviendra la précédente ; l’ancienne précédente sera remplacée. La partie en cours ne sera pas chargée automatiquement."
+    if(!confirm(message))return false
+    await withSessionOperation("saving",async()=>{
+      const records=(await db.ref("saves").once("value")).val()||{},previous=sortedSaveEntries(records)[0]?.[1]
+      const imported={...save,_savedAt:Math.max(Date.now(),saveTimestamp(previous)+1),_saveName:("Copie — "+save._saveName).slice(0,120)}
+      const next={current:imported,...(previous?{previous}:{})}
+      if(typeof reliablePut==="function")await reliablePut("saves",next,undefined,true);else await db.ref("saves").set(next)
+      try{localStorage.setItem(persistenceStorageKey("rpg_saves"),JSON.stringify(next));localStorage.setItem(persistenceStorageKey("rpg_save"),JSON.stringify(imported))}catch(error){console.warn("Copie locale indisponible",error)}
+    })
+    showNotification("Copie importée. Choisissez « Charger » pour la restaurer.")
+    await showSaveMenu();return true
+  }catch(error){showNotification("Import impossible : "+error.message);return false}
+}
+function chooseSaveFile() {
+  try{requirePersistenceGM()}catch(error){showNotification(error.message);return}
+  const input=document.createElement("input");input.type="file";input.accept=".json,application/json";input.onchange=()=>{if(input.files?.[0])importSaveFile(input.files[0])};input.click()
+}

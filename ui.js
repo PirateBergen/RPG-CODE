@@ -2867,6 +2867,8 @@ async function showSaveMenu() {
   const button = (label, action) => { const b = document.createElement("button"); b.textContent = label; b.onclick = action; b.style.margin = "6px"; return b }
   panel.appendChild(button("Sauvegarder maintenant", () => { panel.remove(); saveGame() }))
   panel.appendChild(button("Charger la plus récente", loadGame))
+  panel.appendChild(button("Importer un fichier", chooseSaveFile))
+  const fileHelp=document.createElement("p");fileHelp.textContent="Exportez une sauvegarde pour garder une copie sur votre ordinateur. Un import est vérifié et ne charge pas la partie automatiquement. Les fichiers d’essai et de campagne restent séparés.";panel.appendChild(fileHelp)
   panel.appendChild(button("Fermer", () => panel.remove()))
   try {
     const { entries, local } = await listGameSaves()
@@ -2878,6 +2880,7 @@ async function showSaveMenu() {
       const row = document.createElement("div"); row.style.cssText = "padding:10px 0;border-bottom:1px solid #5d5038"
       const label = document.createElement("div"); label.textContent = (save._saveName || id) + " — " + (save._saveDate || "Date inconnue"); row.appendChild(label)
       row.appendChild(button("Charger", () => loadSave(id)))
+      row.appendChild(button("Exporter un fichier", () => exportSaveFile(id)))
       row.appendChild(button("Supprimer", () => deleteSave(id)))
       list.appendChild(row)
     })

@@ -4213,7 +4213,7 @@ document.addEventListener("mousedown", e => {
       e.target.closest("#characterSheet") || e.target.closest("#shopOverlay") ||
       e.target.closest("#spellMiniGame") || e.target.closest("#runeChallengeOverlay") ||
       e.target.closest("#mobSelectionMenu") || e.target.closest("#wantedEditor")) return
-  if (e.button === 0 && !e.target.closest(".token")) {
+  if (e.button === 0 && e.target.closest("#camera") && !e.target.closest(".token")) {
     cameraDragging = true; cameraStartX = e.clientX - cameraX; cameraStartY = e.clientY - cameraY
     document.body.style.cursor = "grabbing"
   }
@@ -4329,6 +4329,8 @@ function handleGameShortcut(e) {
     const gmAuthModal = document.getElementById("gmAuthModal"); if (gmAuthModal) { closeGMAuthModal(); return }
     const playerAuthModal = document.getElementById("playerAuthModal"); if (playerAuthModal) { closePlayerAuthModal(); return }
     e.preventDefault()
+    const arbitrationModal=document.getElementById("gmArbitrationModal");if(arbitrationModal&&typeof gmArbitrationClose==="function"){gmArbitrationClose();return}
+    const sessionJournal=document.getElementById("sessionLogPanel");if(sessionJournal?.style.display==="flex"){closeSessionLog();return}
     const notesEditor = document.getElementById("notesEditorPanel"); if (notesEditor) { notesEditor.remove(); return }
     const shortcutHelp = document.getElementById("gmShortcutHelp"); if (shortcutHelp) { shortcutHelp.remove(); return }
     const privateSheet = document.getElementById("characterSheet")

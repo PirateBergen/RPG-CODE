@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261107.25"</script>
+  <script>window.GAME_V = "20261107.26"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -162,7 +162,8 @@
 </div>
 
 <!-- FICHE PERSONNAGE -->
-<div id="characterSheet">
+<div id="characterSheet" role="dialog" aria-labelledby="sheetTitle">
+  <button class="compactSheetClose" type="button" onclick="closeCharacterSheet()" aria-label="Fermer la fiche">Fermer ✕</button>
   <h2 id="sheetTitle" style="text-align:center;font-family:'Cinzel';margin-bottom:10px;">Personnage</h2>
   <section id="inventoryTools" aria-label="Ajouter un objet et vérifier le poids" style="padding:12px;border:1px solid #795c34;background:#f5dfb4;color:#302115;max-width:850px;margin-bottom:14px;">
     <strong>Inventaire — capacité : 100</strong>
@@ -177,13 +178,21 @@
   </section>
   <div id="sheetContainer">
     <img id="sheetImage" src="images/elosheet.jpg">
+    <label class="compactSheetLabel" for="lvl">Niveau</label>
     <input id="lvl"     class="sheetField" style="top:270px;left:420px;width:120px;height:60px;font-size:32px;font-weight:bold;text-align:center;border:2px solid black;background:white;">
+    <label class="compactSheetLabel" for="xp">Expérience</label>
     <input id="xp"      class="sheetField" style="top:400px;left:420px;width:140px;">
+    <label class="compactSheetLabel playerOnly" for="force">Force</label>
     <input id="force"   class="sheetField playerOnly" onclick="rollStat('force')"   style="top:520px;left:480px;width:280px;">
+    <label class="compactSheetLabel playerOnly" for="charme">Charme</label>
     <input id="charme"  class="sheetField playerOnly" onclick="rollStat('charme')"  style="top:570px;left:480px;width:280px;">
+    <label class="compactSheetLabel playerOnly" for="perspi">Perspicacité</label>
     <input id="perspi"  class="sheetField playerOnly" onclick="rollStat('perspi')"  style="top:620px;left:480px;width:280px;">
+    <label class="compactSheetLabel playerOnly" for="chance">Chance</label>
     <input id="chance"  class="sheetField playerOnly" onclick="rollStat('chance')"  style="top:670px;left:480px;width:280px;">
+    <label class="compactSheetLabel playerOnly" for="defense">Défense</label>
     <input id="defense" class="sheetField playerOnly" onclick="rollStat('defense')" style="top:720px;left:480px;width:280px;">
+    <label class="compactSheetLabel playerOnly" for="notes">Notes personnelles</label>
     <textarea id="notes" class="sheetField playerOnly" style="top:880px;left:420px;width:380px;height:140px;"></textarea>
     <div id="weightContainer" style="position:absolute;top:300px;left:60px;width:300px;">
       <input id="weight" readonly aria-label="Poids total calculé" class="sheetField" placeholder="Poids" style="top:0;left:0;width:80px;position:relative;">
@@ -193,6 +202,7 @@
         <div id="weightBar" style="height:100%;width:0%;background:lime;"></div>
       </div>
     </div>
+    <label class="compactSheetLabel" for="inventaire">Inventaire</label>
     <textarea id="inventaire" class="sheetField" spellcheck="false" style="top:400px;left:60px;width:300px;height:560px;"></textarea>
     <div id="curseBar" class="playerOnly" style="position:absolute;top:255px;right:60px;">
       <span class="curseGem" onclick="toggleCurse(1)"></span>
@@ -204,6 +214,7 @@
       <span class="curseGem" onclick="toggleCurse(7)"></span>
       <span class="curseGem" onclick="toggleCurse(8)"></span>
     </div>
+    <label class="compactSheetLabel" for="hp">Points de vie</label>
     <input id="hp" class="sheetField" style="top:315px;right:60px;width:90px;font-size:20px;border:2px solid black;background:white;text-align:center;">
     <div id="hpBarContainer" style="position:absolute;top:285px;right:60px;width:200px;height:18px;background:#222;border:2px solid #555;border-radius:6px;">
       <div id="hpBar" style="height:100%;width:100%;background:linear-gradient(90deg,#ff5050,#b00000,#600000);border-radius:4px;box-shadow:0 0 8px red;"></div>

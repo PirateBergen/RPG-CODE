@@ -60,10 +60,11 @@ async function submitCombatAction(kind,actor,payload={}){
  return submitReliableAction("combatRequests",{actor,kind,payload:{...payload,version:1},combatId:window.__combatSnapshot.id,sequence:combatInt(getCombatTurnState()?.sequence)})
 }
 
-function chooseEnemyCombatTarget() {
+function chooseEnemyCombatTarget(attack=null,actor=null,special=false) {
   const slots = livingMobs(window.__combatSnapshot)
   if (!slots.length) return Promise.resolve(null)
-  if (slots.length === 1) return Promise.resolve(slots[0])
+  const allowed=slot=>!special||!["mob_below_half","mob_below_forty","mob_used_special"].includes(attack?.rule)||isPlayerSpecialConditionMet(actor,attack,{mob:window.__combatSnapshot[slot]})
+  if (slots.length === 1) {if(!allowed(slots[0])){showNotification("Condition manquante : "+attack.conditionText);return Promise.resolve(null)}return Promise.resolve(slots[0])}
   if (combatTargetCancellation) combatTargetCancellation()
   return new Promise(resolve => {
     const overlay = document.createElement("div"); overlay.id = "combatEnemyTargetPicker"
@@ -75,6 +76,7 @@ function chooseEnemyCombatTarget() {
       const mob = window.__combatSnapshot[slot], button = document.createElement("button")
       button.textContent = heroDisplayName(mob.name).toUpperCase() + " — " + mob.hp + " / " + mob.maxHP + " PV"
       button.style.cssText = "display:block;margin:10px 0;padding:12px;width:100%;cursor:pointer;"
+      if(!allowed(slot)){button.disabled=true;button.textContent+=" — condition non remplie";button.title=attack.conditionText}
       button.onclick = () => finish(slot); panel.appendChild(button)
     })
     const cancel = document.createElement("button"); cancel.textContent = "Annuler"; cancel.onclick = () => finish(null); panel.appendChild(cancel)
@@ -94,7 +96,7 @@ async function requestHeroCombatAction(attack, options = {}) {
   try {
     const target = getPlayerAttackTypeKey(attack) === "heal"
       ? await chooseCombatTarget(COMBAT_CHARACTERS.filter(id => !document.getElementById(id)?.classList.contains("playerDead")), "Choisir le héros à soigner")
-      : await chooseEnemyCombatTarget()
+      : await chooseEnemyCombatTarget(attack,actor,!!options.isSpecial)
     if (!target) return
     await submitCombatAction("hero", actor, { attack: attack.name, special: !!options.isSpecial, target })
   } catch (error) { showNotification(error.message) }
@@ -265,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if(position && selected?.id!==tokenId && Number.isFinite(position.x)){token.style.left=position.x+"px";token.style.top=position.y+"px"}
         }
       })
-      renderAllMobPanels(); updateThuumButton()
+      renderAllMobPanels(); updateThuumButton(); refreshCombatActionStates()
       if(data.phase==="finished"&&window.__pendingCombatOutcome)observeCombatEnding(window.__pendingCombatOutcome)
     }
   })

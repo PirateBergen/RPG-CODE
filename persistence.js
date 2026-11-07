@@ -135,6 +135,7 @@ function requirePersistenceGM() {
 
 function setSessionBusy(busy, message = "Synchronisation de la partie…") {
   window.__sessionBusy = busy
+  if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
   let overlay = document.getElementById("sessionSyncOverlay")
   if (!busy) { overlay?.remove(); return }
   if (!overlay) {

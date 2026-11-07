@@ -1133,19 +1133,17 @@ function buildPlayerSpecialBlock(playerId, specialAttack) {
   appendAttackLine(block, "Condition", specialAttack.conditionText)
   if (specialAttack.fail) appendAttackLine(block, "Crit fail", specialAttack.fail)
 
-  const state = document.createElement("div")
-  state.className = "combatSpecialState"
-  state.innerText = used ? "Déjà utilisée dans ce combat" : "Unique • condition requise"
-  block.appendChild(state)
+  appendAttackLine(block, "Usage", "Une utilisation par combat")
 
   if (used) {
     block.classList.add("combatBlock--spent")
     block.onclick = null
   } else {
     block.title = "Cliquer pour lancer l'attaque spéciale"
-    block.onclick = () => resolvePlayerAttack(specialAttack, { isSpecial: true })
+    block.onclick = () => resolvePlayerAttack(specialAttack, { isSpecial: true, actorId:playerId })
   }
 
+  bindCombatActionState(block,playerId,specialAttack,true)
   return block
 }
 
@@ -1175,6 +1173,7 @@ function buildPassTurnBlock(actorId, label) {
     if (typeof addMJLog === "function") addMJLog((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
     if (typeof advanceCombatTurn === "function") advanceCombatTurn()
   }
+  bindCombatActionState(block,actorId,{name:"Passer le tour"})
   return block
 }
 
@@ -1205,6 +1204,7 @@ function buildMobPassTurnBlock(actorId, label) {
     if (typeof addMJLog === "function") addMJLog((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
     if (typeof advanceCombatTurn === "function") advanceCombatTurn()
   }
+  bindCombatActionState(block,actorId,{name:"Passer le tour"},false,true)
   return block
 }
 
@@ -1474,9 +1474,8 @@ function showCombatHUD() {
     populateAttackBlock(block, a)
     block.classList.add("combatBlock--action")
     block.title = "Cliquer pour lancer l'attaque"
-    const recharge=a.pikaKind==="hypnosis"?pikaRechargeLeft(window.__combatSnapshot):0
-    if(recharge){appendAttackLine(block,"Recharge",recharge+" tour(s)");block.classList.add("combatBlock--spent")}
-    block.onclick = () => recharge?showNotification("Recharge : "+recharge+" tour(s)"):resolvePlayerAttack(a)
+    block.onclick = () => resolvePlayerAttack(a)
+    bindCombatActionState(block,player,a)
     box.appendChild(block)
   })
   if (specialAttack) box.appendChild(buildPlayerSpecialBlock(player, specialAttack))
@@ -1490,10 +1489,7 @@ function showCombatHUD() {
 
       const bibiBlock = buildPlayerSpecialBlock("bibi", bibiSpecial)
       bibiBlock.classList.add("combatBlock--companion")
-      bibiBlock.title = "Greg peut piloter la spéciale de Bibi"
-      if (!hasPlayerUsedCombatSpecial("bibi")) {
-        bibiBlock.onclick = () => resolvePlayerAttack(bibiSpecial, { isSpecial: true, actorId: "bibi" })
-      }
+
       box.appendChild(bibiBlock)
     }
   }
@@ -1669,6 +1665,7 @@ function buildMobSubPanel(mobData, slot) {
     rBtn.onclick = () => {
       requestEnemyCombatAction(null,mobData,panel,panel._manualTarget,slot)
     }
+    bindCombatActionState(rBtn,slot,{name:"Aléatoire"},false,true)
     panel.appendChild(rBtn)
 
     atks.forEach(atk => {
@@ -1698,6 +1695,7 @@ function buildMobSubPanel(mobData, slot) {
           launchMobAttackFromSlotV2(atk, mobData, panel, target, slot)
         }
       }
+      bindCombatActionState(btn,slot,atk,false,true)
       panel.appendChild(btn)
     })
 
@@ -1737,6 +1735,7 @@ function buildMobSubPanel(mobData, slot) {
         sFlavor.innerText+=" Annoncée un round avant son déclenchement."
         if(charge&&round<charge.readyRound){sBtn.onclick=null;sBtn.style.cursor="not-allowed";sBtn.style.opacity="0.5"}
       }
+      bindCombatActionState(sBtn,slot,specialAtk,true,true)
       panel.appendChild(sBtn)
     }
 
@@ -3754,3 +3753,63 @@ function initializeMenuBehaviour() {
   })
 }
 initializeMenuBehaviour()
+
+function combatActionAvailability(actor, attack, special=false, enemy=false) {
+  const c=window.__combatSnapshot, players=window.__publicCharacters||{}, state=c?.turnState
+  const blocked=label=>({disabled:true,label})
+  if(special&&(enemy?c?.[actor]?.specialUsed:c?.playerSpecials?.[actor]))return blocked("Déjà utilisée dans ce combat")
+  if(attack?.pikaKind==="hypnosis"){const left=pikaRechargeLeft(c);if(left)return blocked("Recharge : "+left+" tour"+(left>1?"s":"")+" restant"+(left>1?"s":""))}
+  if(enemy&&c?.[actor]?.lastAttack===attack?.name&&!special&&getMobAttacksForMob(c[actor].name,c[actor].tier).length>1)return blocked("Recharge : utilisez une autre attaque ou passez")
+  if(window.__actionOnline===false)return blocked("Connexion perdue — actions suspendues")
+  if(window.__sessionBusy)return blocked("Synchronisation de la partie")
+  if(!c||c.phase==="finished")return blocked("Combat terminé")
+  if(state?.phase==="rolling")return blocked("Jets d’initiative en cours")
+  if(c.pendingResolution)return blocked("Décision du MJ en attente")
+  if(state?.currentActorId!==combatOwner(actor))return blocked("En attente du tour de "+(enemy?heroDisplayName(c[actor]?.name):heroDisplayName(combatOwner(actor))))
+  const bibiInstead=actor==="greg"&&["Le Bibi","Passer le tour"].includes(attack?.name)&&players.bibi?.hp>0
+  if(!enemy&&players[actor]?.hp<=0&&!bibiInstead)return blocked("Personnage KO")
+  if(enemy&&c[actor]?.hp<=0)return blocked("Adversaire KO")
+  if(enemy&&special&&c[actor]?.balanceClass==="world"){
+    const charge=c[actor].chargingSpecial,round=state?.round||1
+    if(charge&&round<charge.readyRound)return blocked("Préparation : encore "+(charge.readyRound-round)+" round(s)")
+    return {disabled:false,label:charge?"Prête à déclencher":"Disponible — annoncer la spéciale"}
+  }
+  if(special&&!enemy){
+    const rule=attack.rule
+    if(rule==="mob_below_half"||rule==="mob_below_forty"||rule==="mob_used_special"){
+      const valid=livingMobs(c).some(id=>isPlayerSpecialConditionMet(actor,attack,{mob:c[id],players}))
+      return valid?{disabled:false,label:"Disponible — choisissez une cible remplissant la condition"}:blocked("Condition manquante : "+attack.conditionText)
+    }
+    const known=window.__combatConditionCharacters||{}
+    const ids=rule==="ally_below_twenty"?COMBAT_CHARACTERS.filter(id=>id!==actor):rule==="ally_below_sixty"?COMBAT_CHARACTERS:rule==="greg_below_twenty"?["greg"]:rule==="self_below_seventy"?[actor]:[]
+    if(ids.length){
+      const trusted=ids.filter(id=>known[id]&&canAccessCharacter(id))
+      const partial=Object.fromEntries(trusted.map(id=>[id,known[id]]))
+      const met=trusted.length>0&&(!["greg_below_twenty","self_below_seventy"].includes(rule)||trusted.length===ids.length)&&isPlayerSpecialConditionMet(actor,attack,{players:partial,charData:partial[actor]||{}})
+      if(met)return {disabled:false,label:"Disponible — condition remplie"}
+      if(trusted.length===ids.length)return blocked("Condition manquante : "+attack.conditionText)
+      return {disabled:false,label:"Condition contrôlée au lancement"}
+    }
+  }
+  return {disabled:false,label:attack?.pikaKind==="cancan"?"Disponible — contact requis avec la cible":"Disponible"}
+}
+function bindCombatActionState(block,actor,attack,special=false,enemy=false) {
+  const activate=block.onclick
+  block.dataset.combatActor=actor;block.dataset.combatAttack=attack.name
+  const status=document.createElement("div");status.className="combatActionState";status.setAttribute("aria-live","polite");block.appendChild(status)
+  block.setAttribute("role","button");block.tabIndex=0
+  block._refreshCombatAction=()=>{
+    const value=combatActionAvailability(actor,attack,special,enemy)
+    status.textContent=value.label
+    block.setAttribute("aria-disabled",String(value.disabled))
+    block.classList.toggle("combatAction--unavailable",value.disabled)
+    block.title=value.label
+    return value
+  }
+  block.onclick=event=>{const value=block._refreshCombatAction();if(value.disabled){showNotification(value.label);return}activate?.call(block,event)}
+  block.onkeydown=event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();block.click()}}
+  block._refreshCombatAction()
+}
+function refreshCombatActionStates() {
+  document.querySelectorAll("[data-combat-actor]").forEach(block=>block._refreshCombatAction?.())
+}

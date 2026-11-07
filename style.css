@@ -6321,12 +6321,13 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 
 /* Fenêtres adaptées à la place disponible ; la carte conserve son échelle. */
 .compactSheetLabel,.compactSheetClose{display:none!important}
-#characterSheet{box-sizing:border-box;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overscroll-behavior:contain}
+#characterSheet{z-index:1000000004;box-sizing:border-box;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overscroll-behavior:contain}
 .shopOverlay,.shopBox,#gmArbitrationModal,#gmArbitrationModal>div{box-sizing:border-box}
 .shopBox{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overscroll-behavior:contain}
 #gmArbitrationModal>div{max-width:100%;max-height:calc(100dvh - 30px);min-width:0;overflow-wrap:anywhere}
 #gmArbitrationModal input,#gmArbitrationModal select,#gmArbitrationModal textarea{max-width:100%;box-sizing:border-box}
 #freePointsPanel,#allyPNJPanel,#allyViewerPanel,#notesEditorPanel,#savePanel{box-sizing:border-box;min-width:0!important;max-width:calc(100vw - 16px)!important;max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain}
+#freePointsPanel{z-index:1000000006!important}
 #notesEditorPanel{top:12px!important;max-height:calc(100dvh - 24px)}
 @media(max-width:1000px){
  #characterSheet{width:min(620px,calc(100vw - 16px));padding:16px;color:#302115}

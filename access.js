@@ -132,7 +132,7 @@ function resetLocalCharacterAccess() {
   window.__playerSelectionPending = false
   if (window.__freePointsRef && window.__freePointsCb) window.__freePointsRef.off("value", window.__freePointsCb)
   if (window.__localDefeatRef && window.__localDefeatCb) window.__localDefeatRef.off("value", window.__localDefeatCb)
-  if (window.__combatStatsRef && window.__combatStatsCb) window.__combatStatsRef.off("value", window.__combatStatsCb)
+  if(typeof stopCombatStatsSubscription==="function")stopCombatStatsSubscription();else if(window.__combatStatsRef&&window.__combatStatsCb)window.__combatStatsRef.off("value",window.__combatStatsCb)
   window.__combatInventoryModifiers = null
   document.querySelectorAll("#playerCombatPanel input").forEach(field => { field.value = "" })
   const goldDisplay = document.getElementById("goldDisplay")

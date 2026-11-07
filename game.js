@@ -45,6 +45,7 @@ function detachFirebaseAccessSync() {
   if(typeof syncCharacterEffects==="function")syncCharacterEffects()
   if(typeof syncExplorationCoordinator === "function") syncExplorationCoordinator()
   stopCharacterSubscriptions()
+  if(typeof stopCombatStatsSubscription==="function")stopCombatStatsSubscription()
   stopPersistenceSync()
 }
 
@@ -1846,7 +1847,7 @@ db.ref("game/highPNJName").on("value", snap => {
   const data = snap.val()
   if (!data || !data.name) return
   if (gameState !== "GAME" && gameState !== "COMBAT") return
-  showHighPNJScroll(data.name)
+  showHighPNJScroll(data.name,data.time)
 })
 
 // ─── fly swarm listener ───
@@ -2656,6 +2657,9 @@ function cleanupTransientGameUI(options = {}) {
   window.__pendingLocalDefeat = false
   window.__combatInitiativeHidden = false
 
+  stopCombatStatsSubscription()
+  disposeHighPNJScroll()
+  document.querySelectorAll("audio[id^=pnjSound_]").forEach(sound=>{clearTimeout(sound._pnjFadeDelay);clearInterval(sound._pnjFadeInterval);sound.pause()})
   resetLocalCombatVisualState()
   resetMadnessPresentation()
   if (typeof resetAuroraPresentation === "function") resetAuroraPresentation()
@@ -3689,7 +3693,7 @@ function refreshActivePNJs() {
   })
   db.ref("game/highPNJName").once("value", snap => {
     const data = snap.val()
-    if (data && data.name && typeof showHighPNJScroll === "function") showHighPNJScroll(data.name)
+    if (data && data.name && typeof showHighPNJScroll === "function") showHighPNJScroll(data.name,data.time)
   })
   db.ref("game/cemeterySpell").once("value", snap => {
     const data = snap.val()

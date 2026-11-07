@@ -48,6 +48,8 @@ function openCharacterSheet(id = null) {
     playerID = id || myToken.id
   }
   if (!canAccessCharacter(playerID)) { showNotification("Cette fiche est privée."); return }
+  const sheetGeneration=window.__sheetViewGeneration=(window.__sheetViewGeneration||0)+1
+  clearTimeout(window.__sheetFreePointsTimer)
   currentSheetPlayer = playerID
   // Marquer la fiche avec l'ID du joueur pour éviter les sauvegardes croisées
   const sheet = document.getElementById("characterSheet")
@@ -59,7 +61,7 @@ function openCharacterSheet(id = null) {
   document.getElementById("sheetTitle").innerText = playerID === "ju" ? "PIKA — Elfe · Barde · Don : Appétit abyssal" : heroDisplayName(playerID).toUpperCase()
   document.querySelectorAll(".playerOnly").forEach(f => { f.style.display = playerID === "bibi" ? "none" : "block" })
   readCharacter(playerID, snapshot => {
-    const data = snapshot.val(); if (!data || currentSheetPlayer !== playerID || !canAccessCharacter(playerID)) return
+    const data = snapshot.val(); if (!data || currentSheetPlayer !== playerID || sheetGeneration!==window.__sheetViewGeneration || !canAccessCharacter(playerID)) return
     window.__sheetBaseCharacterData = { ...data }
     window.__sheetInventoryModifiers = { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
     ;["lvl","xp","force","charme","perspi","chance","defense","hp"].forEach(k => { const el = document.getElementById(k); if (el) el.value = data[k] || 0 })
@@ -80,7 +82,7 @@ function openCharacterSheet(id = null) {
   document.getElementById("characterSheet").style.display = "block"
   loadGold(playerID)
   // Vérifier si des points libres sont disponibles
-  if (!isGM || playerID === myToken?.id) setTimeout(() => checkFreePoints(playerID), 300)
+  if (!isGM || playerID === myToken?.id) window.__sheetFreePointsTimer=setTimeout(() => {if(sheetGeneration===window.__sheetViewGeneration&&currentSheetPlayer===playerID&&document.getElementById("characterSheet")?.style.display!=="none"&&canAccessCharacter(playerID))checkFreePoints(playerID)}, 300)
 }
 
 /* ========================= */
@@ -149,6 +151,8 @@ function openNotesEditor(field) {
 }
 
 function closeCharacterSheet() {
+  clearTimeout(window.__sheetFreePointsTimer)
+  const closingGeneration=window.__sheetViewGeneration
   if (window.__sheetAutoSaveTimer) {
     clearTimeout(window.__sheetAutoSaveTimer)
     window.__sheetAutoSaveTimer = null
@@ -157,6 +161,9 @@ function closeCharacterSheet() {
   Promise.resolve(saveCharacter()).then(saved => {
     if (!saved) return
     const sheet = document.getElementById("characterSheet"); if (!sheet) return
+    if(closingGeneration!==window.__sheetViewGeneration||currentSheetPlayer!==closingPlayerId)return
+    window.__sheetViewGeneration=(window.__sheetViewGeneration||0)+1
+    currentSheetPlayer=null;sheet.dataset.playerId=""
     sheet.style.display = "none"
     window.__sheetBaseCharacterData = null
     window.__sheetInventoryModifiers = null
@@ -165,6 +172,8 @@ function closeCharacterSheet() {
 }
 
 function forceCloseCharacterSheetWithoutSave() {
+  clearTimeout(window.__sheetFreePointsTimer)
+  window.__sheetViewGeneration=(window.__sheetViewGeneration||0)+1
   if (window.__sheetAutoSaveTimer) {
     clearTimeout(window.__sheetAutoSaveTimer)
     window.__sheetAutoSaveTimer = null
@@ -322,9 +331,7 @@ function addInventoryItem() {
 
 function loadPlayerCombatStats() {
   if (!myToken || !canAccessCharacter(myToken.id)) return
-  if (window.__combatStatsRef && window.__combatStatsCb) {
-    window.__combatStatsRef.off("value", window.__combatStatsCb)
-  }
+  stopCombatStatsSubscription()
   const playerId = myToken.id
   const ref = db.ref("characters/" + playerId)
   const cb = snap => {
@@ -1860,7 +1867,6 @@ function spawnExtraMobToken(mobData, slot) {
   tok.style.cssText=`position:absolute;width:70px;height:70px;left:${startX+(idx+4)*90}px;top:${Math.round(window.innerHeight*0.25)}px;z-index:200;display:flex;flex-direction:column;align-items:center;cursor:pointer;`
   const img=document.createElement("img"); img.style.cssText="width:60px;height:60px;object-fit:contain;border-radius:50%;border:2px solid #cc2200;box-shadow:0 0 10px rgba(200,0,0,0.5);"; img.src="images/"+mobData.name+".png"; img.onerror=()=>img.style.display="none"; tok.appendChild(img)
   const label=document.createElement("div"); label.style.cssText="font-family:Cinzel,serif;font-size:9px;color:#ff8888;margin-top:2px;text-align:center;background:rgba(0,0,0,0.7);padding:1px 4px;border-radius:2px;"; label.innerText=heroDisplayName(mobData.name||"MOB").toUpperCase()+" "+mobData.hp+"/"+mobData.maxHP; tok.appendChild(label)
-  const slotRef=db.ref("combat/"+slot); const slotCb=s=>{ const d=s.val(); if(d&&label) label.innerText=heroDisplayName(d.name||"MOB").toUpperCase()+" "+d.hp+"/"+d.maxHP }; slotRef.on("value",slotCb); tok._slotRef=slotRef; tok._slotRefCb=slotCb
   tok.addEventListener("mousedown",e=>{ if(!isGM) return; selected=tok; lastX=tok.offsetLeft; _state.tokenDragStart={x:e.clientX,y:e.clientY}; _state.tokenDragging=false; tok._fbSlot=slot; e.preventDefault() })
   container.appendChild(tok)
 }
@@ -2038,12 +2044,14 @@ function showStoryImage(image) {
       setManagedAudioBaseVolume(snd,1)
       document.body.appendChild(snd)
     }
+    clearTimeout(snd._pnjFadeDelay);clearInterval(snd._pnjFadeInterval)
+    setManagedAudioBaseVolume(snd,1)
     snd.currentTime = 0
     snd.play().catch(() => {})
-    setTimeout(() => {
-      let iv = setInterval(() => {
+    snd._pnjFadeDelay=setTimeout(() => {
+      snd._pnjFadeInterval=setInterval(() => {
         if (snd.__baseVolume > 0.05) setManagedAudioBaseVolume(snd,Math.max(0,snd.__baseVolume-0.05))
-        else { snd.pause(); setManagedAudioBaseVolume(snd,1); clearInterval(iv) }
+        else { snd.pause(); setManagedAudioBaseVolume(snd,1); clearInterval(snd._pnjFadeInterval) }
       }, 100)
     }, 2000)
   }
@@ -2066,11 +2074,26 @@ function hideStoryImage() {
 function showHighPNJ(image, name) {
   openPNJ(image, { slot: 1, forceSlot: true, name, scrollName: true })
 }
-function showHighPNJScroll(name) {
-  const old=document.getElementById("highPNJScroll"); if(old) old.remove()
-  const scroll=document.createElement("div"); scroll.id="highPNJScroll"; scroll.style.cssText="position:fixed;bottom:8%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:99999999;"
-  const el=document.createElement("div"); el.innerText=name; el.style.cssText="font-family:'Cinzel Decorative','Cinzel',serif;font-size:32px;letter-spacing:4px;font-weight:900;color:#f5e6c8;text-shadow:0 0 10px rgba(0,0,0,0.9),2px 2px 4px black;text-align:center;opacity:0;transition:opacity 0.5s ease;"; scroll.appendChild(el); document.body.appendChild(scroll)
-  setTimeout(()=>el.style.opacity="1",20); setTimeout(()=>{ el.style.opacity="0"; setTimeout(()=>{ scroll.remove(); if(isGM)db.ref("game/highPNJName").remove().catch(error=>console.warn(error)) },500) },5000)
+function disposeHighPNJScroll(){
+  for(const timer of window.__highPNJScrollTimers||[])clearTimeout(timer)
+  window.__highPNJScrollTimers=[]
+  document.getElementById("highPNJScroll")?.remove()
+}
+function showHighPNJScroll(name,eventTime){
+  disposeHighPNJScroll()
+  const scroll=document.createElement("div");scroll.id="highPNJScroll";scroll.style.cssText="position:fixed;bottom:8%;left:50%;transform:translateX(-50%);pointer-events:none;z-index:99999999;"
+  const text=document.createElement("div");text.textContent=name;text.style.cssText="font-family:Cinzel,serif;font-size:32px;color:#f5e6c8;text-shadow:0 0 10px black;text-align:center;opacity:0;transition:opacity .5s";scroll.appendChild(text);document.body.appendChild(scroll)
+  const schedule=(fn,ms)=>window.__highPNJScrollTimers.push(setTimeout(fn,ms))
+  schedule(()=>text.style.opacity="1",20)
+  schedule(()=>{text.style.opacity="0";schedule(()=>{
+    if(document.getElementById("highPNJScroll")!==scroll)return
+    scroll.remove()
+    if(isGM&&Number.isFinite(eventTime))reliableRootTransaction(root=>{
+      const event=root?.game?.highPNJName
+      if(root?.sessionControl?.phase||event?.name!==name||event?.time!==eventTime)return undefined
+      delete root.game.highPNJName;return root
+    }).catch(error=>console.warn("Fin d’annonce PNJ",error))
+  },500)},5000)
 }
 
 /* ========================= */
@@ -3510,9 +3533,10 @@ function showFreePointsPanel(playerID, points) {
 }
 
 function checkFreePoints(playerID) {
-  if (!canAccessCharacter(playerID)) return
+  const generation=window.__sheetViewGeneration
+  if (!canAccessCharacter(playerID)||currentSheetPlayer!==playerID) return
   db.ref("characters/" + playerID + "/freePoints").once("value", snap => {
-    if (!canAccessCharacter(playerID)) return
+    if (!canAccessCharacter(playerID)||currentSheetPlayer!==playerID||generation!==window.__sheetViewGeneration||document.getElementById("characterSheet")?.style.display==="none") return
     const pts = parseInt(snap.val()) || 0
     if (pts > 0) showFreePointsPanel(playerID, pts)
   })
@@ -3553,9 +3577,10 @@ function saveGold() {
 }
 
 function loadGold(playerID) {
+  const generation=window.__sheetViewGeneration
   if (!canAccessCharacter(playerID)) return
   db.ref("characters/" + playerID + "/gold").once("value", snap => {
-    if (!canAccessCharacter(playerID) || currentSheetPlayer !== playerID) return
+    if (!canAccessCharacter(playerID) || currentSheetPlayer !== playerID || generation!==window.__sheetViewGeneration) return
     const val = parseInt(snap.val()) || 0
     const input   = document.getElementById("goldInput")
     const display = document.getElementById("goldDisplay")
@@ -3903,3 +3928,5 @@ function persistCharacterEdits(id,data){
   window.__characterEditQueue[id]=promise
   pendingSessionWrites.add(promise);promise.then(()=>pendingSessionWrites.delete(promise),error=>{pendingSessionWrites.delete(promise)});return promise
 }
+
+function stopCombatStatsSubscription(){if(window.__combatStatsRef&&window.__combatStatsCb)window.__combatStatsRef.off("value",window.__combatStatsCb);window.__combatStatsRef=null;window.__combatStatsCb=null}

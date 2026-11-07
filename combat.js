@@ -737,6 +737,7 @@ function _showDefeatNow(outcome) {
 
 function endCombat(options = {}) {
   if (!combatActive && !options.force) return
+  stopCombatStatsSubscription()
   combatActive = false; combatStarting = false
   if (typeof resetLocalCombatVisualState === "function") resetLocalCombatVisualState()
   setGameState("GAME")

@@ -6279,3 +6279,30 @@ body[data-entry-stage="lobby"][data-entry-role="player"] #lobbyWaiting { display
 body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playing"]) #mjLog,body:not([data-entry-stage="playing"]) #playerPreviewBtn { visibility:hidden !important; }
 body[data-entry-stage="choice"] #intro { display:none !important; }
 @media(max-width:600px){.entranceChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.entranceChoices button{min-height:150px;padding:14px 8px}.entranceChoices img,.entranceDice{height:90px}.entranceDice{font-size:80px}#entranceTitle{margin-bottom:22px}}
+
+/* Role selection: the same parchment, brass and blue-green as the game. */
+#startScreen{background:radial-gradient(ellipse at 50% 15%,rgba(26,92,96,.24),transparent 58%),linear-gradient(rgba(5,12,16,.92),rgba(5,9,12,.98)),url('images/paper1.png') center/cover;}
+#entranceSelection{width:min(1040px,100%);padding:20px 0 8px;}
+.entranceEyebrow{font-size:10px;letter-spacing:4px;color:#b7975a;margin-bottom:18px;}
+#entranceTitle{margin:0;font-size:clamp(34px,5vw,64px);line-height:1.12;color:#f5e5bf;text-shadow:0 3px 24px #000;letter-spacing:2px;}
+#entranceTitle em{font-style:normal;color:#caac6c;font-size:.8em;}
+.entranceSubtitle{font:italic 19px Georgia,serif;color:#abc3c6;margin:22px 0 30px;}
+.entranceChoices{gap:18px;}
+.entranceChoices .heroCard{position:relative;overflow:hidden;padding:0 0 22px;gap:8px;min-height:290px;border-radius:5px;background:linear-gradient(160deg,#152a2f,#0b131a);border:1px solid #826d42;box-shadow:0 12px 30px #0008;transition:transform .18s,border-color .18s,box-shadow .18s;}
+.heroCard .heroArt{height:180px;width:100%;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#31545c70,transparent 72%);border-bottom:1px solid #b4915133;margin-bottom:10px;}
+.heroCard .heroArt img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 5px 12px #0008);}
+.heroCard .heroName{font:22px Cinzel,Georgia,serif;color:#f3dfb0;padding:0 8px;}
+.heroCard small{font:italic 13px Georgia,serif;color:#aac3c6;padding:0 10px;}
+.entranceChoices .heroCard:hover:not(:disabled){transform:translateY(-5px);border-color:#e5c27d;box-shadow:0 18px 36px #0009,0 0 20px #a5873a18;}
+.entranceChoices .heroCard:focus-visible{outline:2px solid #efd093;outline-offset:5px;}
+.entranceChoices .heroCard[data-reserved="true"]{opacity:.58;filter:saturate(.5);cursor:not-allowed;}
+.heroCard .entranceDice{font-size:108px;color:#d8b878;}
+#entranceGMOptions{background:linear-gradient(120deg,#18323b,#101e26);border:1px solid #947e4d;padding:20px 22px;margin:0 auto 20px;border-radius:5px;}
+#entranceGMOptions[hidden]{display:none;}
+#entranceGMOptions h2{margin:0 0 14px;font:22px Georgia,serif;color:#f2dfb9;}
+.entranceGMActions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;}
+.entranceGMActions button{font:14px Cinzel,Georgia,serif;color:#f3e3bd;background:linear-gradient(#284b53,#172b33);border:1px solid #b09459;padding:12px 16px;cursor:pointer;border-radius:3px;}
+#entranceGMOptions p,.entranceAccountHint{font:14px/1.5 Georgia,serif;color:#a4b6b7;max-width:700px;margin:14px auto 0;}
+.entranceAccounts button{border-color:transparent;color:#c1ad81;text-decoration:underline;text-underline-offset:4px;}
+@media(max-width:650px){.entranceChoices{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.entranceChoices .heroCard{min-height:220px}.heroCard .heroArt{height:130px}.heroCard .heroName{font-size:18px}.entranceEyebrow{letter-spacing:2px;font-size:9px}.entranceGMActions button{width:100%}#entranceSelection{padding-top:10px}}
+@media(prefers-reduced-motion:reduce){.entranceChoices .heroCard{transition:none}.entranceChoices .heroCard:hover:not(:disabled){transform:none}}

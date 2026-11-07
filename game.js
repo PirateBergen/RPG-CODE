@@ -16,7 +16,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig)
 firebase.database().goOnline()
-const db   = firebase.database()
+const db   = typeof createIsolatedTestDatabase === "function" && window.__isolatedTestMode ? createIsolatedTestDatabase(firebase.database()) : firebase.database()
 installSessionWriteTracking(db)
 const auth = typeof firebase.auth === "function" ? firebase.auth() : null
 
@@ -1488,7 +1488,7 @@ function safeStartIntro(event) {
 document.addEventListener("DOMContentLoaded", () => {
 Object.assign(window,{showMobSpecialAttackEvent,showMobAttackPresentation,cleanupRuneChallengeUI,ensureCemeteryGlyphIntro,ensureTokenStateBadgeContainer,setTokenStateBadges,clearCombatTokenStateVisuals,resetLocalCombatVisualState,cleanupTransientGameUI,finalizeNewGameLocally,updateCombatTokenStateVisuals,syncMapElementsFromDB,syncWantedStateFromDB})
 window.__pageLoadTime = Date.now()
-try { window.isNewGame = sessionStorage.getItem("rpg_session_transition") === "new"; sessionStorage.removeItem("rpg_session_transition") } catch (e) {}
+try { window.isNewGame = sessionStorage.getItem(persistenceStorageKey("rpg_session_transition")) === "new"; sessionStorage.removeItem(persistenceStorageKey("rpg_session_transition")) } catch (e) {}
 window.__introClickLockUntil = 0
 
 // ─── startScreen : un seul handler pointerdown, pas d'onclick inline ───

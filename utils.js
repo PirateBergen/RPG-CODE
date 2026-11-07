@@ -159,6 +159,7 @@ function clampInteger(value, min = 0, max = Number.MAX_SAFE_INTEGER) {
 }
 
 function parseLocalStorageJSON(key, fallback) {
+  if (typeof rpgStorageKey === "function") key = rpgStorageKey(key)
   try {
     const raw = localStorage.getItem(key)
     if (!raw) return fallback

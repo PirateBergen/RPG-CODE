@@ -9,9 +9,11 @@ function renderEntrance(){
  document.body.dataset.entryRole=gm?"gm":"player"
  document.getElementById("lobbyWaiting").style.display=window.__entryConfirmed&&!gm?"block":"none"
  document.getElementById("entranceSignOut").hidden=!(window.__authPlayerId||gm)
+ const gmOptions=document.getElementById("entranceGMOptions");if(gmOptions)gmOptions.hidden=!(gm&&window.__entryChoice==="gm"&&!window.__entryConfirmed)
+ if(window.__isolatedTestMode&&gm&&!window.__entryConfirmed){window.__entryChoice="gm";confirmEntrance("gm");window.isNewGame=false;setTimeout(()=>startGame(),200);return}
  if(!window.__entryConfirmed){
   document.getElementById("introBox").style.setProperty("display","none","important")
-  if(window.__entryChoice==="gm"&&gm)confirmEntrance("gm")
+  if(window.__entryChoice==="gm"&&gm)entranceMessage(window.__isolatedTestMode?"Essai local prêt. Entrez pour tester librement.":"Choisissez votre accès MJ ci-dessous.")
   else if(PLAYABLE_HEROES.includes(window.__entryChoice)&&window.__authPlayerId===window.__entryChoice&&!gm&&ownsReservedHero(window.__entryChoice))confirmEntrance(window.__entryChoice)
   return
  }
@@ -45,7 +47,7 @@ async function chooseEntrance(choice){
  try{
   await initFirebaseAnonymousAuth()
   if(choice==="gm"){
-   if(window.__authRole==="gm")confirmEntrance("gm");else{entranceMessage("Connectez-vous avec le compte MJ.");showGMAuthModal()}
+   if(window.__authRole==="gm"){renderEntrance();entranceMessage("Choisissez votre accès MJ ci-dessous.")}else{entranceMessage("Connectez-vous avec le compte MJ.");showGMAuthModal()}
    return
   }
   if(window.__entranceAccountRequested){entranceMessage("Connectez-vous ou créez le compte de ce héros.");showPlayerAuthModal();return}

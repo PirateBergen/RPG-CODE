@@ -14,6 +14,7 @@ function validateReliableRequest(root,r){
  if(root.roles?.[r.uid]!=="gm"&&root.heroAssignments?.[combatOwner(r.actor)]?.uid!==r.uid)throw Error("Ce héros a été libéré ou réattribué par le MJ")
 }
 async function reliablePut(path,value,providedSignal,allowSessionBusy=false){
+ if(db.__isolatedTest){requireActionConnection(allowSessionBusy);await db.ref(path).set(value);return {ok:true,status:200}}
  requireActionConnection(allowSessionBusy);const epoch=reliableEpoch,user=auth?.currentUser
  if(!user)throw Error("Connexion au compte nécessaire")
  const controller=providedSignal?null:new AbortController(),signal=providedSignal||controller.signal
@@ -80,7 +81,7 @@ function restoreReservedPlayerSelection(){
  if(window.__heroReservationsReady&&window.__authRole!=="gm"&&window.__authPlayerId&&ownsReservedHero(window.__authPlayerId)&&gameStarted&&["GAME","COMBAT"].includes(gameState)&&!myToken&&!window.__playerSelectionPending)choosePlayer(window.__authPlayerId)
 }
 function refreshHeroAvailability(){
-  for(const b of document.querySelectorAll(".entranceChoices button")){const match=b.getAttribute("onclick")?.match(/chooseEntrance\('(greg|ju|elo)'\)/);if(!match)continue;const hero=match[1],claim=window.__heroAssignments[hero],unavailable=!!claim&&claim.uid!==window.__authUid;b.disabled=unavailable;b.setAttribute("aria-disabled",String(unavailable));b.title=unavailable?"Héros réservé — le MJ peut libérer une attribution incorrecte":"";const span=b.querySelector("span");if(span)span.textContent=entranceLabel(hero)+(unavailable?" — réservé":"")}
+  for(const b of document.querySelectorAll(".entranceChoices button")){const match=b.getAttribute("onclick")?.match(/chooseEntrance\('(greg|ju|elo)'\)/);if(!match)continue;const hero=match[1],claim=window.__heroAssignments[hero],unavailable=!!claim&&claim.uid!==window.__authUid;b.disabled=unavailable;b.setAttribute("aria-disabled",String(unavailable));b.title=unavailable?"Héros réservé — le MJ peut libérer une attribution incorrecte":"";b.dataset.reserved=String(unavailable);const span=b.querySelector(".heroName")||b.querySelector("span");if(span)span.textContent=entranceLabel(hero)+(unavailable?" — réservé":"")}
 
 }
 function renderHeroManagement(){
@@ -136,6 +137,7 @@ rollStat=function(stat){const sheet=document.getElementById("characterSheet");if
 
 // REST transactions never enter the SDK's offline write queue.
 async function reliableRootTransaction(update,allowSessionBusy=false){
+ if(db.__isolatedTest){requireActionConnection(allowSessionBusy);if(window.__authRole!=="gm")throw Error("Compte MJ nécessaire");return db.ref().transaction(update)}
  requireActionConnection(allowSessionBusy);const epoch=reliableEpoch,user=auth?.currentUser,controller=new AbortController()
  if(!user)throw Error("Compte MJ nécessaire")
  let cancel,timer

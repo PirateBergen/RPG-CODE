@@ -2,6 +2,7 @@
 
 // Une session contient toutes les branches de jeu, jamais les comptes ni les sauvegardes.
 const SESSION_BRANCHES = ["characters", "tokens", "elements", "game", "combat", "events", "curse", "diceRoll"]
+function persistenceStorageKey(key) { return typeof rpgStorageKey === "function" ? rpgStorageKey(key) : key }
 const SAVE_SCHEMA_VERSION = 3
 let persistenceClientId = null
 let persistenceUserId = null
@@ -200,7 +201,7 @@ function startPersistenceSync(uid) {
     if (persistenceRevision === undefined) persistenceRevision = control.revision || null
     if ((control.revision || null) !== persistenceRevision) {
       setSessionBusy(true, "Ouverture de la partie…")
-      try { sessionStorage.setItem("rpg_session_transition", control.action || "load") } catch (e) {}
+      try { sessionStorage.setItem(persistenceStorageKey("rpg_session_transition"), control.action || "load") } catch (e) {}
       if (persistenceOperation !== control.revision) window.location.reload()
       return
     }
@@ -273,8 +274,8 @@ function cacheSave(id, save) {
     const records = {current:save}
     const old=sortedSaveEntries(parseLocalStorageJSON("rpg_saves",{})).find(([,entry])=>entry._savedAt!==save._savedAt)?.[1]
     if(old)records.previous=old
-    localStorage.setItem("rpg_saves", JSON.stringify(records))
-    localStorage.setItem("rpg_save", JSON.stringify(save))
+    localStorage.setItem(persistenceStorageKey("rpg_saves"), JSON.stringify(records))
+    localStorage.setItem(persistenceStorageKey("rpg_save"), JSON.stringify(save))
   } catch (error) { console.warn("Copie locale indisponible ; sauvegarde en ligne conservée", error) }
 }
 
@@ -302,7 +303,7 @@ async function saveGame() {
       const next={current:save,...(previous?{previous}:{})}
       if(typeof reliablePut==="function")await reliablePut("saves",next,undefined,true)
       else await db.ref("saves").set(next)
-      try{localStorage.setItem("rpg_saves",JSON.stringify(next));localStorage.setItem("rpg_save",JSON.stringify(save))}catch(e){console.warn("Copie locale indisponible",e)}
+      try{localStorage.setItem(persistenceStorageKey("rpg_saves"),JSON.stringify(next));localStorage.setItem(persistenceStorageKey("rpg_save"),JSON.stringify(save))}catch(e){console.warn("Copie locale indisponible",e)}
       showNotification("Sauvegardé : " + save._saveName)
       return true
     })
@@ -324,7 +325,7 @@ async function replaceSession(state, action, operation) {
     if(!result.committed)throw Error("Chargement non confirmé")
   }else await db.ref().update(payload) // Remplacement atomique, sans file d’attente hors ligne.
   operation.markCommitted()
-  try { sessionStorage.setItem("rpg_session_transition", action) } catch (e) {}
+  try { sessionStorage.setItem(persistenceStorageKey("rpg_session_transition"), action) } catch (e) {}
   window.location.reload() // Seulement après confirmation serveur pour le MJ initiateur.
   return true
 }
@@ -367,9 +368,9 @@ async function deleteSave(id) {
     await db.ref("saves/" + id).remove()
     const records = parseLocalStorageJSON("rpg_saves", {}); delete records[id]
     try {
-      localStorage.setItem("rpg_saves", JSON.stringify(records))
+      localStorage.setItem(persistenceStorageKey("rpg_saves"), JSON.stringify(records))
       const latest = sortedSaveEntries(records)[0]?.[1]
-      if (latest) localStorage.setItem("rpg_save", JSON.stringify(latest)); else localStorage.removeItem("rpg_save")
+      if (latest) localStorage.setItem(persistenceStorageKey("rpg_save"), JSON.stringify(latest)); else localStorage.removeItem(persistenceStorageKey("rpg_save"))
     } catch (error) { console.warn(error) }
     showSaveMenu(); return true
   } catch (error) { showNotification("Suppression impossible : " + error.message); return false }

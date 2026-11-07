@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261107.4"</script>
+  <script>window.GAME_V = "20261107.5"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -29,15 +29,27 @@
 <div id="gameWrapper">
   <div id="startScreen">
     <section id="entranceSelection" aria-labelledby="entranceTitle">
-      <h1 id="entranceTitle">Choisissez votre personnage</h1>
+      <div class="entranceEyebrow">UNE TABLE · TROIS DESTINS · UN MYSTÈRE</div>
+      <h1 id="entranceTitle">La Prophétie<br><em>des Mouches</em></h1>
+      <p class="entranceSubtitle">Choisissez votre place dans l’histoire.</p>
       <div class="entranceChoices">
-        <button onclick="chooseEntrance('greg')"><img src="images/greg.png" alt=""><span>Greg</span></button>
-        <button onclick="chooseEntrance('ju')"><img src="images/pika.png" alt=""><span>Pika</span></button>
-        <button onclick="chooseEntrance('elo')"><img src="images/elo.png" alt=""><span>Elo</span></button>
-        <button onclick="chooseEntrance('gm')"><span class="entranceDice" aria-hidden="true">⚄</span><span>MJ</span></button>
+        <button onclick="chooseEntrance('greg')" class="heroCard"><span class="heroArt"><img src="images/greg.png" alt="Portrait de Greg"></span><span class="heroName">Greg</span><small>Le lien de la meute</small></button>
+        <button onclick="chooseEntrance('ju')" class="heroCard"><span class="heroArt"><img src="images/pika.png" alt="Portrait de Pika"></span><span class="heroName">Pika</span><small>Elfe · Barde</small></button>
+        <button onclick="chooseEntrance('elo')" class="heroCard"><span class="heroArt"><img src="images/elo.png" alt="Portrait d’Elo"></span><span class="heroName">Elo</span><small>Les murmures de la nature</small></button>
+        <button onclick="chooseEntrance('gm')" class="heroCard gmRoleCard"><span class="heroArt entranceDice" aria-hidden="true">⚄</span><span class="heroName">Maître du jeu</span><small>Le fil de cette histoire</small></button>
       </div>
       <p id="entranceFeedback" role="status" aria-live="polite"></p>
-      <div class="entranceAccounts"><button onclick="entranceAccount()">Se connecter à un compte joueur</button><button id="entranceSignOut" onclick="logoutPlayer()" hidden>Se déconnecter</button></div>
+      <section id="entranceGMOptions" hidden aria-label="Accès du maître du jeu">
+        <h2>Votre table, vos règles.</h2>
+        <div class="entranceGMActions">
+          <button onclick="confirmEntrance('gm')">Accéder à la campagne</button>
+          <button onclick="window.__isolatedTestMode?confirmEntrance('gm'):openIsolatedTest()">Lancer une partie test</button>
+          <button onclick="openHeroManagement()">Libérer un héros réservé</button>
+        </div>
+        <p>La partie test est un essai local séparé. Aucun joueur requis ; aucune modification de la campagne.</p>
+      </section>
+      <div class="entranceAccounts"><button onclick="entranceAccount()">Retrouver mon héros avec mon compte</button><button id="entranceSignOut" onclick="logoutPlayer()" hidden>Se déconnecter</button></div>
+      <p class="entranceAccountHint">Si votre héros est lié à un compte, reconnectez-vous pour le retrouver sur un autre appareil. Les héros réservés peuvent être libérés par le MJ.</p>
     </section>
   </div>
 
@@ -932,6 +944,7 @@
 <!-- Accès aux fiches privées et informations de combat publiques -->
 <script>document.write('<script src="access.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="persistence.js?v='+GAME_V+'"><\/script>')</script>
+<script>document.write('<script src="local-test-mode.js?v='+GAME_V+'"><\/script>')</script>
 <!-- 4. Logique principale + Firebase listeners -->
 <script>document.write('<script src="presentation.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="game.js?v='+GAME_V+'"><\/script>')</script>

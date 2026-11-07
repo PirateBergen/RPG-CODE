@@ -1862,7 +1862,7 @@ db.ref("game/bifrostFlash").on("value", snap => {
   const d = snap.val()
   if (!d) return
   if (!d.time || d.time < (window.__pageLoadTime || 0)) { void 0; return }
-  doBifrostFlash()
+  if(!d.completedAt)doBifrostFlash(d)
   void 0
 })
 
@@ -1872,7 +1872,7 @@ db.ref("game/odinVision").on("value", snap => {
   const data = snap.val()
   if (!data) return
   if (!data.time || data.time < (window.__pageLoadTime || 0)) return
-  showOdinVision(data.msg)
+  showOdinVision(data.msg,data)
 })
 
 // ─── powerSound ───

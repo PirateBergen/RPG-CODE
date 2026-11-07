@@ -3644,42 +3644,26 @@ function openSessionLog() {
   if (panel.style.display === "flex") { closeSessionLog(); return }
   panel.style.display = "flex"
   const content = document.getElementById("sessionLogContent")
-  content.innerHTML = ""
-  db.ref("game/sessionLog").orderByChild("time").limitToLast(80).once("value", snap => {
-    const entries = []
-    snap.forEach(child => entries.unshift(child.val()))
-    entries.forEach(e => {
-      const row = document.createElement("div")
-      row.style.cssText = "font-size:11px;color:#c8d8d0;letter-spacing:0.5px;padding:3px 0;border-bottom:1px solid rgba(30,90,102,0.15);"
-      const ts = document.createElement("span")
-      ts.style.cssText = "color:#1e8a9a;margin-right:8px;font-size:10px;"
-      ts.textContent = "[" + (e.display || "--:--") + "]"
-      const msg = document.createElement("span")
-      msg.textContent = e.text
-      row.appendChild(ts); row.appendChild(msg)
-      content.appendChild(row)
-    })
-    if (!entries.length) { content.innerHTML = '<div style="color:#555;font-size:11px;text-align:center;padding:20px;">Aucune entrée</div>' }
-  })
-  // Mise à jour en temps réel
-  if (panel.__logListener) db.ref("game/sessionLog").off("child_added", panel.__logListener)
-  panel.__logListener = db.ref("game/sessionLog").orderByChild("time").startAt(Date.now()).on("child_added", snap => {
-  if (window.__sessionBusy) return
-    const e = snap.val(); if (!e) return
-    const row = document.createElement("div")
-    row.style.cssText = "font-size:11px;color:#c8d8d0;letter-spacing:0.5px;padding:3px 0;border-bottom:1px solid rgba(30,90,102,0.15);"
-    const ts = document.createElement("span"); ts.style.cssText = "color:#1e8a9a;margin-right:8px;font-size:10px;"; ts.textContent = "[" + (e.display || "--:--") + "]"
-    const msg = document.createElement("span"); msg.textContent = e.text
-    row.appendChild(ts); row.appendChild(msg)
-    content.insertBefore(row, content.firstChild)
-    const empty = content.querySelector(".logEmpty"); if (empty) empty.remove()
-  })
+  if (panel.__logQuery && panel.__logListener) panel.__logQuery.off("value",panel.__logListener)
+  panel.__logQuery=db.ref("game/sessionLog").orderByChild("time").limitToLast(80)
+  panel.__logListener=snap=>{
+    if(panel.style.display!=="flex")return
+    content.replaceChildren()
+    const entries=[];snap.forEach(child=>entries.unshift(child.val()))
+    for(const e of entries){
+      const row=document.createElement("div");row.style.cssText="font-size:12px;color:#c8d8d0;padding:6px 0;border-bottom:1px solid rgba(30,90,102,0.15);line-height:1.5"
+      const ts=document.createElement("span");ts.style.cssText="color:#1e8a9a;margin-right:8px";ts.textContent="["+(e.display||"--:--")+"] "+(e.status==="applied"?"✓ ":"")
+      const msg=document.createElement("span");msg.textContent=String(e.text||"");row.append(ts,msg);content.appendChild(row)
+    }
+    if(!entries.length){const empty=document.createElement("div");empty.className="logEmpty";empty.textContent="Aucune entrée";content.appendChild(empty)}
+  }
+  panel.__logQuery.on("value",panel.__logListener,()=>{content.textContent="Journal indisponible. Vérifiez la connexion et rouvrez-le."})
 }
 
 function closeSessionLog() {
   const panel = document.getElementById("sessionLogPanel")
   if (!panel) return
-  if (panel.__logListener) { db.ref("game/sessionLog").off("child_added", panel.__logListener); panel.__logListener = null }
+  if (panel.__logListener && panel.__logQuery) { panel.__logQuery.off("value", panel.__logListener); panel.__logListener = null; panel.__logQuery=null }
   panel.style.display = "none"
 }
 

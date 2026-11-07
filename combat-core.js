@@ -82,6 +82,15 @@ function finalizedInitiative(state) {
   return { ...state, phase: "active", order, currentIndex: 0, currentActorId: order[0].id, round: 1, sequence: 0 }
 }
 
+function recordConfirmedCombatAction(root,request,result){
+  root.game ||= {}; root.game.sessionLog ||= {}
+  const label=id=>heroDisplayName(root.combat?.[id]?.name||({greg:"Greg",ju:"Pika",elo:"Elo",bibi:"Bibi"})[id]||id||"MJ")
+  const effects=Object.entries(root.combat?.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,h])=>!["dmg","mob","manual","heal"].includes(h.type)?String(h.detail||"Effet appliqué"):label(h.from)+" → "+label(h.to)+" : "+(h.type==="heal"?"+":h.type==="buff"||h.type==="malus"?"effet ":"−")+h.amount+(h.type==="buff"||h.type==="malus"?"":" PV"))
+  const text=[label(result.actor||request.actor),(result.mode==="arbitrated"?result.message:result.attack||result.message)||({pass:"Tour passé",skip:"Acteur KO : tour passé",manual:"Ajustement MJ",thuum:"Cri"})[result.mode]||"Action",result.roll!=null?"dé : "+result.roll+(result.crit?" (critique)":result.fail?" (échec critique)":""):"",...effects,...(!effects.length&&result.message&&result.attack&&result.mode!=="arbitrated"?[result.message]:[])].filter(Boolean).join(" · ")
+  root.game.sessionLog["action-"+request.id]={text:text.slice(0,1500),time:request.time,display:new Date(request.time).toTimeString().slice(0,5),status:"applied",combatId:root.combat.id,requestId:request.id}
+  const entries=Object.entries(root.game.sessionLog).sort((a,b)=>(b[1].time||0)-(a[1].time||0));entries.slice(200).forEach(([key])=>delete root.game.sessionLog[key])
+}
+
 function combatRecord(root, request, from, to, amount, type, detail) {
   root.combat.hits ||= {}
   const index = Object.keys(root.combat.hits).filter(key => key.startsWith(request.id + "_")).length
@@ -380,6 +389,7 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
     } else throw new Error("Action inconnue")
     delete root.__arbitration
     request.status = "done"; request.result = result
+    recordConfirmedCombatAction(root,request,result)
     const visual={id,combatId:root.combat.id,time:Date.now(),result,nextTurn:combatClone(root.combat.turnState)}
     root.combat.lastAction = visual
     if(root.game.combatOutcome?.combatId===root.combat.id)root.game.combatOutcome.finalAction=combatClone(visual)
@@ -489,7 +499,7 @@ function reduceCombatRequest(current,id,seed){
       const result={...original,mode:"arbitrated",message:message.slice(0,1500),changes}
       r.combatRequests[id].result=result;r.combat.lastAction.result=result;r.combat.visualEvents[id].result=result
       if(r.game.combatOutcome?.combatId===r.combat.id)r.game.combatOutcome.finalAction=combatClone(r.combat.lastAction)
-      arbitrationLog(r,id,message);return r
+      recordConfirmedCombatAction(r,{...q,id},result);r.game.sessionLog["decision-"+id]=r.game.sessionLog["action-"+id];delete r.game.sessionLog["action-"+id];return r
     }
     if(pending)throw Error("Décision du MJ en attente : les actions sont suspendues")
     const preview=reduceCombatRequestNow(current,id,seed)

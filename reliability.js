@@ -5,7 +5,7 @@ window.__heroReservationsReady=false
 let reliableEpoch=0,reliableOffset=0,reliabilityCleanupTimer=null,saveTrimPromise=null
 const reliablePending=new Set()
 function reliableActionNow(){return Date.now()+reliableOffset}
-function requireActionConnection(allowSessionBusy=false){if(!window.__actionOnline)throw Error("Connexion perdue — actions suspendues. Réessayez après la reconnexion.");if(allowSessionBusy&&(window.__authRole!=="gm"||!persistenceOperation))throw Error("Synchronisation MJ nécessaire");if(window.__sessionBusy&&!allowSessionBusy)throw Error("La partie se synchronise")}
+function requireActionConnection(allowSessionBusy=false){if(!window.__actionOnline)throw Error("Action non envoyée : connexion perdue. Attendez la reconnexion avant de réessayer.");if(allowSessionBusy&&(window.__authRole!=="gm"||!persistenceOperation))throw Error("Synchronisation MJ nécessaire");if(window.__sessionBusy&&!allowSessionBusy)throw Error("La partie se synchronise")}
 function ownsReservedHero(id){const hero=id==="bibi"?"greg":id;return window.__heroAssignments?.[hero]?.uid===window.__authUid}
 function validateReliableRequest(root,r){
  if(root?.securityVersion!==2)return
@@ -30,7 +30,7 @@ async function reliablePut(path,value,providedSignal,allowSessionBusy=false,meth
   return response
  }
  if(!controller)return send()
- try{return await Promise.race([send(),new Promise((_,reject)=>{cancel=()=>{controller.abort();reject(Error("Connexion interrompue, aucune relance automatique"))};reliablePending.add(cancel);timer=setTimeout(cancel,15000)})])}
+ try{return await Promise.race([send(),new Promise((_,reject)=>{cancel=()=>{controller.abort();reject(Error("Résultat non confirmé : consultez le journal et l’état de la partie avant de réessayer. Aucune relance automatique."))};reliablePending.add(cancel);timer=setTimeout(cancel,15000)})])}
  finally{clearTimeout(timer);if(cancel)reliablePending.delete(cancel);controller.abort()}
 }
 
@@ -40,11 +40,11 @@ function submitReliableAction(branch,request){
  const value={...request,uid:window.__authUid,status:"queued",protocol:2,time:now,expiresAt:now+15000,sessionRevision:persistenceRevision||"initial"}
  return new Promise((resolve,reject)=>{
   let done=false;const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);ref.off("value",listener);reliablePending.delete(disconnect);controller.abort();error?reject(error):resolve(result)}
-  const listener=s=>{const r=s.val();if(r?.status==="done")finish(null,r.result);else if(["failed","cancelled"].includes(r?.status))finish(Error(r.error||"Demande annulée"))}
-  const disconnect=()=>finish(Error("Connexion perdue : résultat non confirmé. Vérifiez la partie, puis réessayez si nécessaire."))
-  const timer=setTimeout(async()=>{if(window.__actionOnline)try{await reliablePut(branch+"/"+ref.key+"/status","cancelled")}catch(e){}finish(Error("Aucune confirmation reçue. Vérifiez l’état de la partie avant de réessayer."))},15000)
+  const listener=s=>{const r=s.val();if(r?.status==="done")finish(null,r.result);else if(["failed","cancelled"].includes(r?.status))finish(Error("Action refusée : "+(r.error||"demande annulée")+". Aucun nouvel effet appliqué par cette demande."))}
+  const disconnect=()=>finish(Error("Connexion perdue : résultat non confirmé. Consultez le journal et l’état de la partie après la reconnexion avant toute nouvelle tentative."))
+  const timer=setTimeout(async()=>{if(window.__actionOnline)try{await reliablePut(branch+"/"+ref.key+"/status","cancelled")}catch(e){}finish(Error("Résultat non confirmé : aucune confirmation reçue. Consultez le journal et l’état de la partie avant de réessayer. Aucune relance automatique."))},15000)
   reliablePending.add(disconnect)
-  reliablePut(branch+"/"+ref.key,value,controller.signal).then(()=>{if(epoch!==reliableEpoch)return disconnect();if(!done)ref.on("value",listener,e=>finish(e))}).catch(e=>finish(e.name==="AbortError"?Error("Envoi interrompu, aucune relance automatique"):e))
+  reliablePut(branch+"/"+ref.key,value,controller.signal).then(()=>{if(epoch!==reliableEpoch)return disconnect();if(!done)ref.on("value",listener,e=>finish(e))}).catch(e=>finish(e.name==="AbortError"?Error("Résultat non confirmé : consultez le journal et l’état de la partie avant de réessayer. Aucune relance automatique."):e))
  })
 }
 async function claimReservedHero(hero,uid=window.__authUid){

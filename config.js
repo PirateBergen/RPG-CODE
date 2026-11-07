@@ -1414,7 +1414,7 @@ const ALLY_PNJS = [
 ]
 
 
-function heroDisplayName(id) { return ["ju","yu","yulian","ju pion","yu pion"].includes(String(id || "").toLowerCase()) ? "Pika" : String(id || "").toUpperCase() }
+function heroDisplayName(id) { return ["ju","yu","yulian","ju pion","yu pion","jupion","yupion","youpion","you pion"].includes(String(id || "").toLowerCase()) ? "Pika" : String(id || "").toUpperCase() }
 function heroPortraitFile(id) { return id === "ju" ? "pika-token.svg" : id + ".png" }
 function migratePikaCharacter(character) {
   if (!character || character.buildVersion === "pika-bard-v1") return false

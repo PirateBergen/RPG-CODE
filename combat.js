@@ -44,12 +44,12 @@ function getCombatActorLabel(actorId) {
   const participants = Array.isArray(turnState?.participants) ? turnState.participants : []
   const order = Array.isArray(turnState?.order) ? turnState.order : []
   const entry = order.find(e => String(e.id || "") === id) || participants.find(e => String(e.id || "") === id)
-  if (entry && entry.label) return entry.label
+  if (entry && entry.label) return /^(?:ju|yu|you)\s*pion$/i.test(entry.label) ? "Pika" : entry.label
   if (id === "greg") return "Greg"
   if (id === "ju") return "Pika"
   if (id === "elo") return "Elo"
   if (id === "bibi") return "Bibi"
-  if (id === "mob") return String(currentMob || "Mob").toUpperCase()
+  if (id === "mob") return heroDisplayName(currentMob || "Mob").toUpperCase()
   return id.toUpperCase()
 }
 

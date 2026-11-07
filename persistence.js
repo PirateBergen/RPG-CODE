@@ -162,7 +162,8 @@ async function flushSessionEdits(preserve = true) {
   if (editor) throw new Error("Validez ou annulez l’éditeur de notes/inventaire avant de continuer.")
   const sheet = document.getElementById("characterSheet")
   if (sheet && sheet.style.display !== "none" && currentSheetPlayer && canAccessCharacter(currentSheetPlayer)) {
-    if (!await saveCharacter()) throw new Error("La fiche ouverte n’a pas pu être enregistrée")
+    window.__sheetFlushAuthorized=true
+    try{if (!await saveCharacter()) throw new Error("La fiche ouverte n’a pas pu être enregistrée")}finally{window.__sheetFlushAuthorized=false}
   }
   // Déplacement en cours : le figer à sa dernière position affichée avant l’instantané.
   if (selected && CHARACTER_IDS.includes(selected.id) && canAccessCharacter(selected.id)) {

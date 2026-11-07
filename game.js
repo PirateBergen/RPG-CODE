@@ -4557,6 +4557,7 @@ function handleGameShortcut(e) {
     const loreOverlay = document.getElementById("mapLoreBookOverlay"); if (loreOverlay) { closeMapLoreBookOverlay(); return }
     const runeOverlay = document.getElementById("runeChallengeOverlay"); if (runeOverlay) { if (typeof closeRuneChallenge === "function") closeRuneChallenge(); else { runeOverlay.remove(); _state.runeJustOpened = false } return }
     const sheet = document.getElementById("characterSheet"); if (sheet && sheet.style.display !== "none" && sheet.style.display !== "") { closeCharacterSheet(); return }
+    const shopEditor = document.getElementById("shopItemEditor"); if(shopEditor){shopEditor.remove();return}
     const shopOverlay = document.getElementById("shopOverlay"); if (shopOverlay && isGM) { closeShop(); return }
     if (wantedOverlay) { wantedOverlay.remove(); return }
     const combatHUD = document.getElementById("combatHUD")

@@ -1144,7 +1144,7 @@ function getShopPrice(item, partyLvl) {
 function getShopStats(item, partyLvl) {
   const lvl = partyLvl || 1
   if (item.id === "cartedumonde") return "Accès aux repères du monde"
-  if (item.id === "selle")      return "Poids Bibi +" + (5 + lvl * 3) + " kg"
+  if (item.id === "selle")      return "Poids Bibi +" + (5 + lvl * 3)
   if (item.id === "amulette")   return "Curse -" + Math.min(3, 1 + Math.floor(lvl / 3))
   if (item.id === "pierresoin") return "+" + (5 + Math.floor(lvl / 2)) + " HP/tour"
   if (item.scaling === 0)       return item.baseStats

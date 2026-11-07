@@ -13,17 +13,18 @@ function validateReliableRequest(root,r){
  if(r.protocol!==2||r.sessionRevision!==(root.sessionControl?.revision||"initial")||!Number.isFinite(r.expiresAt)||r.expiresAt<now)throw Error("Demande expirée ou ancienne session : réessayez")
  if(root.roles?.[r.uid]!=="gm"&&root.heroAssignments?.[combatOwner(r.actor)]?.uid!==r.uid)throw Error("Ce héros a été libéré ou réattribué par le MJ")
 }
-async function reliablePut(path,value,providedSignal,allowSessionBusy=false){
- if(db.__isolatedTest){requireActionConnection(allowSessionBusy);await db.ref(path).set(value);return {ok:true,status:200}}
- requireActionConnection(allowSessionBusy);const epoch=reliableEpoch,user=auth?.currentUser
+async function reliablePut(path,value,providedSignal,allowSessionBusy=false,method="PUT",sheetFlush=false){
+ const checkConnection=()=>{const id=/^characters\/(greg|ju|elo|bibi)$/.exec(path)?.[1];if(sheetFlush&&window.__sheetFlushAuthorized&&id&&canAccessCharacter(id)){if(!window.__actionOnline)throw Error("Connexion perdue — modifications non enregistrées");return}requireActionConnection(allowSessionBusy)}
+ if(db.__isolatedTest){checkConnection();await db.ref(path)[method==="PATCH"?"update":"set"](value);return {ok:true,status:200}}
+ checkConnection();const epoch=reliableEpoch,user=auth?.currentUser
  if(!user)throw Error("Connexion au compte nécessaire")
  const controller=providedSignal?null:new AbortController(),signal=providedSignal||controller.signal
  let timer,cancel
  const send=async()=>{
-  const token=await user.getIdToken();requireActionConnection(allowSessionBusy)
+  const token=await user.getIdToken();checkConnection()
   if(epoch!==reliableEpoch||signal.aborted||window.__authUid!==user.uid)throw Error("Connexion interrompue : réessayez")
   const url=new URL(db.ref(path).toString());url.pathname+=".json";const configured=db.app.options.databaseURL?new URL(db.app.options.databaseURL):null;if(configured?.searchParams.has("ns"))url.searchParams.set("ns",configured.searchParams.get("ns"));url.searchParams.set("auth",token)
-  const response=await fetch(url.href,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(value),signal,cache:"no-store"})
+  const response=await fetch(url.href,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(value),signal,cache:"no-store"})
   if(!response.ok)throw Error(response.status===401||response.status===403?"Accès refusé : reconnectez-vous avec votre héros":"Enregistrement non confirmé. Vérifiez la partie avant de réessayer.")
   if(epoch!==reliableEpoch||!window.__actionOnline||window.__authUid!==user.uid)throw Error("Confirmation perdue : vérifiez l’état de la partie avant de réessayer")
   return response
@@ -165,3 +166,5 @@ async function reliableRootTransaction(update,allowSessionBusy=false){
  try{return await Promise.race([work(),new Promise((_,reject)=>{cancel=()=>{controller.abort();reject(Error("Connexion ou confirmation perdue. Vérifiez la partie avant de réessayer."))};reliablePending.add(cancel);timer=setTimeout(cancel,15000)})])}
  finally{clearTimeout(timer);if(cancel)reliablePending.delete(cancel);controller.abort()}
 }
+
+function reliableCharacterPatch(id,data){if(!canAccessCharacter(id))return Promise.reject(Error("Fiche privée"));return reliablePut("characters/"+id,data,undefined,false,"PATCH",true)}

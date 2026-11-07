@@ -77,7 +77,7 @@ function restoreCombatMap(data){
   updateWorldMapFogTopLeft();updateThuumButton()
 }
 function suspendExplorationForCombat(){
-  for(const id of ["mapLoreBookOverlay","runeChallengeOverlay","spellMiniGame","glipheOverlay","shopOverlay","documentOverlay","wantedBoardOverlay","wantedOverlay"])document.getElementById(id)?.remove()
+  for(const id of ["mapLoreBookOverlay","runeChallengeOverlay","spellMiniGame","glipheOverlay","shopOverlay","shopItemEditor","documentOverlay","wantedBoardOverlay","wantedOverlay"])document.getElementById(id)?.remove()
   if(typeof stopSpellAura==="function")stopSpellAura()
   document.getElementById("sortPrisonMusic")?.pause()
 }

@@ -94,8 +94,9 @@ function syncSharedExplorationState(game){
   }
   if(Object.hasOwn(game,"wantedBoardOpen")){if(game.wantedBoardOpen)openWantedBoard(true);else closeWantedBoard(true)}
   if(Object.hasOwn(game,"shop")){
-    const value=game.shop,signature=JSON.stringify(value||null)
-    if(signature!==window.__sharedShopSignature){window.__sharedShopSignature=signature;document.getElementById("shopOverlay")?.remove();if(value?.open)renderShop(value.partyLvl||1,value.type)}
+    const value=game.shop,signature=JSON.stringify(value||null),wasOpen=!!document.getElementById("shopOverlay"),previousShop=window.__shopState;window.__shopState=value||{}
+    const editor=document.getElementById("shopItemEditor");if(editor&&(!value?.open||editor.dataset.type!==shopTypeKey(value.type)))editor.remove()
+    if(signature!==window.__sharedShopSignature){window.__sharedShopSignature=signature;document.getElementById("shopOverlay")?.remove();if(value?.open)renderShop(value.partyLvl||1,value.type,value,!wasOpen||previousShop?.type!==value.type||previousShop?.time!==value.time)}
   }
   if(Object.hasOwn(game,"document")){
     const signature=JSON.stringify(game.document||null)

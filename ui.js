@@ -211,14 +211,14 @@ function saveCharacter() {
     window.__sheetBaseCharacterData.inventaire = data.inventaire
     if (data.notes != null) window.__sheetBaseCharacterData.notes = data.notes
   }
-  return db.ref("characters/" + id).update(data)
+  return persistCharacterEdits(id,data)
     .then(() => {
       showNotification("Fiche sauvegardée")
       return true
     })
     .catch(err => {
-      console.error("saveCharacter failed", err)
-      showNotification("Sauvegarde fiche incomplète")
+      console.warn("saveCharacter failed", err)
+      showNotification("Fiche non enregistrée : "+err.message+". Le texte reste dans la fiche ; réessayez après reconnexion.")
       return false
     })
 }
@@ -261,7 +261,7 @@ function autoSaveCharacter() {
     if (data.notes != null) window.__sheetBaseCharacterData.notes = data.notes
   }
   if (Object.keys(data).length > 0) {
-    return db.ref("characters/" + id).update(data).then(() => ["greg","ju","elo","bibi"].forEach(p => updateTokenStats(p)))
+    return persistCharacterEdits(id,data).then(() => ["greg","ju","elo","bibi"].forEach(p => updateTokenStats(p)))
   }
 }
 
@@ -269,7 +269,7 @@ function queueCharacterAutoSave(delay = 220) {
   if (window.__sheetAutoSaveTimer) clearTimeout(window.__sheetAutoSaveTimer)
   window.__sheetAutoSaveTimer = setTimeout(() => {
     window.__sheetAutoSaveTimer = null
-    autoSaveCharacter()
+    Promise.resolve().then(()=>autoSaveCharacter()).catch(error=>showNotification("Modifications non enregistrées : "+error.message+". Le texte reste dans la fiche."))
   }, Math.max(0, parseInt(delay, 10) || 0))
 }
 
@@ -2077,44 +2077,125 @@ function showHighPNJScroll(name) {
 /* SHOP                      */
 /* ========================= */
 
-function openShop(type){if(!isGM)return;try{requireExplorationConnection();getPartyLevel(p=>db.ref("game/shop").set({open:true,type:type||"marche",partyLvl:p,time:Date.now()}).catch(error=>showNotification(error.message)))}catch(error){showNotification(error.message)}}
-function closeShop(){if(isGM)db.ref("game/shop").remove().catch(error=>showNotification(error.message))}
-
-function renderShop(partyLvl, shopType) {
-  shopType=shopType||"marche"
-  if (!window.__shopRenderSoundLock) window.__shopRenderSoundLock = 0
-  const now = Date.now()
-  if (now - window.__shopRenderSoundLock > 500) {
-    window.__shopRenderSoundLock = now
-    const shopSfx = new Audio((typeof resolveAudioPath === "function") ? resolveAudioPath("shop.mp3") : "audio/shop.mp3")
-    setManagedAudioBaseVolume(shopSfx, 0.82, "effects")
-    shopSfx.play().catch(() => {})
+function shopTypeKey(type){return type==="armurerie"?"armurerie":"marche"}
+function shopImageBank(type=null){
+  const items=type==="marche"?shopItems:type==="armurerie"?shopItemsArmurerie:[...shopItems,...shopItemsArmurerie]
+  return [...new Map(items.filter(x=>x.img).map(x=>[x.img,{img:x.img,name:x.name}])).values()]
+}
+function validateShopItem(item){
+  const name=String(item.name||"").trim(),baseStats=String(item.baseStats||"").trim(),basePrix=Number(item.basePrix)
+  if(!name||name.length>80)throw Error("Nom requis, limité à 80 caractères")
+  if(baseStats.length>300)throw Error("Description limitée à 300 caractères")
+  if(!Number.isInteger(basePrix)||basePrix<0||basePrix>1000000)throw Error("Prix entier entre 0 et 1 000 000")
+  if(!Object.hasOwn(categoryLabels,item.category))throw Error("Catégorie inconnue")
+  if(!shopImageBank().some(x=>x.img===item.img))throw Error("Choisissez une image de la banque")
+  return {id:String(item.id||""),name,baseStats,basePrix,category:item.category,img:item.img,scaling:0}
+}
+function getShopCatalog(state,type){
+  const key=shopTypeKey(type),catalog=state?.catalogs?.[key]
+  const source=catalog?.initialized===true?Object.values(catalog.items||{}):(key==="armurerie"?shopItemsArmurerie:shopItems)
+  return source.filter(item=>item&&typeof item.id==="string"&&typeof item.name==="string"&&Object.hasOwn(categoryLabels,item.category))
+}
+async function openShop(type){
+  if(!isGM||window.__authRole!=="gm")return
+  try{
+    requireExplorationConnection()
+    await reliableRootTransaction(root=>{
+      if(!root||root.sessionControl?.phase)throw Error("La partie se synchronise")
+      const levels=PLAYABLE_HEROES.map(id=>Math.max(1,Number(root.characters?.[id]?.lvl)||1)),partyLvl=Math.round(levels.reduce((a,b)=>a+b,0)/levels.length)
+      root.game||={};root.game.shop={...root.game.shop,open:true,type:shopTypeKey(type),partyLvl,time:Date.now()};return root
+    })
+  }catch(error){showNotification("Ouverture impossible : "+error.message)}
+}
+async function closeShop(){
+  if(!isGM||window.__authRole!=="gm")return
+  try{requireExplorationConnection();await reliablePut("game/shop/open",false)}catch(error){showNotification(error.message)}
+}
+async function changeShopCatalog(type,action,item){
+  if(!isGM||window.__authRole!=="gm")throw Error("Cette action est réservée au MJ")
+  requireExplorationConnection()
+  const key=shopTypeKey(type),validated=action==="add"?validateShopItem(item):null
+  if(action!=="add"&&action!=="remove")throw Error("Action inconnue")
+  if(validated&&(!/^[A-Za-z0-9_-]{1,100}$/.test(validated.id)||["__proto__","prototype","constructor"].includes(validated.id)))throw Error("Identifiant invalide")
+  const result=await reliableRootTransaction(root=>{
+    if(root?.sessionControl?.phase)throw Error("La partie se synchronise")
+    const shop=root?.game?.shop
+    if(!shop?.open||shopTypeKey(shop.type)!==key)throw Error("La boutique a été fermée ou changée")
+    const items=Object.fromEntries(getShopCatalog(shop,key).map(x=>[x.id,x]))
+    if(action==="add"){if(Object.keys(items).length>=200)throw Error("Maximum de 200 articles par boutique");if(items[validated.id])throw Error("Cet article a déjà été ajouté");items[validated.id]=validated}
+    else {const id=String(item?.id||"");if(!Object.hasOwn(items,id))throw Error("Cet article a déjà été retiré");delete items[id]}
+    shop.catalogs||={};shop.catalogs[key]={initialized:true,items};return root
+  })
+  if(!result.committed)throw Error("Modification non confirmée")
+  return true
+}
+function shopButton(label,action){const button=document.createElement("button");button.type="button";button.textContent=label;button.className="shopButton";button.onclick=action;return button}
+function renderShop(partyLvl,shopType,state=window.__shopState||{},playOpeningSound=true){
+  const key=shopTypeKey(shopType)
+  window.__shopState=state;window.__shopType=key
+  if(playOpeningSound){const sound=new Audio(typeof resolveAudioPath==="function"?resolveAudioPath("shop.mp3"):"audio/shop.mp3");setManagedAudioBaseVolume(sound,.82,"effects");sound.play().catch(()=>{})}
+  _buildShop(partyLvl,null,getShopCatalog(state,key),key==="armurerie"?"⚔ Armurerie":"🛒 Marché")
+}
+function _buildShop(partyLvl,runeCard,items,title){
+  const type=window.__shopType||"marche",overlay=document.createElement("div");overlay.id="shopOverlay";overlay.className="shopOverlay"
+  const box=document.createElement("section");box.className="shopBox";box.setAttribute("role","dialog");box.setAttribute("aria-label",title)
+  const heading=document.createElement("h2");heading.textContent=title;box.appendChild(heading)
+  const sub=document.createElement("p");sub.textContent="Niveau du groupe : "+partyLvl;box.appendChild(sub)
+  if(isGM){const tools=document.createElement("div");tools.className="shopTools";tools.appendChild(shopButton("＋ Ajouter un article",()=>openShopItemEditor(type,partyLvl)));tools.appendChild(shopButton("Fermer la boutique",closeShop));box.appendChild(tools)}
+  const cats=[...new Set(items.map(x=>x.category))],nav=document.createElement("div");nav.className="shopTools";box.appendChild(nav)
+  const zone=document.createElement("div");zone.id="shopItemsZone";zone.className="shopGrid";box.appendChild(zone)
+  const active=window.__shopCategory?.[type],initial=cats.includes(active)?active:cats[0]
+  function show(category){
+    window.__shopCategory||={};window.__shopCategory[type]=category;zone.replaceChildren()
+    nav.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.category===category)))
+    const selection=items.filter(x=>x.category===category)
+    if(!selection.length){const empty=document.createElement("p");empty.textContent="Aucun article dans cette boutique.";zone.appendChild(empty)}
+    for(const item of selection){
+      const card=document.createElement("article");card.className="shopItem";card.dataset.itemId=item.id
+      const img=document.createElement("img");img.alt="";img.src="images/"+(shopImageBank().some(x=>x.img===item.img)?item.img:"bag.png");card.appendChild(img)
+      const name=document.createElement("h3");name.textContent=item.name;card.appendChild(name)
+      const desc=document.createElement("p");desc.textContent=getShopStats(item,partyLvl);card.appendChild(desc)
+      const price=document.createElement("strong");price.textContent="💰 "+getShopPrice(item,partyLvl)+" po";card.appendChild(price)
+      if(isGM)card.appendChild(shopButton("Retirer de la boutique",async()=>{if(!confirm("Retirer « "+item.name+" » de cette boutique ?"))return;try{await changeShopCatalog(type,"remove",item)}catch(error){showNotification(error.message)}}))
+      zone.appendChild(card)
+    }
   }
-  const activeItems=shopType==="armurerie"?shopItemsArmurerie:shopItems, shopTitle=shopType==="armurerie"?"⚔ Armurerie":"🛒 Marché"
-  _buildShop(partyLvl,null,activeItems,shopTitle)
+  for(const category of cats){const button=shopButton(categoryLabels[category],()=>show(category));button.dataset.category=category;nav.appendChild(button)}
+  overlay.appendChild(box);document.body.appendChild(overlay);show(initial)
+}
+function openShopItemEditor(type,partyLvl){
+  if(!isGM||window.__authRole!=="gm")return
+  document.getElementById("shopItemEditor")?.remove()
+  const overlay=document.createElement("div");overlay.id="shopItemEditor";overlay.className="shopOverlay shopEditorOverlay";overlay.dataset.type=type
+  const form=document.createElement("form");form.className="shopBox shopEditor";form.setAttribute("aria-label","Ajouter un article")
+  const title=document.createElement("h2");title.textContent="Ajouter un article";form.appendChild(title)
+  function field(label,node){const wrap=document.createElement("label");wrap.className="shopField";wrap.append(document.createTextNode(label),node);form.appendChild(wrap);return node}
+  const templates=field("Partir d’un article existant",document.createElement("select"));templates.appendChild(new Option("Article personnalisé",""))
+  const defaults=type==="armurerie"?shopItemsArmurerie:shopItems
+  defaults.forEach((item,index)=>templates.appendChild(new Option(item.name,String(index))))
+  const name=field("Nom",document.createElement("input"));name.required=true;name.maxLength=80
+  const category=field("Catégorie",document.createElement("select"));Object.entries(categoryLabels).forEach(([key,label])=>category.appendChild(new Option(label,key)))
+  const price=field("Prix affiché en pièces d’or",document.createElement("input"));price.type="number";price.required=true;price.min="0";price.max="1000000";price.step="1";price.value="0"
+  const desc=field("Description / effets",document.createElement("textarea"));desc.maxLength=300;desc.rows=3
+  let image=shopImageBank(type)[0]?.img||"bag.png"
+  const bank=document.createElement("fieldset");const legend=document.createElement("legend");legend.textContent="Image de l’article";bank.appendChild(legend)
+  const filters=document.createElement("div");filters.className="shopTools";bank.appendChild(filters)
+  const gallery=document.createElement("div");gallery.className="shopImageBank";bank.appendChild(gallery)
+  function images(filter){gallery.replaceChildren();for(const asset of shopImageBank(filter)){const button=shopButton("",()=>{image=asset.img;gallery.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.image===image)))});button.dataset.image=asset.img;button.title=asset.name;button.setAttribute("aria-label",asset.name);button.setAttribute("aria-pressed",String(asset.img===image));const img=document.createElement("img");img.src="images/"+asset.img;img.alt="";button.appendChild(img);gallery.appendChild(button)}}
+  for(const [label,key]of [["Marché","marche"],["Armurerie","armurerie"],["Toutes",null]])filters.appendChild(shopButton(label,()=>images(key)))
+  form.appendChild(bank);images(type)
+  templates.onchange=()=>{if(templates.value==="")return;const item=defaults[Number(templates.value)];name.value=item.name;category.value=item.category;price.value=getShopPrice(item,partyLvl);desc.value=getShopStats(item,partyLvl);image=item.img;images(type)}
+  const message=document.createElement("p");message.setAttribute("role","status");form.appendChild(message)
+  const actions=document.createElement("div");actions.className="shopTools"
+  const submit=shopButton("Ajouter à la boutique",null);submit.type="submit";actions.appendChild(submit);actions.appendChild(shopButton("Annuler",()=>overlay.remove()));form.appendChild(actions)
+  form.onsubmit=async event=>{
+    event.preventDefault();if(submit.disabled)return;submit.disabled=true;message.textContent=""
+    try{const item={id:db.ref("game/shop").push().key,name:name.value,category:category.value,basePrix:price.value,baseStats:desc.value,img:image};await changeShopCatalog(type,"add",item);overlay.remove();showNotification("Article ajouté à la boutique.")}
+    catch(error){message.textContent=error.message;submit.disabled=false}
+  }
+  overlay.appendChild(form);document.body.appendChild(overlay);name.focus()
 }
 
-function _buildShop(partyLvl, runeCard, activeItems, shopTitle) {
-  const overlay=document.createElement("div"); overlay.id="shopOverlay"; overlay.style.cssText="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);display:flex;align-items:center;justify-content:center;z-index:9999990;opacity:0;transition:opacity 0.5s ease;"
-  const box=document.createElement("div"); box.style.cssText="background:url('images/shelf.png') center/100% 100% no-repeat;width:min(900px,92vw);max-height:85vh;overflow-y:auto;padding:50px 50px 40px 50px;min-height:400px;position:relative;font-family:'IM Fell English',serif;"
-  const t=document.createElement("div"); t.style.cssText="text-align:center;font-family:'Cinzel Decorative','Cinzel',serif;font-size:28px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8);margin-bottom:6px;letter-spacing:3px;"; t.innerText=shopTitle; box.appendChild(t)
-  if(runeCard){ const rc=document.createElement("div"); rc.style.cssText="position:relative;background:rgba(200,160,80,0.15);border:2px solid rgba(200,160,80,0.6);border-radius:6px;padding:16px;text-align:center;margin-bottom:16px;"; rc.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:12px;color:#ffd700;margin-bottom:8px;">✦ OBJET MYSTÉRIEUX ✦</div><div style="font-size:28px;color:#ffd700;text-shadow:0 0 10px gold;">${runeCard.rune}</div><div style="font-family:'Cinzel',serif;font-size:14px;color:#ffc840;font-weight:bold;margin-top:8px;">💰 50 po</div>`; if(isGM){ const x=document.createElement("div"); x.style.cssText="position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#8b2000;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:10;"; x.innerText="✕"; x.onclick=()=>rc.remove(); rc.appendChild(x) }; box.appendChild(rc) }
-  const sub=document.createElement("div"); sub.style.cssText="text-align:center;font-family:'Cinzel',serif;font-size:13px;color:#f5ead8;text-shadow:0 1px 3px rgba(0,0,0,0.7);margin-bottom:24px;font-weight:bold;"; sub.innerText="Niveau du groupe : "+partyLvl; box.appendChild(sub)
-  const cats={}, catOrder=[]; activeItems.forEach(item=>{ if(!cats[item.category]){ cats[item.category]=[]; catOrder.push(item.category) }; cats[item.category].push(item) })
-  let currentCat=0
-  const navBar=document.createElement("div"); navBar.style.cssText="display:flex;justify-content:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;"
-  catOrder.forEach((cat,idx)=>{ const btn=document.createElement("button"); btn.style.cssText="font-family:'Cinzel',serif;font-size:11px;padding:5px 12px;background:"+(idx===0?"rgba(0,0,0,0.45)":"rgba(0,0,0,0.25)")+";color:#fff;border:1px solid rgba(255,255,255,"+(idx===0?"0.5":"0.2")+");border-radius:3px;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.8);"; btn.innerText=categoryLabels[cat]; btn.onclick=()=>{ currentCat=idx; navBar.querySelectorAll("button").forEach((b,i)=>{ b.style.background=i===idx?"rgba(0,0,0,0.45)":"rgba(0,0,0,0.25)"; b.style.borderColor=i===idx?"rgba(255,255,255,0.5)":"rgba(255,255,255,0.2)" }); showCat(idx) }; navBar.appendChild(btn) })
-  box.appendChild(navBar)
-  const zone=document.createElement("div"); zone.id="shopItemsZone"; box.appendChild(zone)
-  const catTitleEl=document.createElement("div"); catTitleEl.id="shopCatTitle"; catTitleEl.style.cssText="font-family:'Cinzel',serif;font-size:14px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.8);letter-spacing:2px;font-weight:bold;"
-  function showCat(idx) { const cat=catOrder[idx],items=cats[cat]; if(catTitleEl) catTitleEl.innerText=categoryLabels[cat]; zone.innerHTML=""; const grid=document.createElement("div"); grid.style.cssText="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;"; items.forEach(item=>{ const prix=getShopPrice(item,partyLvl),stats=getShopStats(item,partyLvl); const card=document.createElement("div"); card.style.cssText="background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:12px;display:flex;flex-direction:column;gap:6px;"; const iHtml=item.img?`<img src="images/${item.img}" style="width:40px;height:40px;object-fit:contain;">`:""; card.innerHTML=`<div style="display:flex;align-items:center;gap:10px;">${iHtml}<span style="font-family:'Cinzel',serif;font-size:14px;color:#fff;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,0.8);">${item.name}</span></div><div style="font-size:12px;color:#e8d8c0;font-style:italic;">${stats}</div><div style="font-family:'Cinzel',serif;font-size:14px;color:#ffc840;font-weight:bold;">💰 ${prix} po</div>`; grid.appendChild(card) }); zone.appendChild(grid) }
-  const navRow=document.createElement("div"); navRow.style.cssText="display:flex;justify-content:space-between;align-items:center;margin-top:16px;"
-  const prev=document.createElement("button"); prev.innerHTML="◀ Précédent"; prev.style.cssText="font-family:'Cinzel',serif;font-size:12px;padding:8px 16px;background:rgba(0,0,0,0.35);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:3px;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.8);"; prev.onclick=()=>{ if(currentCat>0){ currentCat--; navBar.querySelectorAll("button")[currentCat].click() } }
-  const next=document.createElement("button"); next.innerHTML="Suivant ▶"; next.style.cssText="font-family:'Cinzel',serif;font-size:12px;padding:8px 16px;background:rgba(0,0,0,0.35);color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:3px;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.8);"; next.onclick=()=>{ if(currentCat<catOrder.length-1){ currentCat++; navBar.querySelectorAll("button")[currentCat].click() } }
-  navRow.appendChild(prev); navRow.appendChild(catTitleEl); navRow.appendChild(next); box.appendChild(navRow)
-  if(isGM){ const cb=document.createElement("button"); cb.style.cssText="display:block;margin:20px auto 0;padding:10px 40px;font-family:'Cinzel',serif;font-size:14px;background:linear-gradient(#5a0000,#2a0000);color:#ffaaaa;border:1px solid #aa0000;border-radius:4px;cursor:pointer;"; cb.innerText="✕ Fermer la boutique"; cb.onclick=closeShop; box.appendChild(cb) }
-  overlay.appendChild(box); document.body.appendChild(overlay); showCat(0); catTitleEl.innerText=categoryLabels[catOrder[0]]; setTimeout(()=>overlay.style.opacity="1",20)
-}
 
 /* ========================= */
 /* RUNE CHALLENGE            */
@@ -3812,4 +3893,13 @@ function bindCombatActionState(block,actor,attack,special=false,enemy=false) {
 }
 function refreshCombatActionStates() {
   document.querySelectorAll("[data-combat-actor]").forEach(block=>block._refreshCombatAction?.())
+}
+
+function persistCharacterEdits(id,data){
+  if(typeof reliableCharacterPatch!=="function")return db.ref("characters/"+id).update(data)
+  window.__characterEditQueue||={}
+  const epoch=reliableEpoch,uid=window.__authUid,patch=JSON.parse(JSON.stringify(data))
+  const promise=Promise.resolve(window.__characterEditQueue[id]).catch(()=>{}).then(()=>{if(epoch!==reliableEpoch||uid!==window.__authUid)throw Error("Connexion interrompue : enregistrez à nouveau la fiche");return reliableCharacterPatch(id,patch)})
+  window.__characterEditQueue[id]=promise
+  pendingSessionWrites.add(promise);promise.then(()=>pendingSessionWrites.delete(promise),error=>{pendingSessionWrites.delete(promise)});return promise
 }

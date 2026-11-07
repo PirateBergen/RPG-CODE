@@ -2958,7 +2958,8 @@ function toggleGMShortcutHelp() {
     font-family:Cinzel,serif;
     z-index:999999999;pointer-events:auto;
     display:flex;flex-direction:column;gap:6px;
-    min-width:280px;
+    width:min(420px,calc(100vw - 32px));box-sizing:border-box;
+    max-height:calc(100dvh - 130px);overflow-y:auto;
     animation:shortcutFadeIn 0.15s ease;
   `
 
@@ -2997,6 +2998,24 @@ function toggleGMShortcutHelp() {
     row.appendChild(keyEl)
     overlay.appendChild(row)
   })
+
+  const inventoryHelp = document.createElement("section")
+  inventoryHelp.setAttribute("aria-label", "Aide inventaire")
+  inventoryHelp.style.cssText = "border-top:1px solid rgba(30,90,102,0.5);margin-top:8px;padding-top:10px;color:#c9dce0;font-family:Georgia,serif;font-size:14px;line-height:1.5;"
+  const heading = document.createElement("strong")
+  heading.textContent = "Inventaire — capacité : 100"
+  inventoryHelp.appendChild(heading)
+  for (const text of [
+    "Ouvre ta fiche avec I ou J. Le formulaire Objet · Quantité · Poids unitaire ajoute une ligne avec le bouton Ajouter ou la touche Entrée.",
+    "Tu peux aussi écrire un objet par ligne : Épée (3), Potion x3 (0,5), Lettre (0). Le poids entre parenthèses est celui d’un seul objet, sans unité. Exemple : 3 potions de 0,5 comptent pour 1,5.",
+    "Le total se calcule automatiquement sur 100. Au-delà, le personnage est surchargé et son déplacement manuel est bloqué. Si « Poids incomplet » apparaît, corrige les lignes signalées avant de te fier au total.",
+    "Les raccourcis restent inactifs pendant que tu écris. Échap ferme la fiche ; l’inventaire reste privé."
+  ]) {
+    const paragraph = document.createElement("p")
+    paragraph.textContent = text; paragraph.style.margin = "6px 0"
+    inventoryHelp.appendChild(paragraph)
+  }
+  overlay.appendChild(inventoryHelp)
 
   // Fermeture au clic extérieur
   setTimeout(() => {

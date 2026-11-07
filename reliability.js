@@ -39,7 +39,7 @@ function submitReliableAction(branch,request){
  const ref=db.ref(branch).push(),epoch=reliableEpoch,now=reliableActionNow(),controller=new AbortController()
  const value={...request,uid:window.__authUid,status:"queued",protocol:2,time:now,expiresAt:now+15000,sessionRevision:persistenceRevision||"initial"}
  return new Promise((resolve,reject)=>{
-  let done=false;const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);ref.off("value",listener);reliablePending.delete(disconnect);controller.abort();error?reject(error):resolve(result)}
+  let done=false;const finish=(error,result)=>{if(done)return;done=true;clearTimeout(timer);ref.off("value",listener);reliablePending.delete(disconnect);controller.abort();if(error&&typeof noteGMDiagnosticIssue==="function")noteGMDiagnosticIssue("Une demande a été refusée ou non confirmée. Consultez le journal et l’état du jeu avant de réessayer.");error?reject(error):resolve(result)}
   const listener=s=>{const r=s.val();if(r?.status==="done")finish(null,r.result);else if(["failed","cancelled"].includes(r?.status))finish(Error("Action refusée : "+(r.error||"demande annulée")+". Aucun nouvel effet appliqué par cette demande."))}
   const disconnect=()=>finish(Error("Connexion perdue : résultat non confirmé. Consultez le journal et l’état de la partie après la reconnexion avant toute nouvelle tentative."))
   const timer=setTimeout(async()=>{if(window.__actionOnline)try{await reliablePut(branch+"/"+ref.key+"/status","cancelled")}catch(e){}finish(Error("Résultat non confirmé : aucune confirmation reçue. Consultez le journal et l’état de la partie avant de réessayer. Aucune relance automatique."))},15000)

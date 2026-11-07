@@ -181,7 +181,10 @@ function stopPersistenceSync() {
   clearTimeout(sessionLockRecoveryTimer)
   persistenceSubscriptions.forEach(([ref, event, cb]) => ref.off(event, cb))
   persistenceSubscriptions = []
-  if (persistenceUserId && persistenceClientId) db.ref("sessionClients/" + persistenceUserId + "/" + persistenceClientId).remove().catch(() => {})
+  if (persistenceUserId && persistenceClientId) {
+    db.ref("sessionClients/" + persistenceUserId + "/" + persistenceClientId).remove().catch(() => {})
+    db.ref("profiles/"+persistenceUserId+"/clientVersions/"+persistenceClientId).remove().catch(()=>{})
+  }
   persistenceUserId = null; persistenceClientId = null; persistenceRevision = undefined
   setSessionBusy(false)
 }
@@ -195,7 +198,9 @@ function startPersistenceSync(uid) {
   const presence = db.ref("sessionClients/" + uid + "/" + persistenceClientId)
   listen(db.ref(".info/connected"), "value", snap => {
     if (!snap.val() || persistenceUserId !== uid) return
-    presence.onDisconnect().remove().then(() => presence.set(true)).catch(error => console.warn("Présence de session", error))
+    presence.onDisconnect().remove().then(() => {if(persistenceUserId===uid)return presence.set(true)}).catch(error => console.warn("Présence de session", error))
+    const version=db.ref("profiles/"+uid+"/clientVersions/"+persistenceClientId)
+    version.onDisconnect().remove().then(()=>{if(persistenceUserId===uid&&window.__actionOnline!==false)return version.set(String(window.GAME_V||"inconnue").slice(0,40))}).catch(()=>{})
   })
   listen(db.ref("sessionControl"), "value", snap => {
     const control = snap.val() || {}
@@ -309,7 +314,7 @@ async function saveGame() {
       showNotification("Sauvegardé : " + save._saveName)
       return true
     })
-  } catch (error) { showNotification("Sauvegarde impossible : " + error.message); console.error(error); return false }
+  } catch (error) { if(typeof noteGMDiagnosticIssue==="function")noteGMDiagnosticIssue("La dernière tentative de sauvegarde a échoué. Vérifiez la sauvegarde indiquée avant de quitter.");showNotification("Sauvegarde impossible : " + error.message); console.error(error); return false }
 }
 
 async function replaceSession(state, action, operation) {

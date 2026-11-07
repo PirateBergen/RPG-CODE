@@ -406,6 +406,7 @@ function logoutPlayer() {
 }
 
 function updateIntroLogoutBtn() {
+  if(typeof syncGMDiagnosticsButton==="function")syncGMDiagnosticsButton()
   const isAuth = !!(window.__authPlayerId || window.__authRole === "gm")
   const introBtn = document.getElementById("introLogoutBtn")
   const menuBtn = document.getElementById("playerMenuLogoutBtn")
@@ -4332,6 +4333,7 @@ function handleGameShortcut(e) {
     const arbitrationModal=document.getElementById("gmArbitrationModal");if(arbitrationModal&&typeof gmArbitrationClose==="function"){gmArbitrationClose();return}
     const sessionJournal=document.getElementById("sessionLogPanel");if(sessionJournal?.style.display==="flex"){closeSessionLog();return}
     const notesEditor = document.getElementById("notesEditorPanel"); if (notesEditor) { notesEditor.remove(); return }
+    if(document.getElementById("gmDiagnosticsPanel")&&typeof closeGMDiagnostics==="function"){closeGMDiagnostics();return}
     const shortcutHelp = document.getElementById("gmShortcutHelp"); if (shortcutHelp) { shortcutHelp.remove(); return }
     const privateSheet = document.getElementById("characterSheet")
     if (privateSheet && privateSheet.style.display !== "none" && privateSheet.style.display !== "") { closeCharacterSheet(); return }

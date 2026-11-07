@@ -6384,3 +6384,15 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 
 
 @media(max-width:600px){#combatHUD{bottom:200px;max-height:min(45dvh,calc(100dvh - 220px))}}
+
+/* Diagnostic à la demande, réservé au MJ. */
+#gmDiagnosticsBtn{flex-shrink:0;padding:9px 12px;min-height:38px;border:1px solid #a58a5b;border-radius:7px;background:#201b14;color:#f1ddb2;font:14px Georgia,serif;cursor:pointer}
+#gmDiagnosticsBtn[hidden]{display:none!important}
+#gmDiagnosticsBtn:focus-visible,#gmDiagnosticsPanel button:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}
+#gmDiagnosticsPanel{position:fixed;right:12px;bottom:90px;width:360px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 112px);overflow:auto;overscroll-behavior:contain;box-sizing:border-box;padding:16px;background:linear-gradient(#17232a,#0a1218);border:1px solid #b59255;border-radius:12px;box-shadow:0 12px 36px #0009;z-index:1000000020;color:#eee1c3;font:15px Georgia,serif;line-height:1.5;text-shadow:none;overflow-wrap:anywhere}
+.gmDiagnosticsHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-16px;background:#17232a;padding:8px 0}
+.gmDiagnosticsHeader h2{font:18px Cinzel,serif;margin:0}.gmDiagnosticsHeader button{padding:8px 10px;background:#30251b;color:#fff1d8;border:1px solid #a58a5b;border-radius:5px;cursor:pointer}
+#gmDiagnosticsContent h3{font-size:15px;color:#e6c17c;margin:18px 0 5px}#gmDiagnosticsContent p{margin:5px 0}.gmDiagnosticsMuted{color:#b9c6cc;font-size:13px}.gmDiagnosticsWarning{color:#ffd99b}
+
+@media(min-width:1001px) and (max-width:1200px){#gmBar{width:calc(100vw - 16px)!important;box-sizing:border-box!important;bottom:8px!important;justify-content:flex-start!important;gap:8px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:4px!important;scrollbar-width:thin}#gmBar>*{flex-shrink:0!important}#diceBar{bottom:76px;right:8px}#combatHUD{bottom:82px}}
+@media(min-width:1201px){#gmBar{gap:4px!important}body[data-entry-role="gm"] #combatHUD{bottom:90px}}

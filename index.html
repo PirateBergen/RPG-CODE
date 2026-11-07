@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261107.1"</script>
+  <script>window.GAME_V = "20261107.2"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -153,6 +153,17 @@
 <!-- FICHE PERSONNAGE -->
 <div id="characterSheet">
   <h2 id="sheetTitle" style="text-align:center;font-family:'Cinzel';margin-bottom:10px;">Personnage</h2>
+  <section id="inventoryTools" aria-label="Ajouter un objet et vérifier le poids" style="padding:12px;border:1px solid #795c34;background:#f5dfb4;color:#302115;max-width:850px;margin-bottom:14px;">
+    <strong>Inventaire — capacité : 100</strong>
+    <p style="margin:6px 0;font-size:15px;">Un objet par ligne : Épée (3), Potion x3 (0,5). Le poids indiqué est celui d’un seul objet. Aucun poids ? Indiquez (0).</p>
+    <div onkeydown="if(event.key==='Enter'){event.preventDefault();addInventoryItem()}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+      <label>Objet<br><input id="inventoryItemName" type="text" placeholder="Potion" maxlength="160" style="max-width:200px;"></label>
+      <label>Quantité<br><input id="inventoryItemQuantity" type="text" inputmode="numeric" value="1" style="width:70px;"></label>
+      <label>Poids unitaire<br><input id="inventoryItemWeight" type="text" inputmode="decimal" placeholder="0,5" style="width:90px;"></label>
+      <button type="button" onclick="addInventoryItem()">Ajouter à l’inventaire</button>
+    </div>
+    <div id="inventoryWeightStatus" role="status" style="margin-top:10px;font-size:15px;"></div>
+  </section>
   <div id="sheetContainer">
     <img id="sheetImage" src="images/elosheet.jpg">
     <input id="lvl"     class="sheetField" style="top:270px;left:420px;width:120px;height:60px;font-size:32px;font-weight:bold;text-align:center;border:2px solid black;background:white;">
@@ -164,9 +175,9 @@
     <input id="defense" class="sheetField playerOnly" onclick="rollStat('defense')" style="top:720px;left:480px;width:280px;">
     <textarea id="notes" class="sheetField playerOnly" style="top:880px;left:420px;width:380px;height:140px;"></textarea>
     <div id="weightContainer" style="position:absolute;top:300px;left:60px;width:300px;">
-      <input id="weight"    class="sheetField" placeholder="Poids" style="top:0;left:0;width:80px;position:relative;">
+      <input id="weight" readonly aria-label="Poids total calculé" class="sheetField" placeholder="Poids" style="top:0;left:0;width:80px;position:relative;">
       <span style="margin-left:10px;">/</span>
-      <input id="maxWeight" class="sheetField" placeholder="Max"   style="top:0;left:0;width:80px;position:relative;margin-left:10px;">
+      <input id="maxWeight" readonly aria-label="Capacité fixe : 100" class="sheetField" placeholder="Max"   style="top:0;left:0;width:80px;position:relative;margin-left:10px;">
       <div id="weightBarContainer" style="margin-top:6px;width:220px;height:14px;background:#222;border-radius:6px;overflow:hidden;">
         <div id="weightBar" style="height:100%;width:0%;background:lime;"></div>
       </div>
@@ -199,6 +210,7 @@
       <span class="corruptionPoint" onclick="setCorruption(10)"></span>
     </div>
   </div>
+
 
   <div id="goldZone" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
     <img src="images/bourse.png" id="goldBtn" onclick="toggleGoldInput()" style="width:48px;height:48px;object-fit:contain;cursor:pointer;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.8));transition:transform 0.15s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'">

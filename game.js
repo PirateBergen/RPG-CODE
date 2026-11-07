@@ -3081,12 +3081,7 @@ function getMaxHP(playerId, level) {
   return s ? s.hp : 100
 }
 
-function getMaxCarryWeight(playerId, level, data = null) {
-  const source = data || {}
-  const lvl = Math.max(1, parseInt(level ?? source.lvl, 10) || 1)
-  const stats = (typeof getPlayerStatsAtLevel === "function") ? getPlayerStatsAtLevel(playerId, lvl) : null
-  return Math.max(1, parseInt(source.poids, 10) || parseInt(stats?.poids, 10) || 100)
-}
+function getMaxCarryWeight() { return 100 }
 
 function isCharacterOverweight(playerId, data = null) {
   const source = data || {}

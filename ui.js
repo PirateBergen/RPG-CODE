@@ -64,8 +64,8 @@ function openCharacterSheet(id = null) {
     window.__sheetInventoryModifiers = { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
     ;["lvl","xp","force","charme","perspi","chance","defense","hp"].forEach(k => { const el = document.getElementById(k); if (el) el.value = data[k] || 0 })
     if (!window._playerMaxPoids) window._playerMaxPoids = {}
-    window._playerMaxPoids[playerID] = data.poids || 100
-    const mw = document.getElementById("maxWeight"); if (mw) mw.value = data.poids || 100
+    window._playerMaxPoids[playerID] = 100
+    const mw = document.getElementById("maxWeight"); if (mw) mw.value = 100
     const invField = document.getElementById("inventaire")
     const notesField = document.getElementById("notes")
     if (invField) invField.value = data.inventaire || ""
@@ -202,6 +202,7 @@ function saveCharacter() {
   data.inventaire = inventoryField ? inventoryField.value : ""
   data.equipmentModifiers = getInventoryStatModifiers(data.inventaire)
   data.carriedWeight = Math.max(0, _parseInventoryWeight(data.inventaire))
+  data.poids = 100
   if (notesField) data.notes = notesField.value
   if (window.__sheetBaseCharacterData) {
     INVENTORY_EFFECT_STATS.forEach(stat => {
@@ -250,6 +251,7 @@ function autoSaveCharacter() {
   data.inventaire = inventoryField ? inventoryField.value : ""
   data.equipmentModifiers = getInventoryStatModifiers(data.inventaire)
   data.carriedWeight = Math.max(0, _parseInventoryWeight(data.inventaire))
+  data.poids = 100
   if (notesField) data.notes = notesField.value
   if (window.__sheetBaseCharacterData) {
     INVENTORY_EFFECT_STATS.forEach(stat => {
@@ -276,46 +278,42 @@ function updateHPBar() {
   document.getElementById("hpBar").style.width = Math.max(0, Math.min(100, hp)) + "%"
 }
 
-function _parseInventoryWeight(text) {
-  let total = 0
-  text.split("\n").forEach(line => {
-    const wm = line.match(/\(([^)]+)\)/); if (!wm) return
-    // Retirer "kg" et espaces, remplacer virgule par point
-    const cleaned = wm[1].replace(/[kg\s]/gi, "").replace(",", ".")
-    const w = parseFloat(cleaned); if (isNaN(w)) return
-    const qm = line.match(/x(\d+)/i)
-    total += w * (qm ? parseInt(qm[1]) : 1)
-  })
-  return Math.round(total * 10) / 10  // arrondi à 1 décimale
-}
+function _parseInventoryWeight(text) { return parseInventoryWeight(text).total }
 
 function updateWeightBar() {
   if (!currentSheetPlayer) return
-  const text = document.getElementById("inventaire").value
-  const total = _parseInventoryWeight(text)
+  const inventory = document.getElementById("inventaire"), result = parseInventoryWeight(inventory?.value || "")
+  const total = result.total, max = 100
   refreshSheetEffectiveStatsDisplay()
-  // Utiliser le max déjà chargé en mémoire, fallback Firebase si absent
-  const cachedMax = window._playerMaxPoids && window._playerMaxPoids[currentSheetPlayer]
-  const applyMax = max => {
-    document.getElementById("weight").value    = total
-    document.getElementById("maxWeight").value = max
-    const pct = Math.min(100, (total / max) * 100)
-    const bar = document.getElementById("weightBar")
-    bar.style.width = pct + "%"
-    bar.style.background = pct < 70 ? "lime" : pct < 100 ? "orange" : "red"
-    const token = document.getElementById(currentSheetPlayer)
-    if (token) token.classList.toggle("overweight", total > max)
+  document.getElementById("weight").value = total
+  document.getElementById("maxWeight").value = max
+  const bar = document.getElementById("weightBar"), pct = Math.max(0, Math.min(100, total / max * 100))
+  bar.style.width = pct + "%"; bar.style.background = result.warnings.length ? "#e6a23c" : total > max ? "red" : pct >= 70 ? "orange" : "lime"
+  const token = document.getElementById(currentSheetPlayer); if (token) token.classList.toggle("overweight", total > max)
+  let status = document.getElementById("inventoryWeightStatus")
+  if (!status) { status = document.createElement("div"); status.id = "inventoryWeightStatus"; status.setAttribute("role", "status"); document.getElementById("inventoryTools")?.appendChild(status) }
+  if (status) {
+    status.replaceChildren()
+    const summary = document.createElement("strong")
+    summary.textContent = (result.warnings.length ? "Poids incomplet : " : "Poids total : ") + total + " / 100" + (total > max ? " — SURCHARGE : retirez " + Math.round((total - max)*1000)/1000 : "")
+    status.appendChild(summary)
+    for (const warning of result.warnings) { const row = document.createElement("div"); row.textContent = "Ligne " + warning.line + " : " + warning.message; status.appendChild(row) }
+    inventory?.setAttribute("aria-invalid", String(result.warnings.length > 0))
   }
-  if (cachedMax) {
-    applyMax(cachedMax)
-  } else {
-    db.ref("characters/" + currentSheetPlayer + "/poids").once("value", snap => {
-      const max = snap.val() || 100
-      if (!window._playerMaxPoids) window._playerMaxPoids = {}
-      window._playerMaxPoids[currentSheetPlayer] = max
-      applyMax(max)
-    })
-  }
+}
+
+function addInventoryItem() {
+  if (!canAccessCharacter(currentSheetPlayer)) return
+  const name = document.getElementById("inventoryItemName"), quantity = document.getElementById("inventoryItemQuantity"), weight = document.getElementById("inventoryItemWeight")
+  const label = name.value.trim(), qty = Number(quantity.value.replace(",", ".")), rawWeight = weight.value.trim().replace(",", "."), amount = Number(rawWeight)
+  if (!label || /[\r\n()]/.test(label) || /(?:^|\s)[x×]\s*\d/i.test(label)) { showNotification("Indiquez un nom d’objet sans parenthèses ni quantité."); name.focus(); return }
+  if (!Number.isSafeInteger(qty) || qty < 1 || qty > 1000000) { showNotification("La quantité doit être un entier supérieur à zéro."); quantity.focus(); return }
+  if (!rawWeight || !/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(rawWeight) || !Number.isFinite(amount) || amount < 0 || amount > 1000000) { showNotification("Indiquez un poids positif ou zéro, sans unité."); weight.focus(); return }
+  const inventory = document.getElementById("inventaire"), line = label + (qty === 1 ? "" : " x" + qty) + " (" + amount + ")"
+  const parsed = parseInventoryWeight(line); if (parsed.warnings.length || parsed.entries.length !== 1) { showNotification("Cet objet ne peut pas être ajouté : vérifiez son nom et son poids."); return }
+  inventory.value += (inventory.value && !inventory.value.endsWith("\n") ? "\n" : "") + line
+  inventory.dispatchEvent(new Event("input", {bubbles:true})); updateWeightBar(); queueCharacterAutoSave(0)
+  name.value = ""; quantity.value = "1"; weight.value = ""; name.focus()
 }
 
 /* ========================= */

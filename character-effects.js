@@ -10,7 +10,7 @@ function syncCharacterEffects(){
  for(const branch of ["characters","curse/wheel","sessionControl",".info/connected"]){const ref=db.ref(branch);ref.on("value",schedule);characterEffectsRefs.push([ref,"value",schedule])}
 }
 async function tickCharacterEffects(){
- if(window.__authRole!=="gm"||(typeof requireActionConnection==="function"&&!window.__actionOnline))return
+ if(window.__authRole!=="gm"||window.__sessionBusy||(typeof requireActionConnection==="function"&&!window.__actionOnline))return
  try{await transactCombatRoot(advanceCharacterState)}catch(error){console.error("Malédiction non synchronisée",error)}
  if(window.__authRole==="gm"){
   const w=window.__activeCurseWheel

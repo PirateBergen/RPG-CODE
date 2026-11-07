@@ -6310,3 +6310,5 @@ body[data-entry-stage="choice"] #intro { display:none !important; }
 body:not([data-entry-stage="playing"]) #diceBar,body:not([data-entry-stage="playing"]) #diceLog{display:none!important;}
 body[data-test-mode="true"] #startScreen{padding-top:68px;}
 body[data-test-mode="true"] #audioSliders{top:48px;}
+
+body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playing"]) .gmSection,body:not([data-entry-stage="playing"]) #gmInterveneBtn,body:not([data-entry-stage="playing"]) #gmFreeActionBtn,body:not([data-entry-stage="playing"]) #gmArbitrationBanner,body:not([data-entry-stage="playing"]) #gmArbitrationModal{display:none!important;}

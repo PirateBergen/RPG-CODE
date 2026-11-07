@@ -15,6 +15,7 @@ function finishOpeningPresentation(){
  window.isNewGame=false;window.__introClickLockUntil=0
 }
 function prepareGMScene(){
+ if(!gameStarted)return false
  if(!isGM||window.__authRole!=="gm")return
  if(window.__sessionBusy)return false
  if(gameState==="GAME"||gameState==="COMBAT")return

@@ -7,10 +7,10 @@ function entranceMessage(text){const e=document.getElementById("entranceFeedback
 function renderEntrance(){
  const gm=window.__authRole==="gm"
  document.body.dataset.entryRole=gm?"gm":"player"
- document.getElementById("lobbyWaiting").style.display=window.__entryConfirmed&&!gm?"block":"none"
+ document.getElementById("lobbyWaiting").style.display=window.__entryConfirmed&&!gm&&!gameStarted?"block":"none"
  document.getElementById("entranceSignOut").hidden=!(window.__authPlayerId||gm)
  const gmOptions=document.getElementById("entranceGMOptions");if(gmOptions)gmOptions.hidden=!(gm&&window.__entryChoice==="gm"&&!window.__entryConfirmed)
- if(window.__isolatedTestMode&&gm&&!window.__entryConfirmed){window.__entryChoice="gm";confirmEntrance("gm");window.isNewGame=false;setTimeout(()=>startGame(),200);return}
+ if(window.__isolatedTestMode&&gm&&!window.__entryConfirmed){window.__entryChoice="gm";window.isNewGame=false;confirmEntrance("gm");return}
  if(!window.__entryConfirmed){
   document.getElementById("introBox").style.setProperty("display","none","important")
   if(window.__entryChoice==="gm"&&gm)entranceMessage(window.__isolatedTestMode?"Essai local prêt. Entrez pour tester librement.":"Choisissez votre accès MJ ci-dessous.")
@@ -18,7 +18,7 @@ function renderEntrance(){
   return
  }
  if(entranceIdentity!==window.__authUid||(!gm&&window.__authPlayerId!==window.__entryChoice))return resetEntrance()
- document.getElementById("introBox").style.setProperty("display",gm?"flex":"none","important")
+ document.getElementById("introBox").style.setProperty("display",gm&&!gameStarted?"flex":"none","important")
  if(!gm)queueEntranceJoin()
 }
 function resetEntrance(){
@@ -93,6 +93,8 @@ startGame=async function(){
  try{requireActionConnection()}catch(e){showNotification(e.message);return}
  if(window.__authRole!=="gm"){queueEntranceJoin();return}
  if(!window.__entryConfirmed)return
+ window.__entranceEpoch++
+ if(window.__isolatedTestMode){window.isNewGame=false;entranceOriginalStartGame();return}
  const revision=persistenceRevision||"initial",id=db.ref().push().key,introduction=!!window.isNewGame
  try{
   const result=await transactCombatRoot(root=>{

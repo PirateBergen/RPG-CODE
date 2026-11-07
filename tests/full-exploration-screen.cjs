@@ -5,6 +5,7 @@ const FakeTimers=require('@sinonjs/fake-timers');
 const base=path.resolve(__dirname,'..');
 function fullScreen(database,uid,hero,options={}){
  const errors=[],sounds=[],warnings=[],dice=[],visuals=[],endings=[],returns=[],dom=new JSDOM(fs.readFileSync(path.join(base,'index.html'),'utf8'),{url:options.testMode?'https://rpg.test/?test=1':'https://rpg.test/',runScripts:'outside-only',pretendToBeVisual:true});const w=dom.window,ctx=dom.getInternalVMContext(),evaluate=s=>vm.runInContext(s,ctx),callbacks=[];
+ if(options.testState)w.sessionStorage.setItem("rpg.test.session.v1",options.testState);
  if(options.transition)w.sessionStorage.setItem("rpg_session_transition",options.transition);
  const clock=FakeTimers.withGlobal(w).install({now:Date.now(),toFake:['Date','setTimeout','clearTimeout','setInterval','clearInterval','requestAnimationFrame','cancelAnimationFrame']});
  w.Math.random=()=>0.5;

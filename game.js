@@ -412,7 +412,9 @@ function updateIntroLogoutBtn() {
   if (menuBtn) menuBtn.style.display = isAuth ? "" : "none"
 }
 
-initFirebaseAnonymousAuth()
+// A cached GM role must not activate the UI before the later scripts are ready.
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",initFirebaseAnonymousAuth,{once:true})
+else queueMicrotask(initFirebaseAnonymousAuth)
 
 window.groupMadness = 0
 window.groupMadnessTier = 0
@@ -4000,7 +4002,7 @@ function showTavern() {
   document.getElementById("diceLog").style.display  = "block"
   tryAutoSelectAuthenticatedPlayer()
   // Ne montrer le menu de sélection que si le joueur n'a pas encore choisi
-  if (!myToken) {
+  if (!isGM && !myToken) {
     document.getElementById("playerSelect").style.display = "none"
     setTimeout(openPlayerMenuOnStart, 100)
   }
@@ -4035,11 +4037,11 @@ function startIntro() {
   stopAllMusic()
   preloadAssets()
   setGameState("INTRO")
-  setTimeout(()=>{if(window.__entranceEpoch===entranceEpoch)animateGameTitle()}, 2000)
+  setTimeout(()=>{if(window.__entranceEpoch===entranceEpoch&&!gameStarted)animateGameTitle()}, 2000)
   const start = document.getElementById("startScreen")
   start.classList.add("fadeOut")
   setTimeout(() => {
-    if(window.__entranceEpoch!==entranceEpoch)return
+    if(window.__entranceEpoch!==entranceEpoch||gameStarted)return
     start.style.display = "none"
     start.style.pointerEvents = "none"
     start.style.visibility = "hidden"

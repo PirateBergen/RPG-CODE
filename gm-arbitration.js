@@ -31,6 +31,11 @@ async function openGMIntervention(){
  try{const armed=gmArbitrationCombat?.interventionArmed;await gmArbitrationSend("armIntervention");showNotification(armed?"Intervention désactivée":"La prochaine attaque attendra votre décision")}catch(e){showNotification(e.message)}
 }
 function renderGMArbitration(){
+ const playing=gameStarted&&document.body.dataset.entryStage==="playing",gmRole=window.__authRole==="gm"
+ const intervene=document.getElementById("gmInterveneBtn"),free=document.getElementById("gmFreeActionBtn")
+ if(intervene)intervene.style.display=playing&&gmRole&&gmArbitrationCombat?.turnState?.phase==="active"?"":"none"
+ if(free)free.style.display=playing&&gmRole?"":"none"
+ if(!playing){document.getElementById("gmArbitrationBanner")?.remove();document.getElementById("gmArbitrationModal")?.remove();gmArbitrationSignature="";return}
  const p=gmArbitrationPending(),gm=window.__authRole==="gm",btn=document.getElementById("gmInterveneBtn")
  if(btn)btn.textContent=p?"Décision en attente":gmArbitrationCombat?.interventionArmed?"Intervention activée":"Intervenir"
  let banner=document.getElementById("gmArbitrationBanner")

@@ -1414,7 +1414,8 @@ const ALLY_PNJS = [
 ]
 
 
-function heroDisplayName(id) { return id === "ju" ? "Pika" : String(id || "").toUpperCase() }
+function heroDisplayName(id) { return ["ju","yu","yulian","ju pion","yu pion"].includes(String(id || "").toLowerCase()) ? "Pika" : String(id || "").toUpperCase() }
+function heroPortraitFile(id) { return id === "ju" ? "pika.png" : id + ".png" }
 function migratePikaCharacter(character) {
   if (!character || character.buildVersion === "pika-bard-v1") return false
   const level = Math.max(1, parseInt(character.lvl, 10) || 1)
@@ -1436,3 +1437,5 @@ function migratePikaRoot(root) {
   for (const key of ["participants", "order"]) for (const actor of next.combat?.turnState?.[key] || []) if (actor.id === "ju") actor.label = "Pika"
   return next
 }
+
+function pikaDisplayText(text) { return String(text || "").replace(/\b(?:Yu|Yulian|Ju)\b/gi, "Pika") }

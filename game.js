@@ -1559,7 +1559,7 @@ db.ref("combat/mob").on("value", snap => {
   if (topBar && topText && data) {
     const pct = Math.max(0, Math.min(100, (data.hp / data.maxHP) * 100))
     topBar.style.width = pct + "%"
-    topText.innerText  = data.name.toUpperCase() + "  " + data.hp + " / " + data.maxHP + "  (Niv " + (data.lvl || "?") + ")"
+    topText.innerText  = heroDisplayName(data.name).toUpperCase() + "  " + data.hp + " / " + data.maxHP + "  (Niv " + (data.lvl || "?") + ")"
     topBar.style.background = pct > 60 ? "linear-gradient(90deg,#3cff6b,#0b8a3a)" : pct > 30 ? "linear-gradient(90deg,#ffb347,#ff7b00)" : "linear-gradient(90deg,#ff4040,#8b0000)"
   }
 
@@ -1585,7 +1585,7 @@ db.ref("combat/mob").on("value", snap => {
   }
 
   const nameEl = document.getElementById("mobName")
-  if (nameEl) nameEl.innerText = data.name.toUpperCase() + "  •  NIV " + (data.lvl || "?")
+  if (nameEl) nameEl.innerText = heroDisplayName(data.name).toUpperCase() + "  •  NIV " + (data.lvl || "?")
   const hpText = document.getElementById("mobHPText")
   if (hpText) hpText.innerText = "HP " + data.hp + " / " + data.maxHP
 
@@ -2531,7 +2531,7 @@ db.ref("game/playerDeath").on("value", snap => {
       skull.innerText = "💀"; tok.appendChild(skull)
     }
   }
-  showNotification(pid.toUpperCase() + " est tombé !")
+  showNotification(heroDisplayName(pid).toUpperCase() + " est tombé !")
   const snd = new Audio("audio/defaite.mp3"); setManagedAudioBaseVolume(snd, 0.6); snd.play().catch(() => {})
   screenShakeHard()
   if (!isGM && getLocalPlayerId() === String(pid || "").toLowerCase()) triggerLocalDefeat("playerDeath")
@@ -2540,7 +2540,7 @@ db.ref("game/playerDeath").on("value", snap => {
       if (!document.getElementById("revive_" + pid)) {
         const revBtn = document.createElement("button"); revBtn.id = "revive_" + pid
       revBtn.style.cssText = "position:fixed;bottom:104px;left:50%;transform:translateX(-50%);z-index:99999;padding:10px 24px;font-family:'Cinzel Decorative',serif;font-size:13px;background:linear-gradient(rgba(0,80,0,0.8),rgba(0,40,0,0.8));color:#88ff88;border:2px solid rgba(50,180,50,0.6);border-radius:6px;cursor:pointer;letter-spacing:2px;animation:bifrostPulse 1.5s ease-in-out infinite alternate;"
-      revBtn.innerText = "✦ Ressusciter " + pid.toUpperCase()
+      revBtn.innerText = "✦ Ressusciter " + heroDisplayName(pid).toUpperCase()
       revBtn.onclick = () => { revivePlayer(pid); revBtn.remove() }
       document.body.appendChild(revBtn)
     }
@@ -3232,7 +3232,7 @@ function watchCharacter(snapshot) {
         token.appendChild(skull)
       }
       if(!wasDead&&Number.isFinite(data.hp)&&gameStarted&&(combatActive||gameState==="GAME")){
-        showNotification(playerID.toUpperCase()+" est KO.")
+        showNotification(heroDisplayName(playerID).toUpperCase()+" est KO.")
         playSound("defeatSound",.35)
       }
     } else {
@@ -3294,7 +3294,7 @@ function watchCharacter(snapshot) {
 function triggerLevelUp(playerID) {
   if (!canAccessCharacter(playerID) || window.__sessionBusy) return
   // Présentation seulement : les points sont attribués une seule fois par transaction.
-  showNotification(playerID.toUpperCase() + " LEVEL UP !")
+  showNotification(heroDisplayName(playerID).toUpperCase() + " LEVEL UP !")
   showLevelUpEffect(playerID); showLevelUpText(playerID); playSound("levelUpSound")
 }
 
@@ -4306,7 +4306,7 @@ async function choosePlayer(id) {
     selected = null; _state.tokenDragging = false; _state.tokenDragStart = null
     document.querySelectorAll(".token").forEach(t => t.classList.remove("selectedPlayer", "gmSelected"))
     if (myToken) myToken.classList.add("selectedPlayer")
-    showNotification("MJ joue : " + id.toUpperCase())
+    showNotification("MJ joue : " + heroDisplayName(id).toUpperCase())
     watchLocalPlayerDefeat(id); updateThuumButton(); _collapsePlayerMenu(id)
     setTimeout(() => openCharacterSheet(id), 50)
     return
@@ -4331,7 +4331,7 @@ async function choosePlayer(id) {
     syncCharacterSubscriptions()
     watchLocalPlayerDefeat(id); watchFreePoints(id); updateThuumButton()
     updatePlayerAuthMenuState(); _collapsePlayerMenu(id)
-    showNotification("Votre héros est : " + id.toUpperCase())
+    showNotification("Votre héros est : " + heroDisplayName(id).toUpperCase())
     if (window.__activeCurseWheel) presentSavedCurseWheel(window.__activeCurseWheel)
   } catch (error) {
     showNotification(error?.message || "Choix du héros impossible")

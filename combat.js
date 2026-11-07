@@ -337,7 +337,7 @@ function showMobSelectionMenu(mainMob, forceTier) {
     if (dd) { dd.style.display = "none"; dd.innerHTML = ""; delete dd.dataset.built }
   })
   const sub = document.getElementById("mobMenuSub")
-  if (sub) sub.innerText = "Mob principal : " + mainMob.toUpperCase()
+  if (sub) sub.innerText = "Mob principal : " + heroDisplayName(mainMob).toUpperCase()
   menu.style.display = "flex"
   menu.style.setProperty("background-color", "rgb(8,0,0)", "important")
   setTimeout(() => updateMobPreview(), 50)
@@ -536,7 +536,7 @@ function showMobIntro(mob) {
         }, 4000)
       }
       const title = document.createElement("div")
-      title.innerText = mobName.toUpperCase()
+      title.innerText = heroDisplayName(mobName).toUpperCase()
       title.style.cssText = "position:absolute;bottom:10%;left:50%;transform:translateX(-50%);font-family:Cinzel;font-size:clamp(20px,3vw,40px);color:red;text-shadow:0 0 10px red;white-space:nowrap;"
       box.appendChild(title)
     setTimeout(() => {
@@ -594,7 +594,7 @@ function spawnMobToken(mob) {
 
   const oldName = token.querySelector(".mobNameTag"); if (oldName) oldName.remove()
   const nameTag = document.createElement("div")
-  nameTag.className = "mobNameTag"; nameTag.innerText = mob.toUpperCase()
+  nameTag.className = "mobNameTag"; nameTag.innerText = heroDisplayName(mob).toUpperCase()
   nameTag.style.cssText = "position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);font-family:Cinzel;font-size:22px;color:red;text-shadow:0 0 10px darkred;white-space:nowrap;"
   token.appendChild(nameTag)
 
@@ -945,7 +945,7 @@ function openMobDiff(mobId, event) {
     else                             btn.style.display = "block"
   })
 
-  nameEl.innerText = mobId.toUpperCase()
+  nameEl.innerText = heroDisplayName(mobId).toUpperCase()
   let x = event.clientX, y = event.clientY
   if (x + 150 > window.innerWidth)  x = window.innerWidth  - 160
   if (y + 160 > window.innerHeight) y = window.innerHeight - 170
@@ -978,7 +978,7 @@ function toggleMobDropdown(slot, triggerEl) {
     dd.dataset.built = "1"
     const none = document.createElement("div"); none.style.cssText = "padding:5px 10px;font-family:Cinzel,serif;font-size:11px;color:rgb(180,100,100);cursor:pointer;"; none.innerText = "— Aucun —"; none.onmousedown = e => { e.stopPropagation(); selectMobOption(slot, "", "— Aucun —") }; dd.appendChild(none)
     MOB_SELECT_LIST.forEach(m => {
-      const item = document.createElement("div"); item.style.cssText = "padding:5px 10px;font-family:Cinzel,serif;font-size:11px;color:rgb(255,180,180);cursor:pointer;"; item.innerText = m.charAt(0).toUpperCase() + m.slice(1)
+      const item = document.createElement("div"); item.style.cssText = "padding:5px 10px;font-family:Cinzel,serif;font-size:11px;color:rgb(255,180,180);cursor:pointer;"; item.innerText = heroDisplayName(m)
       item.onmousedown = e => { e.stopPropagation(); selectMobOption(slot, m, item.innerText) }; item.onmouseenter = () => item.style.background = "rgb(60,10,10)"; item.onmouseleave = () => item.style.background = ""; dd.appendChild(item)
     })
   }
@@ -1005,7 +1005,7 @@ function updateMobPreview() {
   slots.forEach(s => {
     const div = document.createElement("div"); div.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:4px;"
     const img = document.createElement("img"); img.src = "images/" + s.name + ".png"; img.style.cssText = "width:60px;height:60px;object-fit:contain;border-radius:50%;border:2px solid rgb(180,40,40);box-shadow:0 0 10px rgb(150,0,0);"; img.onerror = () => img.style.opacity = "0.3"; div.appendChild(img)
-    const lbl = document.createElement("div"); lbl.style.cssText = "font-family:Cinzel,serif;font-size:9px;color:rgb(255,150,150);letter-spacing:1px;"; lbl.innerText = s.name.toUpperCase(); div.appendChild(lbl)
+    const lbl = document.createElement("div"); lbl.style.cssText = "font-family:Cinzel,serif;font-size:9px;color:rgb(255,150,150);letter-spacing:1px;"; lbl.innerText = heroDisplayName(s.name).toUpperCase(); div.appendChild(lbl)
     preview.appendChild(div)
   })
 }

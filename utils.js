@@ -130,6 +130,7 @@ function getObjectValueLoose(obj, wantedKey) {
 }
 
 function resolveImagePath(path) {
+  if (/(?:^|\/)(?:ju(?: pion)?\.png|yusheet\.jpg)$/i.test(String(path || ""))) return /yusheet/i.test(path) ? "images/pika-sheet.svg" : "images/pika.png"
   const src = String(path || "")
   if (!src) return ""
   if (/^(https?:|data:|blob:|\/|images\/)/i.test(src)) return src
@@ -244,6 +245,7 @@ function showNotification(text, type) {
 }
 
 function addMJLog(text) {
+  text = pikaDisplayText(text)
   const log = document.getElementById("mjLogContent")
   if (!log) return
   const entry = document.createElement("div")
@@ -261,6 +263,7 @@ function pushCombatHit(from, to, amount, type, detail) {
 }
 
 function addCombatLog(text) {
+  text = pikaDisplayText(text)
   const content = document.getElementById("diceLogContent")
   if (!content) return
   const entry = document.createElement("div")
@@ -272,6 +275,7 @@ function addCombatLog(text) {
 }
 
 function addDiceLog(player, dice, result) {
+  player = heroDisplayName(player)
   const log = document.getElementById("diceLog")
   const content = document.getElementById("diceLogContent") || log
   if (!content) return
@@ -948,8 +952,8 @@ function preloadAssets() {
 
 function scanAssets() {
   const images = Object.keys(mapMusic).concat([
-    "greg.png","ju.png","elo.png","bibi.png",
-    "gregsheet.jpg","yusheet.jpg","elosheet.jpg","bibisheet.jpg",
+    "greg.png","pika.png","elo.png","bibi.png",
+    "gregsheet.jpg","pika-sheet.svg","elosheet.jpg","bibisheet.jpg",
     "paper.png","paper1.png"
   ])
   images.forEach(img => {

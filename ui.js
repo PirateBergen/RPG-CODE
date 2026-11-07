@@ -54,7 +54,7 @@ function openCharacterSheet(id = null) {
   if (sheet) sheet.dataset.playerId = playerID
   const inv = document.getElementById("inventaire")
   inv.removeAttribute("readonly")
-  const portraits = { greg:"gregsheet.jpg", ju:"yusheet.jpg", elo:"elosheet.jpg", bibi:"bibisheet.jpg" }
+  const portraits = { greg:"gregsheet.jpg", ju:"pika-sheet.svg", elo:"elosheet.jpg", bibi:"bibisheet.jpg" }
   document.getElementById("sheetImage").src = "images/" + (portraits[playerID] || "elosheet.jpg")
   document.getElementById("sheetTitle").innerText = playerID === "ju" ? "PIKA — Elfe · Barde · Don : Appétit abyssal" : heroDisplayName(playerID).toUpperCase()
   document.querySelectorAll(".playerOnly").forEach(f => { f.style.display = playerID === "bibi" ? "none" : "block" })
@@ -709,7 +709,7 @@ function renderPlayerAttackResolution(playerId, attack, roll, total, outcome) {
   const statKey = getAttackStatKey(attack.stat)
   const statLabel = String(attack.stat || statKey).toUpperCase()
   const verb = outcome.mode === "heal" ? "restaure" : "inflige"
-  const target = outcome.mode === "heal" ? playerId.toUpperCase() : (outcome.targetName || "MOB")
+  const target = outcome.mode === "heal" ? heroDisplayName(playerId).toUpperCase() : (outcome.targetName || "MOB")
   const amount = outcome.amount || 0
   showNotification(
     attack.name + " — d" + attack.dice + ": " + roll + " + " + statLabel + " (" + (total - roll) + ") • " +
@@ -721,7 +721,7 @@ function renderPlayerAttackResolutionV2(playerId, attack, roll, total, outcome) 
   const statKey = getAttackStatKey(attack.stat)
   const statLabel = String(attack.stat || statKey).toUpperCase()
   const verb = outcome.mode === "heal" ? "restaure" : "inflige"
-  const target = outcome.mode === "heal" ? playerId.toUpperCase() : (outcome.targetName || "MOB")
+  const target = outcome.mode === "heal" ? heroDisplayName(playerId).toUpperCase() : (outcome.targetName || "MOB")
   const amount = outcome.amount || 0
   const parts = ["d" + attack.dice + ": " + roll]
   const statBonus = outcome.statBonus != null ? outcome.statBonus : (total - roll)
@@ -750,7 +750,7 @@ function getPlayerSpecialPresentation(playerId) {
       kicker: "RIPOSTE",
       accent: "#8fc9ff",
       glow: "rgba(143,201,255,0.34)",
-      video: "juspé.mp4",
+      image: "pika.png",
       quoteFrame: "cadre.png"
     },
     elo: {
@@ -836,8 +836,8 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   box.appendChild(title)
 
   const flavorText = outcome.mode === "heal"
-    ? playerId.toUpperCase() + " restaure " + (outcome.amount || 0) + " PV"
-    : playerId.toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
+    ? heroDisplayName(playerId).toUpperCase() + " restaure " + (outcome.amount || 0) + " PV"
+    : heroDisplayName(playerId).toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
 
   let flavorHost = box
   if (presentation.quoteFrame) {
@@ -951,8 +951,8 @@ function showPlayerAttackImpact(playerId, attack, outcome, meta = {}) {
 
   const sub = document.createElement("div")
   sub.style.cssText = "margin-top:10px;font-family:Cinzel,serif;font-size:14px;letter-spacing:1px;text-align:center;color:" + accent + ";"
-  if (outcome.mode === "heal") sub.innerText = String(outcome.targetName || playerId).toUpperCase() + " récupère " + (outcome.amount || 0) + " PV"
-  else sub.innerText = playerId.toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
+  if (outcome.mode === "heal") sub.innerText = heroDisplayName(outcome.targetName || playerId).toUpperCase() + " récupère " + (outcome.amount || 0) + " PV"
+  else sub.innerText = heroDisplayName(playerId).toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
   box.appendChild(sub)
 
   overlay.appendChild(box)
@@ -1157,9 +1157,9 @@ function buildPassTurnBlock(actorId, label) {
   title.className = "attackTitle"
   title.innerText = "Passer le tour"
   block.appendChild(title)
-  appendAttackLine(block, "Cible", label || String(actorId || "").toUpperCase())
+  appendAttackLine(block, "Cible", label || heroDisplayName(actorId).toUpperCase())
   appendAttackLine(block, "Effet", "Passe l'action sans attaquer")
-  block.title = "Terminer le tour de " + (label || String(actorId || "").toUpperCase())
+  block.title = "Terminer le tour de " + (label || heroDisplayName(actorId).toUpperCase())
   block.onclick = () => {
     if (!canAccessCharacter(actorId)) return
     const turnState = typeof getCombatTurnState === "function" ? getCombatTurnState() : null
@@ -1169,11 +1169,11 @@ function buildPassTurnBlock(actorId, label) {
     }
     const activeActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
     if (activeActorId && activeActorId !== actorId) {
-      showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : String(activeActorId || "").toUpperCase()))
+      showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : heroDisplayName(activeActorId).toUpperCase()))
       return
     }
-    showNotification((label || String(actorId || "").toUpperCase()) + " passe son tour.")
-    if (typeof addMJLog === "function") addMJLog((label || String(actorId || "").toUpperCase()) + " passe son tour.")
+    showNotification((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
+    if (typeof addMJLog === "function") addMJLog((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
     if (typeof advanceCombatTurn === "function") advanceCombatTurn()
   }
   return block
@@ -1188,9 +1188,9 @@ function buildMobPassTurnBlock(actorId, label) {
   block.appendChild(title)
   const desc = document.createElement("div")
   desc.style.cssText = "margin-top:4px;font-size:9px;line-height:1.35;color:#d6b79e;"
-  desc.innerText = (label || String(actorId || "").toUpperCase()) + " termine son action sans attaquer."
+  desc.innerText = (label || heroDisplayName(actorId).toUpperCase()) + " termine son action sans attaquer."
   block.appendChild(desc)
-  block.title = "Terminer le tour de " + (label || String(actorId || "").toUpperCase())
+  block.title = "Terminer le tour de " + (label || heroDisplayName(actorId).toUpperCase())
   block.onclick = () => {
     const turnState = typeof getCombatTurnState === "function" ? getCombatTurnState() : null
     if (turnState && turnState.phase === "rolling") {
@@ -1199,11 +1199,11 @@ function buildMobPassTurnBlock(actorId, label) {
     }
     const activeActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
     if (activeActorId && activeActorId !== actorId) {
-      showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : String(activeActorId || "").toUpperCase()))
+      showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : heroDisplayName(activeActorId).toUpperCase()))
       return
     }
-    showNotification((label || String(actorId || "").toUpperCase()) + " passe son tour.")
-    if (typeof addMJLog === "function") addMJLog((label || String(actorId || "").toUpperCase()) + " passe son tour.")
+    showNotification((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
+    if (typeof addMJLog === "function") addMJLog((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
     if (typeof advanceCombatTurn === "function") advanceCombatTurn()
   }
   return block
@@ -1227,7 +1227,7 @@ function getCombatStatusEntries() {
       kind: "buff",
       icon: "impact_ring.png",
       title: "Tour actif",
-      text: (actorLabelMap[currentActorId] || (typeof getCombatActorLabel === "function" ? getCombatActorLabel(currentActorId) : String(currentActorId).toUpperCase())) + " joue maintenant",
+      text: (actorLabelMap[currentActorId] || (typeof getCombatActorLabel === "function" ? getCombatActorLabel(currentActorId) : heroDisplayName(currentActorId).toUpperCase())) + " joue maintenant",
       meta: "Round " + (turnState.round || 1)
     })
   }
@@ -1447,7 +1447,7 @@ function showCombatHUD() {
   const specialAttack = getPlayerSpecialAttack(player)
   const currentActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
   const meta = document.getElementById("combatHUDMeta")
-  document.getElementById("combatHUDPortrait").src   = "images/" + player + ".png"
+  document.getElementById("combatHUDPortrait").src   = "images/" + heroPortraitFile(player)
   document.getElementById("combatHUDName").innerText  = heroDisplayName(player).toUpperCase()
   if (meta) {
     meta.replaceChildren()
@@ -1458,7 +1458,7 @@ function showCombatHUD() {
 
     const turnPill = document.createElement("div")
     turnPill.className = "combatHUDMetaPill combatHUDMetaPill--turn"
-    turnPill.innerText = currentActorId === player ? "Tour actif" : ("Tour : " + String(currentActorId || "—").toUpperCase())
+    turnPill.innerText = currentActorId === player ? "Tour actif" : ("Tour : " + heroDisplayName(currentActorId || "—").toUpperCase())
     meta.appendChild(turnPill)
 
     if (isGM && window.__combatPreviewPlayerId) {
@@ -1514,7 +1514,7 @@ function togglePlayerAttacks() {
   }
   const isGregControllingBibi = false
   if ((hud.style.display === "none" || !hud.style.display) && combatActive && playerId && activeActorId && activeActorId !== playerId && !isPreviewMode && !isGregControllingBibi) {
-    showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : String(activeActorId || "").toUpperCase()))
+    showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : heroDisplayName(activeActorId).toUpperCase()))
     return
   }
   if (hud.style.display === "none" || !hud.style.display) { hud.style.display = "flex"; hud.style.alignItems = "flex-start" }
@@ -1984,7 +1984,7 @@ const PNJ_NAMES = {
   "heimdall.png":          "Heimdall",
   "witch.png":             "Witch",
   "ELO PION.png":          "ELO PION",
-  "ju pion.png":           "JU PION",
+  "ju pion.png":           "Pika",
   "greg pion.png":         "GREG PION",
 }
 
@@ -2671,7 +2671,7 @@ function renderWantedPoster(data) {
   info.style.cssText="flex:1;"
   const name=document.createElement("div")
   name.style.cssText="font-family:Cinzel,serif;font-size:11px;color:rgb(255,200,80);"
-  name.innerText = normalized.mob.toUpperCase()
+  name.innerText = heroDisplayName(normalized.mob).toUpperCase()
   const meta=document.createElement("div")
   meta.style.cssText="font-size:10px;color:rgb(200,160,60);"
   meta.innerText = "💰 " + normalized.reward + " po — " + normalized.tier
@@ -2716,7 +2716,7 @@ function showWantedOverlay(data) {
   inner.appendChild(mi)
   const n=document.createElement("div")
   n.style.cssText="font-family:'Cinzel Decorative',serif;font-size:18px;color:rgb(80,40,0);letter-spacing:3px;margin-bottom:8px;"
-  n.innerText=normalized.mob.toUpperCase()
+  n.innerText=heroDisplayName(normalized.mob).toUpperCase()
   inner.appendChild(n)
   const r=document.createElement("div")
   r.style.cssText="font-family:Cinzel,serif;font-size:22px;color:rgb(120,70,0);font-weight:bold;"
@@ -2753,7 +2753,7 @@ function renderWantedBoardCard(data) {
   subtitle.innerText="WANTED"
   const title=document.createElement("div")
   title.style.cssText="font-size:15px;letter-spacing:1px;color:#4f2f12;text-align:center;font-weight:bold;line-height:1.3;margin-top:8px;"
-  title.innerText=normalized.mob.toUpperCase()
+  title.innerText=heroDisplayName(normalized.mob).toUpperCase()
   const meta=document.createElement("div")
   meta.style.cssText="font-size:12px;color:#6b4720;text-align:center;line-height:1.6;margin-top:10px;"
   meta.innerText="Prime : " + normalized.reward + " po"
@@ -2845,7 +2845,7 @@ function closeWantedBoard(fromFirebase) {
   if (overlay) overlay.remove()
   if (isGM && !fromFirebase) db.ref("game/wantedBoardOpen").remove()
 }
-function toggleWantedDropdown(el) { const dd=document.getElementById("wantedMobDropdown"); if(!dd) return; if(dd.style.display!=="none"){ dd.style.display="none"; return }; if(!dd.dataset.built){ dd.dataset.built="1"; const em=document.createElement("div"); em.style.cssText="padding:5px 10px;font-family:Cinzel,serif;font-size:11px;color:rgb(180,120,60);cursor:pointer;"; em.innerText="— Choisir un mob —"; em.onmousedown=e=>{ e.stopPropagation(); selectWantedMob("","— Choisir un mob —") }; dd.appendChild(em); WANTED_MOBS.forEach(m=>{ const it=document.createElement("div"); it.style.cssText="padding:5px 10px;font-family:Cinzel,serif;font-size:11px;color:rgb(255,200,120);cursor:pointer;"; it.innerText=m.charAt(0).toUpperCase()+m.slice(1); it.onmousedown=e=>{ e.stopPropagation(); selectWantedMob(m,it.innerText) }; it.onmouseenter=()=>it.style.background="rgb(60,35,5)"; it.onmouseleave=()=>it.style.background=""; dd.appendChild(it) }) }; const r=el.getBoundingClientRect(); dd.style.position="fixed"; dd.style.top=(r.bottom+2)+"px"; dd.style.left=r.left+"px"; dd.style.width=r.width+"px"; dd.style.display="block" }
+function toggleWantedDropdown(el) { const dd=document.getElementById("wantedMobDropdown"); if(!dd) return; if(dd.style.display!=="none"){ dd.style.display="none"; return }; if(!dd.dataset.built){ dd.dataset.built="1"; const em=document.createElement("div"); em.style.cssText="padding:5px 10px;font-family:Cinzel,serif;font-size:11px;color:rgb(180,120,60);cursor:pointer;"; em.innerText="— Choisir un mob —"; em.onmousedown=e=>{ e.stopPropagation(); selectWantedMob("","— Choisir un mob —") }; dd.appendChild(em); WANTED_MOBS.forEach(m=>{ const it=document.createElement("div"); it.style.cssText="padding:5px 10px;font-family:Cinzel,serif;font-size:11px;color:rgb(255,200,120);cursor:pointer;"; it.innerText=heroDisplayName(m); it.onmousedown=e=>{ e.stopPropagation(); selectWantedMob(m,it.innerText) }; it.onmouseenter=()=>it.style.background="rgb(60,35,5)"; it.onmouseleave=()=>it.style.background=""; dd.appendChild(it) }) }; const r=el.getBoundingClientRect(); dd.style.position="fixed"; dd.style.top=(r.bottom+2)+"px"; dd.style.left=r.left+"px"; dd.style.width=r.width+"px"; dd.style.display="block" }
 function selectWantedMob(val, lbl) { const btn=document.getElementById("wantedMobBtn"); if(btn){ btn.innerText=lbl; btn.dataset.value=val }; const dd=document.getElementById("wantedMobDropdown"); if(dd) dd.style.display="none" }
 function toggleWantedTierDropdown(el) { const dd=document.getElementById("wantedTierDropdown"); if(!dd) return; if(dd.style.display!=="none"){ dd.style.display="none"; return }; const r=el.getBoundingClientRect(); dd.style.position="fixed"; dd.style.top=(r.bottom+2)+"px"; dd.style.left=r.left+"px"; dd.style.width=r.width+"px"; dd.style.display="block" }
 function selectWantedTier(val, lbl) { const btn=document.getElementById("wantedTierBtn"); if(btn){ btn.innerText=lbl; btn.dataset.value=val }; const dd=document.getElementById("wantedTierDropdown"); if(dd) dd.style.display="none"; const rw=WANTED_REWARDS[val]||WANTED_REWARDS.weak, ri=document.getElementById("wantedReward"); if(ri) ri.value=rw[Math.floor(Math.random()*rw.length)] }
@@ -2905,7 +2905,7 @@ function renderSpellDiceGame(data) {
   SPELL_PLAYERS.forEach(pid=>{ const t=tries[pid]||0,iF=freed.includes(pid),isOut=t>=SPELL_MAX_TRIES&&!iF,isCur=pid===realCur&&!iF; const card=document.createElement("div"); card.style.cssText=`display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 20px;border-radius:10px;border:2px solid ${iF?"#44ff44":isOut?"#ff4444":isCur?"#cc44ff":"rgba(150,0,255,0.4)"};background:${isCur?"rgba(120,0,180,0.3)":"rgba(0,0,0,0.3)"};min-width:100px;text-align:center;`; const n=document.createElement("div"); n.style.cssText=`font-family:Cinzel,serif;font-size:13px;letter-spacing:2px;color:${iF?"#44ff44":isOut?"#ff6666":isCur?"#dd88ff":"#9955cc"};`; n.innerText=(iF?"✓ ":isOut?"✕ ":isCur?"▶ ":"")+heroDisplayName(pid).toUpperCase(); card.appendChild(n); const dr=document.createElement("div"); dr.style.cssText="display:flex;gap:4px;"; for(let i=0;i<SPELL_MAX_TRIES;i++){ const d=document.createElement("div"); d.style.cssText="width:12px;height:12px;border-radius:2px;border:1px solid rgba(150,0,255,0.5);background:"+(i<t?(iF?"#44ff44":"rgba(180,0,80,0.6)"):"transparent")+";"; dr.appendChild(d) }; card.appendChild(dr); sr.appendChild(card) })
   ov.appendChild(sr)
   if(myToken&&myToken.id===realCur&&!freed.includes(myToken.id)){ const t=tries[myToken.id]||0; if(t<SPELL_MAX_TRIES){ const rb=document.createElement("div"); rb.id="spellRollBtn"; rb.style.cssText="position:relative;z-index:1;width:120px;height:120px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 40% 35%,rgba(180,0,255,0.6),rgba(80,0,150,0.3));border:3px solid rgba(200,50,255,0.8);box-shadow:0 0 30px rgba(180,0,255,0.5);cursor:pointer;margin-bottom:16px;animation:bifrostPulse 2s ease-in-out infinite alternate;"; rb.innerHTML=`<span style="font-size:36px;">🎲</span><span style="font-family:Cinzel,serif;font-size:11px;color:#cc88ff;letter-spacing:2px;margin-top:4px;">LANCER D20</span>`; rb.onclick=()=>rollSpellDice(myToken.id,t); ov.appendChild(rb); const h=document.createElement("div"); h.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:11px;color:#7733aa;font-style:italic;"; h.innerText=`Essai ${t+1} / ${SPELL_MAX_TRIES}`; ov.appendChild(h) } else { const out=document.createElement("div"); out.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:14px;color:#ff6666;text-shadow:0 0 10px red;"; out.innerText="✕ Vos essais sont épuisés..."; ov.appendChild(out) } }
-  else if(myToken&&!freed.includes(myToken.id)){ const w=document.createElement("div"); w.style.cssText="position:relative;z-index:1;font-family:'IM Fell English',serif;font-size:14px;color:#9944cc;font-style:italic;"; w.innerText=`✦ Au tour de ${realCur.toUpperCase()} de briser son sort... ✦`; ov.appendChild(w) }
+  else if(myToken&&!freed.includes(myToken.id)){ const w=document.createElement("div"); w.style.cssText="position:relative;z-index:1;font-family:'IM Fell English',serif;font-size:14px;color:#9944cc;font-style:italic;"; w.innerText=`✦ Au tour de ${heroDisplayName(realCur).toUpperCase()} de briser son sort... ✦`; ov.appendChild(w) }
   else if(myToken&&freed.includes(myToken.id)){ const d=document.createElement("div"); d.style.cssText="position:relative;z-index:1;font-family:Cinzel,serif;font-size:15px;color:#44ff44;text-shadow:0 0 10px lime;"; d.innerText="✓ Vous êtes libéré — attendez les autres..."; ov.appendChild(d) }
   if(isGM){ const gr=document.createElement("div"); gr.style.cssText="position:relative;z-index:1;display:flex;gap:8px;margin-top:16px;"; const lb=document.createElement("button"); lb.innerText="🔓 Libérer"; lb.style.cssText="padding:8px 18px;font-family:Cinzel,serif;font-size:12px;background:rgba(20,80,20,0.5);color:#88ff88;border:1px solid rgba(50,180,50,0.5);border-radius:4px;cursor:pointer;"; lb.onclick=finishCemeteryByGM; gr.appendChild(lb); ov.appendChild(gr) }
   document.body.appendChild(ov); setTimeout(()=>ov.style.opacity="1",50)
@@ -3137,7 +3137,7 @@ function _allyChooseTarget(pnj, action, panel) {
   ;["greg","ju","elo","bibi"].forEach(pid => {
     const btn = document.createElement("button"); btn.style.cssText = "display:block;width:100%;padding:8px;margin-bottom:6px;font-family:Cinzel,serif;font-size:12px;background:rgba(10,30,38,0.8);color:#e0f0f4;border:1px solid rgba(30,90,102,0.5);border-radius:2px;cursor:pointer;text-align:left;"
     const img = document.createElement("img")
-    img.src = "images/" + sanitizeAssetName(pid + ".png")
+    img.src = "images/" + sanitizeAssetName(heroPortraitFile(pid))
     img.style.cssText = "width:20px;height:20px;border-radius:50%;vertical-align:middle;margin-right:8px;"
     btn.appendChild(img)
     btn.appendChild(document.createTextNode(heroDisplayName(pid).toUpperCase()))

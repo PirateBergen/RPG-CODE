@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261107.9"</script>
+  <script>window.GAME_V = "20261107.10"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -32,9 +32,9 @@
       <h1 id="entranceTitle">La Prophétie<br><em>des Mouches</em></h1>
       <p class="entranceSubtitle">Choisissez votre place dans l’histoire.</p>
       <div class="entranceChoices">
-        <button onclick="chooseEntrance('greg')" class="heroCard"><span class="heroArt"><img src="images/greg.png" alt="Portrait de Greg"></span><span class="heroName">Greg</span></button>
+        <button onclick="chooseEntrance('greg')" class="heroCard"><span class="heroArt"><img src="images/greg.png" alt="Portrait de Greg"></span><span class="heroName">Greg</span><small>Humain forestier · Rôdeur</small></button>
         <button onclick="chooseEntrance('ju')" class="heroCard"><span class="heroArt"><img src="images/pika-selection.svg" alt="Portrait de Pika"></span><span class="heroName">Pika</span><small>Elfe · Barde</small></button>
-        <button onclick="chooseEntrance('elo')" class="heroCard"><span class="heroArt"><img src="images/elo.png" alt="Portrait d’Elo"></span><span class="heroName">Elo</span></button>
+        <button onclick="chooseEntrance('elo')" class="heroCard"><span class="heroArt"><img src="images/elo.png" alt="Portrait d’Elo"></span><span class="heroName">Elo</span><small>Hobbit · Druidesse</small></button>
         <button onclick="chooseEntrance('gm')" class="heroCard gmRoleCard"><span class="heroArt entranceDice" aria-hidden="true">⚄</span><span class="heroName">Maître du jeu</span></button>
       </div>
       <p id="entranceFeedback" role="status" aria-live="polite"></p>

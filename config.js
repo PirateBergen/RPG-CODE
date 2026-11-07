@@ -144,9 +144,9 @@ const attacks = {
     { name:"I know Frank (si arc)",type:"Distance", dice:12, stat:"Perspicacité", effect:"Tir précis arc",                                              crit:"Dégâts x2 et saignement, -1 HP pendant 2 tours" }
   ],
   ju: [
-    { name:"Dépêche-toi !!!",  type:"Charme",  dice:12, stat:"Charme", effect:"L'ennemi cible Pika. Alliés +1 dégats",                        crit:"Mobs n'attaquent pas au prochain tour" },
-    { name:"Spider Sense",     type:"Analyse", dice:10, stat:"Perspicacité", effect:"Révèle les faiblesses",                                      crit:"Augmente le loot de la victoire" },
-    { name:"Petite merde",     type:"Attaque", dice:12, stat:"Force",        effect:"Attaque humiliante. Si utilisé après Spider sense, dégâts x2", crit:"l'ennemi est humilié, -1 attaque pendant 2 tours" }
+    {name:"French cancan",type:"Mêlée",dice:12,stat:"Force",pikaKind:"cancan",effect:"Contact obligatoire. 1 à 3 coups selon le jet ; dégâts par coup : 3 + Force, avec progression de niveau.",crit:"4 coups de pied",condition:"À 180 ou moins de la cible"},
+    {name:"Je suis une fille",type:"Charme",dice:12,stat:"Charme",pikaKind:"hypnosis",effect:"Hypnose 1 tour complet. Recharge : 3 tours. Faible/normal : sauf échec critique ; fort : 7+ ; boss : 10+ ; world boss : critique uniquement.",crit:"Hypnose pendant 2 tours complets"},
+    {name:"Rire KRRKRR",type:"Sort à distance",dice:12,stat:"Charme",pikaKind:"laugh",effect:"Ce rire est tellement bizarre que l’ennemi en reste sans voix. D12 + Charme + progression de niveau.",crit:"Ricochet à 50 % sur une autre cible ; si elle est seule, +50 % de dégâts."}
   ],
   elo: [
     { name:"Mains magiques",                  type:"Soin",      dice:12, stat:"Defense", effect:"Restaure HP à soi ou allié",                                                     crit:"Pv restaurés x2" },
@@ -171,18 +171,7 @@ const playerSpecialAttacks = {
     damageBonus: 1.95
   },
   ju: {
-    name: "Plan qui tourne trop bien",
-    type: "Spécial",
-    dice: 20,
-    stat: "Charme",
-    effect: "Riposte de précision après la spéciale ennemie",
-    crit: "Rupture totale des défenses",
-    fail: "Le plan s'effondre et Pika révèle trop tôt son jeu.",
-    conditionText: "La cible a déjà utilisé sa spéciale",
-    flavor: "Pika attend exactement le moment où l'ennemi se croit intouchable.",
-    icon: "rune_glow.png",
-    rule: "mob_used_special",
-    damageBonus: 1.8
+    name:"Endikaki",type:"Spécial",dice:20,stat:"Charme",pikaKind:"endikaki",effect:"Invoque Endikaki, une bombe vivante qui fonce sur la cible et explose.",crit:"Explosion renforcée : dégâts doublés",fail:"Endikaki explose sans toucher l’ennemi.",conditionText:"Un autre allié est à moins de 20 % de ses PV (un allié KO compte).",flavor:"Le vieux fou est parti !",icon:"endikaki-token.svg",rule:"ally_below_twenty",damageBonus:1.8
   },
   elo: {
     name: "C'est fou ce dont les humains sont capables",
@@ -448,8 +437,9 @@ const mobAttackOverrides = {
     { name:"Coup de diagonale", icon:"✨", dmgMin:3, dmgMax:7, effect:null, desc:"Presque élégant, pas vraiment" }
   ],
   "ju pion": [
-    { name:"Calcul d'échec", icon:"♟", dmgMin:4, dmgMax:8, effect:null, desc:"Le pion pense trop, frappe assez" },
-    { name:"Percée maladroite", icon:"💥", dmgMin:3, dmgMax:7, effect:null, desc:"La stratégie finit dans le tibia" }
+    {name:"French cancan",icon:"👢",dice:12,pikaKind:"cancan",dmgMin:6,dmgMax:12,effect:null,desc:"Coups de pied au contact : 1 à 4 selon le dé."},
+    {name:"Je suis une fille",icon:"✧",dice:12,pikaKind:"hypnosis",dmgMin:0,dmgMax:0,effect:"stun",desc:"Hypnotise un héros 1 tour (2 en critique). Réussite sur 4+. Recharge : 3 tours."},
+    {name:"Rire KRRKRR",icon:"✨",dice:12,pikaKind:"laugh",dmgMin:7,dmgMax:13,effect:"magic",desc:"Un rire bizarre et magique. En critique, ricochet ou dégâts renforcés."}
   ],
   "greg pion": [
     { name:"Morsure de pion", icon:"♟", dmgMin:5, dmgMax:9, effect:null, desc:"Une agressivité disproportionnée" },
@@ -1464,3 +1454,5 @@ function parseInventoryWeight(text) {
   })
   return { total:Math.round(total * 1000) / 1000, warnings, entries }
 }
+
+mobSpecialAttacks["ju pion"]={name:"Endikaki",icon:"💥",dice:20,pikaKind:"endikaki",dmgMin:20,dmgMax:30,effect:"magic",animation:"arcane",flavor:"Une invocation-bombe. Nécessite un autre allié de Pika PNJ sous 20 % de PV."};

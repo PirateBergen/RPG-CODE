@@ -988,6 +988,7 @@ function showPlayerAttackImpact(playerId, attack, outcome, meta = {}) {
 function isPlayerSpecialConditionMet(playerId, specialAttack, context = {}) {
   if (!specialAttack) return false
   const rule = specialAttack.rule || ""
+  if(rule==="ally_below_twenty")return pikaAllyInDanger(context.players||{},playerId)
   const mob = context.mob || null
   const charData = context.charData || {}
   const players = context.players || {}
@@ -1334,6 +1335,7 @@ function getCombatStatusEntries() {
 
   Object.entries(window.__combatSnapshot?.heroDebuffs||{}).forEach(([id,e])=>entries.push({kind:"warn",title:heroDisplayName(id).toUpperCase()+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s)"}))
   Object.entries(window.__combatSnapshot?.heroStuns||{}).filter(([,n])=>n>0).forEach(([id])=>entries.push({kind:"warn",title:heroDisplayName(id).toUpperCase()+" étourdi",text:"Prochaine action sautée",meta:"Une action"}))
+  COMBAT_MOBS.forEach(slot=>{const mob=window.__combatSnapshot?.[slot];if(mob?.pikaHypnosisTurns>0)entries.push({kind:"warn",title:heroDisplayName(mob.name)+" hypnotisé",text:"Tour complet neutralisé",meta:mob.pikaHypnosisTurns+" tour(s) restant(s)"})})
   return entries
 }
 
@@ -1472,7 +1474,9 @@ function showCombatHUD() {
     populateAttackBlock(block, a)
     block.classList.add("combatBlock--action")
     block.title = "Cliquer pour lancer l'attaque"
-    block.onclick = () => resolvePlayerAttack(a)
+    const recharge=a.pikaKind==="hypnosis"?pikaRechargeLeft(window.__combatSnapshot):0
+    if(recharge){appendAttackLine(block,"Recharge",recharge+" tour(s)");block.classList.add("combatBlock--spent")}
+    block.onclick = () => recharge?showNotification("Recharge : "+recharge+" tour(s)"):resolvePlayerAttack(a)
     box.appendChild(block)
   })
   if (specialAttack) box.appendChild(buildPlayerSpecialBlock(player, specialAttack))
@@ -1747,7 +1751,7 @@ function buildMobSubPanel(mobData, slot) {
       targetRow.appendChild(btn)
     })
     panel.appendChild(targetRow)
-    panel.appendChild(buildMobPassTurnBlock(String(slot || "mob"), StringheroDisplayName(mobData.name || "MOB").toUpperCase()))
+    panel.appendChild(buildMobPassTurnBlock(String(slot || "mob"), String(heroDisplayName(mobData.name || "MOB")).toUpperCase()))
   } else {
     // Vue lecture seule pour les joueurs
     atks.forEach(atk => {
@@ -1802,7 +1806,7 @@ function buildMobSubPanel(mobData, slot) {
     passTitle.innerText = "Passer le tour"
     const passDesc = document.createElement("div")
     passDesc.style.cssText = "margin-top:4px;font-size:9px;line-height:1.35;color:#bba28d;"
-    passDesc.innerText = StringheroDisplayName(mobData.name || "MOB").toUpperCase() + " peut aussi choisir de ne pas agir."
+    passDesc.innerText = String(heroDisplayName(mobData.name || "MOB")).toUpperCase() + " peut aussi choisir de ne pas agir."
     passRow.appendChild(passTitle)
     passRow.appendChild(passDesc)
     panel.appendChild(passRow)

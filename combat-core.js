@@ -155,7 +155,8 @@ function nextCombatTurn(root, request, skipRemaining = false) {
     if (combatOutcome(root, request)) return
     const id = order[state.currentIndex].id
     if (combatActorAlive(root, id)) {
-      if (root.combat.heroStuns?.[id] > 0) { root.combat.heroStuns[id]--; continue }
+      if (root.combat.heroStuns?.[id] > 0) { root.combat.heroStuns[id]--;if(root.combat.heroHypnosis?.[id]>0)root.combat.heroHypnosis[id]--; continue }
+      if(COMBAT_MOBS.includes(id)&&root.combat[id]?.pikaHypnosisTurns>0){root.combat[id].pikaHypnosisTurns--;continue}
       state.currentActorId = id; state.sequence = combatInt(state.sequence) + 1; return
     }
   }
@@ -193,6 +194,7 @@ function resolveHeroCombatAction(root, request, dice) {
   const special = !!payload.special
   const attack = getCombatHeroAttack(actor,payload.attack,special)
   if (!attack || attack.name !== payload.attack) throw new Error("Capacité inconnue")
+  if(actor==="ju"&&attack.pikaKind)return resolvePikaHeroAction(root,request,attack,dice)
   if (special && c.playerSpecials?.[actor]) throw new Error("Spéciale déjà utilisée")
   const heal = getPlayerAttackTypeKey(attack) === "heal"
   const slot = payload.target || livingMobs(c)[0]
@@ -257,6 +259,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   const slot = request.actor, c = root.combat, mob = c[slot], payload = request.payload || {}
   requireCombatTurn(root, request, slot)
   if (!mob) throw new Error("Ennemi introuvable")
+  if(isPikaCombatNpc(mob.name))return resolvePikaNpcAction(root,request,dice)
   const special = getMobSpecialAttack(mob.name, mob.tier || "weak")
   const normal = getMobAttacksForMob(mob.name, mob.tier || "weak")
   let specialRoll = null

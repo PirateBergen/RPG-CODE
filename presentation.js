@@ -60,6 +60,7 @@ function presentCombatResolution(action) {
     } else {
       if(Number.isFinite(result.roll)) _showDiceAnimationNow(result.actor?.startsWith("mob")?"MOB":result.actor||"MJ",result.dice||20,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
       const impact=()=>{
+        if(result.pikaKind){presentPikaAttack(result);return}
         if(result.mode==="damage" || result.mode==="heal"){
           const attack=typeof getCombatHeroAttack==="function"?getCombatHeroAttack(result.actor,result.attack,result.special):(result.special?getPlayerSpecialAttack(result.actor):(attacks[result.actor]||[]).find(a=>a.name===result.attack))
           if(attack)showPlayerAttackImpact(result.actor,attack,{mode:result.mode,amount:result.amount,targetName:result.targetName||result.target},{special:result.special,crit:result.crit,fail:result.fail})

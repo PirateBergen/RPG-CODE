@@ -6,7 +6,7 @@ vm.runInContext(read('config.js'),ctx);vm.runInContext(read('utils.js').split('f
 const source=read('ui.js');function functionSource(name){const start=source.indexOf('function '+name+'(');if(start<0)throw Error('helper '+name);const next=/^function \w+\(/m.exec(source.slice(start+1));return source.slice(start,next?start+1+next.index:source.length)}
 for(const name of ['getAttackStatKey','getPlayerAttackTypeKey','getPlayerSpecialAttack','getCharacterMaxHp','playerHasInventoryItem','isPhysicalMobAttack','getPlayerAttackPower','getPlayerLevelScaling','applyPlayerSpecialModifiers','isPlayerSpecialConditionMet'])vm.runInContext(functionSource(name),ctx);
 ctx.hasPlayerCombatTrigger=()=>false;
-vm.runInContext(read('combat-core.js'),ctx);
+vm.runInContext(read('pika-combat.js'),ctx);vm.runInContext(read('combat-core.js'),ctx);
 const run=expression=>vm.runInContext(expression,ctx);
 function fixture(actor='greg'){
  const characters=clone(run('Object.fromEntries(["greg","ju","elo","bibi"].map(id=>[id,{...playerBaseStats[id],lvl:1,xp:0,notes:"privé "+id,inventaire:id==="greg"?"arc":"",gold:10,curse:0,corruption:0}]))'));

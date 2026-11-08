@@ -24,10 +24,12 @@ function drainSharedVisuals() {
   const next = sharedVisualQueue.shift()
   sharedVisualRunning = true
   window.__sharedVisualBusy = true
+  if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
   try { next.play() } catch (error) { console.error("Animation partagée", error) }
   setTimeout(() => {
     sharedVisualRunning = false
     window.__sharedVisualBusy = false
+    if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
     drainSharedVisuals()
   }, next.duration)
 }

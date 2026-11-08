@@ -4,6 +4,7 @@ let combatCoordinatorRef = null
 let combatCoordinatorCallback = null
 let combatCoordinatorQueue = Promise.resolve()
 let combatTargetCancellation = null
+let combatTargetRefresh = null
 let lastCombatPresentationId = null
 window.__combatSnapshot = null
 
@@ -63,25 +64,30 @@ async function submitCombatAction(kind,actor,payload={}){
 function chooseEnemyCombatTarget(attack=null,actor=null,special=false) {
   const slots = livingMobs(window.__combatSnapshot)
   if (!slots.length) return Promise.resolve(null)
-  const allowed=slot=>!special||!["mob_below_half","mob_below_forty","mob_used_special"].includes(attack?.rule)||isPlayerSpecialConditionMet(actor,attack,{mob:window.__combatSnapshot[slot]})
-  if (slots.length === 1) {if(!allowed(slots[0])){showNotification("Condition manquante : "+attack.conditionText);return Promise.resolve(null)}return Promise.resolve(slots[0])}
+  const combatId=window.__combatSnapshot?.id,previousFocus=document.activeElement
+  const allowed=slot=>combatTargetEligibility(attack,actor,special,slot).allowed
+  if (slots.length === 1) {if(!allowed(slots[0])){showNotification(combatTargetEligibility(attack,actor,special,slots[0]).reason);return Promise.resolve(null)}return Promise.resolve(slots[0])}
   if (combatTargetCancellation) combatTargetCancellation()
   return new Promise(resolve => {
     const overlay = document.createElement("div"); overlay.id = "combatEnemyTargetPicker"
     overlay.style.cssText = "position:fixed;inset:0;z-index:2000000000;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;"
-    const panel = document.createElement("div"); panel.style.cssText = "padding:24px;background:#19100c;border:1px solid #cda761;border-radius:12px;color:#ffe4ac;font:18px Georgia;"
-    const title = document.createElement("p"); title.textContent = "Choisir l’ennemi à viser"; panel.appendChild(title)
-    const finish = value => { overlay.remove(); combatTargetCancellation = null; resolve(value) }
+    const panel = document.createElement("div"); panel.className="combatTargetPickerPanel";panel.style.cssText = "padding:24px;background:#19100c;border:1px solid #cda761;border-radius:12px;color:#ffe4ac;font:18px Georgia;"
+    const title = document.createElement("p"); title.textContent = "Choisir la cible"+(attack?.name?" — "+attack.name:""); panel.appendChild(title)
+    const hint=document.createElement("p");hint.className="combatTargetPickerHint";hint.textContent="Choisir une cible lance l’action. Annuler ne consomme aucune action.";panel.appendChild(hint)
+    let done=false;const finish=value=>{if(done)return;done=true;overlay.remove();combatTargetCancellation=null;combatTargetRefresh=null;if(previousFocus?.isConnected)previousFocus.focus?.();resolve(value)}
+    const choices=[]
     slots.forEach(slot => {
       const mob = window.__combatSnapshot[slot], button = document.createElement("button")
-      button.textContent = heroDisplayName(mob.name).toUpperCase() + " — " + mob.hp + " / " + mob.maxHP + " PV"
+      button.dataset.combatTarget=slot;choices.push([slot,button])
       button.style.cssText = "display:block;margin:10px 0;padding:12px;width:100%;cursor:pointer;"
-      if(!allowed(slot)){button.disabled=true;button.textContent+=" — condition non remplie";button.title=attack.conditionText}
-      button.onclick = () => finish(slot); panel.appendChild(button)
+      button.onclick=()=>{if(allowed(slot))finish(slot);else combatTargetRefresh?.()}; panel.appendChild(button)
     })
     const cancel = document.createElement("button"); cancel.textContent = "Annuler"; cancel.onclick = () => finish(null); panel.appendChild(cancel)
     overlay.appendChild(panel); document.body.appendChild(overlay)
     combatTargetCancellation = () => finish(null)
+    combatTargetRefresh=()=>{if(!combatActive||window.__combatSnapshot?.id!==combatId||window.__combatSnapshot?.phase==="finished"||(actor&&window.__combatSnapshot?.turnState?.currentActorId!==combatOwner(actor))){finish(null);return}for(const [slot,button]of choices){const mob=window.__combatSnapshot?.[slot],value=combatTargetEligibility(attack,actor,special,slot);button.disabled=!value.allowed;button.textContent=combatEnemyLabel(slot)+" — "+(mob?.hp||0)+" / "+(mob?.maxHP||0)+" PV"+(value.reason?" — "+value.reason:"");button.title=value.reason}}
+    panel.setAttribute("role","dialog");panel.setAttribute("aria-label",title.textContent)
+    combatTargetRefresh();choices.find(([,b])=>!b.disabled)?.[1].focus();refreshCombatHUDContext()
   })
 }
 
@@ -93,14 +99,16 @@ async function requestHeroCombatAction(attack, options = {}) {
   if (!canAccessCharacter(actor)) return
   if (getCurrentCombatActorId() !== combatOwner(actor)) { showNotification("Ce n’est pas votre tour"); return }
   window.__playerAttackResolving = true
+  refreshCombatActionStates()
   try {
     const target = getPlayerAttackTypeKey(attack) === "heal"
-      ? await chooseCombatTarget(COMBAT_CHARACTERS.filter(id => !document.getElementById(id)?.classList.contains("playerDead")), "Choisir le héros à soigner")
+      ? await chooseCombatTarget(COMBAT_CHARACTERS, "Choisir le héros à soigner — "+attack.name)
       : await chooseEnemyCombatTarget(attack,actor,!!options.isSpecial)
     if (!target) return
+    refreshCombatActionStates()
     await submitCombatAction("hero", actor, { attack: attack.name, special: !!options.isSpecial, target })
   } catch (error) { showNotification(error.message) }
-  finally { window.__playerAttackResolving = false }
+  finally { window.__playerAttackResolving = false;refreshCombatActionStates() }
 }
 
 async function requestEnemyCombatAction(attack, mobData, panel, forcedTarget, slot) {
@@ -108,9 +116,10 @@ async function requestEnemyCombatAction(attack, mobData, panel, forcedTarget, sl
   if (!isGM || window.__mobAttackResolving) return
   const actor = slot || panel?.dataset.slot || mobData.slot || "mob"
   window.__mobAttackResolving = true
+  refreshCombatActionStates()
   try { await submitCombatAction("enemy", actor, { attack: attack?.name || "", random: !attack, target: forcedTarget && forcedTarget !== "all" ? forcedTarget : (panel?._manualTarget || null) }) }
   catch (error) { showNotification(error.message) }
-  finally { window.__mobAttackResolving = false }
+  finally { window.__mobAttackResolving = false;refreshCombatActionStates() }
 }
 
 async function requestAllyCombatAction(pnj, action, targetId, panel) {
@@ -286,3 +295,5 @@ async function requestManualCombatOutcome(type) {
     return root
   })}catch(error){showNotification("Fin de combat non confirmée : "+error.message)}
 }
+
+async function requestCombatPass(actor,enemy=false){if(enemy?!isGM:!canAccessCharacter(actor))return false;if(enemy?window.__mobAttackResolving:window.__playerAttackResolving)return false;const flag=enemy?"__mobAttackResolving":"__playerAttackResolving";window[flag]=true;refreshCombatActionStates();try{await submitCombatAction("pass",actor);return true}catch(error){showNotification("Action non confirmée : "+error.message);return false}finally{window[flag]=false;refreshCombatActionStates()}}

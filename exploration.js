@@ -143,7 +143,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   syncExplorationCoordinator()
   if(isGM)cleanupLegacyWantedElements().catch(error=>console.warn(error))
   db.ref(".info/connected").on("value",snap=>{window.__explorationOnline=!!snap.val();if(!snap.val()){selected=null;_state.tokenDragging=false;cameraDragging=false}})
-  db.ref("tokens").on("value",snap=>{window.__tokenPositions=snap.val()||{}})
+  db.ref("tokens").on("value",snap=>{window.__tokenPositions=snap.val()||{};if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()})
   for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
   db.ref("events").on("value",snap=>{window.__explorationWorldEvents=snap.val()||{};refreshExplorationMapEvents()})
   db.ref("game/explorationEvents").on("child_added",snap=>{if(!window.__sessionBusy)presentExplorationEvent(snap.val())})

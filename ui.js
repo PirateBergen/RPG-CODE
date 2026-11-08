@@ -263,42 +263,19 @@ function isPhysicalMobAttack(attack) {
   return /(coup|frappe|morsure|griffe|croc|charge|balayage|taloche|massue|lance|estoc|poing|fouet|pi[eé]tinement|entaille)/.test(name)
 }
 
-function chooseCombatTarget(playerIds, titleText) {
-  return new Promise(resolve => {
-    const existing = document.getElementById("combatTargetPicker")
-    if (existing) existing.remove()
-
-    const picker = document.createElement("div")
-    picker.id = "combatTargetPicker"
-    picker.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(8,20,24,0.98);border:1px solid rgba(214,164,90,0.5);box-shadow:0 0 0 1px rgba(120,90,40,0.5),0 0 40px rgba(0,0,0,0.9);border-radius:3px;padding:16px;z-index:1000000001;font-family:Cinzel,serif;min-width:260px;"
-
-    const title = document.createElement("div")
-    title.style.cssText = "font-size:13px;letter-spacing:2px;color:#f2d7a6;text-align:center;margin-bottom:12px;"
-    title.innerText = titleText || "Choisir une cible"
-    picker.appendChild(title)
-
-    playerIds.forEach(pid => {
-      const btn = document.createElement("button")
-      btn.style.cssText = "display:block;width:100%;padding:8px;margin-bottom:6px;font-family:Cinzel,serif;font-size:12px;background:rgba(10,30,38,0.8);color:#e0f0f4;border:1px solid rgba(30,90,102,0.5);border-radius:2px;cursor:pointer;text-align:left;"
-      btn.innerText = heroDisplayName(pid).toUpperCase()
-      btn.onclick = () => {
-        picker.remove()
-        resolve(pid)
-      }
-      picker.appendChild(btn)
-    })
-
-    const cancel = document.createElement("button")
-    cancel.style.cssText = "display:block;width:100%;padding:6px;font-family:Cinzel,serif;font-size:11px;background:rgba(80,20,20,0.4);color:#ff8888;border:1px solid rgba(180,40,40,0.4);border-radius:2px;cursor:pointer;"
-    cancel.innerText = "Annuler"
-    cancel.onclick = () => {
-      picker.remove()
-      resolve(null)
-    }
-    picker.appendChild(cancel)
-
-    document.body.appendChild(picker)
-  })
+function chooseCombatTarget(playerIds,titleText){
+ const combatId=window.__combatSnapshot?.id,owner=combatOwner(getCombatHUDPlayerId()),previousFocus=document.activeElement
+ if(typeof combatTargetCancellation==="function")combatTargetCancellation()
+ return new Promise(resolve=>{
+  const picker=document.createElement("section");picker.id="combatTargetPicker";picker.className="combatTargetPickerPanel";picker.setAttribute("role","dialog");picker.setAttribute("aria-label",titleText||"Choisir une cible")
+  picker.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:20px;z-index:2000000000;background:#101b22;border:1px solid #cda761;border-radius:10px;color:#ffe4ac;font:17px Georgia"
+  const title=document.createElement("p");title.textContent=titleText||"Choisir une cible";picker.appendChild(title)
+  const hint=document.createElement("p");hint.className="combatTargetPickerHint";hint.textContent="Choisir un allié lance le soin. Annuler ne consomme aucune action.";picker.appendChild(hint)
+  let done=false;const finish=value=>{if(done)return;done=true;picker.remove();combatTargetCancellation=null;combatTargetRefresh=null;if(previousFocus?.isConnected)previousFocus.focus?.();resolve(value)}
+  const choices=[];for(const id of playerIds){const button=document.createElement("button");button.dataset.combatTarget=id;button.style.cssText="display:block;width:100%;padding:12px;margin:8px 0";button.onclick=()=>{if(!button.disabled)finish(id)};picker.appendChild(button);choices.push([id,button])}
+  const cancel=document.createElement("button");cancel.textContent="Annuler";cancel.onclick=()=>finish(null);picker.appendChild(cancel);document.body.appendChild(picker)
+  combatTargetCancellation=()=>finish(null);combatTargetRefresh=()=>{if(!combatActive||window.__combatSnapshot?.id!==combatId||window.__combatSnapshot?.phase==="finished"||(owner&&window.__combatSnapshot?.turnState?.currentActorId!==owner)){finish(null);return}for(const [id,button]of choices){const hp=window.__publicCharacters?.[id]?.hp;button.disabled=hp!=null&&hp<=0;button.textContent=heroDisplayName(id)+(hp!=null?" — "+hp+" PV":"")+(button.disabled?" — KO":"")}};combatTargetRefresh();choices.find(([,b])=>!b.disabled)?.[1].focus();refreshCombatHUDContext()
+ })
 }
 
 function getPlayerAttackPower(attack, roll, statValue, context = {}) {
@@ -792,25 +769,10 @@ function buildPassTurnBlock(actorId, label) {
   title.className = "attackTitle"
   title.innerText = "Passer le tour"
   block.appendChild(title)
-  appendAttackLine(block, "Cible", label || heroDisplayName(actorId).toUpperCase())
+  appendAttackLine(block, "Action", combatOwner(actorId)==="greg"?"Terminer l’action commune de Greg et Bibi":label||heroDisplayName(actorId).toUpperCase())
   appendAttackLine(block, "Effet", "Passe l'action sans attaquer")
   block.title = "Terminer le tour de " + (label || heroDisplayName(actorId).toUpperCase())
-  block.onclick = () => {
-    if (!canAccessCharacter(actorId)) return
-    const turnState = typeof getCombatTurnState === "function" ? getCombatTurnState() : null
-    if (turnState && turnState.phase === "rolling") {
-      showNotification("Terminez d'abord les jets d'initiative.")
-      return
-    }
-    const activeActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
-    if (activeActorId && activeActorId !== actorId) {
-      showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : heroDisplayName(activeActorId).toUpperCase()))
-      return
-    }
-    showNotification((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
-    if (typeof addMJLog === "function") addMJLog((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
-    if (typeof advanceCombatTurn === "function") advanceCombatTurn()
-  }
+  block.onclick=()=>requestCombatPass(actorId,false)
   bindCombatActionState(block,actorId,{name:"Passer le tour"})
   return block
 }
@@ -827,155 +789,35 @@ function buildMobPassTurnBlock(actorId, label) {
   desc.innerText = (label || heroDisplayName(actorId).toUpperCase()) + " termine son action sans attaquer."
   block.appendChild(desc)
   block.title = "Terminer le tour de " + (label || heroDisplayName(actorId).toUpperCase())
-  block.onclick = () => {
-    const turnState = typeof getCombatTurnState === "function" ? getCombatTurnState() : null
-    if (turnState && turnState.phase === "rolling") {
-      showNotification("Terminez d'abord les jets d'initiative.")
-      return
-    }
-    const activeActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
-    if (activeActorId && activeActorId !== actorId) {
-      showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : heroDisplayName(activeActorId).toUpperCase()))
-      return
-    }
-    showNotification((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
-    if (typeof addMJLog === "function") addMJLog((label || heroDisplayName(actorId).toUpperCase()) + " passe son tour.")
-    if (typeof advanceCombatTurn === "function") advanceCombatTurn()
-  }
+  block.onclick=()=>requestCombatPass(actorId,true)
   bindCombatActionState(block,actorId,{name:"Passer le tour"},false,true)
   return block
 }
 
-function getCombatStatusEntries() {
-  const entries = []
-  const turnState = typeof getCombatTurnState === "function" ? getCombatTurnState() : null
-  const currentActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
-  const actorLabelMap = {
-    greg: "Greg",
-    ju: "Pika",
-    elo: "Elo",
-    bibi: "Bibi",
-    mob: String(currentMob || "Mob").toUpperCase(),
-    mob2: "MOB 2",
-    mob3: "MOB 3"
-  }
-  if (turnState && turnState.phase === "active" && currentActorId) {
-    entries.push({
-      kind: "buff",
-      icon: "impact_ring.png",
-      title: "Tour actif",
-      text: (actorLabelMap[currentActorId] || (typeof getCombatActorLabel === "function" ? getCombatActorLabel(currentActorId) : heroDisplayName(currentActorId).toUpperCase())) + " joue maintenant",
-      meta: "Round " + (turnState.round || 1)
-    })
-  }
-
-  const yuAggro = window.__combatYuAggroState
-  if (yuAggro && parseInt(yuAggro.turns, 10) > 0) {
-    entries.push({
-      kind: "warn",
-      icon: "impact_ring.png",
-      title: "Aggro de Pika",
-      text: "Le mob doit viser Pika sur ses attaques ciblées.",
-      meta: parseInt(yuAggro.turns, 10) + " round(s) restant(s)"
-    })
-  }
-
-  const spiderSense = window.__combatSpiderSenseBuffState
-  if (spiderSense && spiderSense.active) {
-    entries.push({
-      kind: "buff",
-      icon: "arcane.png",
-      title: "Spider Sense",
-      text: "Les attaques offensives alliées gagnent +10% dégâts.",
-      meta: "Actif pour tout le combat"
-    })
-  }
-
-  const revealedWeakness = window.__combatRevealedWeaknessState
-  if (revealedWeakness && revealedWeakness.title) {
-    entries.push({
-      kind: "warn",
-      icon: "weakness.png",
-      title: "Faiblesse révélée",
-      text: revealedWeakness.title + " — " + (revealedWeakness.text || ""),
-      meta: String(revealedWeakness.mobName || "Mob")
-    })
-  }
-
-  const bibiRage = window.__combatBibiRageState
-  if (bibiRage && parseInt(bibiRage.turns, 10) > 0) {
-    entries.push({
-      kind: "buff",
-      icon: "fang.png",
-      title: "Le Bibi",
-      text: "Chaque attaque alliée ajoute " + (parseInt(bibiRage.damage, 10) || 2) + " dégâts au mob.",
-      meta: parseInt(bibiRage.turns, 10) + " round(s) restant(s)"
-    })
-  }
-
-  const attackMalus = window.__combatAttackMalusState
-  if (attackMalus && parseInt(attackMalus.turns, 10) > 0) {
-    entries.push({
-      kind: "warn",
-      icon: "weakness.png",
-      title: "Humiliation du mob",
-      text: "Les attaques du mob perdent " + (parseInt(attackMalus.amount, 10) || 1) + " dégâts.",
-      meta: parseInt(attackMalus.turns, 10) + " round(s) restant(s)"
-    })
-  }
-
-  const poison = window.__combatPlayerPoisonState
-  if (poison && parseInt(poison.turns, 10) > 0) {
-    entries.push({
-      kind: "warn",
-      icon: "venom.png",
-      title: "Poison",
-      text: "Le mob perd " + (parseInt(poison.damage, 10) || 2) + " HP à chacun de ses tours.",
-      meta: parseInt(poison.turns, 10) + " round(s) restant(s)"
-    })
-  }
-
-  const bleed = window.__combatPlayerBleedState
-  if (bleed && parseInt(bleed.turns, 10) > 0) {
-    entries.push({
-      kind: "warn",
-      icon: "fang.png",
-      title: "Saignement",
-      text: "Le mob perd " + (parseInt(bleed.damage, 10) || 1) + " HP à chacun de ses tours.",
-      meta: parseInt(bleed.turns, 10) + " round(s) restant(s)"
-    })
-  }
-
-  const summon = window.__eloSummonState
-  if (summon && summon.active) {
-    entries.push({
-      kind: "ally",
-      icon: "pork.png",
-      title: "John Pork",
-      text: "Invocation active : bonus D4 aux attaques d’Elo" + (summon.frenzy ? ", doublé et en zone." : "."),
-      meta: (parseInt(summon.turnsLeft, 10) || 0) + " round(s) • " + (parseInt(summon.hp, 10) || 0) + "/" + (parseInt(summon.maxHP, 10) || 0) + " HP"
-    })
-  }
-
-  const dmgLog = window.__combatDamageLog || []
-  if (dmgLog.length) {
-    entries.push({ kind: "section", title: "Derniers coups" })
-    dmgLog.forEach(hit => {
-      entries.push({
-        kind: hit.type,
-        icon: hit.type === "heal" ? "arcane.png" : "impact_ring.png",
-        title: hit.from + "  →  " + hit.to,
-        text: hit.type === "heal" ? "+" + hit.amount + " PV" : "−" + hit.amount + " PV",
-        meta: "Round " + hit.round
-      })
-    })
-  }
-
-  Object.entries(window.__combatSnapshot?.heroDebuffs||{}).forEach(([id,e])=>entries.push({kind:"warn",title:heroDisplayName(id).toUpperCase()+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s)"}))
-  Object.entries(window.__combatSnapshot?.heroStuns||{}).filter(([,n])=>n>0).forEach(([id])=>entries.push({kind:"warn",title:heroDisplayName(id).toUpperCase()+" étourdi",text:"Prochaine action sautée",meta:"Une action"}))
-  COMBAT_MOBS.forEach(slot=>{const mob=window.__combatSnapshot?.[slot];if(mob?.pikaHypnosisTurns>0)entries.push({kind:"warn",title:heroDisplayName(mob.name)+" hypnotisé",text:"Tour complet neutralisé",meta:mob.pikaHypnosisTurns+" tour(s) restant(s)"})})
-  return entries
+function getCombatStatusEntries(){
+ const entries=[],c=window.__combatSnapshot||{},state=c.turnState||getCombatTurnState(),actor=state?.currentActorId
+ if(state?.phase==="active"&&actor)entries.push({kind:"buff",title:"Tour actif",text:(actor==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(actor)?combatEnemyLabel(actor):heroDisplayName(actor))+" joue maintenant",meta:"Round "+(state.round||1)})
+ if(state?.phase==="rolling")entries.push({kind:"warn",title:"Initiative",text:"Les jets d’initiative sont en cours",meta:"Ordre des tours en préparation"})
+ for(const slot of COMBAT_MOBS){
+  const mob=c[slot];if(!mob||mob.hp<=0)continue
+  const effects=[],add=(title,text,meta,kind="warn")=>effects.push({kind,title,text,meta})
+  for(const [key,title,fallback]of [["playerPoison","Poison",1],["playerBleed","Saignement",1]]){const e=mob[key];if(e?.turns>0)add(title,"−"+(e.damage||fallback)+" PV à chaque fin de round",e.turns+" round(s) restant(s)")}
+  if(mob.attackMalus?.turns>0)add("Attaque réduite","−"+(mob.attackMalus.amount||1)+" dégâts sur ses attaques",mob.attackMalus.turns+" round(s) restant(s)")
+  if(mob.bibiRage?.turns>0)add("Le Bibi","Les attaques alliées contre cet ennemi gagnent +"+(mob.bibiRage.damage||2)+" dégâts",mob.bibiRage.turns+" round(s) restant(s)","buff")
+  if(mob.yuAggro?.turns>0)add("Attiré par Pika","Ses attaques ciblées visent Pika si elle est encore debout",mob.yuAggro.turns+" round(s) restant(s)")
+  if(mob.spiderSenseBuff?.active)add("Spider Sense","+10 % de dégâts alliés contre cet ennemi","Jusqu’à la fin du combat","buff")
+  if(mob.revealedWeakness?.title)add("Faiblesse révélée",mob.revealedWeakness.title+(mob.revealedWeakness.text?" — "+mob.revealedWeakness.text:""),"Faiblesse de cet ennemi")
+  if(mob.pikaHypnosisTurns>0)add("Hypnose","Ses tours complets sont neutralisés",mob.pikaHypnosisTurns+" tour(s) restant(s)")
+  if(effects.length){entries.push({kind:"section",title:combatEnemyLabel(slot)});entries.push(...effects)}
+ }
+ for(const [id,e]of Object.entries(c.heroDebuffs||{}))if(e.turns>0)entries.push({kind:"warn",title:heroDisplayName(id)+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s) restant(s)"})
+ for(const [id,n]of Object.entries(c.heroStuns||{}))if(n>0)entries.push({kind:"warn",title:heroDisplayName(id)+" étourdi",text:"Action neutralisée",meta:n+" action(s) à sauter"})
+ const summon=c.eloSummon;if(summon?.active)entries.push({kind:"ally",title:"John Pork",text:"Bonus D4 aux attaques d’Elo"+(summon.frenzy?", doublé et en zone":""),meta:(summon.turnsLeft||0)+" round(s) · "+(summon.hp||0)+" / "+(summon.maxHP||0)+" PV"})
+ const hits=window.__combatDamageLog||[];if(hits.length)entries.push({kind:"section",title:"Derniers coups"})
+ for(const hit of hits)entries.push({kind:hit.type,title:hit.from+" → "+hit.to,text:hit.type==="heal"?"+"+hit.amount+" PV":["dmg","mob"].includes(hit.type)?"−"+hit.amount+" PV":String(hit.detail||"Effet appliqué"),meta:"Round "+hit.round})
+ return entries
 }
+
 
 let _renderCombatStatusPanelTimer = null
 function renderCombatStatusPanel() {
@@ -1101,57 +943,28 @@ function showCombatHUD() {
     }
   }
   const box = document.getElementById("combatHUDAttacks"); box.innerHTML = ""
-  if (playerAttacks) playerAttacks.forEach(a => {
-    const block = document.createElement("div"); block.className = "combatBlock"
-    populateAttackBlock(block, a)
-    block.classList.add("combatBlock--action")
-    block.title = "Cliquer pour lancer l'attaque"
-    block.onclick = () => resolvePlayerAttack(a)
-    bindCombatActionState(block,player,a)
-    box.appendChild(block)
-  })
-  if (specialAttack) box.appendChild(buildPlayerSpecialBlock(player, specialAttack))
-  if (player === "greg") {
-    const bibiSpecial = getPlayerSpecialAttack("bibi")
-    if (bibiSpecial) {
-      const divider = document.createElement("div")
-      divider.className = "combatCompanionDivider"
-      divider.innerText = "BIBI"
-      box.appendChild(divider)
-
-      const bibiBlock = buildPlayerSpecialBlock("bibi", bibiSpecial)
-      bibiBlock.classList.add("combatBlock--companion")
-
-      box.appendChild(bibiBlock)
-    }
+  const appendBasic=a=>{const block=document.createElement("div");block.className="combatBlock combatBlock--action";populateAttackBlock(block,a);block.onclick=()=>resolvePlayerAttack(a,{actorId:player});bindCombatActionState(block,player,a);box.appendChild(block)}
+  const heading=text=>{const divider=document.createElement("div");divider.className="combatCompanionDivider";divider.textContent=text;box.appendChild(divider)}
+  if(player==="greg")heading("Greg — attaques")
+  ;(playerAttacks||[]).filter(a=>player!=="greg"||a.name!=="Le Bibi").forEach(appendBasic)
+  if(specialAttack)box.appendChild(buildPlayerSpecialBlock(player,specialAttack))
+  if(player==="greg"){
+    heading("Bibi — même action que Greg")
+    const basic=(playerAttacks||[]).find(a=>a.name==="Le Bibi");if(basic)appendBasic(basic)
+    const special=getPlayerSpecialAttack("bibi");if(special){const block=buildPlayerSpecialBlock("bibi",special);block.classList.add("combatBlock--companion");box.appendChild(block)}
   }
   box.appendChild(buildPassTurnBlock(player, heroDisplayName(player).toUpperCase()))
+  refreshCombatHUDContext()
   // Greg et Bibi partagent le même tour et une seule action.
   renderCombatStatusPanel()
   if (hud) hud.style.display = "none"
   const btn = document.getElementById("playerAttackBtn"); if (btn && player) btn.style.display = "flex"
 }
 
-function togglePlayerAttacks() {
-  const hud = document.getElementById("combatHUD"); if (!hud) return
-  const playerId = getCombatHUDPlayerId()
-  const turnState = typeof getCombatTurnState === "function" ? getCombatTurnState() : null
-  const activeActorId = typeof getCurrentCombatActorId === "function" ? getCurrentCombatActorId() : null
-  const isPreviewMode = !!(isGM && window.__combatPreviewPlayerId) || !!window._previewSavedMyToken
-  if ((hud.style.display === "none" || !hud.style.display) && combatActive && playerId && turnState && turnState.phase === "rolling" && !isPreviewMode) {
-    showNotification("Terminez d'abord les jets d'initiative.")
-    return
-  }
-  const isGregControllingBibi = false
-  if ((hud.style.display === "none" || !hud.style.display) && combatActive && playerId && activeActorId && activeActorId !== playerId && !isPreviewMode && !isGregControllingBibi) {
-    showNotification("Tour actif : " + (typeof getCombatActorLabel === "function" ? getCombatActorLabel(activeActorId) : heroDisplayName(activeActorId).toUpperCase()))
-    return
-  }
-  if (hud.style.display === "none" || !hud.style.display) { hud.style.display = "flex"; hud.style.alignItems = "flex-start" }
-  else {
-    hud.style.display = "none"
-    if (isGM && window.__combatPreviewPlayerId) closeCombatPreviewHUD()
-  }
+function togglePlayerAttacks(){
+ const hud=document.getElementById("combatHUD");if(!hud||!getCombatHUDPlayerId())return
+ if(hud.style.display==="none"||!hud.style.display){refreshCombatActionStates();hud.style.display="flex";hud.style.alignItems="flex-start"}
+ else{hud.style.display="none";if(isGM&&window.__combatPreviewPlayerId)closeCombatPreviewHUD()}
 }
 
 
@@ -2549,7 +2362,9 @@ function combatActionAvailability(actor, attack, special=false, enemy=false) {
   if(!c||c.phase==="finished")return blocked("Combat terminé")
   if(state?.phase==="rolling")return blocked("Jets d’initiative en cours")
   if(c.pendingResolution)return blocked("Décision du MJ en attente")
-  if(state?.currentActorId!==combatOwner(actor))return blocked("En attente du tour de "+(enemy?heroDisplayName(c[actor]?.name):heroDisplayName(combatOwner(actor))))
+  if(state?.currentActorId!==combatOwner(actor))return blocked("En attente du tour de "+(enemy?heroDisplayName(c[actor]?.name):combatOwner(actor)==="greg"?"Greg et Bibi":heroDisplayName(combatOwner(actor))))
+  if(window.__sharedVisualBusy||Date.now()<(window.__combatIntroUntil||0))return blocked("Animation en cours — patientez")
+  if(enemy?window.__mobAttackResolving:window.__playerAttackResolving)return blocked("Action en cours — patientez")
   const bibiInstead=actor==="greg"&&["Le Bibi","Passer le tour"].includes(attack?.name)&&players.bibi?.hp>0
   if(!enemy&&players[actor]?.hp<=0&&!bibiInstead)return blocked("Personnage KO")
   if(enemy&&c[actor]?.hp<=0)return blocked("Adversaire KO")
@@ -2575,28 +2390,66 @@ function combatActionAvailability(actor, attack, special=false, enemy=false) {
       return {disabled:false,label:"Condition contrôlée au lancement"}
     }
   }
+  if(!enemy&&getPlayerAttackTypeKey(attack)!=="heal"&&attack?.name!=="Passer le tour"){const slots=livingMobs(c);if(slots.length&&slots.every(slot=>!combatTargetEligibility(attack,actor,special,slot).allowed))return blocked("Aucune cible admissible — "+combatTargetEligibility(attack,actor,special,slots[0]).reason)}
   return {disabled:false,label:attack?.pikaKind==="cancan"?"Disponible — contact requis avec la cible":"Disponible"}
 }
 function bindCombatActionState(block,actor,attack,special=false,enemy=false) {
   const activate=block.onclick
   block.dataset.combatActor=actor;block.dataset.combatAttack=attack.name
   const status=document.createElement("div");status.className="combatActionState";status.setAttribute("aria-live","polite");block.appendChild(status)
+  const target=document.createElement("div");target.className="combatActionTarget";block.appendChild(target)
   block.setAttribute("role","button");block.tabIndex=0
   block._refreshCombatAction=()=>{
     const value=combatActionAvailability(actor,attack,special,enemy)
     status.textContent=value.label
+    target.textContent=combatActionTargetText(actor,attack,special,enemy)
     block.setAttribute("aria-disabled",String(value.disabled))
     block.classList.toggle("combatAction--unavailable",value.disabled)
     block.title=value.label
     return value
   }
-  block.onclick=event=>{const value=block._refreshCombatAction();if(value.disabled){showNotification(value.label);return}activate?.call(block,event)}
+  block.onclick=event=>{const value=block._refreshCombatAction();if(value.disabled){showNotification(value.label);return}return activate?.call(block,event)}
   block.onkeydown=event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();block.click()}}
   block._refreshCombatAction()
 }
 function refreshCombatActionStates() {
+  refreshCombatHUDContext()
+  if(typeof combatTargetRefresh==="function")combatTargetRefresh()
   document.querySelectorAll("[data-combat-actor]").forEach(block=>block._refreshCombatAction?.())
 }
 
 
 function stopCombatStatsSubscription(){if(window.__combatStatsRef&&window.__combatStatsCb)window.__combatStatsRef.off("value",window.__combatStatsCb);window.__combatStatsRef=null;window.__combatStatsCb=null}
+
+function combatEnemyLabel(slot){const mob=window.__combatSnapshot?.[slot];return heroDisplayName(mob?.name||"Ennemi")+" · n° "+(COMBAT_MOBS.indexOf(slot)+1)}
+function combatTargetEligibility(attack,actor,special,slot){
+ const c=window.__combatSnapshot,mob=c?.[slot];if(!mob||mob.hp<=0)return {allowed:false,reason:"Adversaire KO"}
+ if(special&&["mob_below_half","mob_below_forty","mob_used_special"].includes(attack?.rule)&&!isPlayerSpecialConditionMet(actor,attack,{mob}))return {allowed:false,reason:attack.conditionText||"Condition non remplie"}
+ if(attack?.pikaKind==="cancan"||(actor==="greg"&&attack?.name==="Chat Bite (CaC)")){
+  const tokens=window.__tokenPositions||{},a=tokens[actor],key=slot==="mob"?"mobToken":"mobToken_"+slot
+  const positions=slot==="mob"?[tokens[key],mob,c.presentation?.positions?.[key]]:[mob,tokens[key],c.presentation?.positions?.[key]]
+  const b=positions.find(p=>Number.isFinite(p?.x)&&Number.isFinite(p?.y))
+  if(!Number.isFinite(a?.x)||!Number.isFinite(a?.y)||!b)return {allowed:true,reason:"Contact vérifié au lancement"}
+  if(Math.hypot(a.x-b.x,a.y-b.y)>180)return {allowed:false,reason:"Hors de portée — rapprochez votre pion"}
+  return {allowed:true,reason:"Au contact"}
+ }
+ return {allowed:true,reason:""}
+}
+function combatActionTargetText(actor,attack,special=false,enemy=false){
+ if(enemy||attack?.name==="Passer le tour")return ""
+ if(getPlayerAttackTypeKey(attack)==="heal")return "Cible : choisissez un allié vivant"
+ const slots=livingMobs(window.__combatSnapshot);if(!slots.length)return "Aucune cible vivante"
+ if(slots.length===1){const value=combatTargetEligibility(attack,actor,special,slots[0]);return "Cible : "+combatEnemyLabel(slots[0])+(value.reason?" — "+value.reason:"")}
+ const allowed=slots.filter(slot=>combatTargetEligibility(attack,actor,special,slot).allowed)
+ return "Cible : à choisir — "+allowed.length+" / "+slots.length+" ennemi(s) admissible(s)"
+}
+function refreshCombatHUDContext(){
+ const c=window.__combatSnapshot,state=c?.turnState,player=typeof getCombatHUDPlayerId==="function"?getCombatHUDPlayerId():null,hud=document.getElementById("combatHUD"),info=document.getElementById("combatHUDInfo")
+ document.querySelectorAll(".combatTargetNumber").forEach(el=>{if(!combatActive||!c)el.remove()})
+ if(combatActive&&c)COMBAT_MOBS.forEach((slot,i)=>{const token=document.getElementById(slot==="mob"?"mobToken":"mobToken_"+slot);if(!token||!c[slot])return;let badge=token.querySelector(".combatTargetNumber");if(!badge){badge=document.createElement("span");badge.className="combatTargetNumber";badge.setAttribute("aria-hidden","true");token.appendChild(badge)}badge.textContent=String(i+1);token.title=combatEnemyLabel(slot)+" — "+c[slot].hp+" / "+c[slot].maxHP+" PV"})
+ if(!hud||!info||!player)return
+ let summary=document.getElementById("combatHUDTurnSummary");if(!summary){summary=document.createElement("p");summary.id="combatHUDTurnSummary";summary.setAttribute("role","status");info.insertBefore(summary,document.getElementById("combatHUDAttacks"))}
+ const current=state?.currentActorId,label=current==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(current)?combatEnemyLabel(current):heroDisplayName(current||"—")
+ const pill=document.querySelector("#combatHUDMeta .combatHUDMetaPill--turn");if(pill)pill.textContent="Round "+(state?.round||1)+" · "+(state?.phase==="rolling"?"Initiative":label)
+ summary.textContent=!combatActive||c?.phase==="finished"?"Combat terminé — retour à la carte.":state?.phase==="rolling"?"Les jets d’initiative déterminent l’ordre des tours.":c?.pendingResolution?"Décision du MJ en attente.":window.__sharedVisualBusy||Date.now()<(window.__combatIntroUntil||0)?"Animation en cours — patientez.":window.__playerAttackResolving?(document.getElementById("combatEnemyTargetPicker")||document.getElementById("combatTargetPicker")?"Choisissez la cible dans la fenêtre.":"Action en cours — attendez la confirmation."):current===combatOwner(player)?(combatOwner(player)==="greg"?"À vous : une seule action pour Greg ou Bibi.":"À vous de jouer : choisissez une action."):"Au tour de "+label+". Vos actions sont en attente."
+}

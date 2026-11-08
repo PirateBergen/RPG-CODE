@@ -2443,6 +2443,7 @@ function setTokenStateBadges(tokenId, badges) {
 }
 
 function clearCombatTokenStateVisuals() {
+  document.querySelectorAll(".combatTargetNumber").forEach(el=>el.remove())
   ;["greg","ju","elo","bibi","mobToken","eloSummonToken"].forEach(id => {
     const token = document.getElementById(id)
     if (!token) return
@@ -4298,6 +4299,7 @@ function handleGameShortcut(e) {
     const gmAuthModal = document.getElementById("gmAuthModal"); if (gmAuthModal) { closeGMAuthModal(); return }
     const playerAuthModal = document.getElementById("playerAuthModal"); if (playerAuthModal) { closePlayerAuthModal(); return }
     e.preventDefault()
+    if((document.getElementById("combatEnemyTargetPicker")||document.getElementById("combatTargetPicker"))&&typeof combatTargetCancellation==="function"){combatTargetCancellation();return}
     const arbitrationModal=document.getElementById("gmArbitrationModal");if(arbitrationModal&&typeof gmArbitrationClose==="function"){gmArbitrationClose();return}
     const sessionJournal=document.getElementById("sessionLogPanel");if(sessionJournal?.style.display==="flex"){closeSessionLog();return}
     const notesEditor = document.getElementById("notesEditorPanel"); if (notesEditor) { notesEditor.remove(); return }

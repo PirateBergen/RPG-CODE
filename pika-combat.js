@@ -10,7 +10,8 @@ function pikaAllyInDanger(players, actor="ju") {
 function pikaPosition(root,id) {
   if(!COMBAT_MOBS.includes(id))return root.tokens?.[id]
   const key=id==="mob"?"mobToken":"mobToken_"+id
-  return [root.tokens?.[key],root.combat?.[id],root.combat?.presentation?.positions?.[key]].find(p=>Number.isFinite(p?.x)&&Number.isFinite(p?.y))
+  const positions=id==="mob"?[root.tokens?.[key],root.combat?.[id],root.combat?.presentation?.positions?.[key]]:[root.combat?.[id],root.tokens?.[key],root.combat?.presentation?.positions?.[key]]
+  return positions.find(p=>Number.isFinite(p?.x)&&Number.isFinite(p?.y))
 }
 function pikaAtContact(root,actor,target) {
   const a=pikaPosition(root,actor),b=pikaPosition(root,target)

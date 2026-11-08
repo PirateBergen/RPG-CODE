@@ -932,8 +932,8 @@ function getMobAnimationStyle(animationKey) {
 }
 
 
-const WORLD_BOSS_NAMES=["fenrir","jormungand","kraken","nhiddog","hydre","basilic","odin","thor","freya","heimdall"]
-const CLASSIC_BOSS_NAMES=["balraug","roi"]
+const WORLD_BOSS_NAMES=["fenrir","jormungand","kraken","nhiddog","hydre","basilic","odin","thor","freya","heimdall","balraug","roi"]
+const CLASSIC_BOSS_NAMES=[]
 function getBalanceLevelBonus(level){let bonus=0;for(let i=2;i<=level;i++)bonus+=i>=15?4:i>=10?3:i>=5?2:1;return bonus}
 function getPartyDamageReference(level){
  level=Math.max(1,Math.min(99,Math.round(Number(level)||1)));const bonus=getBalanceLevelBonus(level)
@@ -946,7 +946,7 @@ function balancedCombatMob(name,tier,partyLevel,enemyCount=1){
  const category=getMobBalanceClass(name,chosenTier),count=Math.max(1,Math.min(3,enemyCount)),classic=["weak","normal","strong"].includes(category)
  const groupFactor=classic?[1,.85,.70][count-1]:1,damageGroupFactor=classic?[1,.92,.84][count-1]:1
  const baseline={weak:28,normal:60,strong:100,boss:300,world:400}[category]
- const species=Math.max(category==="world"?1:.8,Math.min(1.2,(mobStats[name]?.baseHP||baseline)/baseline))
+ const species=name==="roi"&&category==="world"?1.2:Math.max(category==="world"?1:.8,Math.min(1.2,(mobStats[name]?.baseHP||baseline)/baseline))
  const unit=category==="world"?10:5,baseBalancedHP=Math.max(10,Math.round(getPartyDamageReference(level)*({weak:.8,normal:1.5,strong:2.5,boss:6,world:12}[category])*species/unit)*unit)
  const hp=Math.max(5,Math.round(baseBalancedHP*groupFactor/5)*5)
  const partyHpReference=Math.round(["greg","ju","elo"].reduce((n,id)=>n+getPlayerStatsAtLevel(id,level).hp,0)/3)
@@ -957,7 +957,8 @@ function getBalancedMobDamageRange(attack,mob){
  const normals=getMobAttacksForMob(mob.name,mob.tier).filter(a=>!a.special&&a.effect!=="all"),average=normals.reduce((n,a)=>n+(a.dmgMin+a.dmgMax)/2,0)/Math.max(1,normals.length)||10
  const weight=Math.max(.8,Math.min(1.2,((Number(attack.dmgMin)+Number(attack.dmgMax))/2||average)/average))
  const fury=category==="world"&&mob.hp<=mob.maxHP*.5?1.15:1
- const factor=weight*(attack.special?1.4:1)*(attack.effect==="all"?(category==="world"?.45:.65):1)*(mob.damageGroupFactor||1)*fury
+ const finalBossFactor=category==="world"&&mob.name==="roi"?1.1:1
+ const factor=finalBossFactor*weight*(attack.special?1.4:1)*(attack.effect==="all"?(category==="world"?.45:.65):1)*(mob.damageGroupFactor||1)*fury
  const health=mob.partyHpReference||Math.round(["greg","ju","elo"].reduce((n,id)=>n+getPlayerStatsAtLevel(id,mob.partyLevel||1).hp,0)/3)
  const min=Math.max(1,Math.round(health*rates[0]*factor)),max=Math.max(min,Math.round(health*rates[1]*factor))
  return {min,max}

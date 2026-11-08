@@ -12,7 +12,7 @@ function closeGMDiagnostics(restoreFocus=true){
  gmDiagnosticsSubscriptions=[];clearInterval(gmDiagnosticsTimer);gmDiagnosticsTimer=null;gmDiagnosticsData={}
  const panel=document.getElementById("gmDiagnosticsPanel");panel?.remove()
  const button=document.getElementById("gmDiagnosticsBtn");button?.setAttribute("aria-expanded","false")
- if(panel&&restoreFocus&&!button?.hidden)button?.focus()
+ if(panel)window.GameWindows?.closed(panel,{restoreFocus});if(panel&&restoreFocus&&!window.GameWindows&&!button?.hidden)button?.focus()
 }
 function toggleGMDiagnostics(){
  if(document.getElementById("gmDiagnosticsPanel")){closeGMDiagnostics();return}
@@ -22,6 +22,7 @@ function toggleGMDiagnostics(){
  const title=document.createElement("h2");title.id="gmDiagnosticsTitle";title.textContent="État de la partie"
  const close=document.createElement("button");close.type="button";close.textContent="Fermer ✕";close.onclick=()=>closeGMDiagnostics();header.append(title,close)
  const content=document.createElement("div");content.id="gmDiagnosticsContent";panel.append(header,content);document.body.appendChild(panel)
+ window.GameWindows?.register(panel,closeGMDiagnostics,{returnFocus:document.getElementById("gmDiagnosticsBtn")})
  document.getElementById("gmDiagnosticsBtn")?.setAttribute("aria-expanded","true")
  const listen=(key,path,requests=false)=>{
   let ref=db.ref(path);if(requests)ref=ref.limitToLast(60)

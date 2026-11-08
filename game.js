@@ -3591,6 +3591,7 @@ function openSessionLog() {
   if (!panel) return
   if (panel.style.display === "flex") { closeSessionLog(); return }
   panel.style.display = "flex"
+  window.GameWindows?.register(panel,closeSessionLog)
   const content = document.getElementById("sessionLogContent")
   if (panel.__logQuery && panel.__logListener) panel.__logQuery.off("value",panel.__logListener)
   panel.__logQuery=db.ref("game/sessionLog").orderByChild("time").limitToLast(80)
@@ -3613,6 +3614,7 @@ function closeSessionLog() {
   if (!panel) return
   if (panel.__logListener && panel.__logQuery) { panel.__logQuery.off("value", panel.__logListener); panel.__logListener = null; panel.__logQuery=null }
   panel.style.display = "none"
+  window.GameWindows?.closed(panel)
 }
 
 function clearSessionLog() {
@@ -4270,7 +4272,7 @@ function handleGameShortcut(e) {
   const active = document.activeElement
   if (active && (active.matches("input, textarea, select") || active.isContentEditable)) {
     if (key !== "escape") return
-    active.blur(); document.body.focus()
+    // Keep focus until the window has applied its own close/save policy.
   }
 
   if (key === "escape") {
@@ -4278,6 +4280,7 @@ function handleGameShortcut(e) {
     const playerAuthModal = document.getElementById("playerAuthModal"); if (playerAuthModal) { closePlayerAuthModal(); return }
     e.preventDefault()
     if((document.getElementById("combatEnemyTargetPicker")||document.getElementById("combatTargetPicker"))&&typeof combatTargetCancellation==="function"){combatTargetCancellation();return}
+    if(window.GameWindows?.closeTop())return
     const arbitrationModal=document.getElementById("gmArbitrationModal");if(arbitrationModal&&typeof gmArbitrationClose==="function"){gmArbitrationClose();return}
     const sessionJournal=document.getElementById("sessionLogPanel");if(sessionJournal?.style.display==="flex"){closeSessionLog();return}
     const notesEditor = document.getElementById("notesEditorPanel"); if (notesEditor) { notesEditor.remove(); return }

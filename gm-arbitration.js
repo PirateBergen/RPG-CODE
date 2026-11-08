@@ -28,7 +28,7 @@ function gmArbitrationSelect(parent,label,options,value){
 function gmArbitrationNumber(parent,label,value,min=0,max=50000){const row=gmArbitrationElement("label",label+" ",parent),e=gmArbitrationElement("input",null,row);e.type="number";e.min=min;e.max=max;e.value=value;return e}
 function gmArbitrationCheck(parent,label,checked){const row=gmArbitrationElement("label",null,parent),e=gmArbitrationElement("input",null,row);e.type="checkbox";e.checked=checked;row.appendChild(document.createTextNode(" "+label));return e}
 function gmArbitrationModal(title){
- document.getElementById("gmArbitrationModal")?.remove()
+ const previousModal=document.getElementById("gmArbitrationModal"),returnFocus=previousModal?.__windowReturnFocus||document.activeElement;previousModal?.remove()
  const overlay=gmArbitrationElement("div",null,document.body);overlay.id="gmArbitrationModal";overlay.style.cssText="position:fixed;inset:0;z-index:2147483646;background:#000c;display:flex;align-items:center;justify-content:center;padding:15px;color:#ffe5b4"
  overlay.addEventListener("keydown",e=>{if(e.key!=="Escape")e.stopPropagation()})
  overlay.addEventListener("pointerdown",e=>{for(const row of overlay.querySelectorAll(".gmChoice"))if(!row.contains(e.target))row.__closeChoice?.()})
@@ -37,6 +37,7 @@ function gmArbitrationModal(title){
  const error=gmArbitrationElement("p","",panel);error.setAttribute("role","alert");error.style.color="#ffb1a5"
  let busy=false
  const button=(text,fn)=>{const b=gmArbitrationElement("button",text,panel);b.type="button";b.addEventListener("click",async()=>{if(busy)return;busy=true;const controls=[...panel.querySelectorAll("button,input,select,textarea")].map(el=>[el,el.disabled]);controls.forEach(([el])=>el.disabled=true);panel.setAttribute("aria-busy","true");error.textContent="";try{await fn()}catch(e){error.textContent=e.message}finally{busy=false;controls.forEach(([el,disabled])=>el.disabled=disabled);panel.removeAttribute("aria-busy")}});return b}
+ overlay.setAttribute("role","dialog");overlay.setAttribute("aria-label",title);window.GameWindows?.register(overlay,()=>{if(panel.getAttribute("aria-busy")!=="true")gmArbitrationClose()},{returnFocus})
  return {panel,button,overlay}
 }
 async function gmArbitrationSend(kind,payload={}){
@@ -48,7 +49,8 @@ async function gmArbitrationSend(kind,payload={}){
  const result=await transactCombatRoot(root=>{if(revision!==(root.sessionControl?.revision||null))throw Error("La session a changé");return reduceSceneGMAction(root,window.__authUid,id,payload,seed)})
  if(!result.committed)throw Error("Action non confirmée")
 }
-function gmArbitrationClose(){gmArbitrationHidden=gmArbitrationPending()?.id||"";document.getElementById("gmArbitrationModal")?.remove()}
+let gmFreeWindowDraft=null
+function gmArbitrationClose(){const modal=document.getElementById("gmArbitrationModal");gmArbitrationHidden=gmArbitrationPending()?.id||"";modal?.__retainFreeDraft?.();modal?.remove();if(modal)window.GameWindows?.closed(modal)}
 async function openGMIntervention(){
  if(window.__authRole!=="gm")return
  if(gmArbitrationPending()){gmArbitrationHidden="";gmArbitrationSignature="";return renderGMArbitration()}
@@ -98,7 +100,10 @@ function openGMFreeAction(){
  if(window.__authRole!=="gm")return
  if(gmArbitrationPending())return openGMIntervention()
  if(typeof prepareGMScene==="function"&&prepareGMScene()===false)return
- const inCombat=gmArbitrationCombat?.phase!=="finished"&&gmArbitrationCombat?.turnState?.phase==="active",{panel,button}=gmArbitrationModal("Action libre")
+ const inCombat=gmArbitrationCombat?.phase!=="finished"&&gmArbitrationCombat?.turnState?.phase==="active"
+ const draftKey=[window.__authUid||"",typeof persistenceRevision==="undefined"?"initial":persistenceRevision||"initial",inCombat?gmArbitrationCombat.id:"map:"+(typeof currentMap==="undefined"?"":currentMap)].join(":")
+ const existing=document.getElementById("gmArbitrationModal");if(existing?.dataset.freeDraftKey===draftKey)return
+ const {panel,button}=gmArbitrationModal("Action libre");document.getElementById("gmArbitrationModal").dataset.freeDraftKey=draftKey
  const combatId=inCombat?gmArbitrationCombat.id:null;if(combatId)document.getElementById("gmArbitrationModal").dataset.freeCombatId=combatId
  const actors=[...COMBAT_CHARACTERS,...(inCombat?COMBAT_MOBS.filter(id=>gmArbitrationCombat[id]?.hp>0):[]),"mj"],actor=gmArbitrationSelect(panel,"Qui agit ?",actors.map(id=>[id,gmArbitrationLabel(id)]),inCombat?gmArbitrationCombat.turnState.currentActorId:"mj")
  const row=gmArbitrationElement("label","Description visible par tous",panel),label=gmArbitrationElement("textarea",null,row);label.maxLength=180;label.style.cssText="width:100%;min-height:65px"
@@ -131,6 +136,11 @@ function openGMFreeAction(){
   const secondary=effect.value==="debuff"?"Malus de "+effectAmount.value+" pendant "+turns.value+" round(s)":effect.value==="stun"?"Étourdissement : une action (héros uniquement)":"Aucun effet secondaire"
   summary.textContent=gmArbitrationLabel(actor.value)+" — "+(label.value.trim()||"Description à compléter")+". Cibles : "+names+". "+(die.value==="0"?"Sans jet": "Jet D"+die.value)+". "+consequence+". "+secondary+". "+(inCombat&&cost.checked?"Consomme l’action de l’acteur.":"Ne consomme pas d’action.")+" Vous confirmerez les conséquences après la préparation."
  }
+ const draftFields=[actor,label,die,hpMode,amount,effect,effectAmount,turns,cost]
+ if(gmFreeWindowDraft?.key===draftKey)draftFields.forEach((el,i)=>{const v=gmFreeWindowDraft.values[i];if(v!==undefined){if(el.type==="checkbox")el.checked=v;else if(el.tagName!=="SELECT"||[...el.options].some(o=>o.value===v))el.value=v}})
+ if(gmFreeWindowDraft?.key===draftKey)targets.forEach(t=>t.e.checked=gmFreeWindowDraft.targets.includes(t.id))
+ document.getElementById("gmArbitrationModal").__retainFreeDraft=()=>{gmFreeWindowDraft={key:draftKey,values:draftFields.map(el=>el.type==="checkbox"?el.checked:el.value),targets:targets.filter(t=>t.e.checked).map(t=>t.id)}}
+ for(const el of [actor,die,hpMode,effect])el.dispatchEvent(new Event("change",{bubbles:true}))
  document.getElementById("gmArbitrationModal").__refreshTargets=refreshDraft
  panel.addEventListener("input",refreshDraft);panel.addEventListener("change",refreshDraft);refreshDraft()
  button("Préparer et voir le résultat",async()=>{
@@ -143,9 +153,9 @@ function openGMFreeAction(){
    if(effect.value==="debuff"&&(!Number.isInteger(Number(effectAmount.value))||Number(effectAmount.value)<1||Number(effectAmount.value)>50||!Number.isInteger(Number(turns.value))||Number(turns.value)<1||Number(turns.value)>10))throw Error("Choisissez un malus entre 1 et 50 et une durée entre 1 et 10 rounds.")
    const action={label:label.value.trim(),targets:targets.filter(t=>t.e.checked).map(t=>t.id),die:Number(die.value),hpMode:hpMode.value,amount:hpMode.value==="none"?0:Number(amount.value),effect:effect.value,effectAmount:effect.value==="debuff"?Number(effectAmount.value):2,turns:effect.value==="debuff"?Number(turns.value):2,consumeAction:inCombat&&cost.checked}
    if(inCombat)await submitCombatAction("free",actor.value,action);else await gmArbitrationSend("free",{kind:"prepare",actor:actor.value,action})
-   gmArbitrationHidden="";gmArbitrationSignature="";renderGMArbitration()
+   gmFreeWindowDraft=null;gmArbitrationHidden="";gmArbitrationSignature="";renderGMArbitration()
  })
- button("Fermer",()=>document.getElementById("gmArbitrationModal")?.remove())
+ button("Fermer",gmArbitrationClose)
 }
 function syncGMArbitration(){gmArbitrationSignature="";renderGMArbitration()}
 document.addEventListener("DOMContentLoaded",()=>{

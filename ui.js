@@ -1576,14 +1576,16 @@ async function showSaveMenu() {
   const panel = document.createElement("div"); panel.id = "savePanel"
   panel.style.cssText = "position:fixed;inset:12% auto auto 50%;transform:translateX(-50%);max-height:75vh;overflow:auto;z-index:2000000000;background:#15110d;border:2px solid gold;border-radius:12px;padding:24px;color:#f5e6c8;width:min(520px,90vw);font:15px Georgia,serif;"
   document.body.appendChild(panel)
+  const closeSaveWindow=()=>{panel.remove();window.GameWindows?.closed(panel)}
+  window.GameWindows?.register(panel,closeSaveWindow)
   const title = document.createElement("h2"); title.textContent = "Sauvegardes"; panel.appendChild(title)
   const list = document.createElement("div"); list.textContent = "Chargement…"; panel.appendChild(list)
   const button = (label, action) => { const b = document.createElement("button"); b.textContent = label; b.onclick = action; b.style.margin = "6px"; return b }
-  panel.appendChild(button("Sauvegarder maintenant", () => { panel.remove(); saveGame() }))
+  panel.appendChild(button("Sauvegarder maintenant", () => { closeSaveWindow(); saveGame() }))
   panel.appendChild(button("Charger la plus récente", loadGame))
   panel.appendChild(button("Importer un fichier", chooseSaveFile))
   const fileHelp=document.createElement("p");fileHelp.textContent="Exportez une sauvegarde pour garder une copie sur votre ordinateur. Un import est vérifié et ne charge pas la partie automatiquement. Les fichiers d’essai et de campagne restent séparés.";panel.appendChild(fileHelp)
-  panel.appendChild(button("Fermer", () => panel.remove()))
+  panel.appendChild(button("Fermer", closeSaveWindow))
   try {
     const { entries, local } = await listGameSaves()
     if (!panel.isConnected || window.__authRole !== "gm") return
@@ -1666,7 +1668,7 @@ function showSpellFreed() {
 
 function toggleGMShortcutHelp() {
   const existing = document.getElementById("gmShortcutHelp")
-  if (existing) { existing.remove(); return }
+  if (existing) { if(existing.__closeHelp)existing.__closeHelp();else existing.remove(); return }
 
   const overlay = document.createElement("div")
   overlay.id = "gmShortcutHelp"
@@ -1738,14 +1740,13 @@ function toggleGMShortcutHelp() {
   }
   overlay.appendChild(inventoryHelp)
 
-  // Fermeture au clic extérieur
-  setTimeout(() => {
-    document.addEventListener("mousedown", function close(ev) {
-      if (!overlay.contains(ev.target)) { overlay.remove(); document.removeEventListener("mousedown", close) }
-    })
-  }, 50)
-
+  // The close callback owns both the outside-click handler and its delayed installation.
+  const outsideClick=ev=>{if(!overlay.contains(ev.target))closeHelp()}
+  const closeHelp=()=>{clearTimeout(outsideTimer);document.removeEventListener("mousedown",outsideClick);overlay.remove();window.GameWindows?.closed(overlay)}
+  const outsideTimer=setTimeout(()=>{if(overlay.isConnected)document.addEventListener("mousedown",outsideClick)},50)
+  overlay.__closeHelp=closeHelp
   document.body.appendChild(overlay)
+  window.GameWindows?.register(overlay,closeHelp)
 }
 
 // Injection style animation

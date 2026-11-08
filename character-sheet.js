@@ -80,14 +80,18 @@ function openCharacterSheet(id = null) {
     updateHPBar(); updateWeightBar()
   })
   document.getElementById("characterSheet").style.display = "block"
+  window.GameWindows?.register(sheet,closeCharacterSheet)
   loadGold(playerID)
   // Vérifier si des points libres sont disponibles
   if (!isGM || playerID === myToken?.id) window.__sheetFreePointsTimer=setTimeout(() => {if(sheetGeneration===window.__sheetViewGeneration&&currentSheetPlayer===playerID&&document.getElementById("characterSheet")?.style.display!=="none"&&canAccessCharacter(playerID))checkFreePoints(playerID)}, 300)
 }
 
+let notesDraftScope=null,notesEditorDrafts=new Map()
+function currentNotesDraftScope(){return (window.__authUid||"")+":"+(typeof persistenceRevision==="undefined"?"initial":persistenceRevision||"initial")}
 function openNotesEditor(field) {
+  const scope=currentNotesDraftScope();if(scope!==notesDraftScope){notesDraftScope=scope;notesEditorDrafts.clear()}
   const existing = document.getElementById("notesEditorPanel")
-  if (existing) existing.remove()
+  if(existing){existing.__dismissNotes?.();if(existing.isConnected)return}
   const label = field.id === "inventaire" ? "Inventaire" : "Notes",editorPlayer=currentSheetPlayer,editorGeneration=window.__sheetViewGeneration
   const panel = document.createElement("div")
   panel.id = "notesEditorPanel"
@@ -96,15 +100,16 @@ function openNotesEditor(field) {
   const header = document.createElement("div")
   header.style.cssText = "padding:10px 14px;cursor:grab;background:rgba(20,40,60,0.92);border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between;user-select:none;-webkit-user-select:none;"
   header.innerHTML = "<span style='font-family:Cinzel,serif;font-size:13px;color:#c7d3e8;'>✏ " + label + "</span>"
-  const closeX = document.createElement("span")
+  const closeX = document.createElement("button");closeX.type="button";closeX.setAttribute("aria-label","Fermer et garder le brouillon")
   closeX.innerText = "✕"
   closeX.style.cssText = "color:#8aabcf;cursor:pointer;font-size:16px;padding:0 4px;"
-  closeX.onclick = () => panel.remove()
+  closeX.onclick = () => closeNotes()
   header.appendChild(closeX)
   panel.appendChild(header)
   // Drag logic
   let _dx = false, _sx, _sy, _ox, _oy
   header.addEventListener("pointerdown", e => {
+    if(e.target.closest("button"))return
     _dx = true; _sx = e.clientX; _sy = e.clientY
     const r = panel.getBoundingClientRect(); _ox = r.left; _oy = r.top
     panel.style.transform = "none"; panel.style.left = _ox + "px"; panel.style.top = _oy + "px"
@@ -118,29 +123,33 @@ function openNotesEditor(field) {
   header.addEventListener("pointerup", () => { _dx = false; header.style.cursor = "grab" })
   // Textarea
   const ta = document.createElement("textarea")
-  ta.value = field.value || ""
+  const draftKey=editorPlayer+":"+field.id
+  ta.value = notesEditorDrafts.has(draftKey)?notesEditorDrafts.get(draftKey):field.value||""
   ta.style.cssText = "width:100%;height:160px;padding:12px 14px;background:rgba(5,10,15,0.95);border:none;border-bottom:1px solid rgba(120,160,210,0.25);color:#f0e8c8;font-family:'IM Fell English',serif;font-size:14px;line-height:1.5;resize:none;box-sizing:border-box;outline:none;-webkit-appearance:none;"
   ta.setAttribute("inputmode", "text")
   ta.spellcheck = false
   panel.appendChild(ta)
+  let saving=false
+  const retainDraft=()=>{if(scope!==currentNotesDraftScope())return;if(ta.value===(field.value||""))notesEditorDrafts.delete(draftKey);else notesEditorDrafts.set(draftKey,ta.value)}
+  const closeNotes=(discard=false)=>{if(saving)return;if(discard)notesEditorDrafts.delete(draftKey);else retainDraft();panel.remove();window.GameWindows?.closed(panel)}
+  panel.__dismissNotes=closeNotes;ta.addEventListener("input",retainDraft)
   // Boutons
   const btnRow = document.createElement("div")
   btnRow.style.cssText = "display:flex;gap:8px;padding:10px 14px;justify-content:flex-end;"
   const cancelBtn = document.createElement("button")
   cancelBtn.innerText = "Annuler"
   cancelBtn.style.cssText = "padding:8px 16px;background:#222;color:#d0c4ae;border:1px solid #555;border-radius:8px;font-family:Cinzel,serif;font-size:12px;cursor:pointer;"
-  cancelBtn.onclick = () => panel.remove()
+  cancelBtn.onclick = () => closeNotes(true)
   const saveBtn = document.createElement("button")
   saveBtn.innerText = "Enregistrer"
   saveBtn.style.cssText = "padding:8px 16px;background:linear-gradient(#3d5d44,#233526);color:#e8f4e0;border:1px solid #87aa86;border-radius:8px;font-family:Cinzel,serif;font-size:12px;cursor:pointer;"
   const message=document.createElement("p");message.setAttribute("role","status");message.style.cssText="margin:8px 12px;color:#f0e8c8";panel.appendChild(message)
-  let saving=false
   saveBtn.onclick=async()=>{
     if(saving)return;saving=true;saveBtn.disabled=true;cancelBtn.disabled=true;ta.readOnly=true;message.textContent="Enregistrement…"
     try{
       requireActionConnection();if(currentSheetPlayer!==editorPlayer||editorGeneration!==window.__sheetViewGeneration||!canAccessCharacter(editorPlayer))throw Error("La fiche a changé : votre texte n’a pas été transféré");field.value=ta.value;field.dispatchEvent(new Event("input",{bubbles:true}));clearTimeout(window.__sheetAutoSaveTimer);window.__sheetAutoSaveTimer=null
       const result=await autoSaveCharacter();if(result===false)throw Error("Vérifiez les valeurs de la fiche")
-      panel.remove();showNotification(label+" de "+heroDisplayName(editorPlayer)+(label==="Notes"?" enregistrées":" enregistré"))
+      notesEditorDrafts.delete(draftKey);panel.remove();window.GameWindows?.closed(panel);showNotification(label+" de "+heroDisplayName(editorPlayer)+(label==="Notes"?" enregistrées":" enregistré"))
     }catch(error){message.textContent="Enregistrement non confirmé : "+error.message+". Votre texte reste dans cette fenêtre."}
     finally{saving=false;saveBtn.disabled=false;cancelBtn.disabled=false;ta.readOnly=false}
   }
@@ -148,7 +157,8 @@ function openNotesEditor(field) {
   btnRow.appendChild(saveBtn)
   panel.appendChild(btnRow)
   document.body.appendChild(panel)
-  setTimeout(() => ta.focus(), 80)
+  window.GameWindows?.register(panel,closeNotes,{returnFocus:field});panel.setAttribute("role","dialog");panel.setAttribute("aria-label",label+" — brouillon conservé à la fermeture")
+  setTimeout(() => {if(panel.isConnected)ta.focus()}, 80)
 }
 
 function closeCharacterSheet() {
@@ -166,6 +176,7 @@ function closeCharacterSheet() {
     window.__sheetViewGeneration=(window.__sheetViewGeneration||0)+1
     currentSheetPlayer=null;sheet.dataset.playerId=""
     sheet.style.display = "none"
+    window.GameWindows?.closed(sheet)
     window.__sheetBaseCharacterData = null
     window.__sheetConfirmedCharacterData=null
     window.__sheetInventoryModifiers = null
@@ -183,6 +194,7 @@ function forceCloseCharacterSheetWithoutSave() {
   const sheet = document.getElementById("characterSheet")
   if (!sheet) return
   sheet.style.display = "none"
+  window.GameWindows?.closed(sheet,{restoreFocus:false})
   sheet.dataset.playerId = ""
   currentSheetPlayer = null
   window.__sheetBaseCharacterData = null
@@ -366,7 +378,7 @@ function showFreePointsPanel(playerID, points) {
           window.__sheetConfirmedCharacterData={...confirmed};window.__sheetBaseCharacterData={...confirmed};window.__sheetInventoryModifiers=getInventoryStatModifiers(inventory.value)
           updateWeightBar();updateHPBar()
         }
-        panel.remove();showNotification("Points de "+heroDisplayName(playerID)+" enregistrés");flashGold();return true
+        panel.remove();window.GameWindows?.closed(panel);showNotification("Points de "+heroDisplayName(playerID)+" enregistrés");flashGold();return true
       }).finally(()=>{if(window.__sheetAllocation?.promise===operation)window.__sheetAllocation=null})
       window.__sheetAllocation={id:playerID,promise:operation};await operation
     }catch(error){showNotification("Points non confirmés : "+error.message)}
@@ -375,6 +387,7 @@ function showFreePointsPanel(playerID, points) {
   panel.appendChild(confirmBtn)
 
   document.body.appendChild(panel)
+  window.GameWindows?.register(panel,()=>{if(!submitting){panel.remove();window.GameWindows.closed(panel)}})
   flashGold()
 }
 

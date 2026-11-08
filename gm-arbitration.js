@@ -35,7 +35,8 @@ function gmArbitrationModal(title){
  const panel=gmArbitrationElement("div",null,overlay);panel.style.cssText="background:#20150e;border:2px solid #bc9454;border-radius:12px;padding:22px;width:min(700px,95vw);max-height:88vh;overflow:auto;font:17px Georgia;display:flex;flex-direction:column;gap:12px"
  gmArbitrationElement("h2",title,panel)
  const error=gmArbitrationElement("p","",panel);error.setAttribute("role","alert");error.style.color="#ffb1a5"
- const button=(text,fn)=>{const b=gmArbitrationElement("button",text,panel);b.type="button";b.addEventListener("click",async()=>{b.disabled=true;error.textContent="";try{await fn()}catch(e){error.textContent=e.message}finally{b.disabled=false}});return b}
+ let busy=false
+ const button=(text,fn)=>{const b=gmArbitrationElement("button",text,panel);b.type="button";b.addEventListener("click",async()=>{if(busy)return;busy=true;const controls=[...panel.querySelectorAll("button,input,select,textarea")].map(el=>[el,el.disabled]);controls.forEach(([el])=>el.disabled=true);panel.setAttribute("aria-busy","true");error.textContent="";try{await fn()}catch(e){error.textContent=e.message}finally{busy=false;controls.forEach(([el,disabled])=>el.disabled=disabled);panel.removeAttribute("aria-busy")}});return b}
  return {panel,button,overlay}
 }
 async function gmArbitrationSend(kind,payload={}){
@@ -104,11 +105,29 @@ function openGMFreeAction(){
  gmArbitrationElement("p","Le jet ne décide pas automatiquement des conséquences : vous les confirmerez après l’avoir vu.",panel)
  const targets=actors.filter(id=>id!=="mj").map(id=>({id,e:gmArbitrationCheck(panel,"Cible : "+gmArbitrationLabel(id),false)}))
  const hpMode=gmArbitrationSelect(panel,"PV",[["none","Aucun changement"],["damage","Dégâts"],["heal","Soin (sans résurrection)"]],"none"),amount=gmArbitrationNumber(panel,"Montant par cible",0)
- const effect=gmArbitrationSelect(panel,"Effet",[["none","Narration uniquement"],...(inCombat?[["stun","Étourdir un héros : une action"],["debuff","Malus de combat"]]:[])],"none"),effectAmount=gmArbitrationNumber(panel,"Force du malus",2,1,50),turns=gmArbitrationNumber(panel,"Durée du malus (rounds)",2,1,10)
+ const effect=gmArbitrationSelect(panel,"Effet",[["none","Aucun effet secondaire"],...(inCombat?[["stun","Étourdir un héros : une action"],["debuff","Malus de combat"]]:[])],"none"),effectAmount=gmArbitrationNumber(panel,"Force du malus",2,1,50),turns=gmArbitrationNumber(panel,"Durée du malus (rounds)",2,1,10)
  const cost=gmArbitrationCheck(panel,"Consommer l’action de l’acteur (Greg / Bibi : une seule action)",!!inCombat);if(!inCombat)cost.disabled=true
+ const summary=gmArbitrationElement("p",null,panel);summary.className="gmFreeActionSummary";summary.setAttribute("aria-live","polite")
+ const refreshDraft=()=>{
+  amount.parentElement.hidden=hpMode.value==="none"
+  effectAmount.parentElement.hidden=turns.parentElement.hidden=effect.value!=="debuff"
+  effect.closest(".gmChoice").hidden=!inCombat
+  cost.parentElement.hidden=!inCombat
+  const names=targets.filter(t=>t.e.checked).map(t=>gmArbitrationLabel(t.id)).join(", ")||"aucune cible"
+  const consequence=hpMode.value==="none"?"aucun changement de PV":(hpMode.value==="damage"?"Dégâts":"Soin")+" : "+(amount.value||"0")+" par cible"
+  const secondary=effect.value==="debuff"?"Malus de "+effectAmount.value+" pendant "+turns.value+" round(s)":effect.value==="stun"?"Étourdissement : une action (héros uniquement)":"Aucun effet secondaire"
+  summary.textContent=gmArbitrationLabel(actor.value)+" — "+(label.value.trim()||"Description à compléter")+". Cibles : "+names+". "+(die.value==="0"?"Sans jet": "Jet D"+die.value)+". "+consequence+". "+secondary+". "+(inCombat&&cost.checked?"Consomme l’action de l’acteur.":"Ne consomme pas d’action.")+" Vous confirmerez les conséquences après la préparation."
+ }
+ panel.addEventListener("input",refreshDraft);panel.addEventListener("change",refreshDraft);refreshDraft()
  button("Préparer et voir le résultat",async()=>{
    if(combatId&&(gmArbitrationCombat?.id!==combatId||gmArbitrationCombat?.phase==="finished"||!combatActive))throw new Error("Ce combat est terminé. Ouvrez une nouvelle action libre depuis la carte.")
-   const action={label:label.value,targets:targets.filter(t=>t.e.checked).map(t=>t.id),die:Number(die.value),hpMode:hpMode.value,amount:Number(amount.value),effect:effect.value,effectAmount:Number(effectAmount.value),turns:Number(turns.value),consumeAction:cost.checked}
+   if(!label.value.trim())throw Error("Décrivez l’action avant de la préparer.")
+   const hasConsequences=hpMode.value!=="none"||effect.value!=="none"
+   if(hasConsequences&&!targets.some(t=>t.e.checked))throw Error("Choisissez au moins une cible pour ces conséquences.")
+   if(hpMode.value!=="none"&&(!Number.isInteger(Number(amount.value))||Number(amount.value)<1||Number(amount.value)>50000))throw Error("Indiquez un montant entier entre 1 et 50 000 par cible.")
+   if(effect.value==="stun"&&targets.some(t=>t.e.checked&&COMBAT_MOBS.includes(t.id)))throw Error("L’étourdissement concerne les héros. Pour un ennemi, choisissez un malus.")
+   if(effect.value==="debuff"&&(!Number.isInteger(Number(effectAmount.value))||Number(effectAmount.value)<1||Number(effectAmount.value)>50||!Number.isInteger(Number(turns.value))||Number(turns.value)<1||Number(turns.value)>10))throw Error("Choisissez un malus entre 1 et 50 et une durée entre 1 et 10 rounds.")
+   const action={label:label.value.trim(),targets:targets.filter(t=>t.e.checked).map(t=>t.id),die:Number(die.value),hpMode:hpMode.value,amount:hpMode.value==="none"?0:Number(amount.value),effect:effect.value,effectAmount:effect.value==="debuff"?Number(effectAmount.value):2,turns:effect.value==="debuff"?Number(turns.value):2,consumeAction:inCombat&&cost.checked}
    if(inCombat)await submitCombatAction("free",actor.value,action);else await gmArbitrationSend("free",{kind:"prepare",actor:actor.value,action})
    gmArbitrationHidden="";gmArbitrationSignature="";renderGMArbitration()
  })

@@ -69,8 +69,39 @@ function openIsolatedTest() {
   const url=new URL(location.href);url.searchParams.set("test","1");location.assign(url.href)
 }
 function returnFromIsolatedTest() {const url=new URL(location.href);url.searchParams.delete("test");location.assign(url.href)}
+let specialPreviewSerial=0,specialPreviewPending=false
+function specialPreviewAllowed(){return !!(window.__isolatedTestMode&&typeof db!=="undefined"&&db.__isolatedTest&&window.__authRole==="gm"&&isGM&&gameStarted&&document.body.dataset.entryStage==="playing")}
+function closeSpecialPreviewPanel(){const panel=document.getElementById("specialPreviewPanel");if(panel?.__resizePreview)window.removeEventListener("resize",panel.__resizePreview);panel?.remove();if(panel)window.GameWindows?.closed(panel)}
+function playSpecialPreview(actor){
+ if(!specialPreviewAllowed()||!CHARACTER_IDS.includes(actor))return false
+ if(specialPreviewPending||window.__sharedVisualBusy||window.__sessionBusy||(combatActive&&Date.now()<(window.__combatIntroUntil||0))){showNotification("Attendez la fin de l’animation en cours.");return false}
+ const attack=getPlayerSpecialAttack(actor);if(!attack)return false
+ const duration=actor==="ju"?4200:6800
+ let cancelled=false,cancelEffect=null,releaseTimer=null
+ const cancel=()=>{cancelled=true;clearTimeout(releaseTimer);cancelEffect?.();specialPreviewPending=false;if(window.__cancelSpecialPreview===cancel)window.__cancelSpecialPreview=null}
+ specialPreviewPending=true;window.__cancelSpecialPreview=cancel;closeSpecialPreviewPanel()
+ const added=enqueueSharedVisual("special-preview-"+(++specialPreviewSerial),()=>{
+  if(cancelled||!specialPreviewAllowed()){cancel();return}
+  if(actor==="ju"){presentPikaAttack({actor,attack:attack.name,pikaKind:"endikaki",mode:"damage",special:true,fail:false,crit:false,amount:0,message:"APERÇU — Endikaki : animation et son uniquement"});cancelEffect=window.__cancelEndikakiPresentation}
+  else cancelEffect=showPlayerAttackImpact(actor,attack,{mode:"damage",amount:0,targetName:"Cible d’essai"},{special:true,preview:true,crit:false,fail:false})
+  releaseTimer=setTimeout(cancel,duration)
+ },duration)
+ if(!added)cancel()
+ return added
+}
+function openSpecialPreviewPanel(){
+ if(!specialPreviewAllowed())return
+ if(specialPreviewPending||window.__sharedVisualBusy){showNotification("Attendez la fin de l’animation en cours.");return}
+ if(document.getElementById("specialPreviewPanel"))return closeSpecialPreviewPanel()
+ const panel=document.createElement("section");panel.id="specialPreviewPanel";panel.className="specialPreviewPanel";panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Tester les spéciales")
+ const title=document.createElement("h2");title.textContent="Tester les spéciales";panel.appendChild(title)
+ const help=document.createElement("p");help.textContent="Animations et sons uniquement, sans condition. Aucun PV, tour, jauge ou usage de spéciale n’est modifié.";panel.appendChild(help)
+ for(const actor of CHARACTER_IDS){const b=document.createElement("button");b.type="button";b.dataset.specialPreview=actor;b.textContent=heroDisplayName(actor)+" — "+getPlayerSpecialAttack(actor).name;b.onclick=()=>playSpecialPreview(actor);panel.appendChild(b)}
+ const close=document.createElement("button");close.type="button";close.textContent="Fermer";close.onclick=closeSpecialPreviewPanel;panel.appendChild(close);document.body.appendChild(panel);const place=()=>{const top=Math.min(innerHeight-100,Math.max(12,(document.getElementById("isolatedTestBanner")?.getBoundingClientRect().bottom||0)+12));panel.style.top=top+"px";panel.style.transform="translateX(-50%)";panel.style.maxHeight="calc(100dvh - "+(top+12)+"px)"};panel.__resizePreview=place;window.addEventListener("resize",place);place();window.GameWindows?.register(panel,closeSpecialPreviewPanel)
+}
+
 document.addEventListener("DOMContentLoaded",()=>{
   if(!window.__isolatedTestMode)return
   const banner=document.createElement("aside");banner.id="isolatedTestBanner";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:8px 14px;background:#3f253d;color:#ffe4a3;font:14px Georgia;text-align:center";banner.textContent="ESSAI LOCAL — la campagne et ses sauvegardes ne sont pas modifiées. "
-  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);document.body.appendChild(banner)
+  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);const previews=document.createElement("button");previews.id="testSpecialsBtn";previews.type="button";previews.textContent="Tester les spéciales";previews.onclick=openSpecialPreviewPanel;banner.appendChild(previews);document.body.appendChild(banner)
 })

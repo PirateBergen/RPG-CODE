@@ -394,7 +394,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   title.innerText = String(attack.name || "SPÉCIALE").toUpperCase()
   box.appendChild(title)
 
-  const flavorText = outcome.mode === "heal"
+  const flavorText = meta.preview ? "APERÇU — aucun dégât ni soin appliqué" : outcome.mode === "heal"
     ? heroDisplayName(playerId).toUpperCase() + " restaure " + (outcome.amount || 0) + " PV"
     : heroDisplayName(playerId).toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
 
@@ -422,9 +422,10 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   overlay.appendChild(box)
   document.body.appendChild(overlay)
 
+  let previewVoice=null
   const specialSound = specialSoundMap[String(playerId || "").toLowerCase()]
   if (specialSound) {
-    const voice = new Audio("audio/" + specialSound)
+    const voice = new Audio("audio/" + specialSound);if(meta.preview)previewVoice=voice
     const isEloSpecial = String(playerId || "").toLowerCase() === "elo"
     const baseVolume = isEloSpecial ? (meta.crit ? 1.25 : 1.12) : (meta.crit ? 0.96 : 0.88)
     if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(voice, baseVolume)
@@ -458,12 +459,12 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     overlay.style.opacity = "0"
     setTimeout(() => overlay.remove(), 450)
   }, 6000)
+  return ()=>{overlay.querySelectorAll("video").forEach(video=>video.pause());previewVoice?.pause();overlay.remove()}
 }
 
 function showPlayerAttackImpact(playerId, attack, outcome, meta = {}) {
   if (meta.special) {
-    showPlayerSpecialCinematic(playerId, attack, outcome, meta)
-    return
+    return showPlayerSpecialCinematic(playerId, attack, outcome, meta)
   }
   const type = getPlayerAttackTypeKey(attack)
   const crit = !!meta.crit

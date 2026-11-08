@@ -61,10 +61,21 @@ function presentPikaAttack(result) {
   if(result.pikaKind!=="endikaki") {
     const effect=document.createElement("div");effect.className="pika-attack-effect";effect.textContent=result.pikaKind==="cancan"?"👢 × "+(result.kicks||0):result.pikaKind==="hypnosis"?(result.hypnotized?"✧ HYPNOSE ✧":"RÉSISTANCE"):"KRRKRR";document.body.appendChild(effect);setTimeout(()=>effect.remove(),1800);return
   }
+  if(typeof window.__cancelEndikakiPresentation==="function")window.__cancelEndikakiPresentation()
+  const timers=new Set(),nodes=new Set();let cancelled=false
+  const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer)}
+  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const id of ["endikakiInvocationSound","endikakiExplosionSound"])document.getElementById(id)?.pause();if(window.__cancelEndikakiPresentation===cleanup)window.__cancelEndikakiPresentation=null}
+  window.__cancelEndikakiPresentation=cleanup
   const idFor=id=>id==="mob"?"mobToken":COMBAT_MOBS.includes(id)?"mobToken_"+id:id
-  const from=document.getElementById(idFor(result.actor))?.getBoundingClientRect();let to=document.getElementById(idFor(result.target))?.getBoundingClientRect()
+  let from=document.getElementById(idFor(result.actor))?.getBoundingClientRect(),to=document.getElementById(idFor(result.target))?.getBoundingClientRect()
+  if(!from?.width)from=null
   if((!to||!to.width)&&result.targetPosition){const map=document.getElementById("map")?.getBoundingClientRect(),scale=typeof cameraZoom!=="undefined"?cameraZoom:1;if(map)to={left:map.left+result.targetPosition.x*scale,top:map.top+result.targetPosition.y*scale,width:80*scale,height:80*scale}}
-  const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb)
-  requestAnimationFrame(()=>{bomb.style.left=(to?to.left+to.width/2:innerWidth*.7)+"px";bomb.style.top=(to?to.top+to.height/2:innerHeight*.55)+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"})
-  setTimeout(()=>{const x=bomb.style.left,y=bomb.style.top;bomb.remove();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x;blast.style.top=y;blast.textContent=result.fail?"✧":"💥";document.body.appendChild(blast);if(!result.fail){if(typeof screenShake==="function")screenShake();if(typeof playSound==="function")playSound("powerSound",.3)}setTimeout(()=>blast.remove(),900)},950)
+  if(!to?.width)to=null
+  const x=(to?to.left+to.width/2:innerWidth*.7)+(result.fail?80:0),y=to?to.top+to.height/2:innerHeight*.55
+  const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb);nodes.add(bomb)
+  playSound("endikakiInvocationSound",1)
+  // The supplied recording lasts 1.92 s. Keep the same timeline on every screen.
+  later(()=>{requestAnimationFrame(()=>{if(cancelled)return;bomb.style.left=x+"px";bomb.style.top=y+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"})},2000)
+  later(()=>{bomb.remove();document.getElementById("endikakiInvocationSound")?.pause();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x+"px";blast.style.top=y+"px";blast.textContent="💥";blast.setAttribute("aria-label",result.fail?"Endikaki explose à côté de la cible":"Endikaki explose");const ring=document.createElement("span");ring.className="endikaki-shockwave";blast.appendChild(ring);document.body.appendChild(blast);nodes.add(blast);playSound("endikakiExplosionSound",.3);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},2950)
+  later(cleanup,4200)
 }

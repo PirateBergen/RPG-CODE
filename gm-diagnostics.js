@@ -31,7 +31,7 @@ function toggleGMDiagnostics(){
  }
  listen("online",".info/connected");listen("clients","sessionClients");listen("profiles","profiles");listen("assignments","heroAssignments");listen("roles","roles")
  listen("savedAt","saves/current/_savedAt");listen("saveName","saves/current/_saveName");listen("control","sessionControl")
- listen("pendingCombat","combat/pendingResolution");listen("pendingScene","game/pendingGMAction")
+ listen("pendingCombat","combat/pendingResolution")
  for(const branch of ["combatRequests","explorationRequests","characterRequests"])listen(branch,branch,true)
  gmDiagnosticsTimer=setInterval(renderGMDiagnostics,1000);renderGMDiagnostics();close.focus()
 }
@@ -74,7 +74,7 @@ function renderGMDiagnostics(){
  heading("Demandes et synchronisation")
  const phases={saving:"Sauvegarde en cours",loading:"Chargement en cours",resetting:"Nouvelle partie en préparation"}
  line(data.control?.phase?(phases[data.control.phase]||"Synchronisation en cours"):"Aucune opération de sauvegarde ou de chargement signalée.")
- if(data.pendingCombat||data.pendingScene)line("Une décision du MJ est en attente. Utilisez le bouton de décision pour la traiter.","gmDiagnosticsWarning")
+ if(data.pendingCombat?.source?.kind!=="free"&&data.pendingCombat)line("Une décision du MJ est en attente. Utilisez le bouton de décision pour la traiter.","gmDiagnosticsWarning")
  const queued=[];let loaded=true
  for(const branch of ["combatRequests","explorationRequests","characterRequests"]){if(data[branch]===undefined)loaded=false;for(const r of Object.values(data[branch]||{}))if(r?.status==="queued"&&Number.isFinite(r.expiresAt)&&r.expiresAt>now&&r.sessionRevision===(data.control?.revision||"initial"))queued.push(r)}
  line(!loaded?"Lecture des demandes…":queued.length?queued.length+" demande(s) récente(s) en attente de confirmation.":"Aucune demande récente en attente.")

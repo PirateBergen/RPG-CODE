@@ -69,10 +69,23 @@ function initialSession() {
     elements: null, combat: null, events: null, curse: null, diceRoll: null }
 }
 
+// Compatibility cleanup only: retired preparations must never apply or block a restored game.
+function discardRetiredFreeActionData(state){
+ if(!state||typeof state!=="object")return false
+ let changed=false
+ for(const key of ["pendingGMAction","gmActionEvents"])if(state.game&&Object.hasOwn(state.game,key)){delete state.game[key];changed=true}
+ if(state.combat?.pendingResolution?.source?.kind==="free"){delete state.combat.pendingResolution;changed=true}
+ if(state.combat?.lastAction?.result?.mode==="free"){delete state.combat.lastAction;changed=true}
+ for(const [id,event]of Object.entries(state.combat?.visualEvents||{}))if(event?.result?.mode==="free"){delete state.combat.visualEvents[id];changed=true}
+ if(state.game?.combatOutcome?.finalAction?.result?.mode==="free"){delete state.game.combatOutcome.finalAction;changed=true}
+ for(const [id,request]of Object.entries(state.combatRequests||{}))if(request?.kind==="free"&&request.status==="queued"){state.combatRequests[id]={...request,status:"failed",error:"Cette ancienne commande a été supprimée."};changed=true}
+ return changed
+}
+
 function captureSession(root) {
   const state = {}
   SESSION_BRANCHES.forEach(key => { state[key] = root[key] ?? null })
-  return cloneSession(state)
+  const snapshot=cloneSession(state);discardRetiredFreeActionData(snapshot);return snapshot
 }
 
 function validateSessionJSON(value, depth = 0) {

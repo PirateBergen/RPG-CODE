@@ -708,7 +708,6 @@ function endCombat(options = {}) {
   if (!combatActive && !options.force) return
   stopCombatStatsSubscription()
   if(typeof combatTargetCancellation==="function")combatTargetCancellation()
-  const freeActionDraft=document.getElementById("gmArbitrationModal");if(freeActionDraft?.dataset.freeCombatId)freeActionDraft.remove()
   combatActive = false; combatStarting = false
   if (typeof resetLocalCombatVisualState === "function") resetLocalCombatVisualState()
   setGameState("GAME")

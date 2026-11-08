@@ -358,7 +358,6 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
     if(request.kind === "initiative"){
       const ts=root.combat.turnState;if(ts?.phase!=="rolling"||!ts.participants?.some(p=>p.id===request.actor)||ts.rolls?.[request.actor]!=null)throw Error("Initiative déjà enregistrée ou combat changé");ts.rolls||={};ts.rolls[request.actor]=dice(12);result={mode:"control",message:"Initiative enregistrée"}
     }
-    else if(request.kind === "free"){if(!gm)throw Error("Action réservée au MJ");result=resolveGMFreeAction(root,request,dice)}
     else if (request.kind === "hero") result = resolveHeroCombatAction(root, request, dice)
     else if (request.kind === "enemy") { if (!gm || !COMBAT_MOBS.includes(request.actor)) throw new Error("Action réservée au MJ"); result = resolveEnemyCombatAction(root, request, dice) }
     else if (request.kind === "ally") result = resolveAllyCombatAction(root, request, dice)
@@ -420,44 +419,15 @@ function arbitrationFrame(root){
   return arbitrationCanonical({combat:c,characters:Object.fromEntries(COMBAT_CHARACTERS.map(id=>[id,{hp:root.characters?.[id]?.hp||0,lvl:root.characters?.[id]?.lvl||1}])),map:root.game?.map||""})
 }
 function arbitrationChanges(before,after){return [...COMBAT_CHARACTERS,...COMBAT_MOBS].flatMap(id=>{const a=COMBAT_MOBS.includes(id)?before.combat?.[id]:before.characters?.[id],b=COMBAT_MOBS.includes(id)?after.combat?.[id]:after.characters?.[id];return a&&b&&a.hp!==b.hp?[{target:id,before:a.hp,after:b.hp,delta:b.hp-a.hp}]:[]})}
-function arbitrationLog(root,id,text){root.game||={};root.game.sessionLog||={};root.game.sessionLog["decision-"+id]={text:String(text).slice(0,1500),time:Date.now(),display:new Date().toTimeString().slice(0,5)}}
-function resolveGMFreeAction(root,request,dice,inCombat=true){
-  const p=request.payload||{},label=String(p.label||"").trim().slice(0,180),actor=request.actor
-  if(!label)throw Error("Décrivez l’action libre")
-  if(![...COMBAT_CHARACTERS,...COMBAT_MOBS,"mj"].includes(actor))throw Error("Acteur invalide")
-  if(inCombat&&p.consumeAction!==false)requireCombatTurn(root,request,actor)
-  const targets=[...new Set(root.__arbitration?.targets||p.targets||[])];if(targets.some(id=>!COMBAT_CHARACTERS.includes(id)&&!(inCombat&&COMBAT_MOBS.includes(id))))throw Error("Cible invalide")
-  const amount=Number(p.amount||0),max=Number(p.die||0)
-  if(!Number.isInteger(amount)||amount<0||amount>50000||![0,4,6,8,10,12,20,100].includes(max))throw Error("Montant ou dé invalide")
-  if(!["none","damage","heal"].includes(p.hpMode||"none"))throw Error("Conséquence invalide")
-  if(!["none","stun","debuff"].includes(p.effect||"none")||(!inCombat&&p.effect&&p.effect!=="none"))throw Error("Effet invalide hors combat")
-  const result={actor,mode:"free",attack:label,message:label}
-  if(max){const roll=dice(max);Object.assign(result,{roll,dice:max,crit:roll===max,fail:roll===1});recordHeroCritical(root,actor,roll===max,roll===1)}
-  targets.forEach(id=>{
-    const c=COMBAT_MOBS.includes(id)?root.combat?.[id]:root.characters?.[id];if(!c)throw Error("Cible absente")
-    const value=arbitrationAmount(root,id,amount),before=c.hp
-    if(p.hpMode==="damage")c.hp=Math.max(0,before-value)
-    if(p.hpMode==="heal"){
-      if(before<=0&&value>0)throw Error("Un soin ne ressuscite pas une cible KO")
-      c.hp=Math.min(COMBAT_MOBS.includes(id)?c.maxHP:getCharacterMaxHp(id,c),before+value)
-    }
-    if(inCombat&&arbitrationEffects(root,id)&&p.effect!=="none"){
-      if(p.effect==="stun"){if(COMBAT_MOBS.includes(id))throw Error("Étourdissement réservé aux héros ; utilisez un malus pour un ennemi");root.combat.heroStuns||={};root.combat.heroStuns[combatOwner(id)]=1}
-      if(p.effect==="debuff"){const effect={amount:Math.max(1,Math.min(50,combatInt(p.effectAmount,2))),turns:Math.max(1,Math.min(10,combatInt(p.turns,2)))};if(COMBAT_MOBS.includes(id))c.attackMalus=effect;else{root.combat.heroDebuffs||={};root.combat.heroDebuffs[id]=effect}}
-    }
-    if(inCombat)combatRecord(root,request,label,id,Math.abs(c.hp-before),p.hpMode==="heal"?"heal":"manual",label+" → "+id+" : "+(c.hp-before)+" PV")
-  })
-  if(inCombat){if(p.consumeAction!==false)nextCombatTurn(root,request);else combatOutcome(root,request)}
-  return result
-}
+
 function arbitrationSource(request,seed){
-  const allowed=["attack","special","target","random","pnjId","actionId","word","label","targets","die","amount","hpMode","effect","effectAmount","turns","consumeAction"]
+  const allowed=["attack","special","target","random","pnjId","actionId","word"]
   const payload={};for(const k of allowed)if(request.payload?.[k]!==undefined)payload[k]=combatClone(request.payload[k])
   return {kind:request.kind,actor:request.actor,payload,sequence:request.sequence,seed}
 }
 function arbitrationReplay(root,pending,uid,id,decision){
   const base=combatClone(root);delete base.combat.pendingResolution;delete base.combat.interventionArmed
-  if(decision?.targets?.length===1&&pending.source.kind!=="enemy"&&pending.source.kind!=="free"){
+  if(decision?.targets?.length===1&&pending.source.kind!=="enemy"){
     const target=decision.targets[0],old=pending.source.payload.target
     if(COMBAT_MOBS.includes(target)===COMBAT_MOBS.includes(old))base.__redirectTarget=target
   }
@@ -474,7 +444,8 @@ function reduceCombatRequest(current,id,seed){
     if(!current.combat||current.combat.id!==q.combatId)throw Error("Ce combat a changé")
     if(!Number.isFinite(q.time)||(typeof reliableActionNow==="function"?reliableActionNow():Date.now())-q.time>120000)throw Error("Cette action a expiré")
     const gm=current.roles?.[q.uid]==="gm",pending=current.combat.pendingResolution
-    if(["armIntervention","resolveIntervention","refreshIntervention","dismissIntervention","free"].includes(q.kind)&&!gm)throw Error("Action réservée au MJ")
+    if(["armIntervention","resolveIntervention","refreshIntervention","dismissIntervention"].includes(q.kind)&&!gm)throw Error("Action réservée au MJ")
+    if(pending?.source?.kind==="free"){const r=fail("Cette ancienne préparation a été supprimée. Réessayez votre action.");delete r.combat.pendingResolution;return r}
     if(q.kind==="armIntervention"){
       if(pending)throw Error("Une décision est déjà en attente")
       const r=combatClone(current);r.combat.interventionArmed=!r.combat.interventionArmed;r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"control",message:r.combat.interventionArmed?"La prochaine attaque attendra la décision du MJ":"Intervention désactivée"};return r
@@ -505,36 +476,10 @@ function reduceCombatRequest(current,id,seed){
     const preview=reduceCombatRequestNow(current,id,seed)
     if(preview?.combatRequests[id].status!=="done")return preview
     const result=preview.combatRequests[id].result
-    const intercepted=(current.combat.interventionArmed&&["hero","enemy","ally","thuum"].includes(q.kind)&&!["warning","skip"].includes(result.mode))||(q.kind==="enemy"&&(current.combat[q.actor]?.balanceClass==="world"||WORLD_BOSS_NAMES.includes(current.combat[q.actor]?.name))&&result.mode==="enemy"&&result.special)||q.kind==="free"
+    const intercepted=(current.combat.interventionArmed&&["hero","enemy","ally","thuum"].includes(q.kind)&&!["warning","skip"].includes(result.mode))||(q.kind==="enemy"&&(current.combat[q.actor]?.balanceClass==="world"||WORLD_BOSS_NAMES.includes(current.combat[q.actor]?.name))&&result.mode==="enemy"&&result.special)
     if(!intercepted)return preview
     const r=combatClone(current);delete r.combat.interventionArmed
     r.combat.pendingResolution={id,revision:0,frame:arbitrationFrame(current),source:arbitrationSource(q,seed),preview:{result,changes:arbitrationChanges(current,preview)}}
     r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"pending",message:"Décision du MJ en attente"};return r
   }catch(e){return fail(e.message||e)}
-}
-
-// Outside combat, the MJ uses the same preview/confirmation in one root transaction.
-function reduceSceneGMAction(current,uid,id,payload,seed){
-  if(current?.roles?.[uid]!=="gm")throw Error("Action réservée au MJ")
-  if(current.sessionControl?.phase)throw Error("Synchronisation en cours")
-  if(current.game?.combatState?.active)throw Error("Un combat est en cours ; utilisez l’action libre de combat")
-  const r=combatClone(current);r.game||={};r.game.gmActionEvents||={}
-  if(r.game.gmActionEvents[id])return r
-  if(payload.kind==="prepare"){
-    if(r.game.pendingGMAction)throw Error("Une décision est déjà en attente")
-    const request={id,actor:payload.actor,payload:payload.action,time:Date.now()},preview=combatClone(r),result=resolveGMFreeAction(preview,request,combatRandom(seed),false)
-    r.game.pendingGMAction={id,revision:0,frame:arbitrationFrame(r),source:arbitrationSource({...request,kind:"free",sequence:0},seed),preview:{result,changes:arbitrationChanges(r,preview)}};return r
-  }
-  const p=r.game.pendingGMAction
-  if(!p||p.id!==payload.pendingId||p.revision!==payload.revision)throw Error("Cette décision a changé")
-  if(payload.kind==="dismiss"){delete r.game.pendingGMAction;return r}
-  if(payload.kind!=="refresh"&&p.frame!==arbitrationFrame(r))throw Error("La partie a changé ; actualisez la prévision")
-  const request={id,actor:p.source.actor,payload:p.source.payload,time:Date.now()},preview=combatClone(r)
-  if(payload.kind==="resolve")Object.defineProperty(preview,"__arbitration",{value:{...(payload.decision||{}),...(payload.decision?.targetsSpecified&&!payload.decision.targets?{targets:[]}:{} )},configurable:true})
-  const result=resolveGMFreeAction(preview,request,combatRandom(p.source.seed),false),changes=arbitrationChanges(r,preview)
-  if(payload.kind==="refresh"){r.game.pendingGMAction={...p,revision:p.revision+1,frame:arbitrationFrame(r),preview:{result,changes}};return r}
-  if(payload.kind!=="resolve")throw Error("Commande invalide")
-  delete preview.__arbitration;delete preview.game.pendingGMAction
-  result.message=(String(payload.decision?.narrative||"").trim()||result.attack)+(changes.length?" · "+changes.map(c=>c.target.toUpperCase()+" "+(c.delta>0?"+":"")+c.delta+" PV").join(" ; "):" · aucun changement de PV")
-  preview.game.gmActionEvents[id]={id,time:Date.now(),result};const entries=Object.keys(preview.game.gmActionEvents);entries.slice(0,Math.max(0,entries.length-80)).forEach(key=>delete preview.game.gmActionEvents[key]);arbitrationLog(preview,id,result.message);return preview
 }

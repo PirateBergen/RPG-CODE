@@ -147,7 +147,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
   const id = db.ref("combatRequests").push().key, now = Date.now(), width = window.innerWidth, height = window.innerHeight
   try {
     const result = await transactCombatRoot(current => {
-      if (!current || current.sessionControl?.phase || current.game?.pendingGMAction || (current.combat?.mob && current.combat.phase !== "finished")) return undefined
+      if (!current || current.sessionControl?.phase || (current.combat?.mob && current.combat.phase !== "finished")) return undefined
       const root = combatClone(current), level = Math.max(1, Math.round(COMBAT_HEROES.reduce((sum, hero) => sum + combatInt(root.characters?.[hero]?.lvl, 1), 0) / 3))
       const tier = WORLD_BOSS_NAMES.includes(mainMob)?"boss":forceTier || (CLASSIC_BOSS_NAMES.includes(mainMob)?"boss":mobStats[mainMob].tier)
       root.game ||= {}; root.tokens ||= {}

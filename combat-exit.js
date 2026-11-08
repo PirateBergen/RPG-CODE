@@ -27,7 +27,7 @@ async function checkCombatCompletion(){
   })}catch(error){console.error("Fin automatique du combat",error)}finally{combatCompletionPending=false;if(combatCompletionDirty)combatCompletionTimer=setTimeout(checkCombatCompletion,40)}
 }
 function observeCombatEnding(data){
-  if(!data?.combatId||!["victory","defeat"].includes(data.type))return
+  if(!data?.combatId||!["victory","defeat","retreat"].includes(data.type))return
   window.__pendingCombatOutcome=data
   if(!data.returnMap||!data.returnTokens)return
   if(!gameStarted||window.__sessionBusy)return
@@ -41,8 +41,8 @@ function observeCombatEnding(data){
   const added=enqueueSharedVisual("outcome-"+data.combatId+"-"+data.type,()=>{
     if(window.__localCombatId&&window.__localCombatId!==data.combatId&&combatActive)return
     window.__combatOutcomeQueued=false;window.__renderedCombatOutcome=frozen
-    if(data.type==="victory")_showVictoryNow(frozen);else _showDefeatNow(frozen)
-  },data.type==="victory"?8100:6100,3)
+    if(data.type==="victory")_showVictoryNow(frozen);else if(data.type==="retreat")showJormungandrRetreat(frozen);else _showDefeatNow(frozen)
+  },data.type==="victory"?8100:data.type==="retreat"?3100:6100,3)
   if(added){window.__combatOutcomeQueued=true;window.__queuedCombatOutcomeId=data.combatId}
 }
 function completeCombatReturn(outcome){
@@ -97,4 +97,11 @@ function scheduleAuthoritativeReturn(outcome){
  try{await finishReliableCombat(id)}catch(error){showNotification("Retour à synchroniser : "+error.message)}
  },Math.max(1000,(outcome.time||Date.now())+8000-Date.now()))
  combatReturnTimers.set(id,timer)
+}
+
+function showJormungandrRetreat(outcome){
+ window.__combatOutcomeShowing=true
+ const veil=document.createElement("div");veil.id="jormungandrRetreat";veil.style.cssText="position:fixed;inset:0;background:#03101cea;display:grid;place-items:center;z-index:999999999;pointer-events:none;color:#d9ecff;text-align:center;font:clamp(24px,4vw,44px) Georgia,serif"
+ veil.textContent="Le Forchur échappe au serpent…";document.body.appendChild(veil)
+ setTimeout(()=>{veil.remove();completeCombatReturn(outcome)},2800)
 }

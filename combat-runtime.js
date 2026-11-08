@@ -148,6 +148,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
   try {
     const result = await transactCombatRoot(current => {
       if (!current || current.sessionControl?.phase || (current.combat?.mob && current.combat.phase !== "finished")) return undefined
+      if([mainMob,...extraMobs].includes("jormungand")&&!isForchurMap(current.game?.map))throw Error("Jörmungandr ne peut être affronté que sur le Forchur, à Brume.")
       const root = combatClone(current), level = Math.max(1, Math.round(COMBAT_HEROES.reduce((sum, hero) => sum + combatInt(root.characters?.[hero]?.lvl, 1), 0) / 3))
       const tier = WORLD_BOSS_NAMES.includes(mainMob)?"boss":forceTier || (CLASSIC_BOSS_NAMES.includes(mainMob)?"boss":mobStats[mainMob].tier)
       root.game ||= {}; root.tokens ||= {}
@@ -224,6 +225,7 @@ async function addReliableCombatMob(name, tier) {
   const seed=Math.floor(Math.random()*4294967296)
   try { await transactCombatRoot(current=>{
     if(!current?.combat || current.combat.phase==="finished")return undefined
+    if(name==="jormungand"&&!isForchurMap(current.game?.combatState?.returnMap||current.game?.map))throw Error("Jörmungandr ne peut être affronté que sur le Forchur.")
     const slot=COMBAT_MOBS.find(s=>!current.combat[s] || combatInt(current.combat[s].hp)<=0)
     if(!slot) return undefined
     const root=combatClone(current), level=Math.max(1,Math.round(COMBAT_HEROES.reduce((sum,id)=>sum+combatInt(root.characters[id].lvl,1),0)/3))
@@ -247,6 +249,7 @@ async function removeReliableCombatMob(slot) {
   if(!isGM || !COMBAT_MOBS.includes(slot))return
   try {await transactCombatRoot(current=>{
     if(!current?.combat?.[slot] || current.combat.phase==="finished")return undefined
+    if(isJormungandr(current.combat[slot]))throw Error("Jörmungandr est invincible. Utilisez Thor ou la fuite.")
     const root=combatClone(current),request={id:"remove-"+slot,time:Date.now()}
     root.combat[slot].hp=0
     if(!combatOutcome(root,request) && root.combat.turnState?.currentActorId===slot)nextCombatTurn(root,request)
@@ -259,6 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
   db.ref("combat").on("value", snapshot => {
     if (window.__sessionBusy) return
     const data = snapshot.val(); window.__combatSnapshot = data || null
+    const flee=document.getElementById("btnFuiteJormungandr");if(flee)flee.hidden=!isGM||!data||!combatHasJormungandr({combat:data})||data.phase==="finished"
     if (!data) return
     window.__combatTurnState = data.turnState || null
     window.__playerCombatSpecialsUsed = data.playerSpecials || {}; window.__playerCombatFlags = data.playerFlags || {}
@@ -276,15 +280,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       })
       renderAllMobPanels(); updateThuumButton(); refreshCombatActionStates()
+
       if(data.phase==="finished"&&window.__pendingCombatOutcome)observeCombatEnding(window.__pendingCombatOutcome)
     }
   })
 })
 
 async function requestManualCombatOutcome(type) {
-  if(!isGM || !["victory","defeat"].includes(type) || window.__sessionBusy)return
+  if(!isGM || !["victory","defeat","retreat"].includes(type) || window.__sessionBusy)return
   try{await transactCombatRoot(current=>{
     if(!current?.combat || current.combat.phase==="finished")return undefined
+    if(type==="retreat"&&!livingHeroes(current).length)throw Error("Le groupe est hors combat : la défaite s’applique.")
+    if(type==="retreat"&&!combatHasJormungandr(current))throw Error("Cette fuite est réservée au combat contre Jörmungandr.")
     const root=combatClone(current)
     sealCombatOutcome(root,type,{time:Date.now()});root.game.combatOutcome.manual=true
     if(type==="victory"){

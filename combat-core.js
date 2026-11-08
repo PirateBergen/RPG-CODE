@@ -1,6 +1,9 @@
 "use strict"
 
 
+function isJormungandr(mob){return mob?.name==="jormungand"}
+function isForchurMap(map){return String(map||"").toLowerCase()==="bateau.jpg"}
+function combatHasJormungandr(root){return ["mob","mob2","mob3"].some(slot=>isJormungandr(root?.combat?.[slot]))}
 function combatExitSnapshot(root,type,request={}){
   const c=root.combat,state=root.game?.combatState||{},origin=state.returnMap||root.game?.map||"taverne.jpg"
   const map=type==="victory"&&c?.mob?.name==="balraug"?"prairie.jpg":type==="victory"&&c?.mob?.name==="kraken"?"niflheim.jpg":origin
@@ -13,9 +16,10 @@ function combatExitSnapshot(root,type,request={}){
 function sealCombatOutcome(root,type,request={}){
   root.game ||= {}
   if(root.game.combatOutcome?.combatId===root.combat.id&&root.combat.phase==="finished"&&root.game.combatOutcome.returnMap&&root.game.combatOutcome.returnTokens)return root.game.combatOutcome
+  if(type==="victory"&&["mob","mob2","mob3"].some(slot=>isJormungandr(root.combat?.[slot])&&!root.combat[slot].defeatedByThor))throw Error("Seule l’invocation de Thor peut vaincre Jörmungandr.")
   root.game.combatOutcome=combatExitSnapshot(root,type,request)
   const now=new Date();root.game.sessionLog ||= {}
-  root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
+  root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe fuit Jörmungandr":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
   root.combat.phase="finished";root.combat.turnState ||= {};root.combat.turnState.phase="finished"
   if(type==="victory"){
     root.game.defeatedMobs ||= {}
@@ -118,11 +122,17 @@ function combatHeal(root, request, from, id, amount, resurrect = false) {
   return c.hp - before
 }
 
-function combatDamage(root, request, from, slot, amount, type = "dmg") {
+function combatDamage(root, request, from, slot, amount, type = "dmg", options = {}) {
   const target = root.combat[slot]
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
-  target.hp = Math.max(0, before - arbitrationAmount(root,slot,amount))
+  if(isJormungandr(target)){
+    const origin=root.game?.combatState?.returnMap||root.game?.map
+    if(!options.thorMjolnir||!isForchurMap(origin)||arbitrationAmount(root,slot,before)<=0){
+      combatRecord(root,request,from,heroDisplayName(target.name),0,type,"Jörmungandr est invulnérable à cette attaque.");return 0
+    }
+    target.hp=0;target.defeatedByThor=true
+  }else target.hp = Math.max(0, before - arbitrationAmount(root,slot,amount))
   combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
   return before - target.hp
 }
@@ -316,11 +326,18 @@ function resolveAllyCombatAction(root, request, dice) {
   if (!pnj || !action) throw new Error("Action alliée inconnue")
   if (root.combat.usedAllies?.[action.id]) throw new Error("Cette intervention a déjà été utilisée")
   if (root.roles?.[request.uid] !== "gm" && root.game.playerAllyAccess?.actionId !== action.id) throw new Error("Le MJ doit autoriser cette intervention")
-  const roll = dice(action.dice), crit = roll >= (action.critMin || action.dice), fail = roll === 1
-  let amount = 0
+  const roll = dice(action.dice), crit = roll >= (action.critMin || action.dice);let fail = roll === 1,thorVictory=false
+  let amount = 0,thorLethalDamage=0
   if (action.type === "damage") {
     amount = Math.round((action.dmgBase + roll * action.dmgBonus) * (crit && action.critMult ? action.critMult : 1) * (fail ? .2 : 1))
-    ;(action.chainMin && roll >= action.chainMin ? livingMobs(root.combat) : [payload.target || livingMobs(root.combat)[0]]).forEach(slot => { if (!livingMobs(root.combat).includes(slot)) throw new Error("Choisissez un ennemi vivant"); combatDamage(root, request, pnj.name, slot, amount) })
+    const targets=action.chainMin&&roll>=action.chainMin?livingMobs(root.combat):[payload.target||livingMobs(root.combat)[0]]
+    const thorMjolnir=pnj.id==="thor"&&action.id==="thor_mjolnir"
+    targets.forEach(slot=>{
+      if(!livingMobs(root.combat).includes(slot))throw Error("Choisissez un ennemi vivant")
+      const dealt=combatDamage(root,request,pnj.name,slot,amount,"dmg",{thorMjolnir})
+      if(thorMjolnir&&isJormungandr(root.combat[slot])&&dealt>0){thorLethalDamage=dealt;thorVictory=true;fail=false}
+    })
+    if(thorVictory)amount=thorLethalDamage
   } else if (action.type === "heal") amount = combatHeal(root, request, pnj.name, payload.target, roll * (action.healMult || 1), crit)
   else if (action.type === "buff" && arbitrationEffects(root,payload.target)) {
     const target = root.characters[payload.target]; if (!target || target.hp <= 0) throw new Error("Choisissez un héros vivant")
@@ -335,7 +352,7 @@ function resolveAllyCombatAction(root, request, dice) {
   root.combat.usedAllies ||= {}; root.combat.usedAllies[action.id] = true
   delete root.game.playerAllyAccess
   nextCombatTurn(root, request)
-  return { actor: request.actor, attack: action.label, pnjId: pnj.id, actionId: action.id, target: payload.target || "", roll, dice: action.dice, crit, fail, amount, mode: "ally" }
+  return { actor: request.actor, attack: action.label, pnjId: pnj.id, actionId: action.id, target: payload.target || "", roll, dice: action.dice, crit, fail, amount, mode: "ally",...(thorVictory?{thorVictory:true,message:"Mjölnir frappe : Jörmungandr est vaincu par Thor."}:{}) }
 }
 
 function reduceCombatRequestNow(current, id, seed, options = {}) {
@@ -370,7 +387,7 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
       if (!gm) throw new Error("Action réservée au MJ")
       const amount = combatInt(request.payload?.amount)
       if (amount < 1 || amount > 50000 || !livingMobs(root.combat).includes(request.payload?.target)) throw new Error("Dégâts ou cible invalides")
-      combatDamage(root, request, "MJ", request.payload.target, amount); combatOutcome(root, request); result = { mode: "manual", amount }
+      const dealt=combatDamage(root, request, "MJ", request.payload.target, amount); combatOutcome(root, request); result = { mode: "manual", amount:dealt }
     } else if (request.kind === "thuum") {
       requireCombatTurn(root, request, request.actor)
       const word = request.payload?.word, def = window.THUUMS?.[word], learned = root.game.playerThuum?.[request.actor]?.[word]

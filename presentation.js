@@ -55,7 +55,7 @@ function presentCombatResolution(action) {
   enqueueSharedVisual("combat-"+action.id,()=>{
     if(isAlly){
       const pnj=ALLY_PNJS.find(p=>p.id===result.pnjId),def=pnj?.actions.find(a=>a.id===result.actionId)
-      if(pnj&&def) _allyInvocationCinematic(pnj,def,result.target,()=>{
+      if(pnj&&def) _allyInvocationCinematic(pnj,result.thorVictory?{...def,dialogue:result.message}:def,result.target,()=>{
         _showDiceAnimationNow(pnj.name,result.dice,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
         setTimeout(()=>_playAllyAnim(def.type,pnj.color,result.crit),2400)
       })

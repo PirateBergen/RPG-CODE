@@ -76,8 +76,9 @@ function _buildShop(partyLvl,runeCard,items,title){
     if(!selection.length){const empty=document.createElement("p");empty.textContent="Aucun article dans cette boutique.";zone.appendChild(empty)}
     for(const item of selection){
       const card=document.createElement("article");card.className="shopItem";card.dataset.itemId=item.id
-      const img=document.createElement("img");img.alt="";img.src="images/"+(shopImageBank().some(x=>x.img===item.img)?item.img:"bag.png");card.appendChild(img)
-      const name=document.createElement("h3");name.textContent=item.name;card.appendChild(name)
+      const itemHeading=document.createElement("div");itemHeading.className="shopItemHeading"
+      const img=document.createElement("img");img.alt="";img.src="images/"+(shopImageBank().some(x=>x.img===item.img)?item.img:"bag.png");itemHeading.appendChild(img)
+      const name=document.createElement("h3");name.textContent=item.name;itemHeading.appendChild(name);card.appendChild(itemHeading)
       const desc=document.createElement("p");desc.textContent=getShopStats(item,partyLvl);card.appendChild(desc)
       const price=document.createElement("strong");price.textContent="💰 "+getShopPrice(item,partyLvl)+" po";card.appendChild(price)
       if(isGM)card.appendChild(shopButton("Retirer de la boutique",async()=>{if(!confirm("Retirer « "+item.name+" » de cette boutique ?"))return;try{await changeShopCatalog(type,"remove",item)}catch(error){showNotification(error.message)}}))

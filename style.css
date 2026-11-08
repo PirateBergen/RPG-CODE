@@ -1543,54 +1543,6 @@ html, body {
 .logFail { color: #ff5050; text-shadow: 0 0 8px red; }
 .logCombat { color: #c8e8ff; font-size: 11px; letter-spacing: 0.2px; }
 
-.mjEntry--combat {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 7px 4px;
-  border-bottom: 1px solid rgba(181,145,82,0.16);
-}
-
-.mjCombatIcon {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.45));
-  flex: 0 0 auto;
-}
-
-.mjCombatText {
-  min-width: 0;
-  flex: 1;
-}
-
-.mjCombatTop {
-  font-family: Cinzel, serif;
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: #f0d8a2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.mjCombatBottom {
-  font-family: Cinzel, serif;
-  font-size: 10px;
-  color: #c9b186;
-  margin-top: 2px;
-}
-
-.mjCombatTag {
-  padding: 2px 7px;
-  border: 1px solid rgba(210,130,70,0.45);
-  border-radius: 999px;
-  background: rgba(96,34,12,0.42);
-  color: #ffcc92;
-  font-family: Cinzel, serif;
-  font-size: 9px;
-  letter-spacing: 1px;
-}
 
 /* ========================= */
 /* RÉSULTAT DÉ               */

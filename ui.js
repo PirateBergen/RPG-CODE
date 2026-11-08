@@ -89,38 +89,6 @@ function createCombatIcon(attack, mobData, className) {
   return img
 }
 
-function addMJCombatLogEntry(data) {
-  const log = document.getElementById("mjLogContent")
-  if (!log) return
-  const entry = document.createElement("div")
-  entry.className = "mjEntry mjEntry--combat"
-
-  const icon = createCombatIcon(data.attack || {}, data.mobData || null, "mjCombatIcon")
-  entry.appendChild(icon)
-
-  const text = document.createElement("div")
-  text.className = "mjCombatText"
-
-  const top = document.createElement("div")
-  top.className = "mjCombatTop"
-  top.innerText = (data.mobName || "MOB") + "  •  " + (data.attackName || "Attaque")
-  text.appendChild(top)
-
-  const bottom = document.createElement("div")
-  bottom.className = "mjCombatBottom"
-  bottom.innerText = (data.target || "CIBLE") + "  •  " + String(data.dmg || 0) + " dégâts"
-  text.appendChild(bottom)
-
-  if (data.special) {
-    const tag = document.createElement("div")
-    tag.className = "mjCombatTag"
-    tag.innerText = "SPÉCIALE"
-    entry.appendChild(tag)
-  }
-
-  entry.appendChild(text)
-  log.prepend(entry)
-}
 
 function appendAttackDiceLine(container, dice, stat) {
   if (!dice) return
@@ -228,28 +196,6 @@ function playerHasInventoryItem(charData, itemNeedle) {
   const needle = String(itemNeedle || "").toLowerCase().trim()
   if (!needle) return false
   return parseInventoryItems(charData?.inventaire).some(item => item === needle || item.includes(needle))
-}
-
-function getTokenCenterById(id) {
-  const token = document.getElementById(id)
-  if (!token) return null
-  const left = parseInt(token.style.left, 10)
-  const top = parseInt(token.style.top, 10)
-  const width = token.offsetWidth || parseInt(token.style.width, 10) || 96
-  const height = token.offsetHeight || parseInt(token.style.height, 10) || 96
-  const x = Number.isFinite(left) ? left + width / 2 : token.offsetLeft + width / 2
-  const y = Number.isFinite(top) ? top + height / 2 : token.offsetTop + height / 2
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return null
-  return { x, y }
-}
-
-function getDistanceBetweenTokens(idA, idB) {
-  const a = getTokenCenterById(idA)
-  const b = getTokenCenterById(idB)
-  if (!a || !b) return Infinity
-  const dx = a.x - b.x
-  const dy = a.y - b.y
-  return Math.sqrt(dx * dx + dy * dy)
 }
 
 

@@ -665,21 +665,6 @@ const mobWeaknesses = {
   "greg pion":       { title:"Fragile", text:"Une vraie pression suffit à l'écarter." }
 }
 
-/**
- * DA par mob — couleur accent + tint de fond.
- * Chaque mob qui a une entrée ici reçoit une classe CSS `mobPanel--{key}`
- * sur son sous-panel de combat pour appliquer la direction artistique.
- * Les mobs sans entrée conservent le style par défaut (rouge sombre).
- */
-const mobThemes = {
-  loup:      { key: "loup" },
-  // à compléter mob par mob
-}
-
-function getMobTheme(mobName) {
-  const key = /^(?:(?:ju|yu|you)\s*pion|pika|you|yu)$/i.test(String(mobName || "").trim()) ? "ju pion" : String(mobName || "").toLowerCase()
-  return mobThemes[key] || null
-}
 
 function getMobWeakness(mobName, mobTier = "weak") {
   const key = /^(?:(?:ju|yu|you)\s*pion|pika|you|yu)$/i.test(String(mobName || "").trim()) ? "ju pion" : String(mobName || "").toLowerCase()
@@ -1002,12 +987,6 @@ function getMobDamageRange(attack, mobLvl, mobTier = "weak", mobData = null) {
   }
 }
 
-function getMobDamage(attack, mobLvl, mobTier = "weak") {
-  const range = getMobDamageRange(attack, mobLvl, mobTier)
-  const min = range.min
-  const max = range.max
-  return Math.floor(Math.random() * (max - min + 1)) + min
-}
 
 /* ========================= */
 /* MAPS & MUSIQUES           */

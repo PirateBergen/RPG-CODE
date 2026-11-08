@@ -3112,16 +3112,6 @@ function updateGMStats(playerID, data) {
   box.innerHTML = `<div class="gmMiniHPText">❤️ ${data.hp || 0}</div><div class="gmMiniCurse">${curseIcons}</div><div class="gmMiniPower">${(data.corruption || 0) >= 10 ? "✨" : ""}</div>`
 }
 
-function getPartyLevel(callback) {
-  const players = ["greg", "ju", "elo"]
-  let total = 0, count = 0
-  players.forEach(p => {
-    db.ref("characters/" + p + "/lvl").once("value", snap => {
-      total += parseInt(snap.val()) || 1
-      if (++count === players.length) callback(Math.round(total / players.length))
-    })
-  })
-}
 
 function ensureMapMusicPlayback(mapName, delay = 0) {
   setTimeout(() => {
@@ -3243,18 +3233,6 @@ async function giveXP(amount) {
  }catch(error){showNotification("XP non confirmée : "+error.message+". Vérifiez l’XP du groupe avant de réessayer.");return false}finally{window.__xpGrantPending=false}
 }
 
-function syncBibiLevel() {
-  db.ref("characters/greg/lvl").once("value", snap => {
-    const gregLvl = parseInt(snap.val()) || 1
-    db.ref("characters/bibi/lvl").once("value", snap2 => {
-      const bibiLvl = parseInt(snap2.val()) || 1
-      if (bibiLvl !== gregLvl) {
-        db.ref("characters/bibi").update({ lvl: gregLvl, hp: getMaxHP('bibi', gregLvl) })
-        addMJLog("🐶 Bibi passe niveau " + gregLvl)
-      }
-    })
-  })
-}
 
 /* ========================= */
 /* SAUVEGARDE                */

@@ -23,22 +23,6 @@ function getCurrentCombatActorId() {
   return String(state.currentActorId || "")
 }
 
-function getCombatActorLabel(actorId) {
-  const id = String(actorId || "")
-  if (!id) return "—"
-  const turnState = getCombatTurnState()
-  const participants = Array.isArray(turnState?.participants) ? turnState.participants : []
-  const order = Array.isArray(turnState?.order) ? turnState.order : []
-  const entry = order.find(e => String(e.id || "") === id) || participants.find(e => String(e.id || "") === id)
-  if (entry && entry.label) return /^(?:(?:ju|yu|you)(?:\s*pion)?|yulian)$/i.test(String(entry.label).trim()) ? "Pika" : entry.label
-  if (id === "greg") return "Greg"
-  if (id === "ju") return "Pika"
-  if (id === "elo") return "Elo"
-  if (id === "bibi") return "Bibi"
-  if (id === "mob") return heroDisplayName(currentMob || "Mob").toUpperCase()
-  return id.toUpperCase()
-}
-
 
 async function initCombatTurnState() {
   if (!isGM || window.__sessionBusy) return

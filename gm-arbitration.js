@@ -36,6 +36,7 @@ function renderGMArbitration(){
  if(intervene)intervene.style.display=playing&&gmRole&&gmArbitrationCombat?.turnState?.phase==="active"?"":"none"
  if(free)free.style.display=playing&&gmRole?"":"none"
  if(!playing){document.getElementById("gmArbitrationBanner")?.remove();document.getElementById("gmArbitrationModal")?.remove();gmArbitrationSignature="";return}
+ const draft=document.getElementById("gmArbitrationModal");if(draft?.dataset.freeCombatId&&(draft.dataset.freeCombatId!==gmArbitrationCombat?.id||gmArbitrationCombat?.phase==="finished"||!combatActive))draft.remove()
  const p=gmArbitrationPending(),gm=window.__authRole==="gm",btn=document.getElementById("gmInterveneBtn")
  if(btn)btn.textContent=p?"Décision en attente":gmArbitrationCombat?.interventionArmed?"Intervention activée":"Intervenir"
  let banner=document.getElementById("gmArbitrationBanner")
@@ -72,6 +73,7 @@ function openGMFreeAction(){
  if(gmArbitrationPending())return openGMIntervention()
  if(typeof prepareGMScene==="function"&&prepareGMScene()===false)return
  const inCombat=gmArbitrationCombat?.phase!=="finished"&&gmArbitrationCombat?.turnState?.phase==="active",{panel,button}=gmArbitrationModal("Action libre")
+ const combatId=inCombat?gmArbitrationCombat.id:null;if(combatId)document.getElementById("gmArbitrationModal").dataset.freeCombatId=combatId
  const actors=[...COMBAT_CHARACTERS,...(inCombat?COMBAT_MOBS.filter(id=>gmArbitrationCombat[id]?.hp>0):[]),"mj"],actor=gmArbitrationSelect(panel,"Qui agit ?",actors.map(id=>[id,gmArbitrationLabel(id)]),inCombat?gmArbitrationCombat.turnState.currentActorId:"mj")
  const row=gmArbitrationElement("label","Description visible par tous",panel),label=gmArbitrationElement("textarea",null,row);label.maxLength=180;label.style.cssText="width:100%;min-height:65px"
  const die=gmArbitrationSelect(panel,"Jet facultatif",[0,4,6,8,10,12,20,100].map(n=>[String(n),n?"D"+n:"Sans dé"]),"0")
@@ -81,6 +83,7 @@ function openGMFreeAction(){
  const effect=gmArbitrationSelect(panel,"Effet",[["none","Narration uniquement"],...(inCombat?[["stun","Étourdir un héros : une action"],["debuff","Malus de combat"]]:[])],"none"),effectAmount=gmArbitrationNumber(panel,"Force du malus",2,1,50),turns=gmArbitrationNumber(panel,"Durée du malus (rounds)",2,1,10)
  const cost=gmArbitrationCheck(panel,"Consommer l’action de l’acteur (Greg / Bibi : une seule action)",!!inCombat);if(!inCombat)cost.disabled=true
  button("Préparer et voir le résultat",async()=>{
+   if(combatId&&(gmArbitrationCombat?.id!==combatId||gmArbitrationCombat?.phase==="finished"||!combatActive))throw new Error("Ce combat est terminé. Ouvrez une nouvelle action libre depuis la carte.")
    const action={label:label.value,targets:targets.filter(t=>t.e.checked).map(t=>t.id),die:Number(die.value),hpMode:hpMode.value,amount:Number(amount.value),effect:effect.value,effectAmount:Number(effectAmount.value),turns:Number(turns.value),consumeAction:cost.checked}
    if(inCombat)await submitCombatAction("free",actor.value,action);else await gmArbitrationSend("free",{kind:"prepare",actor:actor.value,action})
    gmArbitrationHidden="";gmArbitrationSignature="";renderGMArbitration()

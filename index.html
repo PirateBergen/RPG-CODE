@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261108.18"</script>
+  <script>window.GAME_V = "20261108.19"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -168,10 +168,12 @@
   <section id="inventoryTools" aria-label="Ajouter un objet et vérifier le poids" style="padding:12px;border:1px solid #795c34;background:#f5dfb4;color:#302115;max-width:850px;margin-bottom:14px;">
     <strong>Inventaire — capacité : 100</strong>
     <p style="margin:6px 0;font-size:15px;">Un objet par ligne : Épée (3), Potion x3 (0,5). Le poids indiqué est celui d’un seul objet. Aucun poids ? Indiquez (0).</p>
-    <div onkeydown="if(event.key==='Enter'){event.preventDefault();addInventoryItem()}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+    <div onkeydown="if(event.key==='Enter'&&event.target.matches('input')){event.preventDefault();addInventoryItem()}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
       <label>Objet<br><input id="inventoryItemName" type="text" placeholder="Potion" maxlength="160" style="max-width:200px;"></label>
       <label>Quantité<br><input id="inventoryItemQuantity" type="text" inputmode="numeric" value="1" style="width:70px;"></label>
       <label>Poids unitaire<br><input id="inventoryItemWeight" type="text" inputmode="decimal" placeholder="0,5" style="width:90px;"></label>
+      <button type="button" onclick="addInventoryStatRow()">＋ Ajouter une caractéristique</button>
+      <div id="inventoryItemStats" aria-label="Caractéristiques de l’objet" style="flex-basis:100%;display:grid;gap:6px;"></div>
       <button type="button" onclick="addInventoryItem()">Ajouter à l’inventaire</button>
     </div>
     <div id="inventoryWeightStatus" role="status" style="margin-top:10px;font-size:15px;"></div>

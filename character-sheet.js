@@ -50,6 +50,7 @@ function openCharacterSheet(id = null) {
   clearTimeout(window.__sheetFreePointsTimer)
   window.__sheetConfirmedCharacterData=null
   currentSheetPlayer = playerID
+  document.getElementById("inventoryItemStats")?.replaceChildren()
   // Marquer la fiche avec l'ID du joueur pour éviter les sauvegardes croisées
   const sheet = document.getElementById("characterSheet")
   if (sheet) sheet.dataset.playerId = playerID
@@ -285,6 +286,27 @@ function updateWeightBar() {
   }
 }
 
+
+function addInventoryStatRow(){
+ if(!canAccessCharacter(currentSheetPlayer))return
+ const zone=document.getElementById("inventoryItemStats");if(!zone)return
+ const row=document.createElement("div");row.className="inventoryStatRow";row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;align-items:center"
+ const label=document.createElement("label");label.textContent="Caractéristique ";const select=document.createElement("select");select.className="inventoryStatChoice";select.setAttribute("aria-label","Caractéristique")
+ for(const [value,text]of [["force","Force"],["charme","Charme"],["perspi","Perspicacité"],["chance","Chance"],["defense","Défense"]]){const option=document.createElement("option");option.value=value;option.textContent=text;select.appendChild(option)}
+ label.appendChild(select);row.appendChild(label)
+ const pointsLabel=document.createElement("label");pointsLabel.textContent="Points ";const points=document.createElement("input");points.className="inventoryStatValue";points.type="number";points.min="-1000";points.max="1000";points.step="1";points.value="1";points.style.width="80px";points.setAttribute("aria-label","Points de caractéristique");pointsLabel.appendChild(points);row.appendChild(pointsLabel)
+ const remove=document.createElement("button");remove.type="button";remove.textContent="Retirer";remove.onclick=()=>row.remove();row.appendChild(remove);zone.appendChild(row);select.focus()
+}
+function inventoryItemStatText(){
+ const names={force:"Force",charme:"Charme",perspi:"Perspicacité",chance:"Chance",defense:"Défense"},totals={}
+ for(const row of document.querySelectorAll("#inventoryItemStats .inventoryStatRow")){
+  const key=row.querySelector("select").value,input=row.querySelector("input"),value=Number(input.value)
+  if(!Object.hasOwn(names,key)||!input.value.trim()||!Number.isSafeInteger(value)||Math.abs(value)>1000){input.focus();throw Error("Choisissez une caractéristique et un nombre entier entre -1000 et 1000.")}
+  totals[key]=(totals[key]||0)+value
+ }
+ return Object.entries(totals).filter(([,v])=>v!==0).map(([key,value])=>(value>0?"+":"")+value+" "+names[key]).join(", ")
+}
+
 function addInventoryItem() {
   if (!canAccessCharacter(currentSheetPlayer)) return
   const name = document.getElementById("inventoryItemName"), quantity = document.getElementById("inventoryItemQuantity"), weight = document.getElementById("inventoryItemWeight")
@@ -292,11 +314,12 @@ function addInventoryItem() {
   if (!label || /[\r\n()]/.test(label) || /(?:^|\s)[x×]\s*\d/i.test(label)) { showNotification("Indiquez un nom d’objet sans parenthèses ni quantité."); name.focus(); return }
   if (!Number.isSafeInteger(qty) || qty < 1 || qty > 1000000) { showNotification("La quantité doit être un entier supérieur à zéro."); quantity.focus(); return }
   if (!rawWeight || !/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(rawWeight) || !Number.isFinite(amount) || amount < 0 || amount > 1000000) { showNotification("Indiquez un poids positif ou zéro, sans unité."); weight.focus(); return }
-  const inventory = document.getElementById("inventaire"), line = label + (qty === 1 ? "" : " x" + qty) + " (" + amount + ")"
+  let bonuses;try{bonuses=inventoryItemStatText()}catch(error){showNotification(error.message);return}
+  const inventory = document.getElementById("inventaire"), line = label + (bonuses ? " — "+bonuses : "") + (qty === 1 ? "" : " x" + qty) + " (" + amount + ")"
   const parsed = parseInventoryWeight(line); if (parsed.warnings.length || parsed.entries.length !== 1) { showNotification("Cet objet ne peut pas être ajouté : vérifiez son nom et son poids."); return }
   inventory.value += (inventory.value && !inventory.value.endsWith("\n") ? "\n" : "") + line
   inventory.dispatchEvent(new Event("input", {bubbles:true})); updateWeightBar(); queueCharacterAutoSave(0)
-  name.value = ""; quantity.value = "1"; weight.value = ""; name.focus()
+  name.value = ""; quantity.value = "1"; weight.value = ""; document.getElementById("inventoryItemStats")?.replaceChildren(); name.focus()
 }
 
 // Attribution des points libres.

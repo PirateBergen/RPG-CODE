@@ -45,8 +45,10 @@ function openCharacterSheet(id = null) {
     playerID = id || myToken.id
   }
   if (!canAccessCharacter(playerID)) { showNotification("Cette fiche est privée."); return }
+  const goldField=document.getElementById("goldInput");if(goldField){goldField.dataset.dirty="false";goldField.value="";goldField.removeAttribute("aria-busy");goldField.style.display="none"}
   const sheetGeneration=window.__sheetViewGeneration=(window.__sheetViewGeneration||0)+1
   clearTimeout(window.__sheetFreePointsTimer)
+  window.__sheetConfirmedCharacterData=null
   currentSheetPlayer = playerID
   // Marquer la fiche avec l'ID du joueur pour éviter les sauvegardes croisées
   const sheet = document.getElementById("characterSheet")
@@ -60,6 +62,7 @@ function openCharacterSheet(id = null) {
   readCharacter(playerID, snapshot => {
     const data = snapshot.val(); if (!data || currentSheetPlayer !== playerID || sheetGeneration!==window.__sheetViewGeneration || !canAccessCharacter(playerID)) return
     window.__sheetBaseCharacterData = { ...data }
+    window.__sheetConfirmedCharacterData={...data}
     window.__sheetInventoryModifiers = { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
     ;["lvl","xp","force","charme","perspi","chance","defense","hp"].forEach(k => { const el = document.getElementById(k); if (el) el.value = data[k] || 0 })
     if (!window._playerMaxPoids) window._playerMaxPoids = {}
@@ -85,7 +88,7 @@ function openCharacterSheet(id = null) {
 function openNotesEditor(field) {
   const existing = document.getElementById("notesEditorPanel")
   if (existing) existing.remove()
-  const label = field.id === "inventaire" ? "Inventaire" : "Notes"
+  const label = field.id === "inventaire" ? "Inventaire" : "Notes",editorPlayer=currentSheetPlayer,editorGeneration=window.__sheetViewGeneration
   const panel = document.createElement("div")
   panel.id = "notesEditorPanel"
   panel.style.cssText = "position:fixed;top:80px;left:50%;transform:translateX(-50%);width:min(340px,92vw);background:rgba(8,14,20,0.97);border:1px solid rgba(120,160,210,0.5);border-radius:12px;z-index:2000000000;box-shadow:0 8px 32px rgba(0,0,0,0.85);touch-action:none;"
@@ -130,11 +133,16 @@ function openNotesEditor(field) {
   const saveBtn = document.createElement("button")
   saveBtn.innerText = "Enregistrer"
   saveBtn.style.cssText = "padding:8px 16px;background:linear-gradient(#3d5d44,#233526);color:#e8f4e0;border:1px solid #87aa86;border-radius:8px;font-family:Cinzel,serif;font-size:12px;cursor:pointer;"
-  saveBtn.onclick = () => {
-    field.value = ta.value
-    field.dispatchEvent(new Event("input", { bubbles: true }))
-    field.dispatchEvent(new Event("blur",  { bubbles: true }))
-    panel.remove()
+  const message=document.createElement("p");message.setAttribute("role","status");message.style.cssText="margin:8px 12px;color:#f0e8c8";panel.appendChild(message)
+  let saving=false
+  saveBtn.onclick=async()=>{
+    if(saving)return;saving=true;saveBtn.disabled=true;cancelBtn.disabled=true;ta.readOnly=true;message.textContent="Enregistrement…"
+    try{
+      requireActionConnection();if(currentSheetPlayer!==editorPlayer||editorGeneration!==window.__sheetViewGeneration||!canAccessCharacter(editorPlayer))throw Error("La fiche a changé : votre texte n’a pas été transféré");field.value=ta.value;field.dispatchEvent(new Event("input",{bubbles:true}));clearTimeout(window.__sheetAutoSaveTimer);window.__sheetAutoSaveTimer=null
+      const result=await autoSaveCharacter();if(result===false)throw Error("Vérifiez les valeurs de la fiche")
+      panel.remove();showNotification(label+" de "+heroDisplayName(editorPlayer)+(label==="Notes"?" enregistrées":" enregistré"))
+    }catch(error){message.textContent="Enregistrement non confirmé : "+error.message+". Votre texte reste dans cette fenêtre."}
+    finally{saving=false;saveBtn.disabled=false;cancelBtn.disabled=false;ta.readOnly=false}
   }
   btnRow.appendChild(cancelBtn)
   btnRow.appendChild(saveBtn)
@@ -159,6 +167,7 @@ function closeCharacterSheet() {
     currentSheetPlayer=null;sheet.dataset.playerId=""
     sheet.style.display = "none"
     window.__sheetBaseCharacterData = null
+    window.__sheetConfirmedCharacterData=null
     window.__sheetInventoryModifiers = null
     if (pendingLevelUp[closingPlayerId]) { triggerLevelUp(closingPlayerId); pendingLevelUp[closingPlayerId] = false }
   })
@@ -177,6 +186,7 @@ function forceCloseCharacterSheetWithoutSave() {
   sheet.dataset.playerId = ""
   currentSheetPlayer = null
   window.__sheetBaseCharacterData = null
+    window.__sheetConfirmedCharacterData=null
   window.__sheetInventoryModifiers = null
   const title = document.getElementById("sheetTitle")
   if (title) title.innerText = ""
@@ -187,91 +197,50 @@ function forceCloseCharacterSheetWithoutSave() {
   })
 }
 
-function saveCharacter() {
-  if (!canAccessCharacter(currentSheetPlayer)) return Promise.resolve(false)
-  const id = currentSheetPlayer, data = {}
-  const inventoryField = document.getElementById("inventaire")
-  const notesField = document.getElementById("notes")
-  const inventoryMods = (typeof getInventoryStatModifiers === "function")
-    ? getInventoryStatModifiers(inventoryField?.value || "")
-    : { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
-  document.querySelectorAll("#characterSheet .sheetField").forEach(f => {
-    if (f.offsetParent !== null && f.id !== "weight" && f.id !== "maxWeight" && f.id !== "inventaire" && f.id !== "notes") {
-      const rawValue = String(f.value ?? "").trim()
-      if (rawValue !== "") data[f.id] = isNaN(rawValue) ? rawValue : getPersistedSheetStatValue(f.id, parseInt(rawValue, 10), inventoryMods)
-    }
-  })
-  data.inventaire = inventoryField ? inventoryField.value : ""
-  data.equipmentModifiers = getInventoryStatModifiers(data.inventaire)
-  data.carriedWeight = Math.max(0, _parseInventoryWeight(data.inventaire))
-  data.poids = 100
-  if (notesField) data.notes = notesField.value
-  if (window.__sheetBaseCharacterData) {
-    INVENTORY_EFFECT_STATS.forEach(stat => {
-      if (data[stat] != null) window.__sheetBaseCharacterData[stat] = parseInt(data[stat], 10) || 0
-    })
-    window.__sheetBaseCharacterData.inventaire = data.inventaire
-    if (data.notes != null) window.__sheetBaseCharacterData.notes = data.notes
-  }
-  return persistCharacterEdits(id,data)
-    .then(() => {
-      showNotification("Fiche sauvegardée")
-      return true
-    })
-    .catch(err => {
-      console.warn("saveCharacter failed", err)
-      showNotification("Fiche non enregistrée : "+err.message+". Le texte reste dans la fiche ; réessayez après reconnexion.")
-      return false
-    })
+function collectCharacterSheetPatch(){
+ const confirmed=window.__sheetConfirmedCharacterData;if(!confirmed)throw Error("Attendez la lecture de la fiche")
+ const data={},pending=window.__characterPendingFields?.[currentSheetPlayer+":"+window.__sheetViewGeneration]||{},inventory=document.getElementById("inventaire")?.value||"",notes=document.getElementById("notes")?.value||"",mods=getInventoryStatModifiers(inventory)
+ for(const field of document.querySelectorAll("#characterSheet .sheetField")){
+  if(field.offsetParent===null||["weight","maxWeight","inventaire","notes"].includes(field.id))continue
+  const value=String(field.value??"").trim();if(!value)continue
+  if(!Number.isSafeInteger(Number(value))||Number(value)<0)throw Error("Valeur invalide : "+field.id)
+  const raw=getPersistedSheetStatValue(field.id,Number(value),mods)
+  if(pending[field.id]||raw!==Number(confirmed[field.id]))data[field.id]=raw
+ }
+ if(pending.inventaire||inventory!==String(confirmed.inventaire||"")){data.inventaire=inventory;data.equipmentModifiers=mods;data.carriedWeight=Math.max(0,_parseInventoryWeight(inventory))}
+ if(pending.notes||notes!==String(confirmed.notes||""))data.notes=notes
+ if(confirmed.poids!==100)data.poids=100
+ const gold=document.getElementById("goldInput");if(gold?.dataset.dirty==="true"){const value=Number(gold.value);if(!gold.value.trim()||!Number.isSafeInteger(value)||value<0||value>999999)throw Error("Or : indiquez un entier entre 0 et 999999");data.gold=value}
+ return data
 }
-
-function autoSaveCharacter() {
-  if (!myToken && !isGM) return
-  const id = currentSheetPlayer; if (!canAccessCharacter(id)) return
-
-  // Sécurité — vérifier que l'ID de la fiche ouverte correspond bien
-  const sheet = document.getElementById("characterSheet")
-  const sheetId = sheet?.dataset.playerId
-  if (sheetId && sheetId !== id) return
-  if (!isGM && myToken && myToken.id !== id && !(myToken.id === "greg" && id === "bibi")) return
-
-  const data = {}
-  const inventoryField = document.getElementById("inventaire")
-  const notesField = document.getElementById("notes")
-  const inventoryMods = (typeof getInventoryStatModifiers === "function")
-    ? getInventoryStatModifiers(inventoryField?.value || "")
-    : { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
-  document.querySelectorAll("#characterSheet .sheetField").forEach(f => {
-    if (f.offsetParent !== null && f.id !== "weight" && f.id !== "maxWeight" && f.id !== "inventaire" && f.id !== "notes") {
-      const rawValue = String(f.value ?? "")
-      const trimmed = rawValue.trim()
-      if (trimmed !== "") {
-        data[f.id] = isNaN(trimmed) ? trimmed : getPersistedSheetStatValue(f.id, parseInt(trimmed, 10), inventoryMods)
-      }
-    }
-  })
-  data.inventaire = inventoryField ? inventoryField.value : ""
-  data.equipmentModifiers = getInventoryStatModifiers(data.inventaire)
-  data.carriedWeight = Math.max(0, _parseInventoryWeight(data.inventaire))
-  data.poids = 100
-  if (notesField) data.notes = notesField.value
-  if (window.__sheetBaseCharacterData) {
-    INVENTORY_EFFECT_STATS.forEach(stat => {
-      if (data[stat] != null) window.__sheetBaseCharacterData[stat] = parseInt(data[stat], 10) || 0
-    })
-    window.__sheetBaseCharacterData.inventaire = data.inventaire
-    if (data.notes != null) window.__sheetBaseCharacterData.notes = data.notes
-  }
-  if (Object.keys(data).length > 0) {
-    return persistCharacterEdits(id,data).then(() => ["greg","ju","elo","bibi"].forEach(p => updateTokenStats(p)))
-  }
+function confirmCharacterSheetPatch(id,data,generation){
+ if(currentSheetPlayer!==id||generation!==window.__sheetViewGeneration)return
+ window.__sheetConfirmedCharacterData={...window.__sheetConfirmedCharacterData,...data}
+ window.__sheetBaseCharacterData={...window.__sheetBaseCharacterData,...data}
+ confirmSheetGold(id,data.gold,generation)
+}
+function saveCharacter(){
+ if(window.__sheetAllocation?.id===currentSheetPlayer)return window.__sheetAllocation.promise.then(()=>saveCharacter(),()=>false)
+ if(!canAccessCharacter(currentSheetPlayer))return Promise.resolve(false)
+ const id=currentSheetPlayer,generation=window.__sheetViewGeneration;let data
+ try{data=collectCharacterSheetPatch()}catch(error){showNotification(error.message);return Promise.resolve(false)}
+ if(window.__actionOnline)showNotification("Enregistrement de la fiche de "+heroDisplayName(id)+"…")
+ return persistCharacterEdits(id,data,generation).then(()=>{confirmCharacterSheetPatch(id,data,generation);showNotification("Fiche de "+heroDisplayName(id)+" enregistrée");return true}).catch(error=>{showNotification("Fiche de "+heroDisplayName(id)+" non confirmée : "+error.message+". Le texte reste dans la fiche.");return false})
+}
+function autoSaveCharacter(){
+ if(window.__sheetAllocation?.id===currentSheetPlayer)return window.__sheetAllocation.promise.then(()=>autoSaveCharacter())
+ const id=currentSheetPlayer,generation=window.__sheetViewGeneration,sheet=document.getElementById("characterSheet")
+ if(!canAccessCharacter(id)||sheet?.dataset.playerId!==id)return Promise.reject(Error("La fiche a changé"))
+ let data;try{data=collectCharacterSheetPatch()}catch(error){return Promise.reject(error)}
+ return persistCharacterEdits(id,data,generation).then(()=>{confirmCharacterSheetPatch(id,data,generation);["greg","ju","elo","bibi"].forEach(p=>updateTokenStats(p));return true})
 }
 
 function queueCharacterAutoSave(delay = 220) {
   if (window.__sheetAutoSaveTimer) clearTimeout(window.__sheetAutoSaveTimer)
+  const epoch=reliableEpoch,uid=window.__authUid,revision=persistenceRevision,wasOnline=window.__actionOnline
   window.__sheetAutoSaveTimer = setTimeout(() => {
     window.__sheetAutoSaveTimer = null
-    Promise.resolve().then(()=>autoSaveCharacter()).catch(error=>showNotification("Modifications non enregistrées : "+error.message+". Le texte reste dans la fiche."))
+    Promise.resolve().then(()=>{if(!wasOnline||epoch!==reliableEpoch||uid!==window.__authUid||revision!==persistenceRevision)throw Error("Connexion ou partie changée : enregistrez explicitement votre brouillon");return autoSaveCharacter()}).catch(error=>showNotification("Modifications non enregistrées : "+error.message+". Le texte reste dans la fiche."))
   }, Math.max(0, parseInt(delay, 10) || 0))
 }
 
@@ -378,18 +347,30 @@ function showFreePointsPanel(playerID, points) {
 
   const confirmBtn = document.createElement("button"); confirmBtn.style.cssText = "width:100%;margin-top:12px;padding:10px;font-family:Cinzel,serif;font-size:13px;background:rgba(10,40,52,0.8);color:#a0c8d0;border:1px solid #1e5a66;border-radius:2px;cursor:pointer;opacity:0.4;letter-spacing:2px;transition:all 0.2s;"
   confirmBtn.innerText = "✦ Confirmer"; confirmBtn.disabled = true
+  let submitting=false
   confirmBtn.onclick = async () => {
-    if (!canAccessCharacter(playerID) || remaining !== 0 || window.__sessionBusy) return
-    confirmBtn.disabled = true
-    try {
-      const result = await db.ref("characters/" + playerID).transaction(current => spendCharacterPoints(current, changes, points) || undefined)
-      if (!result.committed) { showNotification("Ces points ont déjà été utilisés. Rouvrez la fiche."); return }
-      panel.remove()
-      showNotification("Stats améliorées !")
-      flashGold()
-      if (currentSheetPlayer === playerID) openCharacterSheet(playerID)
-    } catch (error) { showNotification("Points non enregistrés : " + error.message) }
-    finally { confirmBtn.disabled = remaining > 0 }
+    if(submitting||!canAccessCharacter(playerID)||remaining!==0||window.__sessionBusy)return
+    submitting=true;const generation=window.__sheetViewGeneration,allocation={...changes},controls=[...panel.querySelectorAll("button"),confirmBtn]
+    controls.forEach(b=>b.disabled=true);confirmBtn.innerText="Enregistrement…"
+    try{
+      requireActionConnection();clearTimeout(window.__sheetAutoSaveTimer);window.__sheetAutoSaveTimer=null
+      if(currentSheetPlayer===playerID&&!await saveCharacter())throw Error("Enregistrez d’abord la fiche")
+      const operation=persistCharacterTransaction(playerID,current=>spendCharacterPoints(current,allocation,points)||undefined).then(result=>{
+        if(!result.committed)throw Error("Ces points ont déjà été utilisés. Rouvrez la fiche.")
+        if(currentSheetPlayer===playerID&&generation===window.__sheetViewGeneration){
+          const confirmed=result.snapshot.val(),previous=window.__sheetConfirmedCharacterData||{},inventory=document.getElementById("inventaire"),notes=document.getElementById("notes")
+          if(inventory.value===String(previous.inventaire||""))inventory.value=confirmed.inventaire||""
+          if(notes.value===String(previous.notes||""))notes.value=confirmed.notes||""
+          const effective=getEffectiveCharacterData(playerID,{...confirmed,inventaire:inventory.value}),oldEffective=getEffectiveCharacterData(playerID,previous)
+          for(const key of ["lvl","xp","hp",...stats]){const field=document.getElementById(key);if(field&&Number(field.value)===Number(oldEffective[key]))field.value=effective[key]}
+          window.__sheetConfirmedCharacterData={...confirmed};window.__sheetBaseCharacterData={...confirmed};window.__sheetInventoryModifiers=getInventoryStatModifiers(inventory.value)
+          updateWeightBar();updateHPBar()
+        }
+        panel.remove();showNotification("Points de "+heroDisplayName(playerID)+" enregistrés");flashGold();return true
+      }).finally(()=>{if(window.__sheetAllocation?.promise===operation)window.__sheetAllocation=null})
+      window.__sheetAllocation={id:playerID,promise:operation};await operation
+    }catch(error){showNotification("Points non confirmés : "+error.message)}
+    finally{submitting=false;controls.forEach(b=>b.disabled=false);confirmBtn.disabled=remaining>0;confirmBtn.innerText="✦ Confirmer"}
   }
   panel.appendChild(confirmBtn)
 
@@ -425,17 +406,19 @@ function toggleGoldInput() {
   }
 }
 
-function saveGold() {
-  if (!canAccessCharacter(currentSheetPlayer)) return
-  if (!currentSheetPlayer) return
-  const input = document.getElementById("goldInput"); if (!input) return
-  const val = parseInt(input.value) || 0
-  db.ref("characters/" + currentSheetPlayer + "/gold").set(val)
-  // Fermer l'input et afficher la valeur
-  input.style.display = "none"
-  const display = document.getElementById("goldDisplay")
-  if (display) { display.innerText = val + " po"; display.style.display = "block" }
-  showNotification(val + " pièces d'or")
+async function saveGold() {
+ const id=currentSheetPlayer,input=document.getElementById("goldInput"),generation=window.__sheetViewGeneration
+ if(!input||!canAccessCharacter(id))return false
+ const value=Number(input.value);input.dataset.dirty="true"
+ if(!input.value.trim()||!Number.isSafeInteger(value)||value<0||value>999999){showNotification("Or : indiquez un entier entre 0 et 999999");return false}
+ const key=id+":"+value;if(window.__goldSavePending?.key===key)return window.__goldSavePending.promise
+ const promise=(async()=>{input.setAttribute("aria-busy","true");if(window.__actionOnline)showNotification("Enregistrement de l’or de "+heroDisplayName(id)+"…");try{
+  await persistCharacterEdits(id,{gold:value})
+  if(currentSheetPlayer===id&&generation===window.__sheetViewGeneration&&Number(input.value)===value){input.dataset.dirty="false";input.style.display="none";const display=document.getElementById("goldDisplay");if(display){display.innerText=value+" po";display.style.display="block"}}
+  showNotification("Or de "+heroDisplayName(id)+" enregistré : "+value+" po");return true
+ }catch(error){if(currentSheetPlayer===id&&generation===window.__sheetViewGeneration)input.style.display="block";showNotification("Or de "+heroDisplayName(id)+" non confirmé : "+error.message);return false}
+ finally{if(window.__goldSavePending?.key===key){window.__goldSavePending=null;input.removeAttribute("aria-busy")}}})()
+ window.__goldSavePending={key,promise};return promise
 }
 
 function loadGold(playerID) {
@@ -446,17 +429,27 @@ function loadGold(playerID) {
     const val = parseInt(snap.val()) || 0
     const input   = document.getElementById("goldInput")
     const display = document.getElementById("goldDisplay")
-    if (input)   input.value = val
+    if(input?.dataset.dirty==="true")return
+    if (input) { input.value = val;input.dataset.dirty="false" }
     if (display) { display.innerText = val + " po"; display.style.display = "block" }
   })
 }
 
 // Écritures de fiche ordonnées, sans renvoi après une coupure.
-function persistCharacterEdits(id,data){
-  if(typeof reliableCharacterPatch!=="function")return db.ref("characters/"+id).update(data)
+function enqueueCharacterMutation(id,write){
+  try{if(!canAccessCharacter(id))throw Error("Fiche privée");if(!window.__actionOnline)throw Error("Connexion perdue : modification non envoyée");if(window.__sessionBusy&&!window.__sheetFlushAuthorized)throw Error("La partie se synchronise")}catch(error){return Promise.reject(error)}
   window.__characterEditQueue||={}
-  const epoch=reliableEpoch,uid=window.__authUid,patch=JSON.parse(JSON.stringify(data))
-  const promise=Promise.resolve(window.__characterEditQueue[id]).catch(()=>{}).then(()=>{if(epoch!==reliableEpoch||uid!==window.__authUid)throw Error("Connexion interrompue : enregistrez à nouveau la fiche");return reliableCharacterPatch(id,patch)})
+  const epoch=reliableEpoch,uid=window.__authUid,revision=persistenceRevision
+  const promise=Promise.resolve(window.__characterEditQueue[id]).catch(()=>{}).then(()=>{if(epoch!==reliableEpoch||uid!==window.__authUid||revision!==persistenceRevision)throw Error("Contexte changé : enregistrez à nouveau la fiche");return write()})
   window.__characterEditQueue[id]=promise
-  pendingSessionWrites.add(promise);promise.then(()=>pendingSessionWrites.delete(promise),error=>{pendingSessionWrites.delete(promise)});return promise
+  pendingSessionWrites.add(promise);promise.then(()=>pendingSessionWrites.delete(promise),()=>pendingSessionWrites.delete(promise));return promise
 }
+function persistCharacterEdits(id,data,sourceGeneration=null){
+ const patch=JSON.parse(JSON.stringify(data)),keys=Object.keys(patch),key=id+":"+sourceGeneration
+ window.__characterPendingFields||={};const fields=sourceGeneration==null?null:(window.__characterPendingFields[key]||={})
+ if(fields)keys.forEach(name=>fields[name]=(fields[name]||0)+1)
+ return enqueueCharacterMutation(id,()=>reliableCharacterPatch(id,patch)).finally(()=>{if(!fields)return;for(const name of keys){if(--fields[name]<=0)delete fields[name]}if(!Object.keys(fields).length&&window.__characterPendingFields[key]===fields)delete window.__characterPendingFields[key]})
+}
+function persistCharacterTransaction(id,update){return enqueueCharacterMutation(id,()=>reliableCharacterTransaction(id,update))}
+
+function confirmSheetGold(id,value,generation){if(value==null||currentSheetPlayer!==id||generation!==window.__sheetViewGeneration)return;const field=document.getElementById("goldInput");if(field&&Number(field.value)===value)field.dataset.dirty="false"}

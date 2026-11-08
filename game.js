@@ -3230,21 +3230,16 @@ async function changeMap(mapName,customAudio){
 /* ========================= */
 
 async function giveXP(amount) {
-  if (!isGM) return
-  try {
-    const gain = Number(amount)
-    if (!Number.isInteger(gain) || gain <= 0 || window.__sessionBusy) return
-    await db.ref("characters").transaction(current => {
-      if (!current) return undefined
-      const next = cloneSession(current)
-      PLAYABLE_HEROES.forEach(id => { if (next[id]) next[id].xp = Math.min(999999, (Number(next[id].xp) || 0) + gain) })
-      return progressCharacters(next)
-    })
-  } catch (error) { showNotification("XP non confirmée : " + error.message); return }
-  showXPMessage(amount)
-  addMJLog("⭐ MJ donne " + amount + " XP au groupe")
-  addSessionLog("⭐ +" + amount + " XP donné au groupe")
-  // Le familier suit Greg dans la même transaction de progression.
+ if(!isGM||window.__authRole!=="gm")return false
+ const gain=Number(amount);if(!Number.isSafeInteger(gain)||gain<=0||gain>999999)return false
+ if(window.__xpGrantPending)return false
+ if(window.__lastXPGrant?.gain===gain&&Date.now()-window.__lastXPGrant.time<700)return false
+ window.__xpGrantPending=true
+ try{requireActionConnection();showNotification("Attribution d’XP en cours…");const revision=persistenceRevision||"initial"
+  const result=await reliableRootTransaction(current=>{if(!current?.characters||current.sessionControl?.phase||(current.sessionControl?.revision||"initial")!==revision)throw Error("La partie a changé ou se synchronise");const root=cloneSession(current);PLAYABLE_HEROES.forEach(id=>{if(root.characters[id])root.characters[id].xp=Math.min(999999,(Number(root.characters[id].xp)||0)+gain)});root.characters=progressCharacters(root.characters);return root})
+  if(!result.committed)throw Error("Attribution non confirmée")
+  window.__lastXPGrant={gain,time:Date.now()};showXPMessage(gain);addMJLog("⭐ MJ donne "+gain+" XP au groupe");addSessionLog("⭐ +"+gain+" XP donné au groupe");return true
+ }catch(error){showNotification("XP non confirmée : "+error.message+". Vérifiez l’XP du groupe avant de réessayer.");return false}finally{window.__xpGrantPending=false}
 }
 
 function syncBibiLevel() {
@@ -3590,42 +3585,15 @@ function hideIntroLayers() {
   }
 }
 
-function resetAllPlayerStats() {
-  if (!isGM) return
-  if (!confirm("Réinitialiser les stats des joueurs au niveau 1 sans changer la map ni les positions ?")) return
-
-  const initChars = {}
-  ;["greg", "ju", "elo", "bibi"].forEach(pid => {
-    const s = getPlayerStatsAtLevel(pid, 1)
-    initChars[pid] = {
-      lvl: 1,
-      xp: 0,
-      hp: s.hp,
-      poids: s.poids,
-      force: s.force,
-      charme: s.charme,
-      perspi: s.perspi,
-      chance: s.chance,
-      defense: s.defense,
-      curse: 0,
-      corruption: 0,
-      freePoints: 0,
-      gold: 0,
-      inventaire: "",
-      notes: ""
-    }
-  })
-
-  const ops = Object.keys(initChars).map(pid => db.ref("characters/" + pid).set(initChars[pid]))
-  Promise.allSettled(ops).then(results => {
-    const failed = results.filter(r => r.status === "rejected")
-    if (failed.length) {
-      showNotification("⚠ Reset stats incomplet")
-      return
-    }
-    showNotification("Stats joueurs réinitialisées")
-    if (typeof addMJLog === "function") addMJLog("RESET — stats joueurs remises au niveau 1")
-  })
+async function resetAllPlayerStats(){
+ if(!isGM||window.__authRole!=="gm"||window.__statsResetPending)return false
+ window.__statsResetPending=true
+ try{requireActionConnection();if(!confirm("Réinitialiser les stats des joueurs au niveau 1 sans changer la map ni les positions ?"))return false
+  const revision=persistenceRevision||"initial",characters=initialSession().characters
+  const result=await reliableRootTransaction(current=>{if(!current||current.sessionControl?.phase||(current.sessionControl?.revision||"initial")!==revision)throw Error("La partie a changé ou se synchronise");return {...current,characters:cloneSession(characters)}})
+  if(!result.committed)throw Error("Réinitialisation non confirmée")
+  showNotification("Stats joueurs réinitialisées");if(typeof addMJLog==="function")addMJLog("RESET — stats joueurs remises au niveau 1");return true
+ }catch(error){showNotification("Réinitialisation non confirmée : "+error.message);return false}finally{window.__statsResetPending=false}
 }
 
 /* ========================= */

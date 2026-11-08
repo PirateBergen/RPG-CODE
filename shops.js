@@ -113,7 +113,7 @@ function openShopItemEditor(type,partyLvl){
   const actions=document.createElement("div");actions.className="shopTools"
   const submit=shopButton("Ajouter à la boutique",null);submit.type="submit";actions.appendChild(submit);actions.appendChild(shopButton("Annuler",()=>overlay.remove()));form.appendChild(actions)
   form.onsubmit=async event=>{
-    event.preventDefault();if(submit.disabled)return;submit.disabled=true;message.textContent=""
+    event.preventDefault();if(submit.disabled)return;submit.disabled=true;message.textContent="Ajout en cours…"
     try{const item={id:db.ref("game/shop").push().key,name:name.value,category:category.value,basePrix:price.value,baseStats:desc.value,img:image};await changeShopCatalog(type,"add",item);overlay.remove();showNotification("Article ajouté à la boutique.")}
     catch(error){message.textContent=error.message;submit.disabled=false}
   }

@@ -168,3 +168,30 @@ async function reliableRootTransaction(update,allowSessionBusy=false){
 }
 
 function reliableCharacterPatch(id,data){if(!canAccessCharacter(id))return Promise.reject(Error("Fiche privée"));return reliablePut("characters/"+id,data,undefined,false,"PATCH",true)}
+
+// Compare-and-swap sur une seule fiche : pas de file d’attente hors ligne.
+async function reliableCharacterTransaction(id,update){
+ requireActionConnection();if(!canAccessCharacter(id))throw Error("Fiche privée")
+ if(db.__isolatedTest)return db.ref("characters/"+id).transaction(update)
+ const epoch=reliableEpoch,revision=persistenceRevision,uid=window.__authUid,user=auth?.currentUser,controller=new AbortController()
+ if(!user)throw Error("Connexion au compte nécessaire")
+ const check=()=>{requireActionConnection();if(epoch!==reliableEpoch||uid!==window.__authUid||revision!==persistenceRevision||controller.signal.aborted||!canAccessCharacter(id))throw Error("Contexte changé : vérifiez la fiche avant de réessayer")}
+ let timer,cancel
+ const work=async()=>{
+  const token=await user.getIdToken();check()
+  const url=new URL(db.ref("characters/"+id).toString());url.pathname+=".json";const configured=db.app.options.databaseURL?new URL(db.app.options.databaseURL):null;if(configured?.searchParams.has("ns"))url.searchParams.set("ns",configured.searchParams.get("ns"));url.searchParams.set("auth",token)
+  for(let n=0;n<8;n++){
+   check();const response=await fetch(url.href,{headers:{"X-Firebase-ETag":"true"},signal:controller.signal,cache:"no-store"});if(!response.ok)throw Error("Lecture de la fiche refusée ou non confirmée")
+   const current=await response.json(),next=update(current),etag=response.headers.get("etag");check()
+   if(next===undefined)return {committed:false,snapshot:{val:()=>current}}
+   if(!etag)throw Error("Confirmation de fiche indisponible")
+   const result=await fetch(url.href,{method:"PUT",headers:{"Content-Type":"application/json","if-match":etag},body:JSON.stringify(next),signal:controller.signal,cache:"no-store"})
+   if(result.status===412){await result.body?.cancel();continue}
+   if(!result.ok)throw Error(result.status===401||result.status===403?"Modification refusée : vérifiez votre accès au héros":"Modification non confirmée : vérifiez la fiche avant de réessayer")
+   await result.body?.cancel();check();return {committed:true,snapshot:{val:()=>next}}
+  }
+  throw Error("La fiche a changé plusieurs fois : vérifiez-la avant de réessayer")
+ }
+ try{return await Promise.race([work(),new Promise((_,reject)=>{cancel=()=>{controller.abort();reject(Error("Résultat non confirmé : vérifiez la fiche avant de réessayer. Aucune relance automatique."))};reliablePending.add(cancel);timer=setTimeout(cancel,15000)})])}
+ finally{clearTimeout(timer);if(cancel)reliablePending.delete(cancel);controller.abort()}
+}

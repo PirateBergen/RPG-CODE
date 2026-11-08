@@ -1056,7 +1056,7 @@ document.addEventListener("DOMContentLoaded", () => {
   })
 
   document.querySelectorAll("#playerCombatPanel input").forEach(field => {
-    field.addEventListener("input", () => saveCombatStats())
+    field.addEventListener("input", () => saveCombatStats(field.id))
   })
 
   const input = document.getElementById("mobDamageInput")

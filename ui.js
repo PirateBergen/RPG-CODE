@@ -28,17 +28,13 @@ function loadPlayerCombatStats() {
   ref.on("value", cb)
 }
 
-function saveCombatStats() {
-  if (!myToken || !canAccessCharacter(myToken.id)) return
-  if (!myToken) return
-  const hp = parseInt(document.getElementById("combat_hp").value) || 0
-  const data = {}
-  const inventoryMods = window.__combatInventoryModifiers || { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
-  ;["force","charme","perspi","chance","defense"].forEach(k => { data[k] = getPersistedSheetStatValue(k, document.getElementById("combat_"+k).value, inventoryMods) })
-  data.hp = hp
-  db.ref("characters/" + myToken.id).update(data).catch(console.error)
-  const bar = document.getElementById("hp_" + myToken.id); if (bar) bar.style.width = Math.max(0, Math.min(100, hp)) + "%"
-  updateTokenGlow(myToken.id, hp); updateTokenStats(myToken.id); updateCombatHPBar(hp)
+async function saveCombatStats(fieldId=null) {
+ const id=myToken?.id;if(!id||!canAccessCharacter(id))return false
+ const stats=["force","charme","perspi","chance","defense","hp"],data={},mods=window.__combatInventoryModifiers||{}
+ for(const stat of stats){if(fieldId&&fieldId!=="combat_"+stat)continue;const value=document.getElementById("combat_"+stat)?.value;if(value==null||!String(value).trim()||!Number.isSafeInteger(Number(value))||Number(value)<0){showNotification("Statistique invalide");return false}data[stat]=stat==="hp"?Number(value):getPersistedSheetStatValue(stat,value,mods)}
+ if(!Object.keys(data).length)return false
+ try{await persistCharacterEdits(id,data);if(myToken?.id===id){if(data.hp!=null){updateTokenGlow(id,data.hp);updateCombatHPBar(data.hp)}updateTokenStats(id)}return true}
+ catch(error){showNotification("Statistiques de "+heroDisplayName(id)+" non confirmées : "+error.message);return false}
 }
 
 function updateCombatHPBar(hp) {
@@ -1642,10 +1638,14 @@ function showHighPNJScroll(name,eventTime){
 /* MALÉDICTION               */
 /* ========================= */
 
-function toggleCurse(level) {
+async function toggleCurse(level) {
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!isGM && targetId !== (myToken && myToken.id)) return
   if (!targetId || targetId === "bibi") return
+  if(!Number.isInteger(level)||level<0||level>8)return
+  const generation=window.__sheetViewGeneration
+  try{await persistCharacterEdits(targetId,{curse:level})}catch(error){showNotification("Malédiction non confirmée : "+error.message);return}
+  if(generation!==window.__sheetViewGeneration||(currentSheetPlayer||myToken?.id)!==targetId)return
   const previousLevel = curseLevel
   if (level === 8) addMJLog("☠ Malédiction complète !")
   curseLevel = level
@@ -1672,20 +1672,24 @@ function toggleCurse(level) {
   if (level < 8 && window.__curseWheelTriggeredFor === String(targetId).toLowerCase()) {
     window.__curseWheelTriggeredFor = null
   }
-  saveCurse()
 }
+
 function saveCurse() {
   if((currentSheetPlayer || myToken?.id)==="bibi")return
   if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!targetId) return
-  db.ref("characters/" + targetId + "/curse").set(curseLevel)
+  return persistCharacterEdits(targetId,{curse:curseLevel}).catch(error=>showNotification("Malédiction non confirmée : "+error.message))
 }
-function setCorruption(level) {
+async function setCorruption(level) {
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!isGM && targetId !== (myToken && myToken.id)) return
   if (!targetId) return
   if(targetId === "bibi")return
+  if(!Number.isInteger(level)||level<0||level>10)return
+  const generation=window.__sheetViewGeneration
+  try{await persistCharacterEdits(targetId,{corruption:level})}catch(error){showNotification("Don non confirmé : "+error.message);return}
+  if(generation!==window.__sheetViewGeneration||(currentSheetPlayer||myToken?.id)!==targetId)return
   corruptionLevel = level
   document.querySelectorAll(".corruptionPoint").forEach((b, i) => b.classList.toggle("active", i < level))
   const targetToken = document.getElementById(targetId)
@@ -1699,14 +1703,14 @@ function setCorruption(level) {
     activatePowerMode(targetId)
   }
   if (level < 10 && targetToken) targetToken.classList.remove("powerReady", "powerFull")
-  saveCorruption()
 }
+
 function saveCorruption() {
   if((currentSheetPlayer || myToken?.id)==="bibi")return
   if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!targetId) return
-  db.ref("characters/" + targetId + "/corruption").set(corruptionLevel)
+  return persistCharacterEdits(targetId,{corruption:corruptionLevel}).catch(error=>showNotification("Don non confirmé : "+error.message))
 }
 
 

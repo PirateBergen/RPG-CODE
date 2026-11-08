@@ -6,6 +6,17 @@ let reliableEpoch=0,reliableOffset=0,reliabilityCleanupTimer=null,saveTrimPromis
 const reliablePending=new Set()
 function reliableActionNow(){return Date.now()+reliableOffset}
 function requireActionConnection(allowSessionBusy=false){if(!window.__actionOnline)throw Error("Action non envoyée : connexion perdue. Attendez la reconnexion avant de réessayer.");if(allowSessionBusy&&(window.__authRole!=="gm"||!persistenceOperation))throw Error("Synchronisation MJ nécessaire");if(window.__sessionBusy&&!allowSessionBusy)throw Error("La partie se synchronise")}
+// Shared client preflight. Canonical reducers and Firebase still authorize every write.
+function requireActionAccess({gmOnly=false,actor=null,playerOnly=false}={}){
+ requireActionConnection()
+ if(!window.__authUid)throw Error("Connexion au compte nécessaire")
+ if(gmOnly&&window.__authRole!=="gm")throw Error("Action réservée au MJ")
+ if(playerOnly&&(window.__authRole==="gm"||window.__authPlayerId!==actor||!COMBAT_HEROES.includes(actor)))throw Error("Accès au héros nécessaire")
+ if(actor&&!canAccessCharacter(actor))throw Error("Accès au héros nécessaire")
+}
+function requireCombatActorTurn(actor){
+ if(getCurrentCombatActorId()!==combatOwner(actor))throw Error("Ce n’est pas le tour de cet acteur")
+}
 function ownsReservedHero(id){const hero=id==="bibi"?"greg":id;return window.__heroAssignments?.[hero]?.uid===window.__authUid}
 function validateReliableRequest(root,r){
  if(root?.securityVersion!==2)return
@@ -35,7 +46,7 @@ async function reliablePut(path,value,providedSignal,allowSessionBusy=false,meth
 }
 
 function submitReliableAction(branch,request){
- requireActionConnection();if(!window.__authUid)throw Error("Connexion au compte nécessaire")
+ requireActionAccess()
  const ref=db.ref(branch).push(),epoch=reliableEpoch,now=reliableActionNow(),controller=new AbortController()
  const value={...request,uid:window.__authUid,status:"queued",protocol:2,time:now,expiresAt:now+15000,sessionRevision:persistenceRevision||"initial"}
  return new Promise((resolve,reject)=>{

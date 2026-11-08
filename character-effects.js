@@ -22,7 +22,7 @@ async function tickCharacterEffects(){
 }
 async function requestCharacterEffect(kind,actor,payload={}){
  const key=kind+actor;if(characterEffectRequests.has(key))return
- try{requireActionConnection();if(window.__authRole==="gm"||window.__authPlayerId!==actor||!COMBAT_HEROES.includes(actor)||!canAccessCharacter(actor))throw Error("Accès au héros nécessaire")
+ try{requireActionAccess({actor,playerOnly:true})
   characterEffectRequests.add(key);return await submitReliableAction("characterRequests",{actor,kind,payload:{version:1,...payload}})
  }catch(e){showNotification(e.message)}finally{characterEffectRequests.delete(key)}
 }

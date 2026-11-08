@@ -55,8 +55,8 @@ async function migrateSharedFamiliarTurn() {
 }
 
 async function submitCombatAction(kind,actor,payload={}){
- requireActionConnection()
- if(!window.__authUid||!window.__combatSnapshot?.id)throw Error("Attendez la synchronisation du combat")
+ requireActionAccess()
+ if(!window.__combatSnapshot?.id)throw Error("Attendez la synchronisation du combat")
  if(Array.isArray(payload.decision?.targets))payload={...payload,decision:{...payload.decision,targetsSpecified:true}}
  return submitReliableAction("combatRequests",{actor,kind,payload:{...payload,version:1},combatId:window.__combatSnapshot.id,sequence:combatInt(getCombatTurnState()?.sequence)})
 }
@@ -93,11 +93,10 @@ function chooseEnemyCombatTarget(attack=null,actor=null,special=false) {
 
 async function requestHeroCombatAction(attack, options = {}) {
   if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
-  if (window.__playerAttackResolving || window.__sessionBusy) return
+  if (window.__playerAttackResolving) return
   let actor = options.actorId || getCombatHUDPlayerId()
   if(actor==="greg"&&attack.name==="Le Bibi"&&window.__publicCharacters?.greg?.hp<=0&&window.__publicCharacters?.bibi?.hp>0)actor="bibi"
-  if (!canAccessCharacter(actor)) return
-  if (getCurrentCombatActorId() !== combatOwner(actor)) { showNotification("Ce n’est pas votre tour"); return }
+  try{requireActionAccess({actor});requireCombatActorTurn(actor)}catch(error){showNotification(error.message);return}
   window.__playerAttackResolving = true
   refreshCombatActionStates()
   try {
@@ -117,7 +116,7 @@ async function requestEnemyCombatAction(attack, mobData, panel, forcedTarget, sl
   const actor = slot || panel?.dataset.slot || mobData.slot || "mob"
   window.__mobAttackResolving = true
   refreshCombatActionStates()
-  try { await submitCombatAction("enemy", actor, { attack: attack?.name || "", random: !attack, target: forcedTarget && forcedTarget !== "all" ? forcedTarget : (panel?._manualTarget || null) }) }
+  try { requireActionAccess({gmOnly:true});await submitCombatAction("enemy", actor, { attack: attack?.name || "", random: !attack, target: forcedTarget && forcedTarget !== "all" ? forcedTarget : (panel?._manualTarget || null) }) }
   catch (error) { showNotification(error.message) }
   finally { window.__mobAttackResolving = false;refreshCombatActionStates() }
 }
@@ -126,7 +125,7 @@ async function requestAllyCombatAction(pnj, action, targetId, panel) {
   if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   const actor = getCombatHUDPlayerId() || getCurrentCombatActorId()
   if (!COMBAT_HEROES.includes(actor)) { showNotification("Les alliés interviennent pendant un tour de joueur"); return }
-  if (getCurrentCombatActorId() !== actor) { showNotification("Ce n’est pas le tour de cet acteur"); return }
+  try{requireActionAccess({actor});requireCombatActorTurn(actor)}catch(error){showNotification(error.message);return}
   if (window.__playerAttackResolving) return
   window.__playerAttackResolving = true
   try {

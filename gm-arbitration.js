@@ -41,8 +41,7 @@ function gmArbitrationModal(title){
  return {panel,button,overlay}
 }
 async function gmArbitrationSend(kind,payload={}){
- if(window.__authRole!=="gm")throw Error("Commande réservée au MJ")
- if(window.__sessionBusy)throw Error("La partie se synchronise")
+ requireActionAccess({gmOnly:true})
  if(gmArbitrationCombat?.id&&gmArbitrationCombat.phase!=="finished"&&gmArbitrationCombat.turnState?.phase==="active")return submitCombatAction(kind,gmArbitrationCombat.turnState.currentActorId,payload)
  if(Array.isArray(payload.decision?.targets))payload={...payload,decision:{...payload.decision,targetsSpecified:true}}
  const id=db.ref().push().key,seed=Math.floor(Math.random()*4294967296),revision=persistenceRevision

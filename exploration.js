@@ -7,8 +7,8 @@ let explorationCoordinatorRef=null,explorationCoordinatorCb=null,explorationQueu
 const explorationPending=new Set()
 
 function requireExplorationConnection(){
-  if(!window.__explorationOnline)throw new Error("Connexion interrompue : attendez la reconnexion avant de réessayer.")
-  if(window.__sessionBusy)throw new Error("La partie est en cours de synchronisation")
+  requireActionAccess()
+  if(!window.__explorationOnline)throw new Error("Action non envoyée : connexion perdue. Attendez la reconnexion avant de réessayer.")
   if(window.__combatReturnInProgress||window.__combatOutcomeQueued||window.__combatOutcomeShowing||window.__combatSnapshot?.phase==="finished")throw new Error("Attendez le retour à la carte.")
 }
 function syncExplorationCoordinator(){
@@ -24,7 +24,7 @@ function syncExplorationCoordinator(){
   explorationCoordinatorRef.on("child_added",explorationCoordinatorCb)
 }
 async function submitExplorationAction(kind,actor,payload={}){
- requireExplorationConnection();requireActionConnection()
+ requireExplorationConnection()
  return submitReliableAction("explorationRequests",{actor,kind,payload:{...payload,version:1}})
 }
 

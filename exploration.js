@@ -57,6 +57,36 @@ async function writeWorldPartyPosition(value){
  window.__explorationState.worldPartyPosition=position;syncWorldPartyMarker()
 }
 
+
+let nightModeSignature,nightNoticeTimer
+function syncNightMode(){
+ const state=window.__explorationState.nightMode,enabled=state?.enabled===true,visible=gameStarted&&["GAME","COMBAT"].includes(gameState),signature=state?.id||null,changed=nightModeSignature!==undefined&&signature!==nightModeSignature
+ nightModeSignature=signature
+ let filter=document.getElementById("nightMapFilter")
+ const map=document.getElementById("map")
+ if(!filter&&map){filter=document.createElement("div");filter.id="nightMapFilter";filter.setAttribute("aria-hidden","true");map.appendChild(filter)}
+ if(filter)filter.classList.toggle("active",visible&&enabled)
+ const button=document.getElementById("nightModeBtn")
+ if(button){button.setAttribute("aria-pressed",String(enabled));button.title=enabled?"Faire revenir le jour":"Faire tomber la nuit";button.setAttribute("aria-label",button.title);button.textContent=enabled?"☀":"🌙"}
+ if(!visible){clearTimeout(nightNoticeTimer);document.getElementById("nightTransitionNotice")?.remove();return}
+ if(!changed||!state?.id||state.time<(window.__pageLoadTime||0))return
+ clearTimeout(nightNoticeTimer);document.getElementById("nightTransitionNotice")?.remove()
+ const notice=document.createElement("div");notice.id="nightTransitionNotice";notice.setAttribute("role","status")
+ const symbol=document.createElement("span");symbol.textContent=enabled?"☾":"☀";const text=document.createElement("span");text.textContent=enabled?"La nuit tombe…":"Le jour se lève…";notice.append(symbol,text);document.body.appendChild(notice)
+ nightNoticeTimer=setTimeout(()=>notice.remove(),4500)
+}
+async function toggleNightMode(){
+ try{
+  requireActionAccess({gmOnly:true});requireExplorationConnection()
+  const uid=window.__authUid,revision=persistenceRevision||"initial",id=db.ref("game").push().key,time=Date.now()
+  const result=await reliableRootTransaction(root=>{
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision)return undefined
+   root.game||={};root.game.nightMode={enabled:root.game.nightMode?.enabled!==true,id,time};return root
+  })
+  if(!result.committed)throw Error("La partie a changé. Réessayez.")
+ }catch(error){showNotification("Changement d’ambiance non enregistré : "+error.message)}
+}
+
 function requireExplorationConnection(){
   requireActionAccess()
   if(!window.__explorationOnline)throw new Error("Action non envoyée : connexion perdue. Attendez la reconnexion avant de réessayer.")
@@ -131,6 +161,7 @@ async function removePersistentWanted(id){
 function syncSharedExplorationState(game){
   Object.assign(window.__explorationState,game)
   syncWorldPartyMarker()
+  syncNightMode()
   if(!gameStarted||window.__sessionBusy)return
   renderPersistentWantedPosters(window.__explorationState.wantedPosters)
   refreshExplorationMapEvents()
@@ -197,7 +228,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(isGM)cleanupLegacyWantedElements().catch(error=>console.warn(error))
   db.ref(".info/connected").on("value",snap=>{window.__explorationOnline=!!snap.val();if(!snap.val()){selected=null;_state.tokenDragging=false;cameraDragging=false}})
   db.ref("tokens").on("value",snap=>{window.__tokenPositions=snap.val()||{};if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()})
-  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
+  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition","nightMode"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
   db.ref("events").on("value",snap=>{window.__explorationWorldEvents=snap.val()||{};refreshExplorationMapEvents()})
   db.ref("game/explorationEvents").on("child_added",snap=>{if(!window.__sessionBusy)presentExplorationEvent(snap.val())})
   db.ref("game/runeVictory").on("value",snap=>{const e=snap.val();if(e?.id&&e.time>=(window.__pageLoadTime||0))enqueueSharedVisual("rune-victory-"+e.id,_showRuneVictoryNow,5200)})

@@ -1122,7 +1122,7 @@ function getShopPrice(item, partyLvl) {
 }
 
 function getShopStats(item, partyLvl) {
-  const lvl = partyLvl || 1
+  const lvl = Math.max(1,Math.min(99,Math.round(Number(partyLvl)||1)))
   if (item.id === "cartedumonde") return "Accès aux repères du monde"
   if (item.id === "selle")      return "Poids Bibi +" + (5 + lvl * 3)
   if (item.id === "amulette")   return "Curse -" + Math.min(3, 1 + Math.floor(lvl / 3))
@@ -1130,7 +1130,9 @@ function getShopStats(item, partyLvl) {
   if (item.scaling === 0)       return item.baseStats
   const match = item.baseStats.match(/(\d+)/)
   if (!match) return item.baseStats
-  const scaled = parseInt(match[1]) + Math.floor(item.scaling * (lvl - 1) * 0.5)
+  // Equipment on display improves slowly. Acquired inventory values stay fixed.
+  const equipment = item.category === "arme" || item.category === "armure"
+  const scaled = parseInt(match[1]) + (equipment ? Math.floor(lvl / 5) : Math.floor(item.scaling * (lvl - 1) * 0.5))
   return item.baseStats.replace(match[1], scaled)
 }
 

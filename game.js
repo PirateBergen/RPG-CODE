@@ -2086,7 +2086,7 @@ function showMobSpecialAttackEvent(data) {
 
   const mobName = document.createElement("div")
   mobName.style.cssText = "position:relative;z-index:2;font-family:Cinzel,serif;font-size:12px;letter-spacing:4px;color:" + style.accent + ";margin-bottom:10px;"
-  mobName.innerText = String(data.mobName || "")
+  mobName.innerText = pikaDisplayText(data.mobName || "")
   box.appendChild(mobName)
 
   const title = document.createElement("div")
@@ -2118,13 +2118,13 @@ function showMobSpecialAttackEvent(data) {
     }
     const flavor = document.createElement("div")
     flavor.style.cssText = "position:relative;z-index:2;font-family:'IM Fell English',serif;font-size:clamp(18px,2.5vw,28px);line-height:1.45;color:#ffd7c2;max-width:620px;margin:0 auto 18px auto;"
-    flavor.innerText = String(data.flavor)
+    flavor.innerText = pikaDisplayText(data.flavor)
     flavorHost.appendChild(flavor)
   }
 
   const damage = document.createElement("div")
   damage.style.cssText = "position:relative;z-index:2;font-family:Cinzel,serif;font-size:30px;font-weight:bold;color:" + style.accent + ";text-shadow:0 0 18px " + style.accent + ";"
-  damage.innerText = "→ " + String(data.target || "") + "  •  -" + clampInteger(data.dmg, 0, 9999) + " HP"
+  damage.innerText = "→ " + pikaDisplayText(data.target || "") + "  •  -" + clampInteger(data.dmg, 0, 9999) + " HP"
   box.appendChild(damage)
 
   let sceneAudio = null
@@ -2214,19 +2214,19 @@ function showMobAttackPresentation(data) {
   if (data.mobName) {
     const mobName = document.createElement("div")
     mobName.className = "combatEventMobName"
-    mobName.innerText = String(data.mobName)
+    mobName.innerText = pikaDisplayText(data.mobName)
     panel.appendChild(mobName)
   }
   const attackName = document.createElement("div")
   attackName.className = "combatEventAttackName"
-  attackName.innerText = String(data.attackName || "")
+  attackName.innerText = pikaDisplayText(data.attackName || "")
   panel.appendChild(attackName)
   const targetLine = document.createElement("div")
   targetLine.className = "combatEventTarget"
   targetLine.appendChild(document.createTextNode("Cible "))
   const targetStrong = document.createElement("span")
   targetStrong.className = "combatEventTargetName"
-  targetStrong.innerText = String(data.target || "")
+  targetStrong.innerText = pikaDisplayText(data.target || "")
   targetLine.appendChild(targetStrong)
   panel.appendChild(targetLine)
   const damage = document.createElement("div")
@@ -3375,7 +3375,7 @@ function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
   resultBox.style.transform = "translate(-50%, -50%)"
   resultBox.offsetHeight
 
-  const safeName = String(playerName).replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  const safeName = pikaDisplayText(playerName).replace(/</g, "&lt;").replace(/>/g, "&gt;")
   const naturalRoll = Number.isFinite(parseInt(rawRoll, 10)) ? parseInt(rawRoll, 10) : final
   const isCritical = rollMeta.crit ?? (Number.isInteger(naturalRoll) && Number.isInteger(max) && naturalRoll === max && naturalRoll > 1)
   const isFailure = rollMeta.fail ?? (Number.isInteger(naturalRoll) && naturalRoll === 1)
@@ -3605,7 +3605,7 @@ function openSessionLog() {
     for(const e of entries){
       const row=document.createElement("div");row.style.cssText="font-size:12px;color:#c8d8d0;padding:6px 0;border-bottom:1px solid rgba(30,90,102,0.15);line-height:1.5"
       const ts=document.createElement("span");ts.style.cssText="color:#1e8a9a;margin-right:8px";ts.textContent="["+(e.display||"--:--")+"] "+(e.status==="applied"?"✓ ":"")
-      const msg=document.createElement("span");msg.textContent=String(e.text||"");row.append(ts,msg);content.appendChild(row)
+      const msg=document.createElement("span");msg.textContent=pikaDisplayText(e.text);row.append(ts,msg);content.appendChild(row)
     }
     if(!entries.length){const empty=document.createElement("div");empty.className="logEmpty";empty.textContent="Aucune entrée";content.appendChild(empty)}
   }

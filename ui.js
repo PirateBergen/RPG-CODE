@@ -396,7 +396,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
 
   const flavorText = meta.preview ? "APERÇU — aucun dégât ni soin appliqué" : outcome.mode === "heal"
     ? heroDisplayName(playerId).toUpperCase() + " restaure " + (outcome.amount || 0) + " PV"
-    : heroDisplayName(playerId).toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
+    : heroDisplayName(playerId).toUpperCase() + " frappe " + pikaDisplayText(outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
 
   let flavorHost = box
   if (presentation.quoteFrame) {
@@ -512,7 +512,7 @@ function showPlayerAttackImpact(playerId, attack, outcome, meta = {}) {
   const sub = document.createElement("div")
   sub.style.cssText = "margin-top:10px;font-family:Cinzel,serif;font-size:14px;letter-spacing:1px;text-align:center;color:" + accent + ";"
   if (outcome.mode === "heal") sub.innerText = heroDisplayName(outcome.targetName || playerId).toUpperCase() + " récupère " + (outcome.amount || 0) + " PV"
-  else sub.innerText = heroDisplayName(playerId).toUpperCase() + " frappe " + (outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
+  else sub.innerText = heroDisplayName(playerId).toUpperCase() + " frappe " + pikaDisplayText(outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
   box.appendChild(sub)
 
   overlay.appendChild(box)

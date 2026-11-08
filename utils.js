@@ -218,6 +218,7 @@ function inferNotificationType(text) {
 }
 
 function showNotification(text, type) {
+  text=pikaDisplayText(text)
   const box = document.getElementById("notification")
   if (!box) return
   const resolvedType = type || inferNotificationType(text)

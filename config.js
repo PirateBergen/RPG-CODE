@@ -1382,7 +1382,7 @@ const ALLY_PNJS = [
 ]
 
 
-function heroDisplayName(id) { return ["ju","yu","you","yulian","ju pion","yu pion","jupion","yupion","youpion","you pion"].includes(String(id || "").trim().toLowerCase()) ? "Pika" : String(id || "").toUpperCase() }
+function heroDisplayName(id) { const text=pikaDisplayText(String(id || "").trim());return text==="Pika"?text:text.toUpperCase() }
 function heroPortraitFile(id) { return id === "ju" ? "pika-token.svg" : id + ".png" }
 function migratePikaCharacter(character) {
   if (!character || character.buildVersion === "pika-bard-v1") return false
@@ -1406,7 +1406,7 @@ function migratePikaRoot(root) {
   return next
 }
 
-function pikaDisplayText(text) { return String(text || "").replace(/\b(?:You|Yu|Yulian|Ju)\b/gi, "Pika") }
+function pikaDisplayText(text) { return String(text || "").replace(/\b(?:(?:ju|yu|you)(?:[\s_-]*pion)?|yulian)\b/gi, "Pika") }
 
 
 function parseInventoryWeight(text) {

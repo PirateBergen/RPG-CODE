@@ -13,6 +13,8 @@ function _getCombatArenaMap(mob, tier) {
 }
 
 
+function combatParticipantDisplayName(entry){return entry?.id==="ju"?"Pika":pikaDisplayText(entry?.label||heroDisplayName(entry?.id))}
+
 function getCombatTurnState() {
   return window.__combatTurnState || null
 }
@@ -192,7 +194,7 @@ function renderCombatInitiativeOverlay(state) {
 
     const name = document.createElement("div")
     name.style.cssText = "font-size:15px;letter-spacing:1px;color:#f0ddba;margin-bottom:8px;text-transform:uppercase;"
-    name.innerText = state.phase === "active" ? (idx + 1) + ". " + entry.label : entry.label
+    name.innerText = state.phase === "active" ? (idx + 1) + ". " + combatParticipantDisplayName(entry) : combatParticipantDisplayName(entry)
     card.appendChild(name)
 
     const rollVal = state.rolls && state.rolls[entry.id]
@@ -255,7 +257,7 @@ function renderCombatInitiativeOverlay(state) {
       if (currentEntry && currentEntry.type === "player" && typeof setCombatPreviewPlayer === "function") {
         const currentBtn = document.createElement("button")
         currentBtn.style.cssText = "padding:10px 16px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(#4d2f68,#231132);color:#f1dcff;border:1px solid rgba(179,120,219,0.55);border-radius:9px;cursor:pointer;"
-        currentBtn.innerText = "MJ Test : ouvrir le HUD de " + currentEntry.label
+        currentBtn.innerText = "MJ Test : ouvrir le HUD de " + combatParticipantDisplayName(currentEntry)
         currentBtn.onclick = () => setCombatPreviewPlayer(currentEntry.id)
         tools.appendChild(currentBtn)
       }
@@ -1032,7 +1034,7 @@ function _showCombatTurnBanner(data) {
 
   const playerColors = { greg:"#d9b37c", ju:"#8fc9ff", elo:"#9cf2cf", bibi:"#ffd28d" }
   const isMob   = !entry || entry.type === "mob"
-  const label   = isMob ? "Ennemi attaque" : (entry.label || actorId).toUpperCase() + " joue"
+  const label   = isMob ? "Ennemi attaque" : combatParticipantDisplayName(entry||{id:actorId}).toUpperCase() + " joue"
   const color   = isMob ? "#ff8080" : (playerColors[actorId] || "#f3ddb0")
 
   const old = document.getElementById("combatTurnBanner")
@@ -1092,7 +1094,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (currentIsDead) {
         if (window.__skippingDeadCombatTurn !== currentEntry.id) {
           window.__skippingDeadCombatTurn = currentEntry.id
-          showNotification((currentEntry.label || currentEntry.id).toUpperCase() + " est KO et passe son tour.")
+          showNotification(combatParticipantDisplayName(currentEntry).toUpperCase() + " est KO et passe son tour.")
           setTimeout(() => {
             if (typeof advanceCombatTurn === "function" && getCurrentCombatActorId() === currentEntry.id) advanceCombatTurn()
           }, 150)

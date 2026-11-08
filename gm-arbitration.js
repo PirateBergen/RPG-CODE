@@ -1,7 +1,7 @@
 "use strict"
 let gmArbitrationCombat=null,gmArbitrationSignature="",gmArbitrationHidden=""
 function gmArbitrationPending(){const pending=gmArbitrationCombat?.pendingResolution;return pending?.source?.kind==="free"?null:pending}
-function gmArbitrationElement(tag,text,parent){const e=document.createElement(tag);if(text!==null)e.textContent=text;if(parent)parent.appendChild(e);return e}
+function gmArbitrationElement(tag,text,parent){const e=document.createElement(tag);if(text!==null)e.textContent=pikaDisplayText(text);if(parent)parent.appendChild(e);return e}
 let gmChoiceSequence=0
 function gmArbitrationSelect(parent,label,options,value){
  const row=gmArbitrationElement("div",null,parent);row.className="gmChoice"
@@ -66,7 +66,7 @@ function renderGMArbitration(){
  if(!gameStarted||gmArbitrationHidden===p.id||gmArbitrationSignature===signature)return
  gmArbitrationSignature=signature
  const {panel,button}=gmArbitrationModal(gm?"Décision du MJ":"Une action attend la décision du MJ"),result=p.preview.result
- gmArbitrationElement("p",(result.actor==="ju"?"Pika":result.actor||"MJ").toUpperCase()+" — "+(result.attack||result.message||"Action"),panel)
+ gmArbitrationElement("p",heroDisplayName(result.actor||"MJ").toUpperCase()+" — "+(result.attack||result.message||"Action"),panel)
  if(Number.isFinite(result.roll))gmArbitrationElement("p","Jet conservé : "+result.roll+" / "+result.dice+(result.crit?" — critique réussi":result.fail?" — échec critique":""),panel)
  gmArbitrationElement("p","Prévision : "+((p.preview.changes||[]).length?(p.preview.changes||[]).map(c=>gmArbitrationLabel(c.target)+" "+(c.delta>0?"+":"")+c.delta+" PV").join(" ; "):"aucun changement de PV")+". Aucune conséquence n’est encore appliquée.",panel)
  button("Voir la carte",gmArbitrationClose)
@@ -87,7 +87,7 @@ function renderGMArbitration(){
  button("Actualiser la prévision (même jet)",()=>send("refreshIntervention"))
  button("Abandonner la préparation — conserver l’action",()=>send("dismissIntervention"))
 }
-function gmArbitrationLabel(id){return id==="ju"?"Pika":COMBAT_MOBS.includes(id)?(gmArbitrationCombat?.[id]?.name||id).toUpperCase():id==="mj"?"MJ":id.charAt(0).toUpperCase()+id.slice(1)}
+function gmArbitrationLabel(id){return id==="ju"?"Pika":COMBAT_MOBS.includes(id)?heroDisplayName(gmArbitrationCombat?.[id]?.name||id).toUpperCase():id==="mj"?"MJ":id.charAt(0).toUpperCase()+id.slice(1)}
 
 function syncGMArbitration(){gmArbitrationSignature="";renderGMArbitration()}
 document.addEventListener("DOMContentLoaded",()=>{

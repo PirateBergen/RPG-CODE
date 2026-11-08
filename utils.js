@@ -374,6 +374,7 @@ function updateTokenGlow(id, hp) {
 }
 
 function spawnPortal(tokenID) {
+  if(document.body.classList.contains("worldPartyView")&&["greg","ju","elo","bibi"].includes(tokenID))return
   const token = document.getElementById(tokenID)
   if (!token) return
   const portal = document.createElement("div")

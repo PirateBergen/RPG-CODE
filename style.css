@@ -6361,3 +6361,10 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-role="gm"]) #testSpecialsBtn{display:none!important}#isolatedTestBanner button{margin-left:8px;padding:6px 10px;cursor:pointer}.specialPreviewPanel{position:fixed;z-index:2147483646;left:50%;top:50%;transform:translate(-50%,-50%);box-sizing:border-box;width:min(460px,calc(100vw - 24px));max-height:calc(100dvh - 110px);overflow:auto;display:flex;flex-direction:column;gap:10px;padding:20px;background:#1d1711;border:1px solid #bc9454;border-radius:10px;color:#ffe5b4;font:16px/1.5 Georgia,serif}.specialPreviewPanel h2,.specialPreviewPanel p{margin:0}.specialPreviewPanel button{padding:10px;background:#30251b;color:#fff1d8;border:1px solid #a58a5b;border-radius:5px;font:16px Georgia,serif;cursor:pointer}.specialPreviewPanel button:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}
 
 .shopBox>p{text-align:center;font:700 13px Cinzel,serif;color:#f5ead8;text-shadow:0 1px 3px #000b;margin:0 0 24px}.shopItemHeading{display:flex;align-items:center;gap:10px;min-width:0}.shopItemHeading h3{font:bold 14px Cinzel,serif;color:#fff;line-height:1.4}.shopItem>p{font-size:12px;line-height:1.5;font-style:italic;color:#e8d8c0}.shopItem>.shopButton{align-self:flex-start;font-size:10px;padding:4px 8px;background:rgba(0,0,0,.2)}@media(max-width:600px){.shopBox:not(.shopEditor){padding:32px 20px 24px}.shopBox h2{font-size:23px;letter-spacing:2px}}
+
+/* One shared party marker on the world map, anchored by its tip. */
+.worldPartyView #map #greg,.worldPartyView #map #ju,.worldPartyView #map #elo,.worldPartyView #map #bibi{display:none!important}
+#worldPartyMarker{position:absolute;width:56px;height:66px;transform:translate(-50%,-100%);z-index:100;touch-action:none;cursor:grab;user-select:none;background:none;border:0;filter:drop-shadow(0 3px 4px #0008)}
+#worldPartyMarker:active{cursor:grabbing}
+#worldPartyMarker[hidden]{display:none}
+#worldPartyMarker img{width:100%;height:100%;object-fit:contain;pointer-events:none}

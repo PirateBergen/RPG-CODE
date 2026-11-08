@@ -6,6 +6,57 @@ window.__explorationOnline=false
 let explorationCoordinatorRef=null,explorationCoordinatorCb=null,explorationQueue=Promise.resolve()
 const explorationPending=new Set()
 
+
+// The world marker has its own coordinates; individual tokens remain untouched.
+function isWorldPartyMap(){return String(currentMap).toLowerCase()==="mapmonde.jpg"}
+let worldPartyDrag=null,worldPartySaving=false
+function syncWorldPartyMarker(){
+ const visible=gameStarted&&gameState==="GAME"&&!combatActive&&isWorldPartyMap()
+ document.body.classList.toggle("worldPartyView",visible)
+ let marker=document.getElementById("worldPartyMarker")
+ if(!visible){worldPartyDrag=null;if(marker)marker.hidden=true;return}
+ const map=document.getElementById("map");if(!map)return
+ if(!marker){
+  marker=document.createElement("div");marker.id="worldPartyMarker";marker.setAttribute("role","img");marker.setAttribute("aria-label","Position du groupe")
+  const image=document.createElement("img");image.src="images/world-party-marker.png?v="+window.GAME_V;image.alt="";image.draggable=false;marker.appendChild(image);map.appendChild(marker)
+  marker.addEventListener("pointerdown",event=>{
+   if(event.button!==0||worldPartySaving||!isGM)return
+   try{requireActionAccess({gmOnly:true});requireExplorationConnection()}catch(error){showNotification(error.message);return}
+   event.preventDefault();event.stopPropagation();worldPartyDrag={id:event.pointerId,map:currentMap};marker.setPointerCapture?.(event.pointerId)
+  })
+  marker.addEventListener("pointermove",event=>{
+   if(!worldPartyDrag||worldPartyDrag.id!==event.pointerId)return
+   if(!isGM||!isWorldPartyMap()||gameState!=="GAME"){worldPartyDrag=null;syncWorldPartyMarker();return}
+   const rect=map.getBoundingClientRect(),scale=Number(cameraZoom)||1
+   marker.style.left=Math.max(0,Math.min(map.offsetWidth,(event.clientX-rect.left)/scale))+"px"
+   marker.style.top=Math.max(0,Math.min(map.offsetHeight,(event.clientY-rect.top)/scale))+"px"
+  })
+  marker.addEventListener("pointerup",async event=>{
+   if(!worldPartyDrag||worldPartyDrag.id!==event.pointerId)return
+   worldPartyDrag=null;worldPartySaving=true
+   try{await writeWorldPartyPosition({x:parseFloat(marker.style.left),y:parseFloat(marker.style.top)})}catch(error){showNotification("Repère non enregistré : "+error.message)}finally{worldPartySaving=false;syncWorldPartyMarker()}
+  })
+  for(const type of ["pointercancel","lostpointercapture"])marker.addEventListener(type,()=>{if(worldPartyDrag){worldPartyDrag=null;syncWorldPartyMarker()}})
+ }
+ marker.hidden=false;marker.style.pointerEvents=isGM?"auto":"none";marker.title=isGM?"Déplacer le repère du groupe":"Position du groupe"
+ if(worldPartyDrag||worldPartySaving)return
+ const position=window.__explorationState.worldPartyPosition
+ marker.style.left=(Number.isFinite(position?.x)?position.x:map.offsetWidth/2)+"px"
+ marker.style.top=(Number.isFinite(position?.y)?position.y:map.offsetHeight/2)+"px"
+}
+async function writeWorldPartyPosition(value){
+ requireActionAccess({gmOnly:true});requireExplorationConnection()
+ if(!isWorldPartyMap()||gameState!=="GAME"||combatActive)throw Error("Le repère se déplace sur la carte du monde uniquement.")
+ if(!Number.isFinite(value?.x)||!Number.isFinite(value?.y))throw Error("Position invalide")
+ const map=document.getElementById("map"),position={x:Math.max(0,Math.min(map.offsetWidth,value.x)),y:Math.max(0,Math.min(map.offsetHeight,value.y))},uid=window.__authUid,revision=persistenceRevision||"initial"
+ const result=await reliableRootTransaction(root=>{
+  if(root?.roles?.[uid]!=="gm"||String(root?.game?.map).toLowerCase()!=="mapmonde.jpg"||(root?.sessionControl?.revision||"initial")!==revision||root?.sessionControl?.phase||root?.combat?.active||root?.game?.combatState?.active) return undefined
+  root.game.worldPartyPosition=position;return root
+ })
+ if(!result.committed)throw Error("La scène a changé. Réessayez sur la carte du monde.")
+ window.__explorationState.worldPartyPosition=position;syncWorldPartyMarker()
+}
+
 function requireExplorationConnection(){
   requireActionAccess()
   if(!window.__explorationOnline)throw new Error("Action non envoyée : connexion perdue. Attendez la reconnexion avant de réessayer.")
@@ -37,6 +88,7 @@ async function requestExplorationAction(kind,actor,payload){
 async function writeExplorationPosition(id,value,manual=false){
   requireExplorationConnection()
   if(!isGM&&!canAccessCharacter(id))throw new Error("Vous ne contrôlez pas ce pion")
+  if(isWorldPartyMap()&&["greg","ju","elo","bibi"].includes(id))throw new Error("Sur la carte du monde, le MJ déplace le repère du groupe.")
   const position=explorationPosition(value)
   if(id==="bibi")await db.ref("tokens/bibi").transaction(current=>explorationBibiPosition(current,position,manual))
   else{
@@ -78,6 +130,7 @@ async function removePersistentWanted(id){
 }
 function syncSharedExplorationState(game){
   Object.assign(window.__explorationState,game)
+  syncWorldPartyMarker()
   if(!gameStarted||window.__sessionBusy)return
   renderPersistentWantedPosters(window.__explorationState.wantedPosters)
   refreshExplorationMapEvents()
@@ -144,7 +197,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(isGM)cleanupLegacyWantedElements().catch(error=>console.warn(error))
   db.ref(".info/connected").on("value",snap=>{window.__explorationOnline=!!snap.val();if(!snap.val()){selected=null;_state.tokenDragging=false;cameraDragging=false}})
   db.ref("tokens").on("value",snap=>{window.__tokenPositions=snap.val()||{};if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()})
-  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
+  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
   db.ref("events").on("value",snap=>{window.__explorationWorldEvents=snap.val()||{};refreshExplorationMapEvents()})
   db.ref("game/explorationEvents").on("child_added",snap=>{if(!window.__sessionBusy)presentExplorationEvent(snap.val())})
   db.ref("game/runeVictory").on("value",snap=>{const e=snap.val();if(e?.id&&e.time>=(window.__pageLoadTime||0))enqueueSharedVisual("rune-victory-"+e.id,_showRuneVictoryNow,5200)})

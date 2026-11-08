@@ -610,6 +610,7 @@ function playMadnessHit() {
 }
 
 function updateWorldMapFogTopLeft() {
+  if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
   const fog = document.getElementById("worldMapFogTopLeft")
   if (!fog) return
   const shouldShow = currentMap === "MAPMONDE.jpg" && !window.worldMapFogTopLeftHidden && gameState === "GAME"
@@ -3502,6 +3503,7 @@ function refreshActivePNJs() {
   function setGameState(state) {
     const previousState=gameState
     gameState = state
+    if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
     if(state==="COMBAT"&&previousState!=="COMBAT"&&typeof suspendExplorationForCombat==="function")suspendExplorationForCombat()
   if (state !== "GAME" && state !== "COMBAT" && typeof cleanupRuneChallengeUI === "function") cleanupRuneChallengeUI()
   switch (state) {
@@ -3756,6 +3758,7 @@ function showTavern() {
     if (mapName === "MAPMONDE.jpg") { map.style.backgroundSize = "contain"; map.style.backgroundColor = "#0a0a1a" }
     else                            { map.style.backgroundSize = "cover";   map.style.backgroundColor = "" }
     currentMap = mapName
+    if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
     calculateMinZoom(); cameraZoom = minZoom; cameraX = 0; cameraY = 0; updateCamera()
     // Le zoom sauvegardé sera restauré sans réécrire la session.
     if (isGM && window.isNewGame) maybeSpawnMapLoreBook(mapName)

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261108.22"</script>
+  <script>window.GAME_V = "20261108.23"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -327,11 +327,18 @@
   <button class="gmIcon" onclick="toggleGMSection('mobMenu2')"     title="Mobs (T)"><img src="images/mobicon.png" alt="Mobs"></button>
   <button class="gmIcon" onclick="toggleGMSection('xpMenu')"       title="XP"><img src="images/lvlicon.png" alt="Niveau"></button>
   <button class="gmIcon" onclick="toggleGMSection('elementsMenu')" title="Éléments (E)"><img src="images/elementicon.png" alt="Éléments"></button>
-  <button class="gmIcon" id="nightModeBtn" type="button" onclick="toggleNightMode()" title="Faire tomber la nuit" aria-label="Faire tomber la nuit" aria-pressed="false">🌙</button>
+  <button class="gmIcon" id="nightModeBtn" type="button" onclick="toggleGMSection('nightModeMenu')" title="Jour et nuit" aria-label="Jour et nuit" aria-controls="nightModeMenu" aria-pressed="false">🌙</button>
   <button class="gmIcon" id="allyBtn" onclick="openAllyPNJPanel()" title="Alliés (A)" style="display:none;">⚔</button>
 </div>
 
 <!-- SECTIONS MJ -->
+<div id="nightModeMenu" class="gmSection" aria-label="Jour et nuit">
+  <h3>Jour et nuit</h3>
+  <p id="nightModeStatus" role="status">Jour</p>
+  <button id="nightToggleAction" type="button" onclick="toggleNightMode()">Faire tomber la nuit</button>
+  <button id="nightInteriorAction" type="button" onclick="toggleNightInterior()" aria-pressed="false">Intérieur : masquer les effets de nuit</button>
+  <p style="max-width:300px;font-size:13px;line-height:1.4">Dehors, une lanterne dans l’inventaire de Greg, Pika, Elo ou Bibi éclaire le groupe. Sans lanterne, la scène est presque noire. Le mode intérieur rend la scène visible sans faire revenir le jour.</p>
+</div>
 <div id="gmCharacters" class="gmSection">
   <button onclick="openHeroManagement()">Attribution des héros</button>
   <button onclick="openCharacterSheet('greg')">Greg</button>

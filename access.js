@@ -97,6 +97,7 @@ function syncCharacterSubscriptions() {
 
 function publishCharacterCombatSummary(id, data) {
   if (!canAccessCharacter(id)) return
+  if(typeof queueNightLightingSync==="function")queueNightLightingSync()
   const equipmentModifiers = getInventoryStatModifiers(data.inventaire || "")
   const parsedWeight = typeof _parseInventoryWeight === "function" ? _parseInventoryWeight(data.inventaire || "") : null
   const carriedWeight = parsedWeight === null ? null : (Number.isFinite(parsedWeight) ? Math.max(0, parsedWeight) : 0)

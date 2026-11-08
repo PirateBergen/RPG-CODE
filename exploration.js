@@ -58,6 +58,46 @@ async function writeWorldPartyPosition(value){
 }
 
 
+
+function partyHasLantern(characters){
+ return ["greg","ju","elo","bibi"].some(id=>String(characters?.[id]?.inventaire||"").split(/\r?\n/).some(line=>{
+  const name=line.split(/[—;]/)[0].normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+  if(!/\blanternes?\b/.test(name)||/\b(?:sans|aucune?|pas de)\b.*\blanterne/.test(name))return false
+  const quantity=line.toLowerCase().replace(/\([^)]*\)/g," ").match(/(?:^|\s)[x×]\s*(\d+(?:[.,]\d+)?)(?=\s|$)/i)
+  return !quantity||Number(quantity[1].replace(",","."))>0
+ }))
+}
+let nightLightingTimer,nightLightingBusy=false,nightLightingDirty=false
+function queueNightLightingSync(){
+ if(window.__authRole!=="gm")return
+ nightLightingDirty=true;clearTimeout(nightLightingTimer)
+ nightLightingTimer=setTimeout(syncPartyNightLighting,120)
+}
+async function syncPartyNightLighting(){
+ if(nightLightingBusy)return
+ if(window.__authRole!=="gm"||!window.__explorationOnline||window.__sessionBusy||!window.__explorationState.nightMode?.enabled)return
+ nightLightingBusy=true;nightLightingDirty=false
+ try{
+  const uid=window.__authUid,revision=persistenceRevision||"initial"
+  await reliableRootTransaction(root=>{
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||!root.game?.nightMode?.enabled)return undefined
+   const lit=partyHasLantern(root.characters);if(root.game.nightMode.groupLantern===lit)return undefined
+   root.game.nightMode.groupLantern=lit;return root
+  })
+ }catch(error){console.warn("Éclairage nocturne non confirmé",error.message)}finally{nightLightingBusy=false;if(nightLightingDirty)queueNightLightingSync()}
+}
+async function toggleNightInterior(){
+ try{
+  requireActionAccess({gmOnly:true});requireExplorationConnection()
+  const uid=window.__authUid,revision=persistenceRevision||"initial"
+  const result=await reliableRootTransaction(root=>{
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision)return undefined
+   root.game||={};root.game.nightMode={...root.game.nightMode,indoors:root.game.nightMode?.indoors!==true,groupLantern:partyHasLantern(root.characters)};return root
+  })
+  if(!result.committed)throw Error("La partie a changé. Réessayez.")
+ }catch(error){showNotification("Éclairage intérieur non enregistré : "+error.message)}
+}
+
 let nightModeSignature,nightNoticeTimer
 function syncNightMode(){
  const state=window.__explorationState.nightMode,enabled=state?.enabled===true,visible=gameStarted&&["GAME","COMBAT"].includes(gameState),signature=state?.id||null,changed=nightModeSignature!==undefined&&signature!==nightModeSignature
@@ -65,9 +105,16 @@ function syncNightMode(){
  let filter=document.getElementById("nightMapFilter")
  const map=document.getElementById("map")
  if(!filter&&map){filter=document.createElement("div");filter.id="nightMapFilter";filter.setAttribute("aria-hidden","true");map.appendChild(filter)}
- if(filter)filter.classList.toggle("active",visible&&enabled)
+ const indoors=state?.indoors===true,lit=state?.groupLantern===true
+ if(filter)filter.classList.toggle("active",visible&&enabled&&!indoors)
+ let darkness=document.getElementById("nightDarknessFilter")
+ if(!darkness&&map){darkness=document.createElement("div");darkness.id="nightDarknessFilter";darkness.setAttribute("aria-hidden","true");map.appendChild(darkness)}
+ if(darkness)darkness.classList.toggle("active",visible&&enabled&&!indoors&&!lit)
+ const action=document.getElementById("nightToggleAction");if(action)action.textContent=enabled?"Faire revenir le jour":"Faire tomber la nuit"
+ const interior=document.getElementById("nightInteriorAction");if(interior){interior.textContent=indoors?"Extérieur : rétablir les effets de nuit":"Intérieur : masquer les effets de nuit";interior.setAttribute("aria-pressed",String(indoors))}
+ const status=document.getElementById("nightModeStatus");if(status)status.textContent=(enabled?"Nuit":"Jour")+" · "+(indoors?"Intérieur":lit?"Extérieur · lanterne dans le groupe":"Extérieur · sans lanterne")
  const button=document.getElementById("nightModeBtn")
- if(button){button.setAttribute("aria-pressed",String(enabled));button.title=enabled?"Faire revenir le jour":"Faire tomber la nuit";button.setAttribute("aria-label",button.title);button.textContent=enabled?"☀":"🌙"}
+ if(button){button.setAttribute("aria-pressed",String(enabled));button.title="Jour et nuit — "+(enabled?"nuit active":"jour actif");button.setAttribute("aria-label",button.title);button.textContent=enabled?"☀":"🌙"}
  if(!visible){clearTimeout(nightNoticeTimer);document.getElementById("nightTransitionNotice")?.remove();return}
  if(!changed||!state?.id||state.time<(window.__pageLoadTime||0))return
  clearTimeout(nightNoticeTimer);document.getElementById("nightTransitionNotice")?.remove()
@@ -81,7 +128,7 @@ async function toggleNightMode(){
   const uid=window.__authUid,revision=persistenceRevision||"initial",id=db.ref("game").push().key,time=Date.now()
   const result=await reliableRootTransaction(root=>{
    if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision)return undefined
-   root.game||={};root.game.nightMode={enabled:root.game.nightMode?.enabled!==true,id,time};return root
+   root.game||={};root.game.nightMode={...root.game.nightMode,enabled:root.game.nightMode?.enabled!==true,groupLantern:partyHasLantern(root.characters),id,time};return root
   })
   if(!result.committed)throw Error("La partie a changé. Réessayez.")
  }catch(error){showNotification("Changement d’ambiance non enregistré : "+error.message)}
@@ -96,6 +143,7 @@ function syncExplorationCoordinator(){
   if(explorationCoordinatorRef&&explorationCoordinatorCb)explorationCoordinatorRef.off("child_added",explorationCoordinatorCb)
   explorationCoordinatorRef=null;explorationCoordinatorCb=null
   if(window.__authRole!=="gm")return
+  queueNightLightingSync()
   explorationCoordinatorRef=db.ref("explorationRequests")
   explorationCoordinatorCb=snap=>{
     if(snap.val()?.status!=="queued")return
@@ -162,6 +210,7 @@ function syncSharedExplorationState(game){
   Object.assign(window.__explorationState,game)
   syncWorldPartyMarker()
   syncNightMode()
+  if(Object.hasOwn(game,"nightMode"))queueNightLightingSync()
   if(!gameStarted||window.__sessionBusy)return
   renderPersistentWantedPosters(window.__explorationState.wantedPosters)
   refreshExplorationMapEvents()
@@ -226,7 +275,7 @@ function syncCemeteryPresentation(data){
 document.addEventListener("DOMContentLoaded",()=>{
   syncExplorationCoordinator()
   if(isGM)cleanupLegacyWantedElements().catch(error=>console.warn(error))
-  db.ref(".info/connected").on("value",snap=>{window.__explorationOnline=!!snap.val();if(!snap.val()){selected=null;_state.tokenDragging=false;cameraDragging=false}})
+  db.ref(".info/connected").on("value",snap=>{window.__explorationOnline=!!snap.val();if(snap.val())queueNightLightingSync();if(!snap.val()){selected=null;_state.tokenDragging=false;cameraDragging=false}})
   db.ref("tokens").on("value",snap=>{window.__tokenPositions=snap.val()||{};if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()})
   for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition","nightMode"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
   db.ref("events").on("value",snap=>{window.__explorationWorldEvents=snap.val()||{};refreshExplorationMapEvents()})

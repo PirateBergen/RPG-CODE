@@ -947,13 +947,16 @@ function balancedCombatMob(name,tier,partyLevel,enemyCount=1){
  const groupFactor=classic?[1,.85,.70][count-1]:1,damageGroupFactor=classic?[1,.92,.84][count-1]:1
  const baseline={weak:28,normal:60,strong:100,boss:300,world:400}[category]
  const species=name==="roi"&&category==="world"?1.2:Math.max(category==="world"?1:.8,Math.min(1.2,(mobStats[name]?.baseHP||baseline)/baseline))
- const unit=category==="world"?10:5,baseBalancedHP=Math.max(10,Math.round(getPartyDamageReference(level)*({weak:.8,normal:1.5,strong:2.5,boss:6,world:12}[category])*species/unit)*unit)
+ const unit=category==="world"?10:5,baseBalancedHP=Math.max(10,Math.round(getPartyDamageReference(level)*({weak:1,normal:2.1,strong:3,boss:6,world:12}[category])*species/unit)*unit)
  const hp=Math.max(5,Math.round(baseBalancedHP*groupFactor/5)*5)
  const partyHpReference=Math.round(["greg","ju","elo"].reduce((n,id)=>n+getPlayerStatsAtLevel(id,level).hp,0)/3)
- return {name,hp,maxHP:hp,lvl:Math.max(1,level+({weak:-1,normal:0,strong:2,boss:3,world:6}[category])),tier:chosenTier,balanceVersion:1,balanceClass:category,partyLevel:level,partyHpReference,baseBalancedHP,groupFactor,damageGroupFactor,actionsPerTurn:category==="world"?2:1}
+ return {name,hp,maxHP:hp,lvl:Math.max(1,level+({weak:0,normal:1,strong:3,boss:3,world:6}[category])),tier:chosenTier,balanceVersion:2,balanceClass:category,partyLevel:level,partyHpReference,baseBalancedHP,groupFactor,damageGroupFactor,actionsPerTurn:category==="world"?2:1}
 }
 function getBalancedMobDamageRange(attack,mob){
- const category=mob.balanceClass||getMobBalanceClass(mob.name,mob.tier),rates={weak:[.08,.12],normal:[.12,.17],strong:[.18,.25],boss:[.23,.32],world:[.18,.26]}[category]
+ const category=mob.balanceClass||getMobBalanceClass(mob.name,mob.tier)
+ // Keep damage from already saved encounters stable. New ordinary enemies hit harder.
+ const damageRates=mob.balanceVersion===2?{weak:[.10,.14],normal:[.18,.25],strong:[.22,.30],boss:[.23,.32],world:[.18,.26]}:{weak:[.08,.12],normal:[.12,.17],strong:[.18,.25],boss:[.23,.32],world:[.18,.26]}
+ const rates=damageRates[category]
  const normals=getMobAttacksForMob(mob.name,mob.tier).filter(a=>!a.special&&a.effect!=="all"),average=normals.reduce((n,a)=>n+(a.dmgMin+a.dmgMax)/2,0)/Math.max(1,normals.length)||10
  const weight=Math.max(.8,Math.min(1.2,((Number(attack.dmgMin)+Number(attack.dmgMax))/2||average)/average))
  const fury=category==="world"&&mob.hp<=mob.maxHP*.5?1.15:1
@@ -965,7 +968,7 @@ function getBalancedMobDamageRange(attack,mob){
 }
 
 function getMobDamageRange(attack, mobLvl, mobTier = "weak", mobData = null) {
-  if(mobData?.balanceVersion===1)return getBalancedMobDamageRange(attack,mobData)
+  if([1,2].includes(mobData?.balanceVersion))return getBalancedMobDamageRange(attack,mobData)
   const lvl = Math.max(1, parseInt(mobLvl, 10) || 1)
   let levelBonus = 0
   for (let current = 2; current <= lvl; current += 1) {

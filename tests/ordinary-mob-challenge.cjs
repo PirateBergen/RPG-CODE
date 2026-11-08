@@ -1,0 +1,7 @@
+const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict'),ctx=vm.createContext({});vm.runInContext(fs.readFileSync(path.join(__dirname,'../config.js'),'utf8'),ctx);const run=s=>JSON.parse(JSON.stringify(vm.runInContext(s,ctx)));
+for(const level of [1,5,10,15,20,50,99])for(const tier of ['weak','medium','high']){
+ const m=run('balancedCombatMob("garde",'+JSON.stringify(tier)+','+level+')');ctx.m=m;const a=run('getMobAttacksForMob("garde",m.tier).find(a=>!a.special&&a.effect!=="all")');ctx.a=a;
+ const fresh=run('getMobDamageRange(a,m.lvl,m.tier,m)'),old=run('getMobDamageRange(a,m.lvl,m.tier,{...m,balanceVersion:1})');assert(fresh.min>=old.min&&fresh.max>old.max);assert.equal(m.balanceVersion,2);
+ const duo=run('balancedCombatMob("garde",'+JSON.stringify(tier)+','+level+',2)'),trio=run('balancedCombatMob("garde",'+JSON.stringify(tier)+','+level+',3)');assert(trio.hp<duo.hp&&duo.hp<m.hp);assert(trio.hp*3>duo.hp*2&&duo.hp*2>m.hp);
+}
+const report=run('[5,10].map(level=>{const mob=balancedCombatMob("garde","medium",level),attack=getMobAttacksForMob("garde","medium").find(a=>!a.special&&a.effect!=="all");return{level,hp:mob.hp,lvl:mob.lvl,damage:getMobDamageRange(attack,mob.lvl,mob.tier,mob),oldDamage:getMobDamageRange(attack,mob.lvl,mob.tier,{...mob,balanceVersion:1})}})');assert.deepEqual(report[0].oldDamage,{min:19,max:27});assert(report[0].hp>=135&&report[0].hp<=145);console.log(JSON.stringify(report));console.log('OK ordinary tiers stronger, party groups scaled, saved version-1 damage preserved');

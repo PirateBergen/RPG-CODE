@@ -2,12 +2,36 @@
 let gmArbitrationCombat=null,gmArbitrationScene=null,gmArbitrationSignature="",gmArbitrationHidden=""
 function gmArbitrationPending(){return gmArbitrationCombat?.pendingResolution||gmArbitrationScene}
 function gmArbitrationElement(tag,text,parent){const e=document.createElement(tag);if(text!==null)e.textContent=text;if(parent)parent.appendChild(e);return e}
-function gmArbitrationSelect(parent,label,options,value){const row=gmArbitrationElement("label",label+" ",parent),e=gmArbitrationElement("select",null,row);for(const [v,t]of options){const o=gmArbitrationElement("option",t,e);o.value=v}e.value=value;return e}
+let gmChoiceSequence=0
+function gmArbitrationSelect(parent,label,options,value){
+ const row=gmArbitrationElement("div",null,parent);row.className="gmChoice"
+ const id="gmChoice-"+(++gmChoiceSequence),caption=gmArbitrationElement("span",label||"Règle pour cette cible",row);caption.id=id+"-label"
+ const select=gmArbitrationElement("select",null,row);select.hidden=true;select.tabIndex=-1;select.setAttribute("aria-hidden","true")
+ for(const [v,t]of options){const o=gmArbitrationElement("option",t,select);o.value=v}select.value=value
+ const trigger=gmArbitrationElement("button",null,row);trigger.type="button";trigger.id=id;trigger.className="gmChoiceTrigger";trigger.setAttribute("role","combobox");trigger.setAttribute("aria-haspopup","listbox");trigger.setAttribute("aria-expanded","false");trigger.setAttribute("aria-controls",id+"-list");trigger.setAttribute("aria-labelledby",caption.id+" "+id)
+ const list=gmArbitrationElement("div",null,row);list.id=id+"-list";list.className="gmChoiceList";list.hidden=true;list.setAttribute("role","listbox");list.setAttribute("aria-labelledby",caption.id)
+ let active=Math.max(0,select.selectedIndex)
+ const items=options.map(([v,t],i)=>{const b=gmArbitrationElement("button",t,list);b.type="button";b.tabIndex=-1;b.id=id+"-option-"+i;b.setAttribute("role","option");b.dataset.value=v;b.addEventListener("pointerdown",e=>e.preventDefault());b.addEventListener("click",()=>commit(i));return b})
+ const refresh=()=>{trigger.textContent=select.selectedOptions[0]?.textContent||"Choisir";items.forEach((b,i)=>{b.setAttribute("aria-selected",String(i===select.selectedIndex));b.classList.toggle("gmChoiceActive",i===active)});if(!list.hidden)trigger.setAttribute("aria-activedescendant",items[active]?.id||"")}
+ const close=()=>{list.hidden=true;trigger.setAttribute("aria-expanded","false");trigger.removeAttribute("aria-activedescendant")};row.__closeChoice=close
+ const open=()=>{for(const other of parent.closest("#gmArbitrationModal").querySelectorAll(".gmChoice"))if(other!==row)other.__closeChoice?.();active=Math.max(0,select.selectedIndex);list.hidden=false;trigger.setAttribute("aria-expanded","true");refresh();items[active]?.scrollIntoView?.({block:"nearest"})}
+ function commit(i){select.value=String(options[i][0]);active=i;close();refresh();select.dispatchEvent(new Event("change",{bubbles:true}));trigger.focus()}
+ select.addEventListener("change",refresh)
+ trigger.addEventListener("click",()=>list.hidden?open():close())
+ trigger.addEventListener("keydown",e=>{
+  if(["ArrowDown","ArrowUp","Home","End"].includes(e.key)){e.preventDefault();e.stopPropagation();if(list.hidden){open();if(e.key==="Home")active=0;else if(e.key==="End")active=items.length-1}else active=e.key==="Home"?0:e.key==="End"?items.length-1:(active+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;refresh();items[active]?.scrollIntoView?.({block:"nearest"})}
+  else if(e.key==="Enter"||e.key===" "){e.preventDefault();e.stopPropagation();if(list.hidden)open();else commit(active)}
+  else if(e.key==="Escape"&&!list.hidden){e.preventDefault();e.stopPropagation();close()}
+  else if(e.key==="Tab")close()
+ });refresh();return select
+}
 function gmArbitrationNumber(parent,label,value,min=0,max=50000){const row=gmArbitrationElement("label",label+" ",parent),e=gmArbitrationElement("input",null,row);e.type="number";e.min=min;e.max=max;e.value=value;return e}
 function gmArbitrationCheck(parent,label,checked){const row=gmArbitrationElement("label",null,parent),e=gmArbitrationElement("input",null,row);e.type="checkbox";e.checked=checked;row.appendChild(document.createTextNode(" "+label));return e}
 function gmArbitrationModal(title){
  document.getElementById("gmArbitrationModal")?.remove()
  const overlay=gmArbitrationElement("div",null,document.body);overlay.id="gmArbitrationModal";overlay.style.cssText="position:fixed;inset:0;z-index:2147483646;background:#000c;display:flex;align-items:center;justify-content:center;padding:15px;color:#ffe5b4"
+ overlay.addEventListener("keydown",e=>{if(e.key!=="Escape")e.stopPropagation()})
+ overlay.addEventListener("pointerdown",e=>{for(const row of overlay.querySelectorAll(".gmChoice"))if(!row.contains(e.target))row.__closeChoice?.()})
  const panel=gmArbitrationElement("div",null,overlay);panel.style.cssText="background:#20150e;border:2px solid #bc9454;border-radius:12px;padding:22px;width:min(700px,95vw);max-height:88vh;overflow:auto;font:17px Georgia;display:flex;flex-direction:column;gap:12px"
  gmArbitrationElement("h2",title,panel)
  const error=gmArbitrationElement("p","",panel);error.setAttribute("role","alert");error.style.color="#ffb1a5"

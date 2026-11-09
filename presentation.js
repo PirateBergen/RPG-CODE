@@ -135,7 +135,7 @@ function playOregonBombardment(pnj,action,targetId,onComplete){
  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const audio of sounds){audio.pause();audio.currentTime=0}if(window.__cancelOregonBombardment===cleanup)window.__cancelOregonBombardment=null}
  window.__cancelOregonBombardment=cleanup
  const later=(fn,delay)=>{const timer=setTimeout(()=>{timers.delete(timer);if(cancelled)return;if(combatId&&window.__combatSnapshot?.id!==combatId){cleanup();return}fn()},delay);timers.add(timer)}
- const sound=(file,volume)=>{const audio=new Audio("audio/"+file);sounds.add(audio);setManagedAudioBaseVolume(audio,volume,"effects");audio.play().catch(()=>{});audio.addEventListener("ended",()=>sounds.delete(audio),{once:true})}
+ const sound=(file,volume)=>{const audio=new Audio("audio/"+file);audio.__specialEffect=true;sounds.add(audio);setManagedAudioBaseVolume(audio,volume,"effects");audio.play().catch(()=>{});audio.addEventListener("ended",()=>sounds.delete(audio),{once:true})}
  const overlay=document.createElement("div");overlay.className="oregonBombardmentOverlay";overlay.setAttribute("role","status");overlay.setAttribute("aria-label","Les troupes de Mélenchon bombardent la cible depuis l’Oregon III");document.body.appendChild(overlay);nodes.add(overlay)
  const title=document.createElement("div");title.className="oregonBombardmentTitle";title.textContent="LES TROUPES DE MÉLENCHON — FEU !";overlay.appendChild(title)
  const ship=document.createElement("img");ship.className="oregonBombardmentShip";ship.src="images/oregon-voyage-ship.png?v="+window.GAME_V;ship.alt="L’Oregon III survole le combat";overlay.appendChild(ship)

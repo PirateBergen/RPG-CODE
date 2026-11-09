@@ -1748,7 +1748,7 @@ function showMobSpecialAttackEvent(data) {
   const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const audio of sounds){audio.pause();audio.currentTime=0}overlay?.querySelectorAll("audio,video").forEach(el=>el.pause());overlay?.remove();document.getElementById("powSound")?.pause();if(window.__cancelMobSpecialPresentation===cleanup)window.__cancelMobSpecialPresentation=null}
   window.__cancelMobSpecialPresentation=cleanup
   const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer);return timer}
-  const makeAudio=src=>{const audio=new Audio(src);sounds.add(audio);return audio}
+  const makeAudio=src=>{const audio=new Audio(src);audio.__specialEffect=true;sounds.add(audio);return audio}
 
   const baseStyle = typeof getMobAnimationStyle === "function" ? getMobAnimationStyle(data.animation) : { accent:"#ff9966", glow:"rgba(255,120,60,0.55)", bg:"radial-gradient(circle at center,rgba(70,15,0,0.94) 0%,rgba(10,0,0,0.98) 72%)" }
   const presentation = typeof getMobSpecialPresentation === "function" ? getMobSpecialPresentation(data.mobName) : null
@@ -2165,7 +2165,7 @@ function showMobSpecialAttackEvent(data) {
 
   document.body.appendChild(overlay)
   later(() => { overlay.style.opacity = "1" }, 20)
-  later(() => { playSound("powSound", 0.84) }, 80)
+  later(() => { playSound("powSound", 0.84, true) }, 80)
   later(() => {
     impactFlash.style.transition = "opacity 0.12s ease"
     impactFlash.style.opacity = "1"

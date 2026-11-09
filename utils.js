@@ -567,8 +567,8 @@ function getEffectsClipGain(audio){
 function getScaledAudioVolume(volume = 1, channel = "effects", audio = null) {
   const base = Number.isFinite(parseFloat(volume)) ? Math.max(0, Math.min(1, parseFloat(volume))) : 1
   const userVolume = channel === "music" ? getUserMusicVolume() : getUserEffectsVolume()
-  // Effects are deliberately quieter, including with previously saved sliders.
-  const mixGain = channel === "music" ? 1 : 0.35
+  // Specials are more present; ordinary effects retain their existing mix.
+  const mixGain = channel === "music" ? 1 : audio?.__specialEffect ? 0.63 : 0.35
   return Math.max(0, Math.min(1, base * userVolume * mixGain * (channel === "music" ? 1 : getEffectsClipGain(audio))))
 }
 
@@ -769,10 +769,11 @@ function fadeMusicOut(callback) {
   fadeOne(mB)
 }
 
-function playSound(id, volume = 0.8) {
+function playSound(id, volume = 0.8, special = false) {
   const snd = document.getElementById(id)
   if (!snd) return
   snd.currentTime = 0
+  snd.__specialEffect = special
   snd.__baseVolume = volume
   snd.__audioChannel = "effects"
   snd.volume = getScaledAudioVolume(volume, "effects",snd)

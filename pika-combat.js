@@ -73,9 +73,9 @@ function presentPikaAttack(result) {
   if(!to?.width)to=null
   const x=(to?to.left+to.width/2:innerWidth*.7)+(result.fail?80:0),y=to?to.top+to.height/2:innerHeight*.55
   const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb);nodes.add(bomb)
-  playSound("endikakiInvocationSound",1)
+  playSound("endikakiInvocationSound",1,true)
   // The supplied recording lasts 1.92 s. Keep the same timeline on every screen.
   later(()=>{requestAnimationFrame(()=>{if(cancelled)return;bomb.style.left=x+"px";bomb.style.top=y+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"})},2000)
-  later(()=>{bomb.remove();document.getElementById("endikakiInvocationSound")?.pause();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x+"px";blast.style.top=y+"px";blast.textContent="💥";blast.setAttribute("aria-label",result.fail?"Endikaki explose à côté de la cible":"Endikaki explose");const ring=document.createElement("span");ring.className="endikaki-shockwave";blast.appendChild(ring);document.body.appendChild(blast);nodes.add(blast);playSound("endikakiExplosionSound",.3);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},2950)
+  later(()=>{bomb.remove();document.getElementById("endikakiInvocationSound")?.pause();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x+"px";blast.style.top=y+"px";blast.textContent="💥";blast.setAttribute("aria-label",result.fail?"Endikaki explose à côté de la cible":"Endikaki explose");const ring=document.createElement("span");ring.className="endikaki-shockwave";blast.appendChild(ring);document.body.appendChild(blast);nodes.add(blast);playSound("endikakiExplosionSound",.3,true);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},2950)
   later(cleanup,4200)
 }

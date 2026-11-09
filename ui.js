@@ -353,6 +353,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     heroVideo.autoplay = true
     heroVideo.loop = true
     heroVideo.muted = false
+    heroVideo.__specialEffect = true
     heroVideo.volume = 0.88
     heroVideo.playsInline = true
     if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(heroVideo, 0.88)
@@ -425,7 +426,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   let previewVoice=null
   const specialSound = specialSoundMap[String(playerId || "").toLowerCase()]
   if (specialSound) {
-    const voice = new Audio("audio/" + specialSound);if(meta.preview)previewVoice=voice
+    const voice = new Audio("audio/" + specialSound);voice.__specialEffect=true;if(meta.preview)previewVoice=voice
     const isEloSpecial = String(playerId || "").toLowerCase() === "elo"
     const baseVolume = isEloSpecial ? (meta.crit ? 1.25 : 1.12) : (meta.crit ? 0.96 : 0.88)
     if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(voice, baseVolume)
@@ -434,12 +435,12 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   }
 
   if (meta.fail) {
-    playSound("critFailSound", 0.82)
+    playSound("critFailSound", 0.82, true)
     flashRed()
     screenShake()
   } else if (meta.crit) {
-    playSound("critSound", 0.95)
-    playSound("powSound", 0.9)
+    playSound("critSound", 0.95, true)
+    playSound("powSound", 0.9, true)
     flashGold()
     flashGold()
     screenShakeHard()
@@ -447,7 +448,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     setTimeout(() => screenShakeHard(), 360)
     powerExplosion()
   } else {
-    playSound("powSound", 0.84)
+    playSound("powSound", 0.84, true)
     flashGold()
     screenShake()
     setTimeout(() => screenShake(), 160)
@@ -1935,7 +1936,7 @@ function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
     document.body.appendChild(scope.node(cinScreen))
 
     // Son impact — fade out après 2s
-    const impact = scope.audio(new Audio("audio/impact.mp3")); setManagedAudioBaseVolume(impact, 0.85); impact.play().catch(()=>{})
+    const impact = scope.audio(new Audio("audio/impact.mp3")); impact.__specialEffect=true; setManagedAudioBaseVolume(impact, 0.85); impact.play().catch(()=>{})
     scope.later(()=>{ let iv=scope.every(()=>{ if(impact.volume>0.05) impact.volume=Math.max(0,impact.volume-0.06); else{ impact.pause(); clearInterval(iv) } },100) }, 2000)
 
     scope.later(()=>{

@@ -155,6 +155,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       const returnTokens = combatClone(root.tokens)
       root.combat = { id, phase: "active", createdAt: now, mob: calculateCombatMob(mainMob, tier, level,1+extraMobs.slice(0,2).length), presentation: { positions: {} } }
       extraMobs.slice(0, 2).forEach((mob, index) => { root.combat["mob" + (index + 2)] = { ...calculateCombatMob(mob, null, level,1+extraMobs.slice(0,2).length), slot: "mob" + (index + 2) } })
+      if(livingMobs(root.combat).some(slot=>root.combat[slot].name==="roi")&&balrogSwordIsEquipped(root))root.combat.visualEvents={[id+"-sword-glow"]:{id:id+"-sword-glow",combatId:id,time:now,result:{mode:"control",message:"L’épée se met à briller d’une lueur bleutée."}}}
       COMBAT_CHARACTERS.forEach((hero, index) => {
         const position = { x: Math.max(40, Math.round((width - 440) / 2)) + index * 110, y: Math.round(height * .65), facing: 0 }
         root.tokens[hero] = {...root.tokens[hero],...position}; root.combat.presentation.positions[hero] = position
@@ -195,6 +196,7 @@ async function finishReliableCombat(combatId){
  root.game.map=outcome.returnMap;root.tokens=combatClone(outcome.returnTokens)
  root.game.mapAudio=outcome.returnAudio||null
  root.game.combatOutcome.returnedAt=Date.now()
+ if(root.game.balrogSword?.combatId===combatId&&root.game.balrogSword.status==="pending")root.game.balrogSword.status="available"
  delete root.combat;delete root.game.combatState;delete root.game.playerAllyAccess;delete root.game.mobAttackEvent
  return root
  })

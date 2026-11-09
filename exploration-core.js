@@ -23,7 +23,7 @@ function reduceExplorationRequest(current,id,seed) {
     if(!(request.kind==="dice"&&root.roles?.[request.uid]==="gm")&&(!SPELL_PLAYERS.includes(request.actor)||(root.roles?.[request.uid]!=="gm"&&root.profiles?.[request.uid]?.playerId!==request.actor)))throw new Error("Ce héros ne vous appartient pas")
     root.game ||= {}
     let result
-    if(request.kind==="dice"){
+    if(request.kind==="relic"){result=resolveBalrogSwordRequest(root,request)}else if(request.kind==="dice"){
       const max=Number(request.payload?.max);if(![4,6,8,10,12,20,100].includes(max))throw Error("Dé invalide")
       const roll=combatRandom(seed)(max),stat=request.payload?.stat
       if(stat&&!['force','charme','perspi','chance','defense'].includes(stat))throw Error("Statistique invalide")

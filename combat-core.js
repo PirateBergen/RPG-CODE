@@ -33,6 +33,7 @@ function sealCombatOutcome(root,type,request={}){
   root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe prend la fuite":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
   delete root.combat.pendingRetreat
   root.combat.phase="finished";root.combat.turnState ||= {};root.combat.turnState.phase="finished"
+  if(type==="victory"&&COMBAT_MOBS.some(slot=>root.combat[slot]?.name==="balraug")&&!root.game.balrogSword)root.game.balrogSword={status:"pending",combatId:root.combat.id,map:root.game.combatOutcome.returnMap}
   if(type==="victory"){
     root.game.defeatedMobs ||= {}
     COMBAT_MOBS.forEach(slot=>{if(root.combat[slot])root.game.defeatedMobs[root.combat[slot].name]=true})
@@ -118,7 +119,7 @@ function combatRecord(root, request, from, to, amount, type, detail) {
 function combatCharacter(root, id) {
   const raw = root.characters?.[id]
   if (!raw) throw new Error("Personnage introuvable")
-  const data = getEffectiveCharacterData(id, raw)
+  const data = getEffectiveCharacterData(id, raw, root.game?.balrogSword)
   const debuff = root.combat.heroDebuffs?.[id]
   if (debuff?.turns > 0) { data.force = Math.max(0, data.force - (debuff.amount || 2)); data.defense = Math.max(0, data.defense - (debuff.amount || 2)) }
   return data
@@ -280,6 +281,7 @@ function resolveHeroCombatAction(root, request, dice) {
   if (attack.name === "Spider Sense" && !fail && arbitrationEffects(root,slot)) { c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
   if (attack.name === "Petite merde" && c.playerFlags?.[actor]?.spiderSense) damage *= 2
   const amount = combatDamage(root, request, actor.toUpperCase() + " — " + attack.name, slot, Math.round(damage))
+  if (!fail&&actor==="greg"&&attack.name!=="Le Bibi"&&getPlayerAttackTypeKey(attack)==="physical"&&mob.name==="roi"&&balrogSwordIsEquipped(root)&&arbitrationEffects(root,slot))mob.balrogSwordWeaken=Math.max(mob.balrogSwordWeaken||0,crit?.25:.15)
   if (!fail && arbitrationEffects(root,slot)) {
     if ((actor === "greg" || actor === "bibi") && attack.name === "Le Bibi" && crit) mob.bibiRage = { damage: 2, turns: 3 }
     if (actor === "greg" && attack.name === "I know Frank (si arc)" && crit) mob.playerBleed = { damage: 1, turns: 2 }
@@ -329,6 +331,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (mob.attackMalus) damage = Math.max(0, damage - (mob.attackMalus.amount || 0))
   if (mob.malus?.source === "La Sorcière") damage = Math.round(damage * .75)
   damage=gmOutgoingDamage(root,slot,damage)
+  if(mob.balrogSwordWeaken){damage=Math.round(damage*(1-mob.balrogSwordWeaken));delete mob.balrogSwordWeaken}
   let applied = 0
   targets.forEach(id => {
     const before = combatInt(root.characters[id].hp)

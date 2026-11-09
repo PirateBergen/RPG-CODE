@@ -20,7 +20,7 @@ function refreshSheetEffectiveStatsDisplay() {
   })
 
   const nextMods = (typeof getInventoryStatModifiers === "function")
-    ? getInventoryStatModifiers(inventoryField.value)
+    ? getEffectiveCharacterData(currentSheetPlayer,{...baseData,inventaire:inventoryField.value}).__inventoryStatMods
     : { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
 
   INVENTORY_EFFECT_STATS.forEach(stat => {
@@ -213,7 +213,7 @@ function forceCloseCharacterSheetWithoutSave() {
 
 function collectCharacterSheetPatch(){
  const confirmed=window.__sheetConfirmedCharacterData;if(!confirmed)throw Error("Attendez la lecture de la fiche")
- const data={},pending=window.__characterPendingFields?.[currentSheetPlayer+":"+window.__sheetViewGeneration]||{},inventory=document.getElementById("inventaire")?.value||"",notes=document.getElementById("notes")?.value||"",mods=getInventoryStatModifiers(inventory)
+ const data={},pending=window.__characterPendingFields?.[currentSheetPlayer+":"+window.__sheetViewGeneration]||{},inventory=document.getElementById("inventaire")?.value||"",notes=document.getElementById("notes")?.value||"",mods=getEffectiveCharacterData(currentSheetPlayer,{...confirmed,inventaire:inventory}).__inventoryStatMods
  for(const field of document.querySelectorAll("#characterSheet .sheetField")){
   if(field.offsetParent===null||["weight","maxWeight","inventaire","notes"].includes(field.id))continue
   const value=String(field.value??"").trim();if(!value)continue

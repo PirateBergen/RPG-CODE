@@ -774,7 +774,7 @@ function returnToMap(outcome){
  for(const id of ["greg","ju","elo","bibi","mobToken"]){const token=document.getElementById(id);if(!token||!map)continue;map.appendChild(token);token.style.transform="";token.style.width="";token.style.height="";token.style.position="absolute";token.style.pointerEvents="auto"}
  const mob=document.getElementById("mobToken");if(mob)mob.style.display="none"
  if(typeof restoreCombatMap==="function")restoreCombatMap(outcome)
- setTimeout(()=>{if(fade){fade.style.transition="opacity .8s ease";fade.style.opacity="0"}window.__combatReturnInProgress=false},300)
+ setTimeout(()=>{if(fade){fade.style.transition="opacity .8s ease";fade.style.opacity="0"}window.__combatReturnInProgress=false;if(typeof renderBalrogSwordLoot==="function")renderBalrogSwordLoot()},300)
  },600)
 }
 

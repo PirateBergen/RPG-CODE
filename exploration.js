@@ -11,6 +11,7 @@ const explorationPending=new Set()
 function isWorldPartyMap(){return String(currentMap).toLowerCase()==="mapmonde.jpg"}
 let worldPartyDrag=null,worldPartySaving=false
 function syncWorldPartyMarker(){
+ if(typeof renderBalrogSwordLoot==="function")renderBalrogSwordLoot()
  syncForchurFog()
  document.body.classList.toggle("brumePrison",gameStarted&&gameState==="GAME"&&!combatActive&&currentMap==="prisonbrume.jpg")
  const visible=gameStarted&&gameState==="GAME"&&!combatActive&&isWorldPartyMap()

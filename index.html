@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261109.11"</script>
+  <script>window.GAME_V = "20261109.12"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -588,6 +588,7 @@
     <button class="pnjTab" onclick="openPNJTab('elemEffets', this)">✨</button>
     <button class="pnjTab" onclick="openPNJTab('elemCartes', this)">CRI</button>
     <button class="pnjTab" onclick="openPNJTab('elemJeu', this)">JEU</button>
+    <button class="pnjTab" onclick="openPNJTab('elemAllies', this)">ALLIÉS</button>
     <button class="pnjTab" onclick="openPNJTab('elemFolie', this)">☾</button>
     <button class="pnjTab" onclick="openPNJTab('elemWanted', this)">🎯</button>
   </div>
@@ -642,8 +643,12 @@
       <button onclick="grantThuumUseToPlayer('bibi','REIHKT')" class="thuum-use-btn last">Autoriser REIHKT à BIBI</button>
     </div>
   </div>
-  <div id="elemJeu" class="pnjTabContent">
+  <div id="elemAllies" class="pnjTabContent">
+    <div class="elem-title-gold">ALLIÉS ET INVOCATIONS</div>
     <button id="allyDiscoveryBtn" type="button" onclick="openAllyDiscoveryPanel()" class="elem-full-btn">✦ Débloquer un allié</button>
+    <p style="font-size:13px;line-height:1.5;color:#d3c39f">Annoncez le soutien d’un allié au groupe. Ses pouvoirs restent soumis à votre autorisation pendant les combats de world boss.</p>
+  </div>
+  <div id="elemJeu" class="pnjTabContent">
     <div class="rune-title">⚔ DÉFI RUNIQUE ⚔</div>
     <button id="runeLaunchBtn" onclick="openRuneChallenge()" class="rune-launch-btn">ᚱ Lancer le Défi</button>
     <button id="runeContinueBtn" onclick="db.ref('game/runeChallenge').once('value',s=>renderRuneChallenge(s.val()))" class="rune-continue-btn">▶ Continuer le Défi</button>

@@ -2327,7 +2327,8 @@ function initializeMenuBehaviour() {
       const action = button.getAttribute("onclick") || ""
       // Navigation and placement settings are preparation, not final choices.
       if (button.matches(".pnjTab, .mapCategoryButton") || /^\s*(openPNJTab|toggleCategory|setPNJSlot)\s*\(/.test(action)) return
-      if (!action) return
+      if (button.dataset.keepMenuOpen === "true") return
+      if (!action && typeof button.onclick !== "function" && button.dataset.closeMenu !== "true") return
       // Run after the action, including handlers that stop event propagation.
       queueMicrotask(() => { section.style.display = "none" })
     }, true)

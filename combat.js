@@ -40,24 +40,30 @@ async function initCombatTurnState() {
   if (state) { renderCombatInitiativeOverlay(state); finalizeCombatInitiativeIfReady(state) }
 }
 
+const initiativeRollsInFlight=new Set()
+function initiativeRollKey(actorId){return (window.__combatSnapshot?.id||"")+":"+actorId}
 function canRollInitiativeForActor(actorId, state) {
+  if(initiativeRollsInFlight.has(initiativeRollKey(actorId)))return false
   if (!state || state.phase !== "rolling" || actorId === "bibi" || !(state.participants || []).some(p => p.id === actorId) || Number.isInteger(state.rolls?.[actorId])) return false
   return isGM || !!(myToken && myToken.id === actorId && canAccessCharacter(actorId))
 }
 
 async function submitInitiativeRoll(actorId){
  if(!canRollInitiativeForActor(actorId,getCombatTurnState()))return
- try{return await submitCombatAction("initiative",actorId)}catch(e){showNotification(e.message)}
+ const key=initiativeRollKey(actorId);initiativeRollsInFlight.add(key)
+ if(document.getElementById("combatInitiativeOverlay"))renderCombatInitiativeOverlay(getCombatTurnState())
+ try{return await submitCombatAction("initiative",actorId)}catch(e){showNotification(e.message)}finally{initiativeRollsInFlight.delete(key);if(document.getElementById("combatInitiativeOverlay"))renderCombatInitiativeOverlay(getCombatTurnState())}
 }
 
 function submitInitiativeRollForGMTest(actorId) { if(isGM) return submitInitiativeRoll(actorId) }
 
-function submitAllInitiativeRollsForGMTest() {
+async function submitAllInitiativeRollsForGMTest() {
   if (!isGM) return
   const state = getCombatTurnState()
   if (!state || state.phase !== "rolling") return
   const participants = Array.isArray(state.participants) ? state.participants : []
-  participants.forEach(entry => submitInitiativeRollForGMTest(entry.id))
+  // Enemy initiatives are generated atomically when the last hero roll arrives.
+  return Promise.all(participants.filter(entry=>COMBAT_HEROES.includes(entry.id)).map(entry=>submitInitiativeRollForGMTest(entry.id)))
 }
 
 async function finalizeCombatInitiativeIfReady(state) {
@@ -214,7 +220,7 @@ function renderCombatInitiativeOverlay(state) {
         btn.innerText = "Lancer D12"
         btn.onclick = () => submitInitiativeRoll(entry.id)
         card.appendChild(btn)
-      } else if (isGM && !Number.isFinite(rollVal)) {
+      } else if (isGM && !Number.isFinite(rollVal) && !initiativeRollsInFlight.has(initiativeRollKey(entry.id))) {
         const gmBtn = document.createElement("button")
         gmBtn.style.cssText = "padding:8px 14px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(#6a4b1b,#342109);color:#ffe8bb;border:1px solid rgba(212,168,91,0.55);border-radius:8px;cursor:pointer;"
         gmBtn.innerText = "Test MJ"

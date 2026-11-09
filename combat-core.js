@@ -402,7 +402,7 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
     let result
     if(root.combat.heroHaste&&["ally","thuum"].includes(request.kind))throw Error("Terminez les deux attaques de SKARO’H ou passez votre tour")
     if(request.kind === "initiative"){
-      const ts=root.combat.turnState;if(ts?.phase!=="rolling"||!ts.participants?.some(p=>p.id===request.actor)||ts.rolls?.[request.actor]!=null)throw Error("Initiative déjà enregistrée ou combat changé");ts.rolls||={};ts.rolls[request.actor]=dice(12);result={mode:"control",message:"Initiative enregistrée"}
+      const ts=root.combat.turnState;if(ts?.participants?.some(p=>p.id===request.actor)&&Number.isInteger(ts.rolls?.[request.actor])){request.status="done";request.result={mode:"control",message:"Initiative déjà prise en compte"};return root}if(ts?.phase!=="rolling"||!ts.participants?.some(p=>p.id===request.actor)||ts.rolls?.[request.actor]!=null)throw Error("Initiative déjà enregistrée ou combat changé");ts.rolls||={};ts.rolls[request.actor]=dice(12);result={mode:"control",message:"Initiative enregistrée"}
     }
     else if(request.kind==="requestRetreat"){
       if(!gm)throw Error("Seul le MJ peut demander la fuite")

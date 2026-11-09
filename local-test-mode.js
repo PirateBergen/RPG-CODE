@@ -103,5 +103,29 @@ function openSpecialPreviewPanel(){
 document.addEventListener("DOMContentLoaded",()=>{
   if(!window.__isolatedTestMode)return
   const banner=document.createElement("aside");banner.id="isolatedTestBanner";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:8px 14px;background:#3f253d;color:#ffe4a3;font:14px Georgia;text-align:center";banner.textContent="ESSAI LOCAL — la campagne et ses sauvegardes ne sont pas modifiées. "
-  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);const previews=document.createElement("button");previews.id="testSpecialsBtn";previews.type="button";previews.textContent="Tester les spéciales";previews.onclick=openSpecialPreviewPanel;banner.appendChild(previews);document.body.appendChild(banner)
+  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);const previews=document.createElement("button");previews.id="testSpecialsBtn";previews.type="button";previews.textContent="Tester les spéciales";previews.onclick=openSpecialPreviewPanel;banner.appendChild(previews);const actions=document.createElement("button");actions.id="testPlayerActionsBtn";actions.type="button";actions.textContent="Actions des joueurs";actions.onclick=()=>openTestPlayerActions("greg");banner.appendChild(actions);document.body.appendChild(banner)
 })
+
+function thuumEffectDescription(word,rank=1){
+ const def=getThuumDef(word);if(!def)return ""
+ if(word==="SKRAA"){const d=def.combatDamageByRank(rank);return def.description+" "+d.main+" dégâts sur la cible, "+d.splash+" sur chacun des autres ennemis."}
+ if(word==="REIHKT"){const d=def.combatDamageByRank(rank);return d.main+" dégâts. "+def.description}
+ return def.description||""
+}
+async function openTestPlayerActions(actor){
+ if(!window.__isolatedTestMode||window.__authRole!=="gm"||!["greg","ju","elo"].includes(actor))return
+ const root=(await db.ref().once("value")).val()||{}
+ if(!window.__isolatedTestMode||window.__authRole!=="gm")return
+ document.getElementById("testPlayerActionsPanel")?.remove()
+ const panel=document.createElement("section"),title=document.createElement("h2"),notice=document.createElement("p"),tabs=document.createElement("nav"),close=document.createElement("button")
+ panel.id="testPlayerActionsPanel";panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Aperçu des actions des joueurs");title.textContent="Actions de "+heroDisplayName(actor);notice.textContent="Aperçu en lecture seule de l’essai local. Aucun changement de rôle ni utilisation de pouvoir.";panel.append(title,notice,tabs)
+ for(const id of ["greg","ju","elo"]){const button=document.createElement("button");button.textContent=heroDisplayName(id);button.setAttribute("aria-pressed",String(id===actor));button.onclick=()=>openTestPlayerActions(id);tabs.appendChild(button)}
+ const add=(name,text)=>{const card=document.createElement("section"),heading=document.createElement("h3"),desc=document.createElement("p");heading.textContent=name;desc.textContent=text;card.append(heading,desc);panel.appendChild(card)}
+ for(const [word,data]of Object.entries(root.game?.playerThuum?.[actor]||{})){if(!data?.unlocked||!getThuumDef(word))continue;const allowed=!!root.game?.playerThuumAccess?.[actor]?.[word]?.allowed,used=!!root.combat?.usedThuum?.[actor]?.[word];add(word+" — "+getThuumDef(word).words.join(" • "),thuumEffectDescription(word,data.rank||1)+" "+(used?"Déjà utilisé dans ce combat.":allowed?"Autorisation MJ accordée.":"Autorisation MJ requise."))}
+ for(const pnj of ALLY_PNJS.filter(p=>root.game?.allyDiscoveries?.[p.id]))add(pnj.name,pnj.actions.map(a=>a.label+" : "+a.desc).join(" ")+" World boss uniquement, sur autorisation du MJ.")
+ const access=root.game?.playerAllyAccess;if(access?.playerId===actor)add("Invocation autorisée",access.pnjName+" — "+access.actionId)
+ if(Number(root.characters?.[actor]?.corruption)>=10)add("Libérer le pouvoir","Jauge pleine : le pouvoir personnel est disponible.")
+ if(root.game?.runeChallenge?.active)add("Défi runique","Le défi de runes est en cours.")
+ if(panel.querySelectorAll("section").length===0)add("Aucune action spéciale disponible","Ce personnage n’a actuellement ni cri appris, ni allié découvert, ni pouvoir chargé, ni défi actif.")
+ close.textContent="Fermer";close.onclick=()=>panel.remove();panel.appendChild(close);panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();panel.remove()}});document.body.appendChild(panel);panel.scrollTop=0;tabs.querySelector("button")?.focus({preventScroll:true})
+}

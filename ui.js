@@ -744,6 +744,7 @@ function buildMobPassTurnBlock(actorId, label) {
 function getCombatStatusEntries(){
  const entries=[],c=window.__combatSnapshot||{},state=c.turnState||getCombatTurnState(),actor=state?.currentActorId
  if(state?.phase==="active"&&actor)entries.push({kind:"buff",title:"Tour actif",text:(actor==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(actor)?combatEnemyLabel(actor):heroDisplayName(actor))+" joue maintenant",meta:"Round "+(state.round||1)})
+ if(c.heroHaste)entries.push({kind:"buff",title:"SKARO’H — "+heroDisplayName(c.heroHaste.actor),text:"Attaques basiques consécutives",meta:c.heroHaste.remaining+" attaque(s) restante(s)"})
  if(state?.phase==="rolling")entries.push({kind:"warn",title:"Initiative",text:"Les jets d’initiative sont en cours",meta:"Ordre des tours en préparation"})
  for(const slot of COMBAT_MOBS){
   const mob=c[slot];if(!mob||mob.hp<=0)continue
@@ -754,6 +755,7 @@ function getCombatStatusEntries(){
   if(mob.yuAggro?.turns>0)add("Attiré par Pika","Ses attaques ciblées visent Pika si elle est encore debout",mob.yuAggro.turns+" round(s) restant(s)")
   if(mob.spiderSenseBuff?.active)add("Spider Sense","+10 % de dégâts alliés contre cet ennemi","Jusqu’à la fin du combat","buff")
   if(mob.revealedWeakness?.title)add("Faiblesse révélée",mob.revealedWeakness.title+(mob.revealedWeakness.text?" — "+mob.revealedWeakness.text:""),"Faiblesse de cet ennemi")
+  if(mob.reihktParalyzed)add("REIHKT — Paralysie","Prochain tour complet neutralisé","1 tour à sauter")
   if(mob.pikaHypnosisTurns>0)add("Hypnose","Ses tours complets sont neutralisés",mob.pikaHypnosisTurns+" tour(s) restant(s)")
   if(effects.length){entries.push({kind:"section",title:combatEnemyLabel(slot)});entries.push(...effects)}
  }
@@ -2325,6 +2327,7 @@ initializeMenuBehaviour()
 function combatActionAvailability(actor, attack, special=false, enemy=false) {
   const c=window.__combatSnapshot, players=window.__publicCharacters||{}, state=c?.turnState
   const blocked=label=>({disabled:true,label})
+  if(!enemy&&c?.heroHaste&&attack?.name!=="Passer le tour"&&(c.heroHaste.actor!==actor||special||getPlayerAttackTypeKey(attack)==="heal"))return blocked("SKARO’H : attaque basique du personnage uniquement")
   if(special&&(enemy?c?.[actor]?.specialUsed:c?.playerSpecials?.[actor]))return blocked("Déjà utilisée dans ce combat")
   if(attack?.pikaKind==="hypnosis"){const left=pikaRechargeLeft(c);if(left)return blocked("Recharge : "+left+" tour"+(left>1?"s":"")+" restant"+(left>1?"s":""))}
   if(enemy&&c?.[actor]?.lastAttack===attack?.name&&!special&&getMobAttacksForMob(c[actor].name,c[actor].tier).length>1)return blocked("Recharge : utilisez une autre attaque ou passez")

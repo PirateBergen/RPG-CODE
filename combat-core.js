@@ -178,6 +178,11 @@ function nextCombatTurn(root, request, skipRemaining = false) {
   const order = state.order || []
   if (!order.length || combatOutcome(root, request)) return
   const current=state.currentActorId,mob=root.combat[current]
+  const haste=root.combat.heroHaste
+  if(haste&&combatOwner(haste.actor)===current){
+   if(request.kind==="hero"&&request.actor===haste.actor&&haste.remaining>1){haste.remaining--;state.sequence=combatInt(state.sequence)+1;return}
+   delete root.combat.heroHaste
+  }
   if(!skipRemaining&&request.kind!=="pass"&&COMBAT_MOBS.includes(current)&&mob?.hp>0&&(state.actorActionIndex||0)+1<Math.min(2,mob.actionsPerTurn||1)){state.actorActionIndex=(state.actorActionIndex||0)+1;state.sequence=combatInt(state.sequence)+1;return}
   state.actorActionIndex=0
   for (let attempts = 0; attempts < order.length; attempts++) {
@@ -185,6 +190,7 @@ function nextCombatTurn(root, request, skipRemaining = false) {
     if (state.currentIndex === 0) { tickCombatRound(root, request); state.round = Math.max(1, combatInt(state.round, 1)) + 1 }
     if (combatOutcome(root, request)) return
     const id = order[state.currentIndex].id
+    if(root.combat[id]?.reihktParalyzed){delete root.combat[id].reihktParalyzed;continue}
     if (combatActorAlive(root, id)) {
       if (root.combat.heroStuns?.[id] > 0) { root.combat.heroStuns[id]--;if(root.combat.heroHypnosis?.[id]>0)root.combat.heroHypnosis[id]--; continue }
       if(COMBAT_MOBS.includes(id)&&root.combat[id]?.pikaHypnosisTurns>0){root.combat[id].pikaHypnosisTurns--;continue}
@@ -225,6 +231,7 @@ function resolveHeroCombatAction(root, request, dice) {
   const special = !!payload.special
   const attack = getCombatHeroAttack(actor,payload.attack,special)
   if (!attack || attack.name !== payload.attack) throw new Error("Capacité inconnue")
+  if(c.heroHaste&&(c.heroHaste.actor!==actor||special||getPlayerAttackTypeKey(attack)==="heal"))throw Error("SKARO’H permet seulement deux attaques basiques du personnage concerné")
   if(actor==="ju"&&attack.pikaKind)return resolvePikaHeroAction(root,request,attack,dice)
   if (special && c.playerSpecials?.[actor]) throw new Error("Spéciale déjà utilisée")
   const heal = getPlayerAttackTypeKey(attack) === "heal"
@@ -387,6 +394,7 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
     normalizeCombatTurns(root)
     const dice = combatRandom(seed)
     let result
+    if(root.combat.heroHaste&&["ally","thuum"].includes(request.kind))throw Error("Terminez les deux attaques de SKARO’H ou passez votre tour")
     if(request.kind === "initiative"){
       const ts=root.combat.turnState;if(ts?.phase!=="rolling"||!ts.participants?.some(p=>p.id===request.actor)||ts.rolls?.[request.actor]!=null)throw Error("Initiative déjà enregistrée ou combat changé");ts.rolls||={};ts.rolls[request.actor]=dice(12);result={mode:"control",message:"Initiative enregistrée"}
     }
@@ -431,12 +439,12 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
       const target = request.payload.target || livingMobs(root.combat)[0]
       if (!livingMobs(root.combat).includes(target)) throw new Error("Choisissez une cible vivante")
       const amounts = def.combatDamageByRank(learned.rank || 1)
-      livingMobs(root.combat).forEach(slot => combatDamage(root, request, word, slot, slot === target ? amounts.main : amounts.splash))
-      if (word === "REIHKT" && arbitrationEffects(root,target)) root.combat[target].attackMalus = { amount: Math.max(1, (learned.rank || 1) * 2), turns: 2 }
+      if(word!=="SKARO'H")livingMobs(root.combat).forEach(slot => combatDamage(root, request, word, slot, slot === target ? amounts.main : amounts.splash))
+      if (word === "REIHKT" && !isJormungandr(root.combat[target]) && arbitrationEffects(root,target)) root.combat[target].reihktParalyzed = true
       root.combat.usedThuum ||= {}; root.combat.usedThuum[request.actor] ||= {}; root.combat.usedThuum[request.actor][word] = true
       delete root.game.playerThuumAccess[request.actor][word]
       // Le cri et ses effets visuels sont transmis avec le résultat de cette action.
-      nextCombatTurn(root, request); result = { actor: request.actor, mode: "thuum", word, amount: amounts.main }
+      if(word==="SKARO'H"){root.combat.heroHaste={actor:request.actor,remaining:2};root.combat.turnState.sequence=combatInt(root.combat.turnState.sequence)+1}else nextCombatTurn(root, request); result = { actor: request.actor, mode: "thuum", word, amount: amounts.main,message:word==="SKARO'H"?"Deux attaques basiques consécutives sont disponibles":word==="REIHKT"?"La cible perd son prochain tour, sauf Jörmungandr":"" }
     } else throw new Error("Action inconnue")
     delete root.__arbitration
     request.status = "done"; request.result = result

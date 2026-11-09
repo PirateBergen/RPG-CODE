@@ -13,6 +13,7 @@ function reduceCharacterRequest(current,id,seed){
   if(r.kind==="thuum-outside"){
    if(root.combat)throw Error("Attendez la fin du combat pour un cri hors combat")
    const word=r.payload?.word,definition=window.THUUMS?.[word]
+   if(definition?.combatOnly)throw Error("Ce cri est utilisable uniquement en combat")
    if(!definition||!root.game.playerThuum?.[r.actor]?.[word]?.unlocked)throw Error("Ce cri n’est pas appris")
    if(!root.game.playerThuumAccess?.[r.actor]?.[word]?.allowed)throw Error("Le MJ doit autoriser ce cri, en combat comme hors combat")
    delete root.game.playerThuumAccess[r.actor][word]

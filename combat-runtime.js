@@ -207,7 +207,7 @@ async function requestPlayerThuumAction(word) {
   if (!actor || window.__playerAttackResolving) return
   window.__playerAttackResolving = true
   try {
-    const target = await chooseEnemyCombatTarget()
+    const target = word==="SKARO'H" ? livingMobs(window.__combatSnapshot||{})[0] : await chooseEnemyCombatTarget()
     if (target) await submitCombatAction("thuum", actor, { word, target })
     closePlayerPowersPanel()
   } catch (error) { showNotification(error.message) }

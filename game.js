@@ -497,15 +497,16 @@ window.THUUMS = {
     translation: "Fragmentation • Rupture • Dispersion finale",
     description: "Fracasse la cible principale et blesse les ennemis autour.",
     unlockMap: "prebalraug.jpg",
-    buttonImage: (typeof discoveredAllies==="function"&&discoveredAllies().length?"images/"+discoveredAllies()[0].image:"images/runeskraa.png"),
+    buttonImage: "images/runeskraa.png",
     combatDamageByRank: rank => ({ main: 8 + rank * 4, splash: 3 + rank * 2 }),
     outsideCombatMessage: "SKRAA retentit hors combat"
   },
+  "SKARO'H": {word:"SKARO'H",words:["SKARO'H","VEL","NAHL"],translation:"Éclair • Impulsion • Fulgurance",description:"Vous vous déplacez à une vitesse fulgurante : deux attaques basiques consécutives pendant ce tour, avec un jet pour chaque attaque. L’activation du cri ne consomme pas l’une de ces deux attaques. Ni soin, ni spéciale, ni action de Bibi dans cet enchaînement.",unlockMap:null,buttonImage:"images/runeskraa.png",combatDamageByRank:()=>({main:0,splash:0}),combatOnly:true,outsideCombatMessage:"SKARO’H ne peut être utilisé qu’en combat"},
   REIHKT: {
     word: "REIHKT",
     words: ["REIHKT", "MUUR", "ZAAL"],
-    translation: "Terreur • Paralysie • Effondrement",
-    description: "Réduit la puissance des attaques de la cible pendant deux rounds.",
+    translation: "Entrave • Immobilité • Paralysie",
+    description: "Blesse la cible puis la paralyse : elle perd son prochain tour complet. Sans effet de paralysie sur Jörmungandr.",
     unlockMap: "epouventail.jpg",
     buttonImage: "images/runeskraa.png",
     combatDamageByRank: rank => ({ main: 6 + rank * 3, splash: 0 }),
@@ -884,6 +885,7 @@ function updateThuumButton() {
 }
 
 function getThuumEntryState(word) {
+  if(getThuumDef(word)?.combatOnly&&!combatActive)return "Combat uniquement — autorisation MJ nécessaire"
   if (combatActive) {
     if (isThuumUsedThisCombat(word)) return "Déjà utilisé pour ce combat"
     if (!hasThuumUseAccess(word)) return "En combat : autorisation MJ requise"
@@ -894,6 +896,7 @@ function getThuumEntryState(word) {
 
 function canUseThuumNow(word) {
   if (!hasUnlockedThuum(word)) return false
+  if(getThuumDef(word)?.combatOnly&&!combatActive)return false
   if (combatActive) return !isThuumUsedThisCombat(word) && hasThuumUseAccess(word)
   return hasThuumUseAccess(word)
 }
@@ -943,6 +946,7 @@ function renderPlayerThuumEntries(panel) {
     translation.style.opacity = "0.92"
     translation.innerText = def.translation || def.description || ""
     if (translation.innerText) text.appendChild(translation)
+    const description=document.createElement("div");description.className="playerThuumEntryState";description.textContent=thuumEffectDescription(word,getMyThuumWords()[word]?.rank||1);text.appendChild(description)
 
     const state = document.createElement("div")
     state.className = "playerThuumEntryState"
@@ -1206,7 +1210,7 @@ function grantThuumToPlayer(playerId, word) {
   const def = getThuumDef(word)
   if (!def) return
   document.querySelectorAll(".gmSection").forEach(s => s.style.display = "none")
-  if (currentMap !== def.unlockMap) {
+  if (def.unlockMap && currentMap !== def.unlockMap) {
     showNotification(word + " ne peut etre revele que sur " + def.unlockMap)
     return
   }
@@ -1231,7 +1235,7 @@ function grantThuumToPlayer(playerId, word) {
         time: Date.now()
       })
       setTimeout(() => void 0, 2000)
-      showNotification("SKRAA donne a " + heroDisplayName(playerId).toUpperCase())
+      showNotification(word + " donné à " + heroDisplayName(playerId).toUpperCase())
     })
   })
 }

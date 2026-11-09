@@ -11,6 +11,7 @@ const explorationPending=new Set()
 function isWorldPartyMap(){return String(currentMap).toLowerCase()==="mapmonde.jpg"}
 let worldPartyDrag=null,worldPartySaving=false
 function syncWorldPartyMarker(){
+ syncForchurFog()
  document.body.classList.toggle("brumePrison",gameStarted&&gameState==="GAME"&&!combatActive&&currentMap==="prisonbrume.jpg")
  const visible=gameStarted&&gameState==="GAME"&&!combatActive&&isWorldPartyMap()
  document.body.classList.toggle("worldPartyView",visible)
@@ -281,7 +282,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(isGM)cleanupLegacyWantedElements().catch(error=>console.warn(error))
   db.ref(".info/connected").on("value",snap=>{window.__explorationOnline=!!snap.val();if(snap.val())queueNightLightingSync();if(!snap.val()){selected=null;_state.tokenDragging=false;cameraDragging=false}})
   db.ref("tokens").on("value",snap=>{window.__tokenPositions=snap.val()||{};if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()})
-  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition","nightMode","allyDiscoveries"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
+  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition","nightMode","allyDiscoveries","forchurFog"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
   db.ref("events").on("value",snap=>{window.__explorationWorldEvents=snap.val()||{};refreshExplorationMapEvents()})
   db.ref("game/explorationEvents").on("child_added",snap=>{if(!window.__sessionBusy)presentExplorationEvent(snap.val())})
   db.ref("game/runeVictory").on("value",snap=>{const e=snap.val();if(e?.id&&e.time>=(window.__pageLoadTime||0))enqueueSharedVisual("rune-victory-"+e.id,_showRuneVictoryNow,5200)})
@@ -344,4 +345,23 @@ function syncForestNightPaths(visible){
   });map.appendChild(svg)
  }
  svg.removeAttribute("hidden")
+}
+
+function syncForchurFog(){
+ const eligible=gameStarted&&gameState==="GAME"&&!combatActive&&String(currentMap).toLowerCase()==="bateau.jpg"&&!!window.__defeatedMobFlags?.jormungand,active=eligible&&window.__explorationState?.forchurFog?.active===true
+ const button=document.getElementById("forchurFogBtn");if(button){button.hidden=!(eligible&&isGM);button.setAttribute("aria-pressed",String(active));button.title=active?"Dissiper la brume":"Faire apparaître la brume";button.setAttribute("aria-label",button.title)}
+ let fog=document.getElementById("forchurDenseFog");if(!fog&&active){fog=document.createElement("div");fog.id="forchurDenseFog";fog.setAttribute("aria-hidden","true");document.body.appendChild(fog)}
+ if(fog){fog.hidden=!active;fog.classList.toggle("active",active)}document.body.classList.toggle("forchurDenseFogActive",active)
+}
+async function toggleForchurFog(){
+ try{
+  requireActionAccess({gmOnly:true});requireExplorationConnection()
+  if(!gameStarted||gameState!=="GAME"||combatActive)throw Error("La brume se déclenche hors combat, sur le Forchur.")
+  const uid=window.__authUid,revision=persistenceRevision||"initial",expected=window.__explorationState?.forchurFog?.active===true
+  const result=await reliableRootTransaction(root=>{
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!=="bateau.jpg"||!root.game?.defeatedMobs?.jormungand||root.game?.combatState?.active||root.combat?.phase==="active"||!!root.game?.forchurFog?.active!==expected)return undefined
+   root.game.forchurFog={active:!expected};return root
+  })
+  if(!result.committed)throw Error("Le Forchur ou l’état de la partie a changé.")
+ }catch(error){showNotification(error.message)}
 }

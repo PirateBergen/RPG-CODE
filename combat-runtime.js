@@ -170,7 +170,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       root.game.combatState = { active: true, id, mainMob, tier, extraMobs: extraMobs.slice(0, 2), returnMap: root.game.map || currentMap || "taverne.jpg", returnTokens, returnAudio:root.game.mapAudio||null, time: now }
       for(const hero of COMBAT_HEROES)if(root.characters?.[hero]?.cursedEffect==="critOnly")root.characters[hero].cursedCombatId=id
       delete root.game.combatOutcome
-      ;["storyImage", "storyImage2", "storyImage3", "highPNJName"].forEach(key => delete root.game[key])
+      ;["storyImage", "storyImage2", "storyImage3", "highPNJName", "forchurFog"].forEach(key => delete root.game[key])
       return root
     })
     if (!result.committed) throw new Error("Un combat est déjà actif ou la partie est en synchronisation")

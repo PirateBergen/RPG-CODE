@@ -2717,6 +2717,7 @@ db.ref("combat/mob/revealedWeakness").on("value", snap => {
 db.ref("game/defeatedMobs").on("value", snap => {
   if (window.__sessionBusy) return
   window.__defeatedMobFlags = snap.val() || {}
+  if(typeof syncForchurFog==="function")syncForchurFog()
 })
 
 
@@ -3231,7 +3232,7 @@ async function changeMap(mapName,customAudio){
  requireExplorationConnection();_musicTransitioning=false;_pendingMusic=null
  if(musicFadeInterval){clearInterval(musicFadeInterval);musicFadeInterval=null}
  _state._pendingMapAudio=!!customAudio
- await db.ref("game").update({map:mapName,mapAudio:customAudio?{file:customAudio,map:mapName,time:Date.now()}:null})
+ await db.ref("game").update({map:mapName,forchurFog:null,mapAudio:customAudio?{file:customAudio,map:mapName,time:Date.now()}:null})
  maybeSpawnMapLoreBook(mapName)
  document.querySelectorAll(".gmSection").forEach(sec=>{sec.style.display="none"})
  }catch(error){showNotification("Carte non changée : "+error.message)}

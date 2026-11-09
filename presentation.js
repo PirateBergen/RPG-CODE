@@ -5,12 +5,29 @@ const sharedVisualQueue = []
 const sharedVisualSeen = new Set()
 let sharedVisualRunning = false
 let sharedVisualTimer = null
+let sharedVisualEpoch = 0
+const sharedVisualDelays = new Set()
+function sharedVisualLater(fn,delay){const epoch=sharedVisualEpoch,timer=setTimeout(()=>{sharedVisualDelays.delete(timer);if(epoch===sharedVisualEpoch)fn()},delay);sharedVisualDelays.add(timer);return timer}
+function cancelSharedVisuals(){
+ sharedVisualEpoch++;clearTimeout(sharedVisualTimer);sharedVisualTimer=null
+ for(const timer of sharedVisualDelays)clearTimeout(timer);sharedVisualDelays.clear();sharedVisualQueue.length=0
+ sharedVisualRunning=false;window.__sharedVisualBusy=false;window.__combatOutcomeQueued=false
+ for(const key of ["__cancelDicePresentation","__cancelAllyPresentation","__cancelAllyEffect"])window[key]?.()
+ if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
+}
+function createPresentationScope(key,onCleanup=()=>{}){
+ window[key]?.();const timers=new Set(),intervals=new Set(),nodes=new Set(),sounds=new Set();let cancelled=false
+ const cleanup=()=>{if(cancelled)return;cancelled=true;for(const t of timers)clearTimeout(t);for(const t of intervals)clearInterval(t);for(const n of nodes)n.remove();for(const a of sounds){a.pause();a.currentTime=0}onCleanup();if(window[key]===cleanup)window[key]=null}
+ window[key]=cleanup
+ return {cancel:cleanup,later(fn,ms){const t=setTimeout(()=>{timers.delete(t);if(!cancelled)fn()},ms);timers.add(t);return t},every(fn,ms){const t=setInterval(()=>{if(!cancelled)fn()},ms);intervals.add(t);return t},node(n){nodes.add(n);return n},audio(a){sounds.add(a);return a}}
+}
 
 function enqueueSharedVisual(id, play, duration = 0, priority = 1) {
   if (!id || sharedVisualSeen.has(id)) return false
   sharedVisualSeen.add(id)
+  if(sharedVisualSeen.size>2000)sharedVisualSeen.delete(sharedVisualSeen.values().next().value)
   sharedVisualQueue.push({ id, play, duration, priority })
-  if (!sharedVisualRunning && !sharedVisualTimer) sharedVisualTimer = setTimeout(drainSharedVisuals, 80)
+  if (!sharedVisualRunning && !sharedVisualTimer) sharedVisualTimer = sharedVisualLater(drainSharedVisuals, 80)
   return true
 }
 
@@ -18,15 +35,17 @@ function drainSharedVisuals() {
   sharedVisualTimer = null
   if (sharedVisualRunning || !sharedVisualQueue.length) return
   const introDelay = Math.max(0, (window.__combatIntroUntil || 0) - Date.now())
-  if (introDelay) { sharedVisualTimer = setTimeout(drainSharedVisuals, introDelay); return }
+  if (introDelay) { sharedVisualTimer = sharedVisualLater(drainSharedVisuals, introDelay); return }
   // Les annonces de tour/sortie viennent après les résultats reçus au même instant.
   sharedVisualQueue.sort((a,b) => a.priority - b.priority)
   const next = sharedVisualQueue.shift()
   sharedVisualRunning = true
   window.__sharedVisualBusy = true
   if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
+  const epoch=sharedVisualEpoch
   try { next.play() } catch (error) { console.error("Animation partagée", error) }
-  setTimeout(() => {
+  if(epoch!==sharedVisualEpoch)return
+  sharedVisualLater(() => {
     sharedVisualRunning = false
     window.__sharedVisualBusy = false
     if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
@@ -57,7 +76,7 @@ function presentCombatResolution(action) {
       const pnj=ALLY_PNJS.find(p=>p.id===result.pnjId),def=pnj?.actions.find(a=>a.id===result.actionId)
       if(pnj&&def) _allyInvocationCinematic(pnj,result.thorVictory?{...def,dialogue:result.message}:def,result.target,()=>{
         _showDiceAnimationNow(pnj.name,result.dice,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
-        setTimeout(()=>_playAllyAnim(def.type,pnj.color,result.crit),2400)
+        sharedVisualLater(()=>_playAllyAnim(def.type,pnj.color,result.crit),2400)
       })
     } else {
       if(Number.isFinite(result.roll)) _showDiceAnimationNow(result.actor?.startsWith("mob")?"MOB":result.actor||"MJ",result.dice||20,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
@@ -70,16 +89,16 @@ function presentCombatResolution(action) {
         else if(result.mode==="thuum")playThuumCastEffect({playerId:result.actor,word:result.word})
         else if(result.message)showNotification(result.message)
       }
-      if(Number.isFinite(result.roll))setTimeout(impact,2400);else impact()
+      if(Number.isFinite(result.roll))sharedVisualLater(impact,2400);else impact()
     }
-    if(action.nextTurn?.phase==="active"&&!result.skipTurnBanner)setTimeout(()=>{if(window.__pendingCombatOutcome?.combatId!==action.combatId)_showCombatTurnBanner(action.nextTurn)},duration)
+    if(action.nextTurn?.phase==="active"&&!result.skipTurnBanner)sharedVisualLater(()=>{if(window.__pendingCombatOutcome?.combatId!==action.combatId)_showCombatTurnBanner(action.nextTurn)},duration)
   },duration+(action.nextTurn?.phase==="active"&&!result.skipTurnBanner?2800:0))
 }
 
 function queueCombatTurnBanner(combatId,state) {
   if(!state || state.phase!=="active")return
   const add=()=>enqueueSharedVisual("turn-"+combatId+"-"+(state.sequence||0),()=>{if(window.__pendingCombatOutcome?.combatId!==combatId)_showCombatTurnBanner(state)},2800,state.sequence>0?2:0.5)
-  if(state.sequence>0)setTimeout(add,100);else add()
+  if(state.sequence>0)sharedVisualLater(add,100);else add()
 }
 
 function queueCombatOutcome(type) {

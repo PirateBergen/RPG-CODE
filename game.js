@@ -2486,6 +2486,7 @@ function resetLocalCombatVisualState() {
 }
 
 function cleanupTransientGameUI(options = {}) {
+  if(typeof cancelSharedVisuals==="function")cancelSharedVisuals()
   if(typeof cancelCombatRetreatPresentation==="function")cancelCombatRetreatPresentation()
   if(typeof clearWorldBossFleeUI==="function")clearWorldBossFleeUI()
   if(typeof window.__cancelSpecialPreview==="function")window.__cancelSpecialPreview()
@@ -3399,6 +3400,8 @@ function _buildDice3D(resultBox) {
 function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
   window.__diceResolutionUntil = Date.now() + 2600
   const resultBox = document.getElementById("diceResult")
+  const scope=createPresentationScope("__cancelDicePresentation",()=>{resultBox.style.display="none";resultBox.classList.remove("crit","fail","mjRoll");window.__diceResolutionUntil=0})
+  scope.later(scope.cancel,4500)
   resultBox.classList.remove("crit", "fail", "mjRoll")
   resultBox.style.display = "flex"
   resultBox.style.transform = "translate(-50%, -50%)"
@@ -3417,12 +3420,12 @@ function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
   // Rotation rapide pendant 1.8s
   let t = 0
   cube.style.transition = "none"
-  const spin = setInterval(() => {
+  const spin = scope.every(() => {
     t += 0.15
     cube.style.transform = "rotateX(" + (t*137) + "deg) rotateY(" + (t*247) + "deg) rotateZ(" + (t*83) + "deg)"
   }, 16)
 
-  setTimeout(() => {
+  scope.later(() => {
     clearInterval(spin)
     // Aligner la face sur le résultat
     const displayVal = ((final - 1) % 6) + 1
@@ -3430,7 +3433,7 @@ function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
     cube.style.transition = "transform 0.45s cubic-bezier(0.2,0.8,0.3,1.15)"
     cube.style.transform = "rotateX(" + rot.rx + "deg) rotateY(" + rot.ry + "deg)"
 
-    setTimeout(() => {
+    scope.later(() => {
       resLabel.textContent = String(final)
       addDiceLog(playerName, max, final)
 
@@ -3456,15 +3459,15 @@ function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
       }
 
       // Idle après affichage
-      setTimeout(() => {
+      scope.later(() => {
         cube.style.transition = ""
         cube.style.animation = "diceIdle 10s linear infinite"
       }, 500)
 
       // Disparition
-      setTimeout(() => {
+      scope.later(() => {
         resultBox.style.opacity = 0
-        setTimeout(() => {
+        scope.later(() => {
           resultBox.style.display = "none"
           resultBox.classList.remove("crit","fail","mjRoll")
           cube.style.animation = ""

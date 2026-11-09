@@ -432,7 +432,7 @@ const mobAttackOverrides = {
     { name:"Morsure des racines", icon:"🕳", dmgMin:14, dmgMax:24, effect:null, desc:"Le monde d'en dessous a de très bonnes dents" },
     { name:"Frappe souterraine", icon:"🌑", dmgMin:12, dmgMax:21, effect:"all", desc:"Ça remonte de très loin et très fort" }
   ],
-  "ELO PION": [
+  "elo pion": [
     { name:"Charge pionnière", icon:"♟", dmgMin:4, dmgMax:8, effect:null, desc:"Petit format, grande obstination" },
     { name:"Coup de diagonale", icon:"✨", dmgMin:3, dmgMax:7, effect:null, desc:"Presque élégant, pas vraiment" }
   ],

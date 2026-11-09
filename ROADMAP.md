@@ -10,3 +10,9 @@
 Implémentée dans la version 20261109.20 : découverte partagée après retour de victoire, récupération unique par Greg pour Greg ou Bibi, poids 15, équipement et transferts, sauvegarde. Bonus évolutif : Force = bonus de l’épée d’armurerie au niveau de Greg +2 ; Défense +1, puis +2 au niveau 10, +3 au niveau 20. Les statistiques de base ne sont pas modifiées.
 
 Contre le Roi : lueur bleutée partagée à l’entrée du combat si équipée ; une attaque physique de Greg réussie réduit de 15 % la prochaine attaque du Roi, 25 % sur critique. Le meilleur effet est conservé sans cumul, puis consommé.
+
+## Audit du 9 novembre — suite
+
+Corrigé en 20261109.23 : annulation des animations et délais après nettoyage ou retour de combat ; attaques propres au PNJ Elo ; tests de l'ancienne intervention remplacés par les états et PV MJ actuels ; aperçus des 9 pouvoirs alliés avec arrêt manuel, sans écriture de partie.
+
+Chantiers distincts restant à concevoir : garantir les champs calculés des fiches sans supprimer les éditions manuelles voulues ; mesurer et réduire les échanges sur la racine complète pour les longues campagnes ; concevoir les phases du Roi final. Ces points ne sont pas annoncés comme corrigés.

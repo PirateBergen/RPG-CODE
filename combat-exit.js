@@ -48,6 +48,7 @@ function observeCombatEnding(data){
 function completeCombatReturn(outcome){
   const data=outcome||window.__renderedCombatOutcome||window.__pendingCombatOutcome
   if(data?.combatId&&window.__localCombatId&&data.combatId!==window.__localCombatId&&combatActive)return
+  if(typeof cancelSharedVisuals==="function")cancelSharedVisuals()
   cancelCombatRetreatPresentation()
   if(typeof clearWorldBossFleeUI==="function")clearWorldBossFleeUI()
   window.__combatReturnInProgress=true

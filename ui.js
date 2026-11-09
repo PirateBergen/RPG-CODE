@@ -1901,15 +1901,17 @@ function showAllyActionResult(data) { /* Les jets et effets sont désormais rés
 
 function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
   if(pnj.id==="melenchon")return playOregonBombardment(pnj,action,targetId,onComplete)
+  const scope=createPresentationScope("__cancelAllyPresentation")
+  scope.later(scope.cancel,6500)
   // ÉTAPE 1 — Tremblement + flash
   screenShakeHard()
-  setTimeout(()=>screenShakeHard(), 300)
+  scope.later(()=>screenShakeHard(), 300)
   const flash = document.createElement("div"); flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;background:white;opacity:0;pointer-events:none;z-index:999999990;transition:opacity 0.05s;"
-  document.body.appendChild(flash)
-  setTimeout(()=>{ flash.style.opacity="0.7"; setTimeout(()=>{ flash.style.transition="opacity 0.4s"; flash.style.opacity="0"; setTimeout(()=>flash.remove(),400) },80) },50)
+  document.body.appendChild(scope.node(flash))
+  scope.later(()=>{ flash.style.opacity="0.7"; scope.later(()=>{ flash.style.transition="opacity 0.4s"; flash.style.opacity="0"; scope.later(()=>flash.remove(),400) },80) },50)
 
   // ÉTAPE 2 — Image du dieu + message solennel (après 600ms)
-  setTimeout(()=>{
+  scope.later(()=>{
     const cinScreen = document.createElement("div"); cinScreen.id = "allyCinScreen"
     cinScreen.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999995;opacity:0;transition:opacity 0.6s ease;`
 
@@ -1930,21 +1932,21 @@ function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
     msgEl.innerText = action.dialogue
     cinScreen.appendChild(msgEl)
 
-    document.body.appendChild(cinScreen)
+    document.body.appendChild(scope.node(cinScreen))
 
     // Son impact — fade out après 2s
-    const impact = new Audio("audio/impact.mp3"); setManagedAudioBaseVolume(impact, 0.85); impact.play().catch(()=>{})
-    setTimeout(()=>{ let iv=setInterval(()=>{ if(impact.volume>0.05) impact.volume=Math.max(0,impact.volume-0.06); else{ impact.pause(); clearInterval(iv) } },100) }, 2000)
+    const impact = scope.audio(new Audio("audio/impact.mp3")); setManagedAudioBaseVolume(impact, 0.85); impact.play().catch(()=>{})
+    scope.later(()=>{ let iv=scope.every(()=>{ if(impact.volume>0.05) impact.volume=Math.max(0,impact.volume-0.06); else{ impact.pause(); clearInterval(iv) } },100) }, 2000)
 
-    setTimeout(()=>{
+    scope.later(()=>{
       cinScreen.style.opacity = "1"
-      setTimeout(()=>{ img.style.opacity="1"; nameEl.style.opacity="1"; msgEl.style.opacity="1" }, 50)
+      scope.later(()=>{ img.style.opacity="1"; nameEl.style.opacity="1"; msgEl.style.opacity="1" }, 50)
     }, 20)
 
     // ÉTAPE 3 — Après 4s, lancer le dé
-    setTimeout(()=>{
+    scope.later(()=>{
       cinScreen.style.opacity = "0"
-      setTimeout(()=>{ cinScreen.remove(); if(typeof onComplete==="function")onComplete() }, 600)
+      scope.later(()=>{ cinScreen.remove(); if(typeof onComplete==="function")onComplete() }, 600)
     }, 4000)
   }, 600)
 }
@@ -1953,9 +1955,11 @@ function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
 
 
 function _playAllyAnim(animType, color, isCrit) {
+  const scope=createPresentationScope("__cancelAllyEffect")
+  scope.later(scope.cancel,6000)
   // Animation solennelle — voile coloré + particules lentes
   const overlay = document.createElement("div"); overlay.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999990;opacity:0;transition:opacity 1.5s ease;`
-  document.body.appendChild(overlay)
+  document.body.appendChild(scope.node(overlay))
 
   // Voile de couleur discret
   const veil = document.createElement("div"); veil.style.cssText = `position:absolute;top:0;left:0;width:100%;height:100%;background:radial-gradient(ellipse at center, ${color}18 0%, transparent 70%);`
@@ -1974,9 +1978,9 @@ function _playAllyAnim(animType, color, isCrit) {
   const line = document.createElement("div"); line.style.cssText = `position:absolute;top:50%;left:0;width:100%;height:1px;background:linear-gradient(90deg,transparent,${color}66,transparent);transform:scaleX(0);transition:transform 1.2s ease;transform-origin:center;`
   overlay.appendChild(line)
 
-  setTimeout(() => { overlay.style.opacity = "1"; line.style.transform = "scaleX(1)" }, 20)
+  scope.later(() => { overlay.style.opacity = "1"; line.style.transform = "scaleX(1)" }, 20)
   if (isCrit) { flashGold(); screenShakeHard() } else screenShake()
-  setTimeout(() => { overlay.style.transition = "opacity 2s ease"; overlay.style.opacity = "0"; setTimeout(() => overlay.remove(), 2000) }, isCrit ? 3500 : 2500)
+  scope.later(() => { overlay.style.transition = "opacity 2s ease"; overlay.style.opacity = "0"; scope.later(() => overlay.remove(), 2000) }, isCrit ? 3500 : 2500)
 }
 
 ;(function(){

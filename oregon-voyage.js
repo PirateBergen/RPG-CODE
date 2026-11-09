@@ -65,7 +65,7 @@ function syncOregonVoyage(){
  marker.hidden=false;marker.style.pointerEvents=isGM?"auto":"none";marker.title=isGM?"Déplacer l’Oregon III":"L’Oregon III"
  if(oregonShipDrag!==null||oregonShipSaving)return
  const position=currentOregonVoyage()?.position
- marker.style.left=(Number.isFinite(position?.x)?position.x:map.offsetWidth/2)+"px"
+ marker.style.left=(Number.isFinite(position?.x)?position.x:map.offsetWidth*.62)+"px"
  marker.style.top=(Number.isFinite(position?.y)?position.y:map.offsetHeight/2)+"px"
 }
 async function writeOregonShipPosition(value){

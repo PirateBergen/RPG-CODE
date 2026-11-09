@@ -6395,3 +6395,7 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 .oregonVoyageView #map #greg,.oregonVoyageView #map #ju,.oregonVoyageView #map #elo,.oregonVoyageView #map #bibi{display:none!important}
 #oregonVoyageShip{position:absolute;width:150px;height:150px;transform:translate(-50%,-50%);z-index:110;touch-action:none;cursor:grab;user-select:none;filter:drop-shadow(0 8px 6px #0008)}
 #oregonVoyageShip[hidden]{display:none}#oregonVoyageShip img{width:100%;height:100%;object-fit:contain;pointer-events:none}
+
+#oregonVoyageShip img{animation:oregonShipFloat 5s ease-in-out infinite;transform-origin:50% 70%}
+@keyframes oregonShipFloat{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}
+@media(prefers-reduced-motion:reduce){#oregonVoyageShip img{animation:none}}

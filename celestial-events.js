@@ -178,7 +178,8 @@ async function triggerBifrostFlash(){
   })}catch(error){showNotification(error.message)}
 }
 
-function stopBifrostFlashSound(){
+function stopBifrostFlashSound(keepPassageImpact=false){
+  if(!keepPassageImpact&&window.__bifrostPassageSound){try{window.__bifrostPassageSound.pause();window.__bifrostPassageSound.currentTime=0}catch(_){}window.__bifrostPassageSound=null}
   cancelCelestialTimers("bifrost");window.__bifrostGeneration=(window.__bifrostGeneration||0)+1
   clearTimeout(window.__bifrostTrembleFadeDelay);clearInterval(window.__bifrostTrembleFade)
   for(const key of ["__bifrostFlashSound","__bifrostTrembleSound"]){const sound=window[key];if(sound){try{sound.pause();sound.currentTime=0}catch(_){}window[key]=null}}
@@ -195,6 +196,11 @@ function doBifrostFlash(event={}){
   const flashes=[{c:"rgba(200,230,255,.4)",d:80},{c:"rgba(255,255,255,.5)",d:120},{c:"rgba(100,180,255,.9)",d:200},{c:"white",d:400}]
   let delay=0
   flashes.forEach(f=>{celestialAfter("bifrost",()=>{const flash=document.createElement("div");flash.className="celestialBifrostFlash";flash.style.cssText="position:fixed;inset:0;pointer-events:none;z-index:99999998;background:"+f.c;document.body.appendChild(flash);celestialAfter("bifrost",()=>{flash.style.transition="opacity "+f.d*1.5+"ms ease";flash.style.opacity="0";celestialAfter("bifrost",()=>flash.remove(),f.d*2)},f.d*.3)},delay);delay+=f.d+60})
+  celestialAfter("bifrost",()=>{
+    const impact=new Audio(resolveAudioPath("power.mp3"));window.__bifrostPassageSound=impact
+    setManagedAudioBaseVolume(impact,.65,"effects");impact.play().catch(()=>{})
+    impact.addEventListener("ended",()=>{if(window.__bifrostPassageSound===impact)window.__bifrostPassageSound=null},{once:true})
+  },delay-200)
   screenShake();celestialAfter("bifrost",screenShakeHard,300);celestialAfter("bifrost",screenShakeHard,700);celestialAfter("bifrost",flashGold,delay-200)
   celestialAfter("bifrost",async()=>{
     if(!isGM||generation!==window.__bifrostGeneration||currentMap!==origin||window.__sessionBusy)return

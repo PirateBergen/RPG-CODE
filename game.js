@@ -1521,7 +1521,7 @@ db.ref("game/map").on("value", snap => {
   if(typeof refreshExplorationMapEvents==="function")refreshExplorationMapEvents()
   if(typeof playSharedMapAudio==="function")playSharedMapAudio(window.__explorationState?.mapAudio)
   if (previousMap && previousMap !== mapName) { closeMapLoreBookOverlay(); if (isGM) addSessionLog("🗺 Carte : " + (mapNames[mapName] || mapName)) }
-  if (typeof stopBifrostFlashSound === "function") stopBifrostFlashSound()
+  if (typeof stopBifrostFlashSound === "function") stopBifrostFlashSound(mapName==="bifrost.jpg")
   updateMadnessUI(window.groupMadness || 0)
   updateWorldMapFogTopLeft()
   updateMapLoreBookVisibility()

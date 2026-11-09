@@ -166,6 +166,7 @@ async function requestExplorationAction(kind,actor,payload){
 async function writeExplorationPosition(id,value,manual=false){
   requireExplorationConnection()
   if(!isGM&&!canAccessCharacter(id))throw new Error("Vous ne contrôlez pas ce pion")
+  if(typeof isOregonShipView==="function"&&isOregonShipView()&&["greg","ju","elo","bibi"].includes(id))throw Error("Le MJ déplace le bateau pendant le voyage de l’Oregon III.")
   if(isWorldPartyMap()&&["greg","ju","elo","bibi"].includes(id))throw new Error("Sur la carte du monde, le MJ déplace le repère du groupe.")
   const position=explorationPosition(value)
   if(id==="bibi")await db.ref("tokens/bibi").transaction(current=>explorationBibiPosition(current,position,manual))
@@ -305,6 +306,7 @@ function clearFlySwarmVisuals(){document.querySelectorAll(".fly-particle,#flySwa
 function refreshExplorationMapEvents(){
  if(!gameStarted||window.__sessionBusy||!["GAME","COMBAT"].includes(gameState))return
  const events=window.__explorationWorldEvents||{}
+ if(typeof syncOregonVoyage==="function")syncOregonVoyage()
  if(typeof scheduleAuroraExpiry==="function")scheduleAuroraExpiry(events.aurora)
  if(events.aurora?.active){if(!document.getElementById("auroraOverlay")||window.__auroraPresentedEvent!==events.aurora.time)showAuroraEvent(events.aurora)}
  else if(document.getElementById("auroraOverlay")&&!window.__auroraClosing){window.__auroraClosing=true;showAuroraEndSequence();setTimeout(()=>{window.__auroraClosing=false},8000)}
@@ -312,14 +314,15 @@ function refreshExplorationMapEvents(){
  else if(document.getElementById("flySwarmOverlay")&&!window.__fliesClosing){window.__fliesClosing=true;resetFlySwarmPresentation();setTimeout(()=>{window.__fliesClosing=false},9000)}
 }
 function playSharedMapAudio(data){
+ if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
  if(!data?.file){window.__sharedMapAudioSignature=null;return}
  if(!gameStarted||window.__sessionBusy||(data.map||window.__latestMapValue)!==currentMap)return
  const signature=(data.time||0)+":"+data.file
  if(signature===window.__sharedMapAudioSignature)return
  window.__sharedMapAudioSignature=signature
  const map=currentMap,file=/\.(mp3|wav|ogg|m4a)([?#]|$)/i.test(data.file)?data.file:data.file+".mp3"
- setTimeout(()=>{if(currentMap!==map||window.__sharedMapAudioSignature!==signature||window.__sessionBusy)return
+ setTimeout(()=>{if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority())return;if(currentMap!==map||window.__sharedMapAudioSignature!==signature||window.__sessionBusy)return
  _musicTransitioning=false;_pendingMusic=null;stopAllMusic()
- setTimeout(()=>{if(currentMap!==map||window.__sharedMapAudioSignature!==signature)return;crossfadeMusic(typeof resolveAudioPath==="function"?resolveAudioPath(file):"audio/"+file);_state._pendingMapAudio=false},300)
+ setTimeout(()=>{if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority())return;if(currentMap!==map||window.__sharedMapAudioSignature!==signature)return;crossfadeMusic(typeof resolveAudioPath==="function"?resolveAudioPath(file):"audio/"+file);_state._pendingMapAudio=false},300)
  },1400)
 }

@@ -374,7 +374,7 @@ function updateTokenGlow(id, hp) {
 }
 
 function spawnPortal(tokenID) {
-  if(document.body.classList.contains("worldPartyView")&&["greg","ju","elo","bibi"].includes(tokenID))return
+  if((document.body.classList.contains("worldPartyView")||document.body.classList.contains("oregonVoyageView"))&&["greg","ju","elo","bibi"].includes(tokenID))return
   const token = document.getElementById(tokenID)
   if (!token) return
   const portal = document.createElement("div")
@@ -593,7 +593,7 @@ function setManagedAudioBaseVolume(audio, volume = 1, channel = "effects") {
 
 function inferAudioChannel(audio) {
   const id = String(audio?.id || "")
-  if (["music", "musicA", "musicB", "auroraMusic", "forsureMusic", "sortPrisonMusic", "madnessLow", "madnessMid", "madnessHigh", "madnessPeak"].includes(id)) return "music"
+  if (["music", "musicA", "musicB", "oregonVoyageMusic", "auroraMusic", "forsureMusic", "sortPrisonMusic", "madnessLow", "madnessMid", "madnessHigh", "madnessPeak"].includes(id)) return "music"
   return "effects"
 }
 
@@ -621,6 +621,7 @@ function syncManagedAudioVolumes() {
 }
 
 function crossfadeMusic(newMusic) {
+  if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
   if (
     auroraActive &&
     newMusic !== "aurore.mp3" &&
@@ -657,6 +658,7 @@ function crossfadeMusic(newMusic) {
   next.__baseVolume=1;next.__audioChannel="music";next.volume = 0
 
   const fadeOutIv = setInterval(() => {
+    if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){clearInterval(fadeOutIv);_musicTransitioning=false;ensureOregonVoyageMusic();return}
     if (active.volume > 0.06) {
       active.volume = Math.max(0, active.volume - 0.1)
     } else {
@@ -672,10 +674,12 @@ function crossfadeMusic(newMusic) {
       next.onended = null
       next._loopFadeSetup = true
       next.addEventListener("timeupdate", function _loopFade() {
+        if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
         if (!next._loopFadeSetup) { next.removeEventListener("timeupdate", _loopFade); return }
         if (next.duration && next.currentTime > next.duration - 3 && !next._fading) {
           next._fading = true
           const fadeIv = setInterval(() => {
+            if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){clearInterval(fadeIv);next._fading=false;ensureOregonVoyageMusic();return}
             if (next.volume > 0.05) {
               next.volume = Math.max(0, next.volume - 0.04)
             } else {
@@ -685,6 +689,7 @@ function crossfadeMusic(newMusic) {
               next._fading = false
               next.play().catch(() => {})
               const fi = setInterval(() => {
+                if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){clearInterval(fi);ensureOregonVoyageMusic();return}
                 if (next.volume < getUserMusicVolume()) next.volume = Math.min(getUserMusicVolume(), next.volume + 0.05)
                 else clearInterval(fi)
               }, 100)
@@ -694,6 +699,7 @@ function crossfadeMusic(newMusic) {
       })
 
       musicFadeInterval = setInterval(() => {
+        if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){clearInterval(musicFadeInterval);musicFadeInterval=null;_musicTransitioning=false;ensureOregonVoyageMusic();return}
         if (next.volume < getUserMusicVolume()) {
           next.volume = Math.min(getUserMusicVolume(), next.volume + 0.05)
         } else {

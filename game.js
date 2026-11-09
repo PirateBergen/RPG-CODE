@@ -611,6 +611,7 @@ function playMadnessHit() {
 
 function updateWorldMapFogTopLeft() {
   if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
+  if(typeof syncOregonVoyage==="function")syncOregonVoyage()
   if(typeof syncNightMode==="function")syncNightMode()
   const fog = document.getElementById("worldMapFogTopLeft")
   if (!fog) return
@@ -3124,14 +3125,17 @@ function updateGMStats(playerID, data) {
 
 function ensureMapMusicPlayback(mapName, delay = 0) {
   setTimeout(() => {
+    if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
     if (!mapName || !mapMusic[mapName]) return
     crossfadeMusic(mapMusic[mapName])
     setTimeout(() => {
+      if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
       const active = currentMusic === "A" ? document.getElementById("musicA") : document.getElementById("musicB")
       const hasPlayback = !!(active && !active.paused && active.src && active.volume > 0.01)
       if (!hasPlayback) {
         crossfadeMusic(mapMusic[mapName])
         setTimeout(() => {
+          if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
           const retryActive = currentMusic === "A" ? document.getElementById("musicA") : document.getElementById("musicB")
           const retryOk = !!(retryActive && !retryActive.paused && retryActive.src && retryActive.volume > 0.01)
           if (retryOk) return
@@ -3154,6 +3158,7 @@ function ensureMapMusicPlayback(mapName, delay = 0) {
 }
 
 function playInitialMapMusic(mapName) {
+  if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
   if (!mapName || !mapMusic[mapName]) return
   const direct = document.getElementById("musicA")
   if (!direct) return
@@ -3510,6 +3515,7 @@ function refreshActivePNJs() {
     gameState = state
     if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(window.__combatSnapshot)
     if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
+  if(typeof syncOregonVoyage==="function")syncOregonVoyage()
   if(typeof syncNightMode==="function")syncNightMode()
     if(state==="COMBAT"&&previousState!=="COMBAT"&&typeof suspendExplorationForCombat==="function")suspendExplorationForCombat()
   if (state !== "GAME" && state !== "COMBAT" && typeof cleanupRuneChallengeUI === "function") cleanupRuneChallengeUI()
@@ -3766,6 +3772,7 @@ function showTavern() {
     else                            { map.style.backgroundSize = "cover";   map.style.backgroundColor = "" }
     currentMap = mapName
     if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
+  if(typeof syncOregonVoyage==="function")syncOregonVoyage()
   if(typeof syncNightMode==="function")syncNightMode()
     calculateMinZoom(); cameraZoom = minZoom; cameraX = 0; cameraY = 0; updateCamera()
     // Le zoom sauvegardé sera restauré sans réécrire la session.

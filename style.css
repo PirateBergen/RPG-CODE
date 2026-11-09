@@ -6391,3 +6391,7 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 #gmCombatButtons{flex-wrap:wrap}
 
 .combatRetreatOverlay{position:fixed;inset:0;background:#03101cea;display:grid;place-items:center;z-index:999999999;pointer-events:none;color:#d9ecff;text-align:center;font:clamp(24px,4vw,44px) Georgia,serif}
+
+.oregonVoyageView #map #greg,.oregonVoyageView #map #ju,.oregonVoyageView #map #elo,.oregonVoyageView #map #bibi{display:none!important}
+#oregonVoyageShip{position:absolute;width:150px;height:150px;transform:translate(-50%,-50%);z-index:110;touch-action:none;cursor:grab;user-select:none;filter:drop-shadow(0 8px 6px #0008)}
+#oregonVoyageShip[hidden]{display:none}#oregonVoyageShip img{width:100%;height:100%;object-fit:contain;pointer-events:none}

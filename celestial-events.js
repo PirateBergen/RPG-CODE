@@ -5,7 +5,7 @@ async function triggerAurora(){
   if(!isGM||window.__authRole!=="gm")return
   try{await reliableRootTransaction(root=>{
     if(root?.events?.aurora?.active)return undefined
-    root.events||={};root.events.aurora={active:true,time:Date.now()};return root
+    root.events||={};root.events.aurora={active:true,time:Date.now(),...(root.game?.map==="bateau1.jpg"?{oregonVoyage:{active:true}}:{})};return root
   });document.querySelectorAll(".gmSection").forEach(s=>s.style.display="none")}
   catch(error){showNotification(error.message)}
 }
@@ -29,6 +29,7 @@ function clearAuroraTimers() {
 }
 
 function startAuroraMusic() {
+  if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){stopAuroraMusic(false);ensureOregonVoyageMusic();return}
   clearInterval(window.__auroraFadeInInterval)
   const aurora = document.getElementById("auroraMusic")
   if (!aurora) return
@@ -112,7 +113,7 @@ function showAuroraEvent(event=window.__explorationWorldEvents?.aurora) {
   const msg=document.createElement("div"); msg.id="auroraMessage"; msg.style.cssText="position:fixed;top:12%;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;z-index:9999995;opacity:0;transition:opacity 2s ease;"; const msgIcon=document.createElement("div"); msgIcon.style.cssText="font-size:42px;margin-bottom:16px;"; msgIcon.innerText="✨"; const msgTitle=document.createElement("div"); msgTitle.style.cssText="font-family:Cinzel Decorative,Cinzel,serif;font-size:28px;letter-spacing:4px;margin-bottom:12px;color:#a0ffcc;text-shadow:0 0 20px #00ffaa;"; msgTitle.innerText="AURORES BORÉALES"; const msgText=document.createElement("div"); msgText.style.cssText="font-family:IM Fell English,serif;font-size:18px;color:#c0fff0;opacity:0.9;line-height:1.6;max-width:500px;text-align:center;"; msgText.innerText="Les cieux s'embrasent de lumières mystiques..."; msg.appendChild(msgIcon); msg.appendChild(msgTitle); msg.appendChild(msgText); document.body.appendChild(msg)
   celestialAfter("aurora",()=>{ ov.style.opacity="1"; msg.style.opacity="1" },100)
   startAuroraMusic()
-  fadeMusicOut(()=>{})
+  if(!(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()))fadeMusicOut(()=>{})
   window.__auroraMsgTimer = celestialAfter("aurora",()=>{
     msg.style.opacity="0"
     window.__auroraRemoveMsgTimer = celestialAfter("aurora",()=>msg.remove(),2000)
@@ -156,7 +157,8 @@ function showAuroraEndSequence() {
         celestialAfter("aurora",() => { if (end.parentNode) end.remove() }, 2200)
       }, 4000)
     }
-    if (currentMap && mapMusic[currentMap]) crossfadeMusic(mapMusic[currentMap])
+    if(typeof resumeCurrentExplorationMusic==="function")resumeCurrentExplorationMusic()
+    else if (currentMap && mapMusic[currentMap]) crossfadeMusic(mapMusic[currentMap])
   })
 }
 
@@ -199,6 +201,7 @@ function doBifrostFlash(event={}){
     try{const result=await reliableRootTransaction(root=>{
       const current=root?.game?.bifrostFlash
       if(generation!==window.__bifrostGeneration||root?.sessionControl?.phase||root?.game?.combatState?.active||(root?.sessionControl?.revision||"initial")!==revision||!event.time||current?.time!==event.time||current.completedAt||root.game.map!==origin)return undefined
+      if(root.events?.aurora?.oregonVoyage)root.events.aurora.oregonVoyage.active=false
       root.game.map="bifrost.jpg";delete root.game.mapAudio;current.completedAt=Date.now();return root
     });if(result.committed){maybeSpawnMapLoreBook("bifrost.jpg");document.querySelectorAll(".gmSection").forEach(node=>node.style.display="none")}}
     catch(error){console.warn("Passage du Bifrost",error)}

@@ -82,7 +82,7 @@ function playSpecialPreview(actor){
  specialPreviewPending=true;window.__cancelSpecialPreview=cancel;closeSpecialPreviewPanel()
  const added=enqueueSharedVisual("special-preview-"+(++specialPreviewSerial),()=>{
   if(cancelled||!specialPreviewAllowed()){cancel();return}
-  if(actor==="ju"){presentPikaAttack({actor,attack:attack.name,pikaKind:"endikaki",mode:"damage",special:true,fail:false,crit:false,amount:0,message:"APERÇU — Endikaki : animation et son uniquement"});cancelEffect=window.__cancelEndikakiPresentation}
+  if(actor==="ju"){presentPikaAttack({actor,attack:attack.name,pikaKind:"endikaki",mode:"damage",special:true,preview:true,fail:false,crit:false,amount:0,message:"APERÇU — Endikaki : animation et son uniquement"});cancelEffect=window.__cancelEndikakiPresentation}
   else cancelEffect=showPlayerAttackImpact(actor,attack,{mode:"damage",amount:0,targetName:"Cible d’essai"},{special:true,preview:true,crit:false,fail:false})
   releaseTimer=setTimeout(cancel,duration)
  },duration)
@@ -120,13 +120,7 @@ async function openTestPlayerActions(actor){
  const panel=document.createElement("section"),title=document.createElement("h2"),notice=document.createElement("p"),tabs=document.createElement("nav"),close=document.createElement("button")
  panel.id="testPlayerActionsPanel";panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Aperçu des actions des joueurs");title.textContent="Actions de "+heroDisplayName(actor);notice.textContent="Aperçu en lecture seule de l’essai local. Aucun changement de rôle ni utilisation de pouvoir.";panel.append(title,notice,tabs)
  for(const id of ["greg","ju","elo"]){const button=document.createElement("button");button.textContent=heroDisplayName(id);button.setAttribute("aria-pressed",String(id===actor));button.onclick=()=>openTestPlayerActions(id);tabs.appendChild(button)}
- const add=(name,text)=>{const card=document.createElement("section"),heading=document.createElement("h3"),desc=document.createElement("p");heading.textContent=name;desc.textContent=text;card.append(heading,desc);panel.appendChild(card)}
- for(const [word,data]of Object.entries(root.game?.playerThuum?.[actor]||{})){if(!data?.unlocked||!getThuumDef(word))continue;const allowed=!!root.game?.playerThuumAccess?.[actor]?.[word]?.allowed,used=!!root.combat?.usedThuum?.[actor]?.[word];add(word+" — "+getThuumDef(word).words.join(" • "),thuumEffectDescription(word,data.rank||1)+" "+(used?"Déjà utilisé dans ce combat.":allowed?"Autorisation MJ accordée.":"Autorisation MJ requise."))}
- for(const pnj of ALLY_PNJS.filter(p=>root.game?.allyDiscoveries?.[p.id]))add(pnj.name,pnj.actions.map(a=>a.label+" : "+a.desc).join(" ")+" World boss uniquement, sur autorisation du MJ.")
- const access=root.game?.playerAllyAccess;if(access?.playerId===actor)add("Invocation autorisée",access.pnjName+" — "+access.actionId)
- if(Number(root.characters?.[actor]?.corruption)>=10)add("Libérer le pouvoir","Jauge pleine : le pouvoir personnel est disponible.")
- if(root.game?.runeChallenge?.active)add("Défi runique","Le défi de runes est en cours.")
- if(panel.querySelectorAll("section").length===0)add("Aucune action spéciale disponible","Ce personnage n’a actuellement ni cri appris, ni allié découvert, ni pouvoir chargé, ni défi actif.")
+ const menu=document.createElement("section");menu.id="testPlayerActionsMenu";menu.style.display="block";panel.appendChild(menu);renderPlayerPowersPanel(menu,{actor,root})
  close.textContent="Fermer";close.onclick=()=>panel.remove();panel.appendChild(close);panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();panel.remove()}});document.body.appendChild(panel);panel.scrollTop=0;tabs.querySelector("button")?.focus({preventScroll:true})
 }
 
@@ -179,4 +173,18 @@ function playAllySpecialPreview(id){
   timer=setTimeout(cancel,14000)
  },14200)
  if(added)showSpecialPreviewStop();else cancel();return added
+}
+function getPreviewPlayerActionTabs(actor,root){
+ const tabs=[];if(getGrantedDocuments(actor,root.game?.playerDocuments||{}).length)tabs.push("documents")
+ if(ALLY_PNJS.some(p=>root.game?.allyDiscoveries?.[p.id])||root.game?.playerAllyAccess?.playerId===actor)tabs.push("ally")
+ if(Object.entries(root.game?.playerThuum?.[actor]||{}).some(([word,data])=>data?.unlocked&&getThuumDef(word)))tabs.push("thuum")
+ if(root.game?.runeChallenge?.active)tabs.push("runes");return tabs
+}
+function renderPreviewPlayerActionTab(panel,tab,actor,root){
+ const add=(name,text)=>{const card=document.createElement("section"),heading=document.createElement("h3"),desc=document.createElement("p");card.className="playerActionPreviewCard";heading.textContent=name;desc.textContent=text;card.append(heading,desc);panel.appendChild(card)}
+ if(tab==="documents")return renderGrantedDocuments(panel,actor,root.game?.playerDocuments||{},true)
+ if(tab==="thuum")for(const [word,data]of Object.entries(root.game?.playerThuum?.[actor]||{})){if(!data?.unlocked||!getThuumDef(word))continue;const allowed=!!root.game?.playerThuumAccess?.[actor]?.[word]?.allowed,used=!!root.combat?.usedThuum?.[actor]?.[word];add(word+" — "+getThuumDef(word).words.join(" • "),thuumEffectDescription(word,data.rank||1)+" "+(used?"Déjà utilisé dans ce combat.":allowed?"Autorisation MJ accordée.":"Autorisation MJ requise."))}
+ if(tab==="ally"){const access=root.game?.playerAllyAccess;if(access?.playerId===actor)add("Invocation autorisée",access.pnjName+" — "+access.actionId);for(const pnj of ALLY_PNJS.filter(p=>root.game?.allyDiscoveries?.[p.id]))add(pnj.name,pnj.actions.map(a=>a.label+" : "+a.desc).join(" ")+" World boss uniquement, sur autorisation du MJ.")}
+ if(tab==="runes")add("Défi runique","Le défi de runes est en cours. Consultation en lecture seule dans cet aperçu.")
+ if(tab==="fiche"){add("Fiche de "+heroDisplayName(actor),"Raccourci I ou J. La fiche et l’inventaire restent personnels.");if(Number(root.characters?.[actor]?.corruption)>=10)add("Libérer le pouvoir","Jauge pleine : le bouton du pouvoir personnel est disponible.")}
 }

@@ -110,6 +110,10 @@ function publishCharacterCombatSummary(id, data) {
 }
 
 function resetLocalCharacterAccess() {
+  if(typeof closePersonalDocument==="function")closePersonalDocument()
+  if(typeof closeDocumentGrantPanel==="function")closeDocumentGrantPanel()
+  if(typeof closePlayerPowersPanel==="function")closePlayerPowersPanel()
+  document.getElementById("testPlayerActionsPanel")?.remove()
   stopCharacterSubscriptions()
   clearTimeout(window.__sheetAutoSaveTimer)
   window.__sheetAutoSaveTimer = null
@@ -140,7 +144,7 @@ function resetLocalCharacterAccess() {
   if (goldDisplay) goldDisplay.innerText = ""
   document.querySelectorAll(".token").forEach(t => t.classList.remove("selectedPlayer", "gmSelected"))
   document.querySelectorAll(".gmSection").forEach(el => { el.style.display = "none" })
-  ;["gmBar", "mjLog", "playerPreviewBtn", "combatHUD", "playerAttackBtn", "menuMini"].forEach(id => {
+  ;["gmBar", "mjLog", "playerPreviewBtn", "combatHUD", "playerAttackBtn", "playerThuumBtn", "menuMini"].forEach(id => {
     const el = document.getElementById(id)
     if (el) el.style.display = "none"
   })

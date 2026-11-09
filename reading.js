@@ -221,3 +221,59 @@ function presentMapLoreBookEvent(book,actor){
     showMapLoreBookOverlay(book);showNotification(heroDisplayName(actor)+" ouvre le livre.")
   };show()
 }
+
+const PLAYER_DOCUMENTS=[
+ {id:"baldur-note",image:"note baldur.png",title:"Note de Baldur",kind:"Note"},
+ {id:"forest-note",image:"note foret.png",title:"Note de la Forêt",kind:"Note"},
+ {id:"maelstrom-fresco",image:"fresque.jpg",title:"Fresque Maelstrom",kind:"Fresque"},
+ {id:"mysterious-rune",image:"rune-mysterieuse.png",title:"Rune mystérieuse",kind:"Rune"}
+]
+window.__playerDocuments={}
+function getGrantedDocuments(actor,grants=window.__playerDocuments){return PLAYER_DOCUMENTS.filter(doc=>grants?.[actor]?.[doc.id]===true)}
+function closePersonalDocument(){const el=document.getElementById("personalDocumentOverlay");el?.remove();if(el)window.GameWindows?.closed(el)}
+function openPersonalDocument(id,actor=getLocalPlayerId(),preview=false){
+ const doc=PLAYER_DOCUMENTS.find(d=>d.id===id),test=preview&&window.__isolatedTestMode&&db.__isolatedTest&&window.__authRole==="gm"
+ if(!doc||!getGrantedDocuments(actor).some(d=>d.id===id)||(!test&&(isGM||actor!==window.__authPlayerId||actor!==getLocalPlayerId())))return false
+ closePersonalDocument();const overlay=document.createElement("section"),box=document.createElement("div"),title=document.createElement("h2"),image=document.createElement("img"),close=document.createElement("button")
+ overlay.id="personalDocumentOverlay";overlay.dataset.documentId=id;overlay.dataset.actor=actor;overlay.dataset.preview=String(!!test);overlay.className="personalDocumentOverlay";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-label",doc.title);box.className="personalDocumentBox";title.textContent=doc.title;image.src="images/"+doc.image;image.alt=doc.title;close.textContent="Fermer ✕";close.type="button";close.onclick=closePersonalDocument;box.append(title,image,close);overlay.appendChild(box);overlay.addEventListener("pointerdown",e=>{if(e.target===overlay)closePersonalDocument()});document.body.appendChild(overlay);window.GameWindows?.register(overlay,closePersonalDocument);playSound("parcheminSound",.7);return true
+}
+function renderGrantedDocuments(panel,actor=getLocalPlayerId(),grants=window.__playerDocuments,preview=false){
+ const docs=getGrantedDocuments(actor,grants),intro=document.createElement("p");intro.className="playerActionHint";intro.textContent="Tes documents — à consulter librement, uniquement sur ton écran.";panel.appendChild(intro)
+ if(!docs.length){const empty=document.createElement("p");empty.textContent="Le MJ ne t’a pas encore confié de document.";panel.appendChild(empty)}
+ for(const doc of docs){const button=document.createElement("button"),image=document.createElement("img"),text=document.createElement("span"),name=document.createElement("strong"),kind=document.createElement("small");button.type="button";button.className="playerDocumentCard";button.dataset.documentId=doc.id;image.src="images/"+doc.image;image.alt="";name.textContent=doc.title;kind.textContent=doc.kind+" · Consulter";text.append(name,kind);button.append(image,text);button.onclick=()=>openPersonalDocument(doc.id,actor,preview);panel.appendChild(button)}
+}
+async function setDocumentRecipients(id,actors,expected=null){
+ requireActionAccess({gmOnly:true});requireActionConnection()
+ if(!PLAYER_DOCUMENTS.some(d=>d.id===id)||!Array.isArray(actors)||actors.some(a=>!PLAYABLE_HEROES.includes(a)))throw Error("Document ou destinataire inconnu")
+ const selected=[...new Set(actors)],uid=window.__authUid,revision=persistenceRevision||"initial"
+ const result=await reliableRootTransaction(root=>{
+  if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision)return undefined
+  const current=PLAYABLE_HEROES.filter(a=>root.game?.playerDocuments?.[a]?.[id]===true)
+  if(expected&&JSON.stringify(current.slice().sort())!==JSON.stringify(expected.slice().sort()))return undefined
+  root.game||={};root.game.playerDocuments||={}
+  for(const actor of PLAYABLE_HEROES){root.game.playerDocuments[actor]||={};if(selected.includes(actor))root.game.playerDocuments[actor][id]=true;else delete root.game.playerDocuments[actor][id]}
+  return root
+ })
+ if(!result.committed)throw Error("Les accès ou la partie ont changé. Fermez puis rouvrez ce panneau.")
+ return true
+}
+function closeDocumentGrantPanel(){const el=document.getElementById("documentGrantPanel");el?.remove();if(el)window.GameWindows?.closed(el)}
+async function openDocumentGrantPanel(id){
+ try{
+  requireActionAccess({gmOnly:true});requireActionConnection();const doc=PLAYER_DOCUMENTS.find(d=>d.id===id);if(!doc)return
+  const revision=persistenceRevision,grants=(await db.ref("game/playerDocuments").once("value")).val()||{}
+  if(window.__authRole!=="gm"||revision!==persistenceRevision||window.__sessionBusy)return
+  closeDocumentGrantPanel();const panel=document.createElement("section"),box=document.createElement("div"),title=document.createElement("h2"),help=document.createElement("p"),error=document.createElement("p"),save=document.createElement("button"),close=document.createElement("button"),expected=PLAYABLE_HEROES.filter(a=>grants[a]?.[id]===true)
+  panel.id="documentGrantPanel";panel.className="personalDocumentOverlay";panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-label","Donner un document");box.className="documentGrantBox";title.textContent=doc.title;help.textContent="Choisissez qui pourra consulter ce document dans Action → Documents. Décochez un joueur pour retirer son accès.";error.setAttribute("role","alert");box.append(title,help,error)
+  for(const actor of PLAYABLE_HEROES){const label=document.createElement("label"),input=document.createElement("input"),name=document.createElement("span");input.type="checkbox";input.value=actor;input.checked=expected.includes(actor);name.textContent=heroDisplayName(actor);label.append(input,name);box.appendChild(label)}
+  save.textContent="Enregistrer les accès";save.type="button";save.onclick=async()=>{const inputs=[...box.querySelectorAll("input")],selected=inputs.filter(i=>i.checked).map(i=>i.value);save.disabled=true;inputs.forEach(i=>i.disabled=true);try{await setDocumentRecipients(id,selected,expected);closeDocumentGrantPanel();showNotification("Accès au document enregistrés.")}catch(e){error.textContent=e.message}finally{save.disabled=false;inputs.forEach(i=>i.disabled=false)}};close.textContent="Annuler";close.type="button";close.onclick=closeDocumentGrantPanel;box.append(save,close);panel.appendChild(box);document.body.appendChild(panel);window.GameWindows?.register(panel,closeDocumentGrantPanel)
+ }catch(error){showNotification(error.message)}
+}
+function renderGMDocumentLibrary(){
+ const host=document.getElementById("gmDocumentLibrary");if(!host)return;host.replaceChildren()
+ for(const doc of PLAYER_DOCUMENTS){const row=document.createElement("div"),name=document.createElement("strong"),show=document.createElement("button"),give=document.createElement("button");row.className="gmDocumentRow";name.textContent=doc.title;show.textContent="Afficher à tous";show.type="button";show.onclick=()=>showDocument(doc.image,doc.title);give.textContent="Donner…";give.type="button";give.dataset.grantDocument=doc.id;give.onclick=()=>openDocumentGrantPanel(doc.id);row.append(name,show,give);host.appendChild(row)}
+}
+document.addEventListener("DOMContentLoaded",()=>{
+ renderGMDocumentLibrary()
+ db.ref("game/playerDocuments").on("value",snapshot=>{window.__playerDocuments=snapshot.val()||{};const viewer=document.getElementById("personalDocumentOverlay");if(viewer&&!getGrantedDocuments(viewer.dataset.actor).some(d=>d.id===viewer.dataset.documentId))closePersonalDocument();if(typeof updateThuumButton==="function")updateThuumButton()})
+})

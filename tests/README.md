@@ -20,3 +20,5 @@ Redémarrage MJ : tests/firebase-session-view.cjs avec l’émulateur Realtime D
 Corrections du 9 novembre : tests/presentation-lifecycle.cjs vérifie l'annulation des présentations en attente et en cours, sans effet tardif. tests/firebase-mob-special-previews.cjs couvre aussi tous les pouvoirs alliés dans l'essai local (sons simulés). tests/firebase-combat-saves.cjs restaure les états et PV MJ actuels, sans l'ancien système de prévision.
 
 Commande commune après installation des dépendances de tests : `node tests/run.cjs`. Pour les scénarios multijoueurs, démarrer uniquement l'émulateur local sur 127.0.0.1:9005 puis lancer `node tests/run.cjs --firebase`. Les données de production ne doivent jamais servir aux tests.
+
+Documents attribués : `node tests/firebase-player-documents.cjs` avec la base émulée locale. Vérifie les destinataires, la consultation locale, le retrait, la sauvegarde, le menu Action en essai MJ et le texte de la spéciale de Pika.

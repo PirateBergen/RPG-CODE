@@ -834,6 +834,7 @@ function hasActiveRuneChallenge() {
 
 function getAvailablePlayerPowerTabs() {
   const tabs = []
+  if(typeof getGrantedDocuments==="function"&&getGrantedDocuments(getLocalPlayerId()).length)tabs.push("documents")
   if (hasPlayerAllyAccess() || (typeof discoveredAllies==="function"&&discoveredAllies().length)) tabs.push("ally")
   if (getUnlockedThuumWords().length) tabs.push("thuum")
   if (hasActiveRuneChallenge()) tabs.push("runes")
@@ -880,7 +881,8 @@ function updateThuumButton() {
   btn.disabled = false
   if (activeWord) {
     btn.title = combatActive && isThuumUsedThisCombat(activeWord) ? activeWord + " déjà utilisé pour ce combat" : hasThuumUseAccess(activeWord) ? activeWord + " — utilisation autorisée par le MJ" : activeWord + " — autorisation MJ nécessaire, en combat ou hors combat"
-  } else btn.title = hasPlayerAllyAccess() ? "Cris et invocations : intervention autorisée par le MJ" : (typeof discoveredAllies==="function"&&discoveredAllies().length?"Alliés découverts — consulter les invocations":"Défi de runes actif")
+  } else btn.title = "Action — documents, cris, invocations et runes"
+
   renderPlayerPowersPanel()
 }
 
@@ -1055,30 +1057,34 @@ function renderPlayerRuneEntry(panel) {
   panel.appendChild(entry)
 }
 
-function renderPlayerPowersPanel() {
-  const panel = document.getElementById("playerThuumPanel")
+function renderPlayerPowersPanel(targetPanel=null,preview=null) {
+  const panel = targetPanel || document.getElementById("playerThuumPanel")
   if (!panel || panel.style.display === "none") return
   panel.innerHTML = ""
-  const powerTabs = getAvailablePlayerPowerTabs()
+  panel.classList.add("playerActionMenu")
+  const powerTabs = preview?getPreviewPlayerActionTabs(preview.actor,preview.root):getAvailablePlayerPowerTabs()
   const tabs = [...powerTabs, "fiche"]
 
   const title = document.createElement("div")
-  title.id = "playerThuumPanelTitle"
-  title.innerText = "Cris, invocations et runes"
+  if(!preview)title.id = "playerThuumPanelTitle"
+  title.className="playerActionTitle"
+  title.innerText = "Menu Action"
   panel.appendChild(title)
+  if(!preview){const close=document.createElement("button");close.type="button";close.textContent="Fermer ✕";close.className="playerActionClose";close.onclick=closePlayerPowersPanel;panel.appendChild(close)}
 
   const tabRow = document.createElement("div")
   tabRow.style.cssText = "display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;"
   panel.appendChild(tabRow)
 
   const content = document.createElement("div")
-  content.id = "playerPowerPanelContent"
+  if(!preview)content.id = "playerPowerPanelContent"
+  content.className="playerActionContent"
   panel.appendChild(content)
 
   const allTabs = [...tabs]
   const defaultTab = panel.dataset.activeTab && allTabs.includes(panel.dataset.activeTab)
     ? panel.dataset.activeTab
-    : (powerTabs.length ? getDefaultPlayerPowerTab() : "fiche")
+    : (preview?(powerTabs.includes("thuum")?"thuum":powerTabs[0]||"fiche"):(powerTabs.length ? getDefaultPlayerPowerTab() : "fiche"))
   panel.dataset.activeTab = defaultTab
 
   function paintTab(tab) {
@@ -1090,7 +1096,9 @@ function renderPlayerPowersPanel() {
       btn.style.color = btn.dataset.tab === tab ? "#f6e2a8" : "#d5c39a"
     })
 
-    if (tab === "ally") renderPlayerAllyEntry(content)
+    if(preview){renderPreviewPlayerActionTab(content,tab,preview.actor,preview.root);return}
+    if(tab === "documents")renderGrantedDocuments(content)
+    else if (tab === "ally") renderPlayerAllyEntry(content)
     else if (tab === "thuum") renderPlayerThuumEntries(content)
     else if (tab === "runes") renderPlayerRuneEntry(content)
     else if (tab === "fiche") {
@@ -1106,7 +1114,7 @@ function renderPlayerPowersPanel() {
     const btn = document.createElement("button")
     btn.dataset.tab = tab
     btn.style.cssText = "padding:6px 12px;font-family:'Cinzel',serif;font-size:12px;letter-spacing:1px;border:1px solid rgba(120,92,44,0.38);border-radius:999px;background:rgba(18,14,10,0.65);color:#d5c39a;cursor:pointer;"
-    btn.innerText = tab === "ally" ? "Invoc" : tab === "thuum" ? "Thu'um" : tab === "runes" ? "Runes" : "Fiche"
+    btn.innerText = tab === "documents" ? "Documents" : tab === "ally" ? "Invocations" : tab === "thuum" ? "Cris" : tab === "runes" ? "Runes" : "Fiche"
     btn.onclick = () => paintTab(tab)
     tabRow.appendChild(btn)
   })
@@ -2486,6 +2494,8 @@ function resetLocalCombatVisualState() {
 }
 
 function cleanupTransientGameUI(options = {}) {
+  if(typeof closePersonalDocument==="function")closePersonalDocument()
+  if(typeof closeDocumentGrantPanel==="function")closeDocumentGrantPanel()
   if(typeof cancelSharedVisuals==="function")cancelSharedVisuals()
   if(typeof cancelCombatRetreatPresentation==="function")cancelCombatRetreatPresentation()
   if(typeof clearWorldBossFleeUI==="function")clearWorldBossFleeUI()

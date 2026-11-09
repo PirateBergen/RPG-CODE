@@ -66,6 +66,7 @@ function presentPikaAttack(result) {
   const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer)}
   const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const id of ["endikakiInvocationSound","endikakiExplosionSound"])document.getElementById(id)?.pause();if(window.__cancelEndikakiPresentation===cleanup)window.__cancelEndikakiPresentation=null}
   window.__cancelEndikakiPresentation=cleanup
+  const caption=document.createElement("section"),title=document.createElement("h2"),description=document.createElement("p");caption.className="endikaki-caption";caption.setAttribute("role","status");title.textContent=String(result.attack||"Endikaki").toUpperCase();description.textContent=result.preview?"Invocation d’Endikaki — animation et son uniquement":result.fail?"Endikaki manque sa cible…":result.message||"Endikaki fonce sur l’ennemi et explose !";caption.append(title,description);document.body.appendChild(caption);nodes.add(caption)
   const idFor=id=>id==="mob"?"mobToken":COMBAT_MOBS.includes(id)?"mobToken_"+id:id
   let from=document.getElementById(idFor(result.actor))?.getBoundingClientRect(),to=document.getElementById(idFor(result.target))?.getBoundingClientRect()
   if(!from?.width)from=null

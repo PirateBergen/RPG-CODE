@@ -4,6 +4,7 @@
 function isJormungandr(mob){return mob?.name==="jormungand"}
 function isForchurMap(map){return String(map||"").toLowerCase()==="bateau.jpg"}
 function combatHasJormungandr(root){return ["mob","mob2","mob3"].some(slot=>isJormungandr(root?.combat?.[slot]))}
+function combatHasWorldBoss(root){return ["mob","mob2","mob3"].some(slot=>{const mob=root?.combat?.[slot];return mob&&(mob.balanceClass==="world"||WORLD_BOSS_NAMES.includes(mob.name))})}
 function combatExitSnapshot(root,type,request={}){
   const c=root.combat,state=root.game?.combatState||{},origin=state.returnMap||root.game?.map||"taverne.jpg"
   const map=type==="victory"&&c?.mob?.name==="balraug"?"prairie.jpg":type==="victory"&&c?.mob?.name==="kraken"?"niflheim.jpg":origin
@@ -16,10 +17,11 @@ function combatExitSnapshot(root,type,request={}){
 function sealCombatOutcome(root,type,request={}){
   root.game ||= {}
   if(root.game.combatOutcome?.combatId===root.combat.id&&root.combat.phase==="finished"&&root.game.combatOutcome.returnMap&&root.game.combatOutcome.returnTokens)return root.game.combatOutcome
-  if(type==="victory"&&["mob","mob2","mob3"].some(slot=>isJormungandr(root.combat?.[slot])&&!root.combat[slot].defeatedByThor))throw Error("Seule l’invocation de Thor peut vaincre Jörmungandr.")
+  if(type==="victory"&&!(request.manual&&root.roles?.[request.uid]==="gm")&&["mob","mob2","mob3"].some(slot=>isJormungandr(root.combat?.[slot])&&!root.combat[slot].defeatedByThor))throw Error("Seule l’invocation de Thor peut vaincre Jörmungandr.")
   root.game.combatOutcome=combatExitSnapshot(root,type,request)
   const now=new Date();root.game.sessionLog ||= {}
-  root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe fuit Jörmungandr":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
+  root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe prend la fuite":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
+  delete root.combat.pendingRetreat
   root.combat.phase="finished";root.combat.turnState ||= {};root.combat.turnState.phase="finished"
   if(type==="victory"){
     root.game.defeatedMobs ||= {}
@@ -374,6 +376,27 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
     let result
     if(request.kind === "initiative"){
       const ts=root.combat.turnState;if(ts?.phase!=="rolling"||!ts.participants?.some(p=>p.id===request.actor)||ts.rolls?.[request.actor]!=null)throw Error("Initiative déjà enregistrée ou combat changé");ts.rolls||={};ts.rolls[request.actor]=dice(12);result={mode:"control",message:"Initiative enregistrée"}
+    }
+    else if(request.kind==="requestRetreat"){
+      if(!gm)throw Error("Seul le MJ peut demander la fuite")
+      if(root.combat.phase!=="active"||root.combat.turnState?.phase!=="active"||!combatHasWorldBoss(root))throw Error("La fuite nécessite un combat world boss avec initiatives terminées")
+      if(!livingHeroes(root).includes(request.actor))throw Error("Choisissez un personnage vivant")
+      if(root.combat.pendingRetreat)throw Error("Une tentative attend déjà son dé")
+      if((root.combat.turnState.round||1)<(root.combat.retreatBlockedUntilRound||0))throw Error("Fuite indisponible jusqu’au round suivant")
+      root.combat.pendingRetreat={id:request.id,actor:request.actor};result={actor:request.actor,mode:"control",skipTurnBanner:true,message:heroDisplayName(request.actor)+" doit lancer un D12 pour la fuite"}
+    }
+    else if(request.kind==="cancelRetreat"){
+      if(!gm||root.combat.pendingRetreat?.id!==request.payload?.pendingId)throw Error("Cette tentative a changé")
+      delete root.combat.pendingRetreat;result={mode:"control",skipTurnBanner:true,message:"Tentative de fuite annulée avant le jet"}
+    }
+    else if(request.kind==="rollRetreat"){
+      const pending=root.combat.pendingRetreat
+      if(root.combat.phase!=="active"||root.combat.turnState?.phase!=="active"||!combatHasWorldBoss(root)||!pending||pending.id!==request.payload?.pendingId||pending.actor!==request.actor)throw Error("Cette tentative de fuite a changé")
+      if(!livingHeroes(root).includes(request.actor))throw Error("Le personnage choisi est KO ; le MJ doit choisir quelqu’un d’autre")
+      const roll=dice(12),success=roll===12;delete root.combat.pendingRetreat
+      if(success)sealCombatOutcome(root,"retreat",request)
+      else root.combat.retreatBlockedUntilRound=(root.combat.turnState.round||1)+1
+      result={actor:request.actor,mode:"retreat-roll",skipTurnBanner:true,roll,dice:12,crit:success,fail:roll===1,success,message:success?"Fuite réussie !":"Fuite échouée : le combat continue. Nouvelle tentative au round suivant."}
     }
     else if (request.kind === "hero") result = resolveHeroCombatAction(root, request, dice)
     else if (request.kind === "enemy") { if (!gm || !COMBAT_MOBS.includes(request.actor)) throw new Error("Action réservée au MJ"); result = resolveEnemyCombatAction(root, request, dice) }

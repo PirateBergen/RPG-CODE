@@ -2363,6 +2363,7 @@ function bindCombatActionState(block,actor,attack,special=false,enemy=false) {
   block._refreshCombatAction()
 }
 function refreshCombatActionStates() {
+  if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(window.__combatSnapshot)
   refreshCombatHUDContext()
   if(typeof combatTargetRefresh==="function")combatTargetRefresh()
   document.querySelectorAll("[data-combat-actor]").forEach(block=>block._refreshCombatAction?.())

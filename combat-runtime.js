@@ -262,7 +262,7 @@ document.addEventListener("DOMContentLoaded", () => {
   db.ref("combat").on("value", snapshot => {
     if (window.__sessionBusy) return
     const data = snapshot.val(); window.__combatSnapshot = data || null
-    const flee=document.getElementById("btnFuiteJormungandr");if(flee)flee.hidden=!isGM||!data||!combatHasJormungandr({combat:data})||data.phase==="finished"
+    if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(data)
     if (!data) return
     window.__combatTurnState = data.turnState || null
     window.__playerCombatSpecialsUsed = data.playerSpecials || {}; window.__playerCombatFlags = data.playerFlags || {}
@@ -290,10 +290,9 @@ async function requestManualCombatOutcome(type) {
   if(!isGM || !["victory","defeat","retreat"].includes(type) || window.__sessionBusy)return
   try{await transactCombatRoot(current=>{
     if(!current?.combat || current.combat.phase==="finished")return undefined
-    if(type==="retreat"&&!livingHeroes(current).length)throw Error("Le groupe est hors combat : la défaite s’applique.")
-    if(type==="retreat"&&!combatHasJormungandr(current))throw Error("Cette fuite est réservée au combat contre Jörmungandr.")
+    if(type==="retreat")throw Error("La fuite se résout avec un D12 : utilisez le bouton Fuite.")
     const root=combatClone(current)
-    sealCombatOutcome(root,type,{time:Date.now()});root.game.combatOutcome.manual=true
+    sealCombatOutcome(root,type,{time:Date.now(),manual:true,uid:window.__authUid});root.game.combatOutcome.manual=true
     if(type==="victory"){
       root.game.defeatedMobs ||= {}
       COMBAT_MOBS.forEach(slot=>{if(root.combat[slot])root.game.defeatedMobs[root.combat[slot].name]=true})
@@ -303,3 +302,33 @@ async function requestManualCombatOutcome(type) {
 }
 
 async function requestCombatPass(actor,enemy=false){if(enemy?!isGM:!canAccessCharacter(actor))return false;if(enemy?window.__mobAttackResolving:window.__playerAttackResolving)return false;const flag=enemy?"__mobAttackResolving":"__playerAttackResolving";window[flag]=true;refreshCombatActionStates();try{await submitCombatAction("pass",actor);return true}catch(error){showNotification("Action non confirmée : "+error.message);return false}finally{window[flag]=false;refreshCombatActionStates()}}
+
+function closeWorldBossFleePicker(){const picker=document.getElementById("worldBossFleePicker");if(picker){picker.remove();window.GameWindows?.closed(picker)}}
+function openWorldBossFleePicker(){
+ if(!isGM)return
+ const c=window.__combatSnapshot;if(!c||!combatHasWorldBoss({combat:c}))return
+ if(c.turnState?.phase!=="active"){showNotification("Terminez les initiatives avant la fuite.");return}
+ closeWorldBossFleePicker()
+ const picker=document.createElement("div");picker.id="worldBossFleePicker";picker.setAttribute("role","dialog");picker.setAttribute("aria-label","Choisir le personnage pour la fuite");picker.className="worldBossFleeBox"
+ const title=document.createElement("p");title.textContent="Qui tente la fuite ? Un 12 sur D12 est nécessaire.";picker.appendChild(title)
+ for(const actor of livingHeroes({characters:window.__combatConditionCharacters||{}})){
+  const button=document.createElement("button");button.type="button";button.textContent=heroDisplayName(actor);button.onclick=async()=>{button.disabled=true;try{await submitCombatAction("requestRetreat",actor);closeWorldBossFleePicker()}catch(error){button.disabled=false;showNotification(error.message)}};picker.appendChild(button)
+ }
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Annuler";cancel.onclick=closeWorldBossFleePicker;picker.appendChild(cancel);document.body.appendChild(picker);window.GameWindows?.register(picker,closeWorldBossFleePicker)
+}
+function renderWorldBossFlee(c){
+ const button=document.getElementById("btnWorldBossFlee"),world=gameStarted&&gameState==="COMBAT"&&!!c&&c.phase!=="finished"&&combatHasWorldBoss({combat:c}),round=c?.turnState?.round||1,blocked=round<(c?.retreatBlockedUntilRound||0)
+ if(button){button.hidden=!isGM||!world;button.disabled=!!c?.pendingRetreat||blocked||c?.turnState?.phase!=="active";button.textContent=blocked?"⛵ Fuite · round "+c.retreatBlockedUntilRound:"⛵ FUITE · D12"}
+ if(!world){document.getElementById("worldBossFleePanel")?.remove();closeWorldBossFleePicker();window.__fleePanelSignature=null;return}
+ const pending=c.pendingRetreat,signature=JSON.stringify([c.id,pending?.id,pending?.actor,window.__authUid,isGM])
+ if(!pending){document.getElementById("worldBossFleePanel")?.remove();window.__fleePanelSignature=null;return}
+ if(signature===window.__fleePanelSignature&&document.getElementById("worldBossFleePanel"))return
+ window.__fleePanelSignature=signature;document.getElementById("worldBossFleePanel")?.remove();closeWorldBossFleePicker()
+ const panel=document.createElement("div");panel.id="worldBossFleePanel";panel.className="worldBossFleeBox";panel.setAttribute("aria-label","Tentative de fuite")
+ const title=document.createElement("p");title.textContent=heroDisplayName(pending.actor)+" tente la fuite · 12 sur D12 requis";panel.appendChild(title)
+ if(isGM||canAccessCharacter(pending.actor)){
+  const roll=document.createElement("button");roll.type="button";roll.textContent="Lancer le D12 de fuite";roll.onclick=async()=>{roll.disabled=true;try{await submitCombatAction("rollRetreat",pending.actor,{pendingId:pending.id})}catch(error){roll.disabled=false;showNotification(error.message)}};panel.appendChild(roll)
+ }
+ if(isGM){const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Annuler avant le jet";cancel.onclick=()=>submitCombatAction("cancelRetreat",pending.actor,{pendingId:pending.id}).catch(error=>showNotification(error.message));panel.appendChild(cancel)}
+ document.body.appendChild(panel)
+}

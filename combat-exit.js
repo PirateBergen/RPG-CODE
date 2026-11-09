@@ -48,6 +48,7 @@ function observeCombatEnding(data){
 function completeCombatReturn(outcome){
   const data=outcome||window.__renderedCombatOutcome||window.__pendingCombatOutcome
   if(data?.combatId&&window.__localCombatId&&data.combatId!==window.__localCombatId&&combatActive)return
+  document.getElementById("worldBossFleePanel")?.remove();document.getElementById("worldBossFleePicker")?.remove()
   window.__combatReturnInProgress=true
   if(isGM&&data?.combatId)finishReliableCombat(data.combatId).catch(error=>showNotification("Retour affiché ; synchronisation à confirmer : "+error.message))
   endCombat({force:true,skipFinish:true})
@@ -102,6 +103,6 @@ function scheduleAuthoritativeReturn(outcome){
 function showJormungandrRetreat(outcome){
  window.__combatOutcomeShowing=true
  const veil=document.createElement("div");veil.id="jormungandrRetreat";veil.style.cssText="position:fixed;inset:0;background:#03101cea;display:grid;place-items:center;z-index:999999999;pointer-events:none;color:#d9ecff;text-align:center;font:clamp(24px,4vw,44px) Georgia,serif"
- veil.textContent="Le Forchur échappe au serpent…";document.body.appendChild(veil)
+ veil.textContent=outcome.returnMap==="bateau.jpg"?"Le Forchur échappe au combat…":"Le groupe parvient à s’échapper…";document.body.appendChild(veil)
  setTimeout(()=>{veil.remove();completeCombatReturn(outcome)},2800)
 }

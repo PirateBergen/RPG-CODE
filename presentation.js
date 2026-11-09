@@ -51,7 +51,7 @@ function presentCombatResolution(action) {
   const result=action.result
   const isAlly=result.mode==="ally"
   const duration=isAlly?14000:Number.isFinite(result.roll)?(result.special?9000:6000):result.mode==="enemy"?(result.special?7000:3400):2000
-  if(action.nextTurn?.phase==="active")sharedVisualSeen.add("turn-"+action.combatId+"-"+(action.nextTurn.sequence||0))
+  if(action.nextTurn?.phase==="active"&&!result.skipTurnBanner)sharedVisualSeen.add("turn-"+action.combatId+"-"+(action.nextTurn.sequence||0))
   enqueueSharedVisual("combat-"+action.id,()=>{
     if(isAlly){
       const pnj=ALLY_PNJS.find(p=>p.id===result.pnjId),def=pnj?.actions.find(a=>a.id===result.actionId)
@@ -72,8 +72,8 @@ function presentCombatResolution(action) {
       }
       if(Number.isFinite(result.roll))setTimeout(impact,2400);else impact()
     }
-    if(action.nextTurn?.phase==="active")setTimeout(()=>{if(window.__pendingCombatOutcome?.combatId!==action.combatId)_showCombatTurnBanner(action.nextTurn)},duration)
-  },duration+(action.nextTurn?.phase==="active"?2800:0))
+    if(action.nextTurn?.phase==="active"&&!result.skipTurnBanner)setTimeout(()=>{if(window.__pendingCombatOutcome?.combatId!==action.combatId)_showCombatTurnBanner(action.nextTurn)},duration)
+  },duration+(action.nextTurn?.phase==="active"&&!result.skipTurnBanner?2800:0))
 }
 
 function queueCombatTurnBanner(combatId,state) {

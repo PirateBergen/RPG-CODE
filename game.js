@@ -3506,6 +3506,7 @@ function refreshActivePNJs() {
   function setGameState(state) {
     const previousState=gameState
     gameState = state
+    if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(window.__combatSnapshot)
     if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
   if(typeof syncNightMode==="function")syncNightMode()
     if(state==="COMBAT"&&previousState!=="COMBAT"&&typeof suspendExplorationForCombat==="function")suspendExplorationForCombat()

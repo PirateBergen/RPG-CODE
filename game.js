@@ -2482,6 +2482,7 @@ function cleanupTransientGameUI(options = {}) {
   if(typeof clearWorldBossFleeUI==="function")clearWorldBossFleeUI()
   if(typeof window.__cancelSpecialPreview==="function")window.__cancelSpecialPreview()
   if(typeof window.__cancelEndikakiPresentation==="function")window.__cancelEndikakiPresentation()
+  if(typeof window.__cancelOregonBombardment==="function")window.__cancelOregonBombardment()
   if(typeof closeSpecialPreviewPanel==="function")closeSpecialPreviewPanel()
   const {
     closeSavePanel = false

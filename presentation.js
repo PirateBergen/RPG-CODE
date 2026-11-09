@@ -109,3 +109,23 @@ function observeCombatPresentation(data) {
     })
 
 }
+
+function playOregonBombardment(pnj,action,targetId,onComplete){
+ window.__cancelOregonBombardment?.()
+ const nodes=new Set(),timers=new Set(),sounds=new Set(),combatId=window.__combatSnapshot?.id;let cancelled=false
+ const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const audio of sounds){audio.pause();audio.currentTime=0}if(window.__cancelOregonBombardment===cleanup)window.__cancelOregonBombardment=null}
+ window.__cancelOregonBombardment=cleanup
+ const later=(fn,delay)=>{const timer=setTimeout(()=>{timers.delete(timer);if(cancelled)return;if(combatId&&window.__combatSnapshot?.id!==combatId){cleanup();return}fn()},delay);timers.add(timer)}
+ const sound=(file,volume)=>{const audio=new Audio("audio/"+file);sounds.add(audio);setManagedAudioBaseVolume(audio,volume,"effects");audio.play().catch(()=>{});audio.addEventListener("ended",()=>sounds.delete(audio),{once:true})}
+ const overlay=document.createElement("div");overlay.className="oregonBombardmentOverlay";overlay.setAttribute("role","status");overlay.setAttribute("aria-label","Les troupes de Mélenchon bombardent la cible depuis l’Oregon III");document.body.appendChild(overlay);nodes.add(overlay)
+ const title=document.createElement("div");title.className="oregonBombardmentTitle";title.textContent="LES TROUPES DE MÉLENCHON — FEU !";overlay.appendChild(title)
+ const ship=document.createElement("img");ship.className="oregonBombardmentShip";ship.src="images/oregon-voyage-ship.png?v="+window.GAME_V;ship.alt="L’Oregon III survole le combat";overlay.appendChild(ship)
+ sound("generalmelenchon.mp3",.7)
+ const token=document.getElementById(targetId==="mob"?"mobToken":"mobToken_"+targetId),rect=token?.getBoundingClientRect(),x=rect?.width?rect.left+rect.width/2:innerWidth*.68,y=rect?.height?rect.top+rect.height/2:innerHeight*.58
+ for(let i=0;i<3;i++)later(()=>{
+  const bomb=document.createElement("div"),fromX=innerWidth*(.28+i*.14),fromY=innerHeight*.29;bomb.className="oregonBomb";bomb.textContent="💣";bomb.style.left=fromX+"px";bomb.style.top=fromY+"px";bomb.style.setProperty("--bomb-dx",(x-fromX+(i-1)*18)+"px");bomb.style.setProperty("--bomb-dy",(y-fromY)+"px");overlay.appendChild(bomb)
+  later(()=>{bomb.remove();const blast=document.createElement("div");blast.className="endikaki-blast oregonBombBlast";blast.textContent="💥";blast.style.left=(x+(i-1)*18)+"px";blast.style.top=y+"px";overlay.appendChild(blast);sound("bombe.mp3",.28);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},850)
+ },1300+i*550)
+ later(()=>{cleanup();if(typeof onComplete==="function")onComplete()},5200)
+ return cleanup
+}

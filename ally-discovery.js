@@ -1,6 +1,7 @@
 "use strict"
 
 const ALLY_DISCOVERY_MESSAGES={
+ melenchon:"Le général Mélenchon engage ses troupes à vos côtés. Lors de vos combats les plus difficiles, l’Oregon III pourra vous apporter son appui aérien.",
  odin:"Le regard du Tout-Père se pose sur vous. Dans vos combats les plus difficiles, Odin pourra répondre à votre appel.",
  thor:"Le tonnerre gronde : Thor vous promet son soutien face aux ennemis les plus redoutables.",
  freya:"Freya vous accorde sa faveur. Au cœur des batailles les plus sombres, vous ne serez plus seuls.",

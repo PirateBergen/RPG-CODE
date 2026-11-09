@@ -1900,6 +1900,7 @@ function _executeAllyAction(pnj, action, targetId, panel) { return requestAllyCo
 function showAllyActionResult(data) { /* Les jets et effets sont désormais résolus par le MJ, une seule fois. */ }
 
 function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
+  if(pnj.id==="melenchon")return playOregonBombardment(pnj,action,targetId,onComplete)
   // ÉTAPE 1 — Tremblement + flash
   screenShakeHard()
   setTimeout(()=>screenShakeHard(), 300)

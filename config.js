@@ -1282,6 +1282,7 @@ const dialogue = [
 /* ========================= */
 
 const ALLY_PNJS = [
+ {id:"melenchon",name:"Les troupes de Mélenchon",image:"generalmelenchon.png",role:"Appui aérien de l’Oregon III",color:"#e5a24a",lore:"Le général engage ses troupes : l’Oregon III survole le champ de bataille et ouvre le feu.",actions:[{id:"melenchon_bombardment",label:"Bombardement de l’Oregon",type:"damage",icon:"💣",dice:20,dmgBase:160,dmgBonus:18,critMult:2,desc:"L’Oregon III bombarde un ennemi choisi : 160 + D20 × 18 dégâts au total. Critique 20 : dégâts doublés. Une seule utilisation pendant ce combat, sur autorisation du MJ.",dialogue:"L’Oregon arrive en renfort. Bombardez la cible !"}]},
  {id:"baldur",name:"Jarl Baldur",image:"jarl baldur.png",role:"Puissant guerrier et jarl de Brume",color:"#e2b36b",lore:"Un chef viking lié au groupe par son serment.",actions:[{id:"baldur_wrath",label:"Le courroux du Jarl",type:"damage",icon:"🪓",dice:20,dmgBase:120,dmgBonus:15,critMult:2,staggerOnCrit:true,desc:"Baldur abat sa hache sur un ennemi : 120 + D20 × 15 dégâts. Critique 20 : dégâts doublés et prochaine action ennemie interrompue.",dialogue:"Par mon serment, vous ne tomberez pas seuls !"}]},
   {
     id:      "odin",

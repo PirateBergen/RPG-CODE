@@ -489,7 +489,9 @@ async function awaitResumeSessionPresentation() {
     cemeteryEventDone = !!(game.completedEvents?.cemetery || game.cemeterySpell)
     if (typeof refreshActivePNJs === "function") refreshActivePNJs()
     if(typeof syncSharedExplorationState==="function")syncSharedExplorationState(game)
-    if (game.runeChallenge?.active) renderRuneChallenge(game.runeChallenge)
+    document.getElementById("runeChallengeOverlay")?.remove()
+    window.activeRuneChallengeData=game.runeChallenge?.active?game.runeChallenge:null
+    updateRuneMenuBtn(!!window.activeRuneChallengeData)
     // Épreuve restaurée par le contrôleur partagé.
     if(typeof syncCemeteryPresentation==="function")syncCemeteryPresentation(game.cemeterySpell||null)
     if (game.wantedBoardOpen) openWantedBoard(true)

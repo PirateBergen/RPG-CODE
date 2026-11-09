@@ -2271,6 +2271,8 @@ db.ref("curse/wheel").on("value", snap => {
 db.ref("game/runeChallenge").on("value", snap => {
   if (window.__sessionBusy) return
   const data = snap.val()
+  const hadSnapshot=window.__runeChallengeSnapshotSeen===true
+  window.__runeChallengeSnapshotSeen=true
   const previous = window.activeRuneChallengeData || null
   window.activeRuneChallengeData = data || null
   if (!data || !data.active) {
@@ -2282,10 +2284,10 @@ db.ref("game/runeChallenge").on("value", snap => {
   if (gameState !== "GAME" && gameState !== "COMBAT") return
   updateRuneMenuBtn(true)
   const overlay = document.getElementById("runeChallengeOverlay")
-  const shouldOpenFresh =
-    !previous ||
-    !previous.active ||
-    previous.time !== data.time
+  // Initial snapshots and saved events restore progress, not a local open window.
+  const shouldOpenFresh = hadSnapshot && Number(data.time)>=(window.__pageLoadTime||0) && (
+    !previous || !previous.active || previous.time !== data.time
+  )
   if (overlay) {
     overlay.remove()
     renderRuneChallenge(data)

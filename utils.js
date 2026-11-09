@@ -223,13 +223,17 @@ function showNotification(text, type) {
   if (!box) return
   const resolvedType = type || inferNotificationType(text)
   if (box.__hideTimer) clearTimeout(box.__hideTimer)
+  box.setAttribute("role","status");box.setAttribute("aria-live","polite");box.setAttribute("aria-atomic","true")
+  let clearance=100
+  for(const id of ["gmBar","diceBar","playerThuumBtn"]){const el=document.getElementById(id);if(!el)continue;const r=el.getBoundingClientRect();if(r.width&&r.height&&r.top>innerHeight/2&&getComputedStyle(el).visibility!=="hidden")clearance=Math.max(clearance,innerHeight-r.top+12)}
+  box.style.setProperty("--notice-bottom",clearance+"px")
   box.dataset.type = resolvedType
   box.innerText = text
   box.style.opacity = 1
   box.__hideTimer = setTimeout(() => {
     box.style.opacity = 0
     box.dataset.type = ""
-  }, 3000)
+  }, Math.min(9000,Math.max(4500,String(text).length*45)))
 }
 
 function addMJLog(text) {

@@ -822,7 +822,8 @@ function hasThuumUseAccess(word) {
 }
 
 function hasPlayerAllyAccess() {
-  return !!window.playerAllyAccessData
+  const access=window.playerAllyAccessData
+  return !!access&&!!myToken&&(!access.playerId||access.playerId===myToken.id)&&(!access.combatId||access.combatId===window.__combatSnapshot?.id)
 }
 
 function hasActiveRuneChallenge() {
@@ -955,7 +956,7 @@ function renderPlayerThuumEntries(panel) {
 
 function renderPlayerAllyEntry(panel) {
   const access = window.playerAllyAccessData
-  if (!access) return
+  if (!access || !hasPlayerAllyAccess()) return
 
   let granted = null
   if (typeof ALLY_PNJS !== "undefined") {
@@ -2805,7 +2806,7 @@ db.ref("game/playerAllyAccess").on("value", snap => {
   window.playerAllyAccessData = data || null
   const existing = document.getElementById("allyViewerPanel")
 
-  if (!data && existing) existing.remove()
+  if (existing) existing.remove()
   updateThuumButton()
 })
 
@@ -3513,6 +3514,7 @@ function refreshActivePNJs() {
   function setGameState(state) {
     const previousState=gameState
     gameState = state
+    if(state!=="COMBAT")document.getElementById("allyGrantPicker")?.remove()
     if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(window.__combatSnapshot)
     if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()
   if(typeof syncOregonVoyage==="function")syncOregonVoyage()

@@ -1,97 +1,52 @@
 "use strict"
-let gmArbitrationCombat=null,gmArbitrationSignature="",gmArbitrationHidden=""
-function gmArbitrationPending(){const pending=gmArbitrationCombat?.pendingResolution;return pending?.source?.kind==="free"?null:pending}
-function gmArbitrationElement(tag,text,parent){const e=document.createElement(tag);if(text!==null)e.textContent=pikaDisplayText(text);if(parent)parent.appendChild(e);return e}
-let gmChoiceSequence=0
-function gmArbitrationSelect(parent,label,options,value){
- const row=gmArbitrationElement("div",null,parent);row.className="gmChoice"
- const id="gmChoice-"+(++gmChoiceSequence),caption=gmArbitrationElement("span",label||"Règle pour cette cible",row);caption.id=id+"-label"
- const select=gmArbitrationElement("select",null,row);select.hidden=true;select.tabIndex=-1;select.setAttribute("aria-hidden","true")
- for(const [v,t]of options){const o=gmArbitrationElement("option",t,select);o.value=v}select.value=value
- const trigger=gmArbitrationElement("button",null,row);trigger.type="button";trigger.id=id;trigger.className="gmChoiceTrigger";trigger.setAttribute("role","combobox");trigger.setAttribute("aria-haspopup","listbox");trigger.setAttribute("aria-expanded","false");trigger.setAttribute("aria-controls",id+"-list");trigger.setAttribute("aria-labelledby",caption.id+" "+id)
- const list=gmArbitrationElement("div",null,row);list.id=id+"-list";list.className="gmChoiceList";list.hidden=true;list.setAttribute("role","listbox");list.setAttribute("aria-labelledby",caption.id)
- let active=Math.max(0,select.selectedIndex)
- const items=options.map(([v,t],i)=>{const b=gmArbitrationElement("button",t,list);b.type="button";b.tabIndex=-1;b.id=id+"-option-"+i;b.setAttribute("role","option");b.dataset.value=v;b.addEventListener("pointerdown",e=>e.preventDefault());b.addEventListener("click",()=>commit(i));return b})
- const refresh=()=>{trigger.textContent=select.selectedOptions[0]?.textContent||"Choisir";items.forEach((b,i)=>{b.setAttribute("aria-selected",String(i===select.selectedIndex));b.classList.toggle("gmChoiceActive",i===active)});if(!list.hidden)trigger.setAttribute("aria-activedescendant",items[active]?.id||"")}
- const close=()=>{list.hidden=true;trigger.setAttribute("aria-expanded","false");trigger.removeAttribute("aria-activedescendant")};row.__closeChoice=close
- const open=()=>{for(const other of parent.closest("#gmArbitrationModal").querySelectorAll(".gmChoice"))if(other!==row)other.__closeChoice?.();active=Math.max(0,select.selectedIndex);list.hidden=false;trigger.setAttribute("aria-expanded","true");refresh();items[active]?.scrollIntoView?.({block:"nearest"})}
- function commit(i){select.value=String(options[i][0]);active=i;close();refresh();select.dispatchEvent(new Event("change",{bubbles:true}));trigger.focus()}
- select.addEventListener("change",refresh)
- trigger.addEventListener("click",()=>list.hidden?open():close())
- trigger.addEventListener("keydown",e=>{
-  if(["ArrowDown","ArrowUp","Home","End"].includes(e.key)){e.preventDefault();e.stopPropagation();if(list.hidden){open();if(e.key==="Home")active=0;else if(e.key==="End")active=items.length-1}else active=e.key==="Home"?0:e.key==="End"?items.length-1:(active+(e.key==="ArrowDown"?1:-1)+items.length)%items.length;refresh();items[active]?.scrollIntoView?.({block:"nearest"})}
-  else if(e.key==="Enter"||e.key===" "){e.preventDefault();e.stopPropagation();if(list.hidden)open();else commit(active)}
-  else if(e.key==="Escape"&&!list.hidden){e.preventDefault();e.stopPropagation();close()}
-  else if(e.key==="Tab")close()
- });refresh();return select
-}
-function gmArbitrationNumber(parent,label,value,min=0,max=50000){const row=gmArbitrationElement("label",label+" ",parent),e=gmArbitrationElement("input",null,row);e.type="number";e.min=min;e.max=max;e.value=value;return e}
-function gmArbitrationCheck(parent,label,checked){const row=gmArbitrationElement("label",null,parent),e=gmArbitrationElement("input",null,row);e.type="checkbox";e.checked=checked;row.appendChild(document.createTextNode(" "+label));return e}
-function gmArbitrationModal(title){
- const previousModal=document.getElementById("gmArbitrationModal"),returnFocus=previousModal?.__windowReturnFocus||document.activeElement;previousModal?.remove()
- const overlay=gmArbitrationElement("div",null,document.body);overlay.id="gmArbitrationModal";overlay.style.cssText="position:fixed;inset:0;z-index:2147483646;background:#000c;display:flex;align-items:center;justify-content:center;padding:15px;color:#ffe5b4"
- overlay.addEventListener("keydown",e=>{if(e.key!=="Escape")e.stopPropagation()})
- overlay.addEventListener("pointerdown",e=>{for(const row of overlay.querySelectorAll(".gmChoice"))if(!row.contains(e.target))row.__closeChoice?.()})
- const panel=gmArbitrationElement("div",null,overlay);panel.style.cssText="background:#20150e;border:2px solid #bc9454;border-radius:12px;padding:22px;width:min(700px,95vw);max-height:88vh;overflow:auto;font:17px Georgia;display:flex;flex-direction:column;gap:12px"
- gmArbitrationElement("h2",title,panel)
- const error=gmArbitrationElement("p","",panel);error.setAttribute("role","alert");error.style.color="#ffb1a5"
- let busy=false
- const button=(text,fn)=>{const b=gmArbitrationElement("button",text,panel);b.type="button";b.addEventListener("click",async()=>{if(busy)return;busy=true;const controls=[...panel.querySelectorAll("button,input,select,textarea")].map(el=>[el,el.disabled]);controls.forEach(([el])=>el.disabled=true);panel.setAttribute("aria-busy","true");error.textContent="";try{await fn()}catch(e){error.textContent=e.message}finally{busy=false;controls.forEach(([el,disabled])=>el.disabled=disabled);panel.removeAttribute("aria-busy")}});return b}
- overlay.setAttribute("role","dialog");overlay.setAttribute("aria-label",title);window.GameWindows?.register(overlay,()=>{if(panel.getAttribute("aria-busy")!=="true")gmArbitrationClose()},{returnFocus})
- return {panel,button,overlay}
-}
-async function gmArbitrationSend(kind,payload={}){
- requireActionAccess({gmOnly:true})
- if(gmArbitrationCombat?.id&&gmArbitrationCombat.phase!=="finished"&&gmArbitrationCombat.turnState?.phase==="active")return submitCombatAction(kind,gmArbitrationCombat.turnState.currentActorId,payload)
- throw Error("Intervenir est disponible pendant un combat actif.")
-}
-function gmArbitrationClose(){const modal=document.getElementById("gmArbitrationModal");gmArbitrationHidden=gmArbitrationPending()?.id||"";modal?.remove();if(modal)window.GameWindows?.closed(modal)}
-async function openGMIntervention(){
- if(window.__authRole!=="gm")return
- if(gmArbitrationPending()){gmArbitrationHidden="";gmArbitrationSignature="";return renderGMArbitration()}
- if(gmArbitrationCombat?.turnState?.phase!=="active"||gmArbitrationCombat.phase==="finished")return showNotification("Intervenir est disponible pendant un combat actif.")
- try{const armed=gmArbitrationCombat?.interventionArmed;await gmArbitrationSend("armIntervention");showNotification(armed?"Intervention désactivée":"La prochaine attaque attendra votre décision")}catch(e){showNotification(e.message)}
-}
+let gmAdjustmentSerial=0
+function gmArbitrationClose(){const el=document.getElementById("gmArbitrationModal");el?.remove();if(el)window.GameWindows?.closed(el)}
 function renderGMArbitration(){
- const playing=gameStarted&&document.body.dataset.entryStage==="playing",gmRole=window.__authRole==="gm"
- const intervene=document.getElementById("gmInterveneBtn")
- if(intervene)intervene.style.display=playing&&gmRole&&gmArbitrationCombat?.turnState?.phase==="active"?"":"none"
- if(!playing){document.getElementById("gmArbitrationBanner")?.remove();document.getElementById("gmArbitrationModal")?.remove();gmArbitrationSignature="";return}
- const p=gmArbitrationPending(),gm=window.__authRole==="gm",btn=document.getElementById("gmInterveneBtn")
- if(btn)btn.textContent=p?"Décision en attente":gmArbitrationCombat?.interventionArmed?"Intervention activée":"Intervenir"
- let banner=document.getElementById("gmArbitrationBanner")
- if(!p){banner?.remove();if(gmArbitrationSignature){document.getElementById("gmArbitrationModal")?.remove();gmArbitrationSignature=""}gmArbitrationHidden="";return}
- if(!banner){banner=gmArbitrationElement("button","Décision MJ en attente — afficher",document.body);banner.id="gmArbitrationBanner";banner.style.cssText="position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:2147483645;padding:12px;background:#4b2810;color:#ffe5b4;border:1px solid #c99e55";banner.onclick=()=>{gmArbitrationHidden="";gmArbitrationSignature="";renderGMArbitration()}}
- const signature=p.id+":"+p.revision+":"+gm
- if(!gameStarted||gmArbitrationHidden===p.id||gmArbitrationSignature===signature)return
- gmArbitrationSignature=signature
- const {panel,button}=gmArbitrationModal(gm?"Décision du MJ":"Une action attend la décision du MJ"),result=p.preview.result
- gmArbitrationElement("p",heroDisplayName(result.actor||"MJ").toUpperCase()+" — "+(result.attack||result.message||"Action"),panel)
- if(Number.isFinite(result.roll))gmArbitrationElement("p","Jet conservé : "+result.roll+" / "+result.dice+(result.crit?" — critique réussi":result.fail?" — échec critique":""),panel)
- gmArbitrationElement("p","Prévision : "+((p.preview.changes||[]).length?(p.preview.changes||[]).map(c=>gmArbitrationLabel(c.target)+" "+(c.delta>0?"+":"")+c.delta+" PV").join(" ; "):"aucun changement de PV")+". Aucune conséquence n’est encore appliquée.",panel)
- button("Voir la carte",gmArbitrationClose)
- if(!gm)return
- const modes=[["normal","Résolution normale"],["half","Moitié des dégâts / soins"],["none","Esquive totale : aucun effet"],["custom","Montant personnalisé par cible"]]
- const mode=gmArbitrationSelect(panel,"Conséquences",modes,"normal"),amount=gmArbitrationNumber(panel,"Montant personnalisé",0),effects=gmArbitrationCheck(panel,"Conserver les effets secondaires",true)
- const originalTargets=[...new Set([...(result.targets||[]),...(result.target?[result.target]:[]),...(p.preview.changes||[]).map(c=>c.target)])]
- const choices=originalTargets.some(id=>COMBAT_MOBS.includes(id))&&originalTargets.some(id=>COMBAT_CHARACTERS.includes(id))?[...COMBAT_CHARACTERS,...COMBAT_MOBS]:p.source.kind==="enemy"?COMBAT_CHARACTERS:originalTargets.some(id=>COMBAT_MOBS.includes(id))?COMBAT_MOBS:COMBAT_CHARACTERS
- const singleTarget=["hero","ally"].includes(p.source.kind)&&originalTargets.length===1
- const rows=[];gmArbitrationElement("p","Cibles (décochez pour les protéger) et exceptions individuelles :",panel)
- for(const id of choices){if(COMBAT_MOBS.includes(id)&&!gmArbitrationCombat?.[id])continue;const row=gmArbitrationElement("div",null,panel);const selected=gmArbitrationCheck(row,gmArbitrationLabel(id),originalTargets.includes(id));const rule=gmArbitrationSelect(row,"",[["inherit","Choix général"],...modes],"inherit"),n=gmArbitrationNumber(row,"PV",0);rows.push({id,selected,rule,n});if(singleTarget)selected.addEventListener("change",()=>{if(selected.checked)rows.forEach(r=>{if(r.id!==id)r.selected.checked=false})})}
- const label=gmArbitrationElement("label","Explication visible par tous",panel),narrative=gmArbitrationElement("textarea",null,label);narrative.maxLength=600;narrative.style.cssText="width:100%;min-height:70px";narrative.placeholder="Ex. Le groupe se réfugie derrière les piliers."
- const decision=()=>({mode:mode.value,amount:Number(amount.value),effects:effects.checked,targets:rows.filter(r=>r.selected.checked).map(r=>r.id),perTarget:Object.fromEntries(rows.filter(r=>r.rule.value!=="inherit").map(r=>[r.id,{mode:r.rule.value,amount:Number(r.n.value)}])),narrative:narrative.value})
- const send=async(kind,d)=>{await gmArbitrationSend(kind,{pendingId:p.id,revision:p.revision,decision:d,kind:kind==="resolveIntervention"?"resolve":kind==="refreshIntervention"?"refresh":"dismiss"});gmArbitrationSignature="";renderGMArbitration()}
- button("Appliquer la décision",()=>send("resolveIntervention",decision()))
- button("Esquive totale — consommer l’action",()=>send("resolveIntervention",{...decision(),mode:"none",perTarget:{},effects:false}))
- button("Annuler l’attaque — consommer l’action",()=>send("resolveIntervention",{...decision(),cancel:true,mode:"none",perTarget:{},effects:false}))
- button("Actualiser la prévision (même jet)",()=>send("refreshIntervention"))
- button("Abandonner la préparation — conserver l’action",()=>send("dismissIntervention"))
+ const c=window.__combatSnapshot,playing=gameStarted&&document.body.dataset.entryStage==="playing",button=document.getElementById("gmInterveneBtn")
+ if(button){button.textContent="Intervenir";button.title="Ajouter un état, le retirer ou ajuster les PV";button.style.display=playing&&window.__authRole==="gm"&&c?.phase==="active"&&c.turnState?.phase==="active"?"":"none"}
+ document.getElementById("gmArbitrationBanner")?.remove()
+ const modal=document.getElementById("gmArbitrationModal");if(modal&&(!playing||c?.id!==modal.dataset.combatId||c?.phase!=="active"))gmArbitrationClose()
+ syncGMStatusBadges()
 }
-function gmArbitrationLabel(id){return id==="ju"?"Pika":COMBAT_MOBS.includes(id)?heroDisplayName(gmArbitrationCombat?.[id]?.name||id).toUpperCase():id==="mj"?"MJ":id.charAt(0).toUpperCase()+id.slice(1)}
+function syncGMArbitration(){clearLegacyGMIntervention();renderGMArbitration()}
+function syncGMStatusBadges(){
+ document.querySelectorAll(".gmStatusBadges").forEach(el=>el.remove())
+ if(!combatActive)return
+ for(const [id,states]of Object.entries(window.__combatSnapshot?.gmStates||{})){
+  const token=document.getElementById(COMBAT_MOBS.includes(id)?id==="mob"?"mobToken":"mobToken_"+id:id);if(!token)continue
+  const box=document.createElement("div");box.className="gmStatusBadges"
+  for(const [key,state]of Object.entries(states)){const def=GM_COMBAT_STATES[key];if(!def)continue;const badge=document.createElement("span");badge.textContent=def.icon;badge.title=def.label+" — "+state.turns+" "+def.unit+". "+def.description;box.appendChild(badge)}
+  token.appendChild(box)
+ }
+}
+async function sendGMCombatAdjustment(change,expectedCombatId=window.__combatSnapshot?.id){
+ requireActionAccess({gmOnly:true});requireExplorationConnection()
+ const uid=window.__authUid,revision=persistenceRevision||"initial",changeId="gm-"+Date.now()+"-"+(++gmAdjustmentSerial)+"-"+Math.random().toString(36).slice(2)
+ const result=await reliableRootTransaction(root=>applyGMCombatAdjustment(root,uid,expectedCombatId,revision,change,changeId))
+ if(!result.committed)throw Error("Ajustement non confirmé")
+ return true
+}
+function openGMIntervention(){
+ if(window.__authRole!=="gm")return
+ const c=window.__combatSnapshot;if(!combatActive||c?.phase!=="active"||c.turnState?.phase!=="active")return showNotification("Disponible après les initiatives, pendant un combat actif.")
+ gmArbitrationClose()
+ const overlay=document.createElement("div"),panel=document.createElement("section"),title=document.createElement("h2"),intro=document.createElement("p"),error=document.createElement("p"),targetBox=document.createElement("div"),stateBox=document.createElement("div"),description=document.createElement("p"),fields=document.createElement("div"),current=document.createElement("div"),history=document.createElement("div")
+ overlay.id="gmArbitrationModal";overlay.dataset.combatId=c.id;overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-label","Intervenir — états et PV");panel.className="gmInterventionBox";title.textContent="Intervenir — états et PV";intro.textContent="Choisissez une cible. Les ajustements ne consomment pas d’action. Un état remplace l’état MJ du même type. Les autres effets du jeu restent en place.";error.setAttribute("role","alert");error.className="gmInterventionError"
+ panel.append(title,intro,error,targetBox,stateBox,description,fields,current,history);overlay.appendChild(panel);document.body.appendChild(overlay)
+ let selected="greg",stateKey="paralysis",busy=false
+ const button=(parent,label,fn)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.onclick=fn;parent.appendChild(b);return b}
+ const input=(label,value,min,max)=>{const row=document.createElement("label"),field=document.createElement("input");row.textContent=label;field.type="number";field.value=value;field.min=min;field.max=max;field.step=1;row.appendChild(field);fields.appendChild(row);return field}
+ const apply=async change=>{if(busy)return;busy=true;error.textContent="";overlay.setAttribute("aria-busy","true");const controls=[...panel.querySelectorAll("button,input,select")];controls.forEach(e=>e.disabled=true);try{await sendGMCombatAdjustment({...change,target:selected},c.id);renderCurrent()}catch(e){error.textContent=e.message}finally{busy=false;overlay.removeAttribute("aria-busy");controls.forEach(e=>e.disabled=false)}}
+ for(const id of [...COMBAT_CHARACTERS,...COMBAT_MOBS]){if(COMBAT_MOBS.includes(id)&&!c[id])continue;const label=COMBAT_MOBS.includes(id)?heroDisplayName(c[id].name)+" — ennemi "+(COMBAT_MOBS.indexOf(id)+1):heroDisplayName(id),b=button(targetBox,label,()=>{selected=id;for(const item of targetBox.children)item.setAttribute("aria-pressed",String(item===b));renderCurrent()});b.dataset.target=id;b.setAttribute("aria-pressed",String(id===selected))}
+ targetBox.className="gmInterventionTargets";stateBox.className="gmInterventionStates"
+ const paint=()=>{const def=GM_COMBAT_STATES[stateKey];description.textContent=def.description+" "+(def.unit==="rounds"?"La durée diminue à chaque fin de round ; les effets périodiques se déclenchent avant de diminuer.":"La durée compte les tours complets de cette cible, pas les rounds. Si son tour est en cours et qu’elle ne peut plus agir, il est passé immédiatement.");fields.replaceChildren();const turns=input("Durée ("+def.unit+")",1,1,99),amount=stateKey==="paralysis"?null:input(["weakened","vulnerable","protected"].includes(stateKey)?"Valeur":"PV par fin de round",5,1,50000);let mode="points";if(["weakened","vulnerable","protected"].includes(stateKey)){const choices=document.createElement("div");fields.appendChild(choices);for(const value of ["points","percent"]){const b=button(choices,value==="points"?"Points":"Pourcentage",()=>{mode=value;amount.max=value==="percent"?100:50000;for(const x of choices.children)x.setAttribute("aria-pressed",String(x===b))});b.setAttribute("aria-pressed",String(value===mode))}}button(fields,"Appliquer « "+def.label+" »",()=>apply({kind:"state",state:stateKey,turns:Number(turns.value),amount:amount?Number(amount.value):0,mode}))}
+ for(const [key,def]of Object.entries(GM_COMBAT_STATES)){const b=button(stateBox,def.icon+" "+def.label,()=>{stateKey=key;for(const x of stateBox.children)x.setAttribute("aria-pressed",String(x===b));paint()});b.dataset.state=key;b.setAttribute("aria-pressed",String(key===stateKey))}
+ const hp=document.createElement("fieldset"),legend=document.createElement("legend"),value=document.createElement("input");legend.textContent="Ajuster les PV de la cible";value.type="number";value.min=0;value.max=50000;value.step=1;value.value=10;value.setAttribute("aria-label","Montant de PV");hp.append(legend,value);for(const [operation,label]of [["damage","Retirer des PV"],["heal","Soigner / réanimer"],["set","Fixer les PV"]])button(hp,label,()=>apply({kind:"hp",operation,amount:Number(value.value)}));panel.insertBefore(hp,current)
+ const note=document.createElement("p");note.textContent="Les PV restent entre 0 et le maximum. Le MJ peut modifier même les PV d’un ennemi invulnérable. Mettre la dernière cible à 0 déclenche normalement la victoire ou la défaite.";hp.appendChild(note)
+ function renderCurrent(){current.replaceChildren();const heading=document.createElement("h3"),root={combat:window.__combatSnapshot,characters:window.__publicCharacters},target=gmTarget(root,selected);heading.textContent="Cible : "+(COMBAT_MOBS.includes(selected)?heroDisplayName(target?.name):heroDisplayName(selected))+" — "+(target?.hp??"?")+" PV";current.appendChild(heading);const states=gmStateMap(root,selected);for(const [key,state]of Object.entries(states)){const def=GM_COMBAT_STATES[key];if(!def)continue;button(current,"Retirer "+def.label+" — "+state.turns+" "+def.unit,()=>apply({kind:"remove",state:key}))}if(Object.keys(states).length)button(current,"Retirer tous les états MJ de cette cible",()=>apply({kind:"clear"}));history.replaceChildren();const label=document.createElement("h3");label.textContent="Derniers ajustements MJ";history.appendChild(label);for(const entry of Object.values(window.__combatSnapshot?.gmAdjustmentLog||{}).slice(-8).reverse()){const line=document.createElement("p");line.textContent=entry.text;history.appendChild(line)}}
+ overlay.__refreshCurrent=renderCurrent;paint();renderCurrent();button(panel,"Fermer",()=>{if(!busy)gmArbitrationClose()});overlay.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();if(!busy)gmArbitrationClose()}if(event.key==="Tab"){const items=[...panel.querySelectorAll("button:not(:disabled),input:not(:disabled)")],first=items[0],last=items.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}});window.GameWindows?.register(overlay,gmArbitrationClose);targetBox.querySelector("button")?.focus({preventScroll:true})
+}
+document.addEventListener("DOMContentLoaded",()=>db.ref("combat").on("value",()=>{clearLegacyGMIntervention();renderGMArbitration();document.getElementById("gmArbitrationModal")?.__refreshCurrent?.();requestAnimationFrame(syncGMStatusBadges)}))
 
-function syncGMArbitration(){gmArbitrationSignature="";renderGMArbitration()}
-document.addEventListener("DOMContentLoaded",()=>{
- db.ref("combat").on("value",s=>{gmArbitrationCombat=s.val();renderGMArbitration()})
-})
-const gmArbitrationOriginalTavern=showTavern
-showTavern=function(...args){const result=gmArbitrationOriginalTavern(...args);renderGMArbitration();return result}
+let gmLegacyClearing=false
+async function clearLegacyGMIntervention(){if(gmLegacyClearing||window.__authRole!=="gm"||window.__sessionBusy||(!window.__combatSnapshot?.pendingResolution&&!window.__combatSnapshot?.interventionArmed))return;gmLegacyClearing=true;try{const id=window.__combatSnapshot.id;await reliableRootTransaction(root=>{if(root?.roles?.[window.__authUid]!=="gm"||root.sessionControl?.phase||root.combat?.id!==id)return undefined;if(!root.combat.pendingResolution&&!root.combat.interventionArmed)return undefined;delete root.combat.pendingResolution;delete root.combat.interventionArmed;return root})}catch(error){console.warn("Ancienne intervention",error.message)}finally{gmLegacyClearing=false}}

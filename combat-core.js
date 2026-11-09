@@ -144,7 +144,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
       combatRecord(root,request,from,heroDisplayName(target.name),0,type,"Jörmungandr est invulnérable à cette attaque.");return 0
     }
     target.hp=0;target.defeatedByThor=true
-  }else target.hp = Math.max(0, before - arbitrationAmount(root,slot,amount))
+  }else target.hp = Math.max(0, before - arbitrationAmount(root,slot,gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount))))
   combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
   return before - target.hp
 }
@@ -170,6 +170,7 @@ function tickCombatRound(root, request) {
   Object.entries(root.combat.heroDebuffs || {}).forEach(([id, effect]) => { if (--effect.turns <= 0) delete root.combat.heroDebuffs[id] })
   const summon = root.combat.eloSummon
   if (summon && (--summon.turnsLeft <= 0 || combatInt(summon.hp) <= 0)) delete root.combat.eloSummon
+  gmTickStatusRound(root,request)
 }
 
 function nextCombatTurn(root, request, skipRemaining = false) {
@@ -184,16 +185,18 @@ function nextCombatTurn(root, request, skipRemaining = false) {
    delete root.combat.heroHaste
   }
   if(!skipRemaining&&request.kind!=="pass"&&COMBAT_MOBS.includes(current)&&mob?.hp>0&&(state.actorActionIndex||0)+1<Math.min(2,mob.actionsPerTurn||1)){state.actorActionIndex=(state.actorActionIndex||0)+1;state.sequence=combatInt(state.sequence)+1;return}
+  gmEndStatusTurn(root,current)
   state.actorActionIndex=0
-  for (let attempts = 0; attempts < order.length; attempts++) {
+  for (let attempts = 0; attempts < order.length*101; attempts++) {
     state.currentIndex = (combatInt(state.currentIndex) + 1) % order.length
     if (state.currentIndex === 0) { tickCombatRound(root, request); state.round = Math.max(1, combatInt(state.round, 1)) + 1 }
     if (combatOutcome(root, request)) return
     const id = order[state.currentIndex].id
-    if(root.combat[id]?.reihktParalyzed){delete root.combat[id].reihktParalyzed;continue}
+    if(root.combat[id]?.reihktParalyzed){delete root.combat[id].reihktParalyzed;gmBeginStatusTurn(root,id);gmEndStatusTurn(root,id);continue}
     if (combatActorAlive(root, id)) {
-      if (root.combat.heroStuns?.[id] > 0) { root.combat.heroStuns[id]--;if(root.combat.heroHypnosis?.[id]>0)root.combat.heroHypnosis[id]--; continue }
-      if(COMBAT_MOBS.includes(id)&&root.combat[id]?.pikaHypnosisTurns>0){root.combat[id].pikaHypnosisTurns--;continue}
+      if(!gmBeginStatusTurn(root,id))continue
+      if (root.combat.heroStuns?.[id] > 0) { root.combat.heroStuns[id]--;if(root.combat.heroHypnosis?.[id]>0)root.combat.heroHypnosis[id]--;gmEndStatusTurn(root,id); continue }
+      if(COMBAT_MOBS.includes(id)&&root.combat[id]?.pikaHypnosisTurns>0){root.combat[id].pikaHypnosisTurns--;gmEndStatusTurn(root,id);continue}
       state.currentActorId = id; state.sequence = combatInt(state.sequence) + 1; return
     }
   }
@@ -201,6 +204,7 @@ function nextCombatTurn(root, request, skipRemaining = false) {
 
 function requireCombatTurn(root, request, actor) {
   const state = root.combat.turnState
+  if(request.kind!=="pass"&&gmParalyzed(root,actor))throw Error("Cet acteur est paralysé par le MJ")
   if (state?.phase !== "active" || root.combat.phase === "finished") throw new Error("Le combat n’est pas prêt à recevoir une action")
   if (state.currentActorId !== combatOwner(actor)) throw new Error("Ce n’est pas le tour de cet acteur")
   if (combatInt(request.sequence) !== combatInt(state.sequence)) throw new Error("Ce tour est déjà terminé")
@@ -231,7 +235,8 @@ function resolveHeroCombatAction(root, request, dice) {
   const special = !!payload.special
   const attack = getCombatHeroAttack(actor,payload.attack,special)
   if (!attack || attack.name !== payload.attack) throw new Error("Capacité inconnue")
-  if(c.heroHaste&&(c.heroHaste.actor!==actor||special||getPlayerAttackTypeKey(attack)==="heal"))throw Error("SKARO’H permet seulement deux attaques basiques du personnage concerné")
+  if(attack.name==="Le Bibi"&&gmParalyzed(root,"bibi"))throw Error("Bibi est paralysée par le MJ")
+  if(c.heroHaste&&(attack.name==="Le Bibi"||c.heroHaste.actor!==actor||special||getPlayerAttackTypeKey(attack)==="heal"))throw Error("SKARO’H permet seulement deux attaques basiques du personnage concerné")
   if(actor==="ju"&&attack.pikaKind)return resolvePikaHeroAction(root,request,attack,dice)
   if (special && c.playerSpecials?.[actor]) throw new Error("Spéciale déjà utilisée")
   const heal = getPlayerAttackTypeKey(attack) === "heal"
@@ -323,10 +328,11 @@ function resolveEnemyCombatAction(root, request, dice) {
   let damage = range.min + dice(range.max - range.min + 1) - 1
   if (mob.attackMalus) damage = Math.max(0, damage - (mob.attackMalus.amount || 0))
   if (mob.malus?.source === "La Sorcière") damage = Math.round(damage * .75)
+  damage=gmOutgoingDamage(root,slot,damage)
   let applied = 0
   targets.forEach(id => {
     const before = combatInt(root.characters[id].hp)
-    root.characters[id].hp = Math.max(0, before - arbitrationAmount(root,id,damage)); applied += before - root.characters[id].hp
+    root.characters[id].hp = Math.max(0, before - arbitrationAmount(root,id,gmIncomingDamage(root,id,damage))); applied += before - root.characters[id].hp
     if (arbitrationEffects(root,id) && id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
     if (arbitrationEffects(root,id) && attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
     if (arbitrationEffects(root,id) && attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
@@ -496,6 +502,7 @@ function arbitrationReplay(root,pending,uid,id,decision){
   return reduceCombatRequestNow(base,id,pending.source.seed,{decision})
 }
 function reduceCombatRequest(current,id,seed){
+  if(current?.combat?.pendingResolution||current?.combat?.interventionArmed){current=combatClone(current);delete current.combat.pendingResolution;delete current.combat.interventionArmed}
   const q=current?.combatRequests?.[id];if(!q||q.status!=="queued")return null
   const fail=message=>{const r=combatClone(current);r.combatRequests[id]={...q,status:"failed",error:String(message).slice(0,300)};return r}
   try{
@@ -536,10 +543,84 @@ function reduceCombatRequest(current,id,seed){
     const preview=reduceCombatRequestNow(current,id,seed)
     if(preview?.combatRequests[id].status!=="done")return preview
     const result=preview.combatRequests[id].result
-    const intercepted=(current.combat.interventionArmed&&["hero","enemy","ally","thuum"].includes(q.kind)&&!["warning","skip"].includes(result.mode))||(q.kind==="enemy"&&(current.combat[q.actor]?.balanceClass==="world"||WORLD_BOSS_NAMES.includes(current.combat[q.actor]?.name))&&result.mode==="enemy"&&result.special)
+    const intercepted=false // MJ adjustments now apply directly; attacks no longer wait for a preview.
     if(!intercepted)return preview
     const r=combatClone(current);delete r.combat.interventionArmed
     r.combat.pendingResolution={id,revision:0,frame:arbitrationFrame(current),source:arbitrationSource(q,seed),preview:{result,changes:arbitrationChanges(current,preview)}}
     r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"pending",message:"Décision du MJ en attente"};return r
   }catch(e){return fail(e.message||e)}
+}
+
+const GM_COMBAT_STATES={
+ paralysis:{label:"Paralysé",icon:"⛓",unit:"tours",description:"Ne peut pas agir pendant le nombre de tours complets choisi. Un world boss perd toutes ses actions du tour. Greg et Bibi sont affectés séparément : l’autre peut encore agir."},
+ weakened:{label:"Affaibli",icon:"▼",unit:"rounds",description:"Inflige moins de dégâts. Choisissez la réduction en points ou en pourcentage. Les soins ne sont pas réduits."},
+ vulnerable:{label:"Vulnérable",icon:"◇",unit:"rounds",description:"Subit davantage de dégâts. Choisissez le supplément en points ou en pourcentage."},
+ protected:{label:"Protégé",icon:"🛡",unit:"rounds",description:"Subit moins de dégâts, sans descendre sous zéro. Choisissez la réduction en points ou en pourcentage. Si la cible est aussi vulnérable, la protection s’applique après la vulnérabilité."},
+ poison:{label:"Poison",icon:"☠",unit:"rounds",description:"Perd les PV indiqués à chaque fin de round. Ces dégâts fixes ignorent les états Protégé et Vulnérable."},
+ bleeding:{label:"Saignement",icon:"🩸",unit:"rounds",description:"Perd les PV indiqués à chaque fin de round, indépendamment du poison ou de la brûlure."},
+ burning:{label:"Brûlure",icon:"🔥",unit:"rounds",description:"Perd les PV indiqués à chaque fin de round, indépendamment des autres dégâts périodiques."},
+ regeneration:{label:"Régénération",icon:"✚",unit:"rounds",description:"Récupère les PV indiqués à chaque fin de round, sans dépasser ses PV maximum. Ne réanime pas une cible KO."}
+}
+function gmTarget(root,id){return COMBAT_MOBS.includes(id)?root.combat?.[id]:root.characters?.[id]}
+function gmStateMap(root,id){return root.combat?.gmStates?.[id]||{}}
+function gmParalyzed(root,id){return (gmStateMap(root,id).paralysis?.turns||0)>0}
+function gmTurnMembers(owner){return owner==="greg"?["greg","bibi"]:[owner]}
+function gmEndStatusTurn(root,owner){for(const id of gmTurnMembers(owner)){const state=gmStateMap(root,id).paralysis;if(state?.activeTurn){delete state.activeTurn;if(--state.turns<=0)delete root.combat.gmStates[id].paralysis}}}
+function gmBeginStatusTurn(root,owner){
+ const alive=gmTurnMembers(owner).filter(id=>(gmTarget(root,id)?.hp||0)>0)
+ for(const id of alive){const state=gmStateMap(root,id).paralysis;if(state)state.activeTurn=true}
+ if(alive.length&&alive.every(id=>gmParalyzed(root,id))){gmEndStatusTurn(root,owner);return false}
+ return true
+}
+function gmModifyDamage(amount,state,increase=false){if(!state)return Math.max(0,Math.round(amount));const n=state.mode==="percent"?amount*state.amount/100:state.amount;return Math.max(0,Math.round(amount+(increase?n:-n)))}
+function gmOutgoingDamage(root,actor,amount){return gmModifyDamage(amount,gmStateMap(root,actor).weakened)}
+function gmIncomingDamage(root,id,amount){if(amount<=0)return 0;const states=gmStateMap(root,id);return gmModifyDamage(gmModifyDamage(amount,states.vulnerable,true),states.protected)}
+function gmTickStatusRound(root,request){
+ for(const [id,states]of Object.entries(root.combat.gmStates||{})){
+  const target=gmTarget(root,id);if(!target)continue
+  for(const key of ["poison","bleeding","burning","regeneration"]){const state=states[key];if(!state||target.hp<=0)continue;const before=target.hp,max=COMBAT_MOBS.includes(id)?target.maxHP:getCharacterMaxHp(id,target)
+   if(key==="regeneration")target.hp=Math.min(max,target.hp+state.amount)
+   else if(!isJormungandr(COMBAT_MOBS.includes(id)?target:null))target.hp=Math.max(0,target.hp-state.amount)
+   if(before!==target.hp)combatRecord(root,request,"MJ — "+GM_COMBAT_STATES[key].label,id,Math.abs(before-target.hp),key==="regeneration"?"heal":"dmg","Effet MJ : "+GM_COMBAT_STATES[key].label)
+  }
+  for(const [key,state]of Object.entries(states))if(key!=="paralysis"&&--state.turns<=0)delete states[key]
+ }
+}
+function applyGMCombatAdjustment(current,uid,combatId,revision,change,changeId){
+ if(current?.roles?.[uid]!=="gm")throw Error("Action réservée au MJ")
+ if(current.sessionControl?.phase||(current.sessionControl?.revision||"initial")!==revision||current.combat?.id!==combatId||current.combat.phase!=="active"||current.combat.turnState?.phase!=="active")throw Error("Le combat ou la partie a changé")
+ if(current.combat.gmAdjustmentLog?.[changeId])return current
+ const root=combatClone(current),c=root.combat,id=change.target,target=gmTarget(root,id),request={id:changeId,uid,actor:"mj",manual:true,time:Date.now()}
+ if(![...COMBAT_CHARACTERS,...COMBAT_MOBS].includes(id)||!target)throw Error("Choisissez une cible existante")
+ const label=COMBAT_MOBS.includes(id)?heroDisplayName(target.name):heroDisplayName(id)
+ let message="",integer=(value,min,max)=>{const n=Number(value);if(!Number.isInteger(n)||n<min||n>max)throw Error("Valeur attendue entre "+min+" et "+max);return n}
+ c.gmStates||={};c.gmStates[id]||={}
+ if(change.kind==="state"){
+  const def=GM_COMBAT_STATES[change.state];if(!def)throw Error("État inconnu")
+  const turns=integer(change.turns,1,99),mode=change.mode==="percent"?"percent":"points",amount=change.state==="paralysis"?0:integer(change.amount,1,mode==="percent"?100:50000)
+  c.gmStates[id][change.state]={turns,amount,mode,...(change.state==="paralysis"&&combatOwner(id)===c.turnState.currentActorId?{activeTurn:true}:{})}
+  if(change.state==="paralysis"&&c.heroHaste?.actor===id)delete c.heroHaste
+  message=label+" : "+def.label+" pendant "+turns+" "+def.unit+(amount?" ("+amount+(mode==="percent"?" %":" points")+")":"")
+ }else if(change.kind==="remove"){
+  if(!GM_COMBAT_STATES[change.state])throw Error("État inconnu")
+  delete c.gmStates[id][change.state];message=label+" : "+GM_COMBAT_STATES[change.state].label+" retiré"
+ }else if(change.kind==="clear"){c.gmStates[id]={};message=label+" : états MJ retirés"}
+ else if(change.kind==="hp"){
+  const max=COMBAT_MOBS.includes(id)?target.maxHP:getCharacterMaxHp(id,target),value=integer(change.amount,0,50000),before=target.hp
+  if(!["set","heal","damage"].includes(change.operation))throw Error("Ajustement de PV inconnu")
+  target.hp=Math.max(0,Math.min(max,change.operation==="set"?value:before+(change.operation==="heal"?value:-value)))
+  message=label+" : "+before+" → "+target.hp+" / "+max+" PV (ajustement MJ)"
+  if(target.hp!==before)combatRecord(root,request,"MJ",label,Math.abs(target.hp-before),target.hp>before?"heal":"dmg",message)
+ }else throw Error("Ajustement inconnu")
+ delete c.pendingResolution;delete c.interventionArmed
+ if(!combatOutcome(root,request)){
+  const owner=c.turnState.currentActorId,members=gmTurnMembers(owner).filter(member=>(gmTarget(root,member)?.hp||0)>0)
+  if(!combatActorAlive(root,owner)||(members.length&&members.every(member=>gmParalyzed(root,member))))nextCombatTurn(root,request,true)
+ }
+ c.gmAdjustmentLog||={};c.gmAdjustmentLog[changeId]={time:request.time,text:message,target:id}
+ Object.keys(c.gmAdjustmentLog).slice(0,-50).forEach(key=>delete c.gmAdjustmentLog[key])
+ recordConfirmedCombatAction(root,request,{mode:"control",message})
+ c.visualEvents||={};c.visualEvents[changeId]={id:changeId,combatId:c.id,time:request.time,result:{mode:"control",message},nextTurn:combatClone(c.turnState)}
+ Object.keys(c.visualEvents).slice(0,-120).forEach(key=>delete c.visualEvents[key])
+ return root
 }

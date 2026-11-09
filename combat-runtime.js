@@ -95,7 +95,7 @@ async function requestHeroCombatAction(attack, options = {}) {
   if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   if (window.__playerAttackResolving) return
   let actor = options.actorId || getCombatHUDPlayerId()
-  if(actor==="greg"&&attack.name==="Le Bibi"&&window.__publicCharacters?.greg?.hp<=0&&window.__publicCharacters?.bibi?.hp>0)actor="bibi"
+  if(actor==="greg"&&attack.name==="Le Bibi"&&(window.__publicCharacters?.greg?.hp<=0||gmParalyzed({combat:window.__combatSnapshot},"greg"))&&window.__publicCharacters?.bibi?.hp>0)actor="bibi"
   try{requireActionAccess({actor});requireCombatActorTurn(actor)}catch(error){showNotification(error.message);return}
   window.__playerAttackResolving = true
   refreshCombatActionStates()

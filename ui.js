@@ -761,6 +761,7 @@ function getCombatStatusEntries(){
  }
  for(const [id,e]of Object.entries(c.heroDebuffs||{}))if(e.turns>0)entries.push({kind:"warn",title:heroDisplayName(id)+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s) restant(s)"})
  for(const [id,n]of Object.entries(c.heroStuns||{}))if(n>0)entries.push({kind:"warn",title:heroDisplayName(id)+" étourdi",text:"Action neutralisée",meta:n+" action(s) à sauter"})
+ for(const [id,states]of Object.entries(c.gmStates||{}))for(const [key,value]of Object.entries(states)){const def=GM_COMBAT_STATES[key];if(def)entries.push({kind:"warn",title:(COMBAT_MOBS.includes(id)?combatEnemyLabel(id):heroDisplayName(id))+" — "+def.label,text:def.description,meta:value.turns+" "+def.unit+" restant(s)"+(value.amount?" · "+value.amount+(value.mode==="percent"?" %":" points"):"")})}
  const summon=c.eloSummon;if(summon?.active)entries.push({kind:"ally",title:"John Pork",text:"Bonus D4 aux attaques d’Elo"+(summon.frenzy?", doublé et en zone":""),meta:(summon.turnsLeft||0)+" round(s) · "+(summon.hp||0)+" / "+(summon.maxHP||0)+" PV"})
  const hits=window.__combatDamageLog||[];if(hits.length)entries.push({kind:"section",title:"Derniers coups"})
  for(const hit of hits)entries.push({kind:hit.type,title:hit.from+" → "+hit.to,text:hit.type==="heal"?"+"+hit.amount+" PV":["dmg","mob"].includes(hit.type)?"−"+hit.amount+" PV":String(hit.detail||"Effet appliqué"),meta:"Round "+hit.round})
@@ -2327,7 +2328,9 @@ initializeMenuBehaviour()
 function combatActionAvailability(actor, attack, special=false, enemy=false) {
   const c=window.__combatSnapshot, players=window.__publicCharacters||{}, state=c?.turnState
   const blocked=label=>({disabled:true,label})
-  if(!enemy&&c?.heroHaste&&attack?.name!=="Passer le tour"&&(c.heroHaste.actor!==actor||special||getPlayerAttackTypeKey(attack)==="heal"))return blocked("SKARO’H : attaque basique du personnage uniquement")
+  if(attack?.name==="Le Bibi"&&gmParalyzed({combat:c},"bibi"))return blocked("Bibi est paralysée par le MJ")
+  if(attack?.name!=="Passer le tour"&&!(actor==="greg"&&attack?.name==="Le Bibi"&&players.bibi?.hp>0)&&gmParalyzed({combat:c},actor))return blocked("Paralysé par le MJ — "+c.gmStates[actor].paralysis.turns+" tour(s)")
+  if(!enemy&&c?.heroHaste&&attack?.name!=="Passer le tour"&&(attack?.name==="Le Bibi"||c.heroHaste.actor!==actor||special||getPlayerAttackTypeKey(attack)==="heal"))return blocked("SKARO’H : attaque basique du personnage uniquement")
   if(special&&(enemy?c?.[actor]?.specialUsed:c?.playerSpecials?.[actor]))return blocked("Déjà utilisée dans ce combat")
   if(attack?.pikaKind==="hypnosis"){const left=pikaRechargeLeft(c);if(left)return blocked("Recharge : "+left+" tour"+(left>1?"s":"")+" restant"+(left>1?"s":""))}
   if(enemy&&c?.[actor]?.lastAttack===attack?.name&&!special&&getMobAttacksForMob(c[actor].name,c[actor].tier).length>1)return blocked("Recharge : utilisez une autre attaque ou passez")

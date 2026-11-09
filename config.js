@@ -1280,6 +1280,7 @@ const dialogue = [
 /* ========================= */
 
 const ALLY_PNJS = [
+ {id:"baldur",name:"Jarl Baldur",image:"jarl baldur.png",role:"Puissant guerrier et jarl de Brume",color:"#e2b36b",lore:"Un chef viking lié au groupe par son serment.",actions:[{id:"baldur_wrath",label:"Le courroux du Jarl",type:"damage",icon:"🪓",dice:20,dmgBase:120,dmgBonus:15,critMult:2,staggerOnCrit:true,desc:"Baldur abat sa hache sur un ennemi : 120 + D20 × 15 dégâts. Critique 20 : dégâts doublés et prochaine action ennemie interrompue.",dialogue:"Par mon serment, vous ne tomberez pas seuls !"}]},
   {
     id:      "odin",
     name:    "Odin",

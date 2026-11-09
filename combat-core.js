@@ -290,6 +290,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   const slot = request.actor, c = root.combat, mob = c[slot], payload = request.payload || {}
   requireCombatTurn(root, request, slot)
   if (!mob) throw new Error("Ennemi introuvable")
+  if(mob.allyStagger){delete mob.allyStagger;nextCombatTurn(root,request);return {actor:slot,mode:"skip",message:"Le courroux du Jarl interrompt cette action"}}
   const special = getMobSpecialAttack(mob.name, mob.tier || "weak")
   const normal = getMobAttacksForMob(mob.name, mob.tier || "weak")
   let specialRoll = null
@@ -333,6 +334,7 @@ function resolveEnemyCombatAction(root, request, dice) {
 }
 
 function resolveAllyCombatAction(root, request, dice) {
+  if(!combatHasWorldBoss(root))throw Error("Les invocations sont réservées aux combats de world boss")
   requireCombatTurn(root, request, request.actor)
   const payload = request.payload || {}, pnj = ALLY_PNJS.find(p => p.id === payload.pnjId), action = pnj?.actions.find(a => a.id === payload.actionId)
   if (!pnj || !action) throw new Error("Action alliée inconnue")
@@ -347,6 +349,7 @@ function resolveAllyCombatAction(root, request, dice) {
     targets.forEach(slot=>{
       if(!livingMobs(root.combat).includes(slot))throw Error("Choisissez un ennemi vivant")
       const dealt=combatDamage(root,request,pnj.name,slot,amount,"dmg",{thorMjolnir})
+      if(action.staggerOnCrit&&crit&&dealt>0&&root.combat[slot].hp>0&&arbitrationEffects(root,slot))root.combat[slot].allyStagger=true
       if(thorMjolnir&&isJormungandr(root.combat[slot])&&dealt>0){thorLethalDamage=dealt;thorVictory=true;fail=false}
     })
     if(thorVictory)amount=thorLethalDamage
@@ -410,7 +413,7 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
     else if (request.kind === "hero") result = resolveHeroCombatAction(root, request, dice)
     else if (request.kind === "enemy") { if (!gm || !COMBAT_MOBS.includes(request.actor)) throw new Error("Action réservée au MJ"); result = resolveEnemyCombatAction(root, request, dice) }
     else if (request.kind === "ally") result = resolveAllyCombatAction(root, request, dice)
-    else if (request.kind === "pass") { requireCombatTurn(root, request, request.actor); if(COMBAT_MOBS.includes(request.actor)) delete root.combat[request.actor].lastAttack; nextCombatTurn(root, request); result = { actor: request.actor, mode: "pass", message: "Tour passé" } }
+    else if (request.kind === "pass") { requireCombatTurn(root, request, request.actor); if(COMBAT_MOBS.includes(request.actor)){delete root.combat[request.actor].lastAttack;delete root.combat[request.actor].allyStagger;} nextCombatTurn(root, request); result = { actor: request.actor, mode: "pass", message: "Tour passé" } }
     else if (request.kind === "skipDead") {
       if (!gm || root.combat.turnState?.currentActorId !== request.actor || combatActorAlive(root, request.actor) || combatInt(request.sequence) !== combatInt(root.combat.turnState.sequence)) throw new Error("Le tour ne peut pas être sauté")
       nextCombatTurn(root, request); result = { actor: request.actor, mode: "skip", message: "Acteur KO : tour passé" }

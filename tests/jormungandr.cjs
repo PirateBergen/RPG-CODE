@@ -13,6 +13,6 @@ console.log('OK authorized Thor kills on any die including 1, produces victory a
 {const r=fixture(),n=act(r,'ally','greg',{pnjId:'thor',actionId:'thor_mjolnir',target:'mob'},10,20);assert.equal(n.combatRequests['action-1'].status,'failed');assert.equal(n.combat.mob.hp,1000)}
 {const r=fixture();r.game.map=r.game.combatState.returnMap='prairie.jpg';r.game.playerAllyAccess={actionId:'thor_mjolnir'};const n=act(r,'ally','greg',{pnjId:'thor',actionId:'thor_mjolnir',target:'mob'},10,20);assert.equal(n.combat.mob.hp,1000)}
 console.log('OK Thor still requires MJ grant, and cannot kill serpent outside boat');
-{const r=engine.fixture();r.game.playerAllyAccess={actionId:'thor_mjolnir'};const n=act(r,'ally','greg',{pnjId:'thor',actionId:'thor_mjolnir',target:'mob'},1,20);assert(n.combat.mob.hp>0);assert.equal(n.combatRequests['action-1'].result.fail,true)}
+{const r=engine.fixture();r.game.playerAllyAccess={actionId:'thor_mjolnir'};const n=act(r,'ally','greg',{pnjId:'thor',actionId:'thor_mjolnir',target:'mob'},1,20);assert(n.combat.mob.hp>0);assert.equal(n.combatRequests['action-1'].status,'failed')}
 {const r=fixture('greg',true);r.game.playerAllyAccess={actionId:'thor_mjolnir'};const n=act(r,'ally','greg',{pnjId:'thor',actionId:'thor_mjolnir',target:'mob'},15,20);assert.equal(n.combat.mob.hp,0);assert.equal(n.combat.mob2.hp,300)}
 console.log('OK Thor keeps ordinary damage on other enemies, including splash');

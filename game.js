@@ -497,7 +497,7 @@ window.THUUMS = {
     translation: "Fragmentation • Rupture • Dispersion finale",
     description: "Fracasse la cible principale et blesse les ennemis autour.",
     unlockMap: "prebalraug.jpg",
-    buttonImage: "images/runeskraa.png",
+    buttonImage: (typeof discoveredAllies==="function"&&discoveredAllies().length?"images/"+discoveredAllies()[0].image:"images/runeskraa.png"),
     combatDamageByRank: rank => ({ main: 8 + rank * 4, splash: 3 + rank * 2 }),
     outsideCombatMessage: "SKRAA retentit hors combat"
   },
@@ -823,7 +823,7 @@ function hasThuumUseAccess(word) {
 
 function hasPlayerAllyAccess() {
   const access=window.playerAllyAccessData
-  return !!access&&!!myToken&&(!access.playerId||access.playerId===myToken.id)&&(!access.combatId||access.combatId===window.__combatSnapshot?.id)
+  return combatActive&&combatHasWorldBoss({combat:window.__combatSnapshot})&&!!access&&!!myToken&&(!access.playerId||access.playerId===myToken.id)&&(!access.combatId||access.combatId===window.__combatSnapshot?.id)
 }
 
 function hasActiveRuneChallenge() {
@@ -833,7 +833,7 @@ function hasActiveRuneChallenge() {
 
 function getAvailablePlayerPowerTabs() {
   const tabs = []
-  if (hasPlayerAllyAccess()) tabs.push("ally")
+  if (hasPlayerAllyAccess() || (typeof discoveredAllies==="function"&&discoveredAllies().length)) tabs.push("ally")
   if (getUnlockedThuumWords().length) tabs.push("thuum")
   if (hasActiveRuneChallenge()) tabs.push("runes")
   return tabs
@@ -879,7 +879,7 @@ function updateThuumButton() {
   btn.disabled = false
   if (activeWord) {
     btn.title = combatActive && isThuumUsedThisCombat(activeWord) ? activeWord + " déjà utilisé pour ce combat" : hasThuumUseAccess(activeWord) ? activeWord + " — utilisation autorisée par le MJ" : activeWord + " — autorisation MJ nécessaire, en combat ou hors combat"
-  } else btn.title = hasPlayerAllyAccess() ? "Cris et invocations : intervention autorisée par le MJ" : "Défi de runes actif"
+  } else btn.title = hasPlayerAllyAccess() ? "Cris et invocations : intervention autorisée par le MJ" : (typeof discoveredAllies==="function"&&discoveredAllies().length?"Alliés découverts — consulter les invocations":"Défi de runes actif")
   renderPlayerPowersPanel()
 }
 
@@ -956,6 +956,7 @@ function renderPlayerThuumEntries(panel) {
 
 function renderPlayerAllyEntry(panel) {
   const access = window.playerAllyAccessData
+  if(typeof renderDiscoveredAllies==="function")renderDiscoveredAllies(panel)
   if (!access || !hasPlayerAllyAccess()) return
 
   let granted = null
@@ -3514,6 +3515,7 @@ function refreshActivePNJs() {
   function setGameState(state) {
     const previousState=gameState
     gameState = state
+    if(!["GAME","COMBAT"].includes(state)&&typeof clearAllyDiscoveryAnimation==="function"){clearAllyDiscoveryAnimation();document.getElementById("allyDiscoveryPanel")?.remove()}
     if(state!=="COMBAT")document.getElementById("allyGrantPicker")?.remove()
     if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(window.__combatSnapshot)
     if(typeof syncWorldPartyMarker==="function")syncWorldPartyMarker()

@@ -1768,6 +1768,7 @@ function toggleGMShortcutHelp() {
 
 function openAllyPNJPanel() {
   if (!isGM || !combatActive) return
+  if(!combatHasWorldBoss({combat:window.__combatSnapshot})){showNotification("Les invocations sont réservées aux combats de world boss.");return}
   const existing = document.getElementById("allyPNJPanel")
   if (existing) {
     existing.remove()
@@ -2115,7 +2116,7 @@ async function giveAllyActionToPlayer(pnj,action,playerId,expectedCombatId=windo
   if(!["greg","ju","elo"].includes(playerId))throw Error("Choisissez Greg, Pika ou Elo.")
   const combatId=expectedCombatId,uid=window.__authUid,revision=persistenceRevision||"initial"
   const result=await reliableRootTransaction(root=>{
-   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||!combatId||root.combat?.id!==combatId||root.combat.phase!=="active"||root.combat.usedAllies?.[action.id]||!root.characters?.[playerId]||Number(root.characters[playerId].hp)<=0)return undefined
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||!combatId||root.combat?.id!==combatId||root.combat.phase!=="active"||!combatHasWorldBoss(root)||root.combat.usedAllies?.[action.id]||!root.characters?.[playerId]||Number(root.characters[playerId].hp)<=0)return undefined
    root.game||={};root.game.playerAllyAccess={pnjName:pnj.name,actionId:action.id,playerId,combatId,time:Date.now()};return root
   })
   if(!result.committed)throw Error("Combat terminé, pouvoir déjà utilisé ou personnage KO.")

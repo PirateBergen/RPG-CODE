@@ -209,6 +209,7 @@ async function removePersistentWanted(id){
 }
 function syncSharedExplorationState(game){
   Object.assign(window.__explorationState,game)
+  if(Object.hasOwn(game,"allyDiscoveries")&&typeof syncAllyDiscoveries==="function")syncAllyDiscoveries()
   syncWorldPartyMarker()
   syncNightMode()
   if(Object.hasOwn(game,"nightMode"))queueNightLightingSync()
@@ -278,7 +279,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(isGM)cleanupLegacyWantedElements().catch(error=>console.warn(error))
   db.ref(".info/connected").on("value",snap=>{window.__explorationOnline=!!snap.val();if(snap.val())queueNightLightingSync();if(!snap.val()){selected=null;_state.tokenDragging=false;cameraDragging=false}})
   db.ref("tokens").on("value",snap=>{window.__tokenPositions=snap.val()||{};if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()})
-  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition","nightMode"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
+  for(const key of ["wantedPosters","wantedOpen","wantedBoardOpen","shop","document","mapLoreBook","mapAudio","worldPartyPosition","nightMode","allyDiscoveries"])db.ref("game/"+key).on("value",snap=>syncSharedExplorationState({[key]:snap.val()}))
   db.ref("events").on("value",snap=>{window.__explorationWorldEvents=snap.val()||{};refreshExplorationMapEvents()})
   db.ref("game/explorationEvents").on("child_added",snap=>{if(!window.__sessionBusy)presentExplorationEvent(snap.val())})
   db.ref("game/runeVictory").on("value",snap=>{const e=snap.val();if(e?.id&&e.time>=(window.__pageLoadTime||0))enqueueSharedVisual("rune-victory-"+e.id,_showRuneVictoryNow,5200)})

@@ -11,6 +11,7 @@ const explorationPending=new Set()
 function isWorldPartyMap(){return String(currentMap).toLowerCase()==="mapmonde.jpg"}
 let worldPartyDrag=null,worldPartySaving=false
 function syncWorldPartyMarker(){
+ if(typeof syncSummonedAllies==="function")syncSummonedAllies()
  if(typeof renderBalrogSwordLoot==="function")renderBalrogSwordLoot()
  syncForchurFog()
  document.body.classList.toggle("brumePrison",gameStarted&&gameState==="GAME"&&!combatActive&&currentMap==="prisonbrume.jpg")
@@ -247,6 +248,7 @@ function syncSharedExplorationState(game){
 function presentExplorationEvent(event){
   if(!event?.id||!event.result||event.time<(window.__pageLoadTime||0))return
   const result=event.result
+  if(result.mode==="summon")enqueueSharedVisual("explore-"+event.id,()=>presentExplorationSummon(result),14000)
   if(result.mode==="book")enqueueSharedVisual("explore-"+event.id,()=>presentMapLoreBookEvent(result.book,result.actor),1000)
   if(result.mode==="hint")enqueueSharedVisual("explore-"+event.id,()=>{playSound("parcheminSound",.7);flashGold();showNotification("Fragment runique découvert !")},1800)
   if(result.mode==="spell")enqueueSharedVisual("explore-"+event.id,()=>{

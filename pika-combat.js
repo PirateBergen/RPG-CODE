@@ -64,7 +64,7 @@ function presentPikaAttack(result) {
   if(typeof window.__cancelEndikakiPresentation==="function")window.__cancelEndikakiPresentation()
   const timers=new Set(),nodes=new Set();let cancelled=false
   const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer)}
-  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const id of ["endikakiInvocationSound","endikakiExplosionSound"])document.getElementById(id)?.pause();if(window.__cancelEndikakiPresentation===cleanup)window.__cancelEndikakiPresentation=null}
+  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const id of ["endikakiInvocationSound","endikakiExplosionSound","pikaSpecialMusic"])document.getElementById(id)?.pause();if(window.__cancelEndikakiPresentation===cleanup)window.__cancelEndikakiPresentation=null}
   window.__cancelEndikakiPresentation=cleanup
   const caption=document.createElement("section"),title=document.createElement("h2"),description=document.createElement("p");caption.className="endikaki-caption";caption.setAttribute("role","status");title.textContent=String(result.attack||"Endikaki").toUpperCase();description.textContent=result.preview?"Invocation d’Endikaki — animation et son uniquement":result.fail?"Endikaki manque sa cible…":result.message||"Endikaki fonce sur l’ennemi et explose !";caption.append(title,description);document.body.appendChild(caption);nodes.add(caption)
   const idFor=id=>id==="mob"?"mobToken":COMBAT_MOBS.includes(id)?"mobToken_"+id:id
@@ -74,6 +74,9 @@ function presentPikaAttack(result) {
   if(!to?.width)to=null
   const x=(to?to.left+to.width/2:innerWidth*.7)+(result.fail?80:0),y=to?to.top+to.height/2:innerHeight*.55
   const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb);nodes.add(bomb)
+  playSound("powSound",.84,true)
+  playSound("pikaSpecialMusic",.45,true)
+  later(()=>setManagedAudioBaseVolume(document.getElementById("pikaSpecialMusic"),.85,"effects"),1950)
   playSound("endikakiInvocationSound",1,true)
   // The supplied recording lasts 1.92 s. Keep the same timeline on every screen.
   later(()=>{requestAnimationFrame(()=>{if(cancelled)return;bomb.style.left=x+"px";bomb.style.top=y+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"})},2000)

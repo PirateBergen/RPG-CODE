@@ -23,7 +23,7 @@ function reduceExplorationRequest(current,id,seed) {
     if(!(request.kind==="dice"&&root.roles?.[request.uid]==="gm")&&(!SPELL_PLAYERS.includes(request.actor)||(root.roles?.[request.uid]!=="gm"&&root.profiles?.[request.uid]?.playerId!==request.actor)))throw new Error("Ce héros ne vous appartient pas")
     root.game ||= {}
     let result
-    if(request.kind==="relic"){result=resolveBalrogSwordRequest(root,request)}else if(request.kind==="dice"){
+    if(request.kind==="summon"){result=resolveExplorationSummon(root,request,id,now)}else if(request.kind==="relic"){result=resolveBalrogSwordRequest(root,request)}else if(request.kind==="dice"){
       const max=Number(request.payload?.max);if(![4,6,8,10,12,20,100].includes(max))throw Error("Dé invalide")
       const roll=combatRandom(seed)(max),stat=request.payload?.stat
       if(stat&&!['force','charme','perspi','chance','defense'].includes(stat))throw Error("Statistique invalide")
@@ -70,4 +70,16 @@ function reduceExplorationRequest(current,id,seed) {
     old.slice(0,Math.max(0,old.length-120)).forEach(([key])=>delete root.game.explorationEvents[key])
     return root
   }catch(error){const unchanged=combatClone(current);unchanged.explorationRequests[id]={...queued,status:"failed",error:error.message};return unchanged}
+}
+
+function resolveExplorationSummon(root,request,id,time){
+ const access=root.game?.playerAllyAccess,payload=request.payload||{},pnj=ALLY_PNJS.find(p=>p.id===payload.pnjId),action=pnj?.actions.find(a=>a.id===payload.actionId)
+ if(root.game?.combatState?.active||root.combat?.phase==="active")throw Error("Cette invocation est prévue hors combat")
+ if(!pnj||!action||!access||access.scope!=="exploration"||access.playerId!==request.actor||access.actionId!==action.id||access.grantId!==payload.grantId)throw Error("Autorisation MJ absente ou déjà utilisée")
+ if(!root.game?.map||payload.map!==root.game.map)throw Error("La carte a changé")
+ if(!root.characters?.[request.actor]||root.characters[request.actor].hp<=0)throw Error("Ce héros est KO")
+ root.game.summonedAllies||={};const existing=Object.entries(root.game.summonedAllies).find(([,t])=>t?.pnjId===pnj.id&&t.map===root.game.map),tokenId=existing?.[0]||id,position=root.tokens?.[request.actor]||{x:360,y:360}
+ if(!existing)root.game.summonedAllies[tokenId]={pnjId:pnj.id,map:root.game.map,actor:request.actor,x:Math.max(40,Number(position.x)||360)+90,y:Math.max(40,Number(position.y)||360),time}
+ delete root.game.playerAllyAccess
+ return {mode:"summon",pnjId:pnj.id,actionId:action.id,actor:request.actor,map:root.game.map,tokenId,message:pnj.name+" rejoint la scène."}
 }

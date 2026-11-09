@@ -339,6 +339,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     elo: "spéelo.mp3",
     bibi: "spébibi.mp3"
   }
+  playSound("powSound",0.84,true)
   const overlay = document.createElement("div")
   overlay.className = "playerSpecialOverlay playerSpecialOverlay--" + presentation.scene
 
@@ -440,7 +441,6 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     screenShake()
   } else if (meta.crit) {
     playSound("critSound", 0.95, true)
-    playSound("powSound", 0.9, true)
     flashGold()
     flashGold()
     screenShakeHard()
@@ -448,7 +448,6 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     setTimeout(() => screenShakeHard(), 360)
     powerExplosion()
   } else {
-    playSound("powSound", 0.84, true)
     flashGold()
     screenShake()
     setTimeout(() => screenShake(), 160)
@@ -1771,7 +1770,8 @@ function toggleGMShortcutHelp() {
 /* ========================= */
 
 function openAllyPNJPanel() {
-  if (!isGM || !combatActive) return
+  if(!combatActive)return openExplorationAlliesPanel()
+  if (!isGM) return
   if(!combatHasWorldBoss({combat:window.__combatSnapshot})){showNotification("Les invocations sont réservées aux combats de world boss.");return}
   const existing = document.getElementById("allyPNJPanel")
   if (existing) {
@@ -1783,7 +1783,7 @@ function openAllyPNJPanel() {
 
   const title = document.createElement("div"); title.style.cssText = "font-size:11px;letter-spacing:3px;color:#1e8a9a;margin-bottom:12px;border-bottom:1px solid rgba(30,90,102,0.3);padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;"
   const titleText = document.createElement("span")
-  titleText.innerText = "⚔ INVOQUER UNE DIVINITÉ"
+  titleText.innerText = "⚔ INVOCATIONS"
   const titleClose = document.createElement("span")
   titleClose.style.cssText = "cursor:pointer;color:#ff8888;font-size:14px;"
   titleClose.innerText = "✕"
@@ -1866,6 +1866,7 @@ function openAllyPNJPanel() {
 }
 
 function triggerAllyAction(pnj, action, panel) {
+  if(!combatActive){if(isGM){openAllyGrantPicker(pnj,action);return}return requestExplorationSummon(pnj,action)}
   if (!isGM && myToken && (action.type === "heal" || action.type === "buff")) {
     _executeAllyAction(pnj, action, myToken.id, panel)
     return
@@ -1901,6 +1902,7 @@ function _executeAllyAction(pnj, action, targetId, panel) { return requestAllyCo
 function showAllyActionResult(data) { /* Les jets et effets sont désormais résolus par le MJ, une seule fois. */ }
 
 function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
+  playSound("powSound",.84,true)
   if(pnj.id==="melenchon")return playOregonBombardment(pnj,action,targetId,onComplete)
   const scope=createPresentationScope("__cancelAllyPresentation")
   scope.later(scope.cancel,6500)
@@ -1917,7 +1919,7 @@ function _allyInvocationCinematic(pnj, action, targetId, onComplete) {
     cinScreen.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999999995;opacity:0;transition:opacity 0.6s ease;`
 
     // Image du dieu
-    const img = document.createElement("img"); img.src = "images/"+pnj.image
+    const img = document.createElement("img");img.className="allyInvocationBackdrop"; img.src = "images/"+pnj.image
     img.style.cssText = `max-height:45vh;object-fit:contain;filter:drop-shadow(0 0 30px ${pnj.color});opacity:0;transition:opacity 0.8s ease;margin-bottom:30px;`
     cinScreen.appendChild(img)
 
@@ -2104,7 +2106,7 @@ function toggleDiceLog() {
 
 
 function grantAllyActionToPlayers(pnj, action, playerId) {
- if(!isGM||!combatActive)return Promise.resolve(false)
+ if(!isGM)return Promise.resolve(false)
  if(!playerId){openAllyGrantPicker(pnj,action);return Promise.resolve(false)}
  return giveAllyActionToPlayer(pnj,action,playerId)
 }
@@ -2112,7 +2114,7 @@ function openAllyGrantPicker(pnj,action){
  document.getElementById("allyGrantPicker")?.remove()
  const combatId=window.__combatSnapshot?.id
  const previous=document.activeElement,overlay=document.createElement("div"),box=document.createElement("div"),title=document.createElement("h3"),desc=document.createElement("p")
- overlay.id="allyGrantPicker";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-labelledby","allyGrantTitle");box.className="allyGrantBox";title.id="allyGrantTitle";title.textContent="À qui donner « "+action.label+" » ?";desc.textContent="Autorisation pour ce combat, utilisable une fois par le personnage choisi. Elle remplace l’autorisation précédente.";box.append(title,desc);overlay.appendChild(box)
+ overlay.id="allyGrantPicker";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-labelledby","allyGrantTitle");box.className="allyGrantBox";title.id="allyGrantTitle";title.textContent="À qui donner « "+action.label+" » ?";desc.textContent=combatActive?"Autorisation pour ce combat, utilisable une fois par le personnage choisi. Elle remplace l’autorisation précédente.":"Autorisation hors combat : cinématique et pion uniquement. Le joueur choisira quand invoquer cet allié.";box.append(title,desc);overlay.appendChild(box)
  const close=()=>{overlay.remove();previous?.focus?.()}
  for(const id of ["greg","ju","elo"]){const button=document.createElement("button");button.type="button";button.textContent=heroDisplayName(id);button.dataset.hero=id;button.onclick=async()=>{for(const b of box.querySelectorAll("button"))b.disabled=true;try{if(await giveAllyActionToPlayer(pnj,action,id,combatId)){close();document.getElementById("allyPNJPanel")?.remove()}else close()}finally{for(const b of box.querySelectorAll("button"))b.disabled=false}};box.appendChild(button)}
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Annuler";cancel.onclick=close;box.appendChild(cancel)
@@ -2120,6 +2122,7 @@ function openAllyGrantPicker(pnj,action){
  document.body.appendChild(overlay);box.querySelector("button").focus()
 }
 async function giveAllyActionToPlayer(pnj,action,playerId,expectedCombatId=window.__combatSnapshot?.id){
+ if(!expectedCombatId)return giveExplorationAllyAccess(pnj,action,playerId)
  try{
   requireActionAccess({gmOnly:true});requireExplorationConnection()
   if(!["greg","ju","elo"].includes(playerId))throw Error("Choisissez Greg, Pika ou Elo.")

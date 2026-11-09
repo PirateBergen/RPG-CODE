@@ -151,4 +151,5 @@ function resetLocalCharacterAccess() {
   const select = document.getElementById("playerSelect")
   if (select) { select.style.display = "none"; select.style.opacity = "1" }
   isGM = false
+  if(typeof syncSummonedAllies==="function")syncSummonedAllies()
 }

@@ -22,3 +22,5 @@ Corrections du 9 novembre : tests/presentation-lifecycle.cjs vérifie l'annulati
 Commande commune après installation des dépendances de tests : `node tests/run.cjs`. Pour les scénarios multijoueurs, démarrer uniquement l'émulateur local sur 127.0.0.1:9005 puis lancer `node tests/run.cjs --firebase`. Les données de production ne doivent jamais servir aux tests.
 
 Documents attribués : `node tests/firebase-player-documents.cjs` avec la base émulée locale. Vérifie les destinataires, la consultation locale, le retrait, la sauvegarde, le menu Action en essai MJ et le texte de la spéciale de Pika.
+
+Invocations hors combat : tests/firebase-exploration-summons.cjs couvre autorisation ponctuelle, animation partagée, pion localisé par carte, sauvegarde, déplacement MJ et suppression réservée au MJ. Les médias restent simulés.

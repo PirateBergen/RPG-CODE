@@ -823,8 +823,9 @@ function hasThuumUseAccess(word) {
 }
 
 function hasPlayerAllyAccess() {
-  const access=window.playerAllyAccessData
-  return combatActive&&combatHasWorldBoss({combat:window.__combatSnapshot})&&!!access&&!!myToken&&(!access.playerId||access.playerId===myToken.id)&&(!access.combatId||access.combatId===window.__combatSnapshot?.id)
+ const access=window.playerAllyAccessData;if(!access||!myToken||access.playerId&&access.playerId!==myToken.id)return false
+ if(access.scope==="exploration")return gameStarted&&gameState==="GAME"&&!combatActive&&!!access.grantId
+ return combatActive&&combatHasWorldBoss({combat:window.__combatSnapshot})&&(!access.combatId||access.combatId===window.__combatSnapshot?.id)
 }
 
 function hasActiveRuneChallenge() {
@@ -1010,7 +1011,7 @@ function renderPlayerAllyEntry(panel) {
   const desc = document.createElement("div")
   desc.className = "playerThuumEntryState"
   desc.style.color = "#d8c28a"
-  desc.innerText = granted.action.desc
+  desc.innerText = window.playerAllyAccessData?.scope==="exploration"?"Fait apparaître un pion sur cette carte, sans dégâts ni soins. Le MJ pourra le retirer.":granted.action.desc
   text.appendChild(desc)
 
   const state = document.createElement("div")
@@ -1897,7 +1898,7 @@ function showMobSpecialAttackEvent(data) {
     heroImage.className = "mobSpecialImage" + (scene ? " mobSpecialImage--" + scene : "")
     heroImage.src = typeof resolveImagePath === "function" ? resolveImagePath(presentation.image) : "images/" + presentation.image
     heroImage.alt = ""
-    box.appendChild(heroImage)
+    overlay.appendChild(heroImage)
   }
 
   if (presentation && presentation.sparkleImage) {

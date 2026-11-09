@@ -151,7 +151,7 @@ const attacks = {
   elo: [
     { name:"Mains magiques",                  type:"Soin",      dice:12, stat:"Defense", effect:"Restaure HP à soi ou allié",                                                     crit:"Pv restaurés x2" },
     { name:"Je vais te raconter une histoire",type:"Sort",      dice:12, stat:"Charme",  effect:"invoque les forces de la nature. Dégats double en forêt ou mine",                crit:"L'ennemi est empoisonné, -2 hp pendant 2 tours" },
-    { name:"Je suis jet laguée",              type:"Invocation",dice:12, stat:"Chance",  effect:"Invoque un familier : bonus D4 aux attaques d’Elo pendant 3 rounds",    crit:"Le familier devient fou, dégats x2 et attaque tous les mobs" }
+    { name:"Je suis jet laguée",              type:"Invocation",dice:12, stat:"Chance",  effect:"John Pork frappe à son arrivée, encaisse les attaques à cible unique et donne un bonus D4 aux attaques d’Elo pendant 3 rounds",    crit:"Le familier devient fou, dégats x2 et attaque tous les mobs" }
   ]
 }
 
@@ -967,7 +967,7 @@ function getBalancedMobDamageRange(attack,mob){
  return {min,max}
 }
 
-function getMobDamageRange(attack, mobLvl, mobTier = "weak", mobData = null) {
+function getMobBaseDamageRange(attack, mobLvl, mobTier = "weak", mobData = null) {
   if([1,2].includes(mobData?.balanceVersion))return getBalancedMobDamageRange(attack,mobData)
   const lvl = Math.max(1, parseInt(mobLvl, 10) || 1)
   let levelBonus = 0
@@ -1481,3 +1481,6 @@ function resolveBalrogSwordRequest(root,request){
  for(const id of ["greg","bibi"]){const c=root.characters[id];c.equipmentModifiers=getEffectiveCharacterData(id,c,data).__inventoryStatMods;c.carriedWeight=parseInventoryWeight(c.inventaire).total}
  return {mode:"relic",message:payload.operation==="equip"?(data.equipped?"Épée équipée":"Épée déséquipée"):"L’épée rejoint l’inventaire de "+heroDisplayName(data.holder)}
 }
+
+const SPECIAL_DAMAGE_MULTIPLIER=1.35
+function getMobDamageRange(attack,lvl,tier="weak",data=null){const range=getMobBaseDamageRange(attack,lvl,tier,data);return attack?.special?{min:Math.round(range.min*SPECIAL_DAMAGE_MULTIPLIER),max:Math.round(range.max*SPECIAL_DAMAGE_MULTIPLIER)}:range}

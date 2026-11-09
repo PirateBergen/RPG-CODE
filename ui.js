@@ -220,7 +220,7 @@ function chooseCombatTarget(playerIds,titleText){
   let done=false;const finish=value=>{if(done)return;done=true;picker.remove();combatTargetCancellation=null;combatTargetRefresh=null;if(previousFocus?.isConnected)previousFocus.focus?.();resolve(value)}
   const choices=[];for(const id of playerIds){const button=document.createElement("button");button.dataset.combatTarget=id;button.style.cssText="display:block;width:100%;padding:12px;margin:8px 0";button.onclick=()=>{if(!button.disabled)finish(id)};picker.appendChild(button);choices.push([id,button])}
   const cancel=document.createElement("button");cancel.textContent="Annuler";cancel.onclick=()=>finish(null);picker.appendChild(cancel);document.body.appendChild(picker)
-  combatTargetCancellation=()=>finish(null);combatTargetRefresh=()=>{if(!combatActive||window.__combatSnapshot?.id!==combatId||window.__combatSnapshot?.phase==="finished"||(owner&&window.__combatSnapshot?.turnState?.currentActorId!==owner)){finish(null);return}for(const [id,button]of choices){const hp=window.__publicCharacters?.[id]?.hp;button.disabled=hp!=null&&hp<=0;button.textContent=heroDisplayName(id)+(hp!=null?" — "+hp+" PV":"")+(button.disabled?" — KO":"")}};combatTargetRefresh();choices.find(([,b])=>!b.disabled)?.[1].focus();refreshCombatHUDContext()
+  combatTargetCancellation=()=>finish(null);combatTargetRefresh=()=>{if(!combatActive||window.__combatSnapshot?.id!==combatId||window.__combatSnapshot?.phase==="finished"||(owner&&window.__combatSnapshot?.turnState?.currentActorId!==owner)){finish(null);return}for(const [id,button]of choices){const data=id==="eloSummon"?window.__combatSnapshot?.eloSummon:window.__publicCharacters?.[id],hp=data?.hp,max=id==="eloSummon"?data?.maxHP:getCharacterMaxHp(id,data||{});button.disabled=hp!=null&&(hp<=0||hp>=max);button.textContent=(id==="eloSummon"?"John Pork":heroDisplayName(id))+(hp!=null?" — "+hp+" / "+max+" PV":"")+(hp<=0?" — KO":hp>=max?" — PV au maximum":"")}};combatTargetRefresh();choices.find(([,b])=>!b.disabled)?.[1].focus();refreshCombatHUDContext()
  })
 }
 
@@ -396,10 +396,11 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   title.innerText = String(attack.name || "SPÉCIALE").toUpperCase()
   box.appendChild(title)
 
-  const flavorText = meta.preview ? "APERÇU — aucun dégât ni soin appliqué" : outcome.mode === "heal"
+  let flavorText = meta.preview ? "APERÇU — aucun dégât ni soin appliqué" : outcome.mode === "heal"
     ? heroDisplayName(playerId).toUpperCase() + " restaure " + (outcome.amount || 0) + " PV"
     : heroDisplayName(playerId).toUpperCase() + " frappe " + pikaDisplayText(outcome.targetName || "MOB") + " pour " + (outcome.amount || 0) + " dégâts"
 
+  if(!meta.preview&&outcome.groupHealAmount>0)flavorText+=" · +"+outcome.groupHealAmount+" PV rendus au groupe"
   let flavorHost = box
   if (presentation.quoteFrame) {
     const frame = document.createElement("img")
@@ -762,7 +763,7 @@ function getCombatStatusEntries(){
  for(const [id,e]of Object.entries(c.heroDebuffs||{}))if(e.turns>0)entries.push({kind:"warn",title:heroDisplayName(id)+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s) restant(s)"})
  for(const [id,n]of Object.entries(c.heroStuns||{}))if(n>0)entries.push({kind:"warn",title:heroDisplayName(id)+" étourdi",text:"Action neutralisée",meta:n+" action(s) à sauter"})
  for(const [id,states]of Object.entries(c.gmStates||{}))for(const [key,value]of Object.entries(states)){const def=GM_COMBAT_STATES[key];if(def)entries.push({kind:"warn",title:(COMBAT_MOBS.includes(id)?combatEnemyLabel(id):heroDisplayName(id))+" — "+def.label,text:def.description,meta:value.turns+" "+def.unit+" restant(s)"+(value.amount?" · "+value.amount+(value.mode==="percent"?" %":" points"):"")})}
- const summon=c.eloSummon;if(summon?.active)entries.push({kind:"ally",title:"John Pork",text:"Bonus D4 aux attaques d’Elo"+(summon.frenzy?", doublé et en zone":""),meta:(summon.turnsLeft||0)+" round(s) · "+(summon.hp||0)+" / "+(summon.maxHP||0)+" PV"})
+ const summon=c.eloSummon;if(summon?.active)entries.push({kind:"ally",title:"John Pork",text:"Tank : encaisse les attaques à cible unique. Bonus D4 aux attaques d’Elo"+(summon.frenzy?", doublé et en zone":""),meta:(summon.turnsLeft||0)+" round(s) · "+(summon.hp||0)+" / "+(summon.maxHP||0)+" PV"})
  const hits=window.__combatDamageLog||[];if(hits.length)entries.push({kind:"section",title:"Derniers coups"})
  for(const hit of hits)entries.push({kind:hit.type,title:hit.from+" → "+hit.to,text:hit.type==="heal"?"+"+hit.amount+" PV":["dmg","mob"].includes(hit.type)?"−"+hit.amount+" PV":String(hit.detail||"Effet appliqué"),meta:"Round "+hit.round})
  return entries
@@ -2337,6 +2338,7 @@ initializeMenuBehaviour()
 function combatActionAvailability(actor, attack, special=false, enemy=false) {
   const c=window.__combatSnapshot, players=window.__publicCharacters||{}, state=c?.turnState
   const blocked=label=>({disabled:true,label})
+  if(attack?.name==="Le Bibi"&&players.bibi?.hp<=0)return blocked("Bibi est KO — attaque indisponible")
   if(attack?.name==="Le Bibi"&&gmParalyzed({combat:c},"bibi"))return blocked("Bibi est paralysée par le MJ")
   if(attack?.name!=="Passer le tour"&&!(actor==="greg"&&attack?.name==="Le Bibi"&&players.bibi?.hp>0)&&gmParalyzed({combat:c},actor))return blocked("Paralysé par le MJ — "+c.gmStates[actor].paralysis.turns+" tour(s)")
   if(!enemy&&c?.heroHaste&&attack?.name!=="Passer le tour"&&(attack?.name==="Le Bibi"||c.heroHaste.actor!==actor||special||getPlayerAttackTypeKey(attack)==="heal"))return blocked("SKARO’H : attaque basique du personnage uniquement")

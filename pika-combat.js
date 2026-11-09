@@ -50,6 +50,7 @@ function resolvePikaHeroAction(root,request,attack,dice) {
     if(kind==="laugh"&&!fail){damage=roll+combatInt(data.charme)+bonus;const other=livingMobs(c).find(id=>id!==slot);if(crit&&other){result.bounceTarget=other;result.bounceAmount=combatDamage(root,request,"PIKA — Rire KRRKRR",other,Math.floor(damage*.5))}else if(crit)damage=Math.round(damage*1.5)}
     if(kind==="endikaki"&&!fail)damage=Math.round((roll+combatInt(data.charme)+bonus)*1.8+8+(level-1)*2)*(crit?2:1)
     if(!fail&&c[slot].bibiRage?.turns>0)damage+=c[slot].bibiRage.damage||2
+    if(kind==="endikaki")damage=Math.round(damage*SPECIAL_DAMAGE_MULTIPLIER)
     result.amount=combatDamage(root,request,"PIKA — "+attack.name,slot,Math.max(0,damage))
     result.message=kind==="cancan"?result.kicks+" coup(s) de pied — "+result.amount+" dégâts":kind==="endikaki"?"Endikaki explose — "+result.amount+" dégâts":"Ce rire est tellement bizarre que l’ennemi en reste sans voix — "+result.amount+" dégâts"
   }

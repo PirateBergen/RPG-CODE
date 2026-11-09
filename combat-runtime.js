@@ -101,7 +101,7 @@ async function requestHeroCombatAction(attack, options = {}) {
   refreshCombatActionStates()
   try {
     const target = getPlayerAttackTypeKey(attack) === "heal"
-      ? await chooseCombatTarget(COMBAT_CHARACTERS, "Choisir le héros à soigner — "+attack.name)
+      ? await chooseCombatTarget([...COMBAT_CHARACTERS,...(window.__combatSnapshot?.eloSummon?.active?["eloSummon"]:[])], "Choisir le héros à soigner — "+attack.name)
       : await chooseEnemyCombatTarget(attack,actor,!!options.isSpecial)
     if (!target) return
     refreshCombatActionStates()

@@ -24,3 +24,5 @@ Commande commune après installation des dépendances de tests : `node tests/run
 Documents attribués : `node tests/firebase-player-documents.cjs` avec la base émulée locale. Vérifie les destinataires, la consultation locale, le retrait, la sauvegarde, le menu Action en essai MJ et le texte de la spéciale de Pika.
 
 Invocations hors combat : tests/firebase-exploration-summons.cjs couvre autorisation ponctuelle, animation partagée, pion localisé par carte, sauvegarde, déplacement MJ et suppression réservée au MJ. Les médias restent simulés.
+
+John Pork et soins : tests/combat-health.cjs et tests/firebase-combat-health.cjs vérifient dégâts d’arrivée, interception mono-cible, zones, soins sur héros et invocation, Bibi KO, soins de groupe, expiration, sauvegarde et son d’entrée du Balrog. Les lectures audio restent simulées.

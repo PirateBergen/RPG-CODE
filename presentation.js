@@ -12,7 +12,7 @@ function cancelSharedVisuals(){
  sharedVisualEpoch++;clearTimeout(sharedVisualTimer);sharedVisualTimer=null
  for(const timer of sharedVisualDelays)clearTimeout(timer);sharedVisualDelays.clear();sharedVisualQueue.length=0
  sharedVisualRunning=false;window.__sharedVisualBusy=false;window.__combatOutcomeQueued=false
- for(const key of ["__cancelDicePresentation","__cancelAllyPresentation","__cancelAllyEffect"])window[key]?.()
+ for(const key of ["__cancelDicePresentation","__cancelAllyPresentation","__cancelAllyEffect","__cancelBalrogIntroSound"])window[key]?.()
  if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
 }
 function createPresentationScope(key,onCleanup=()=>{}){
@@ -81,10 +81,11 @@ function presentCombatResolution(action) {
     } else {
       if(Number.isFinite(result.roll)) _showDiceAnimationNow(result.actor?.startsWith("mob")?"MOB":result.actor||"MJ",result.dice||20,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
       const impact=()=>{
+        if(result.message&&result.attack==="Je suis jet laguée")showNotification(result.message)
         if(result.pikaKind){presentPikaAttack(result);return}
         if(result.mode==="damage" || result.mode==="heal"){
           const attack=typeof getCombatHeroAttack==="function"?getCombatHeroAttack(result.actor,result.attack,result.special):(result.special?getPlayerSpecialAttack(result.actor):(attacks[result.actor]||[]).find(a=>a.name===result.attack))
-          if(attack)showPlayerAttackImpact(result.actor,attack,{mode:result.mode,amount:result.amount,targetName:result.targetName||result.target},{special:result.special,crit:result.crit,fail:result.fail})
+          if(attack)showPlayerAttackImpact(result.actor,attack,{mode:result.mode,amount:result.amount,groupHealAmount:result.groupHealAmount,targetName:result.targetName||result.target},{special:result.special,crit:result.crit,fail:result.fail})
         } else if(result.mode==="enemy" && result.presentation)showMobAttackPresentation(result.presentation)
         else if(result.mode==="thuum")playThuumCastEffect({playerId:result.actor,word:result.word})
         else if(result.message)showNotification(result.message)

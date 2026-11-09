@@ -2149,7 +2149,7 @@ function showMobSpecialAttackEvent(data) {
 
   const damage = document.createElement("div")
   damage.style.cssText = "position:relative;z-index:2;font-family:Cinzel,serif;font-size:30px;font-weight:bold;color:" + style.accent + ";text-shadow:0 0 18px " + style.accent + ";"
-  damage.innerText = data.preview ? "APERÇU — animation et son uniquement" : "→ " + pikaDisplayText(data.target || "") + "  •  -" + clampInteger(data.dmg, 0, 9999) + " HP"
+  damage.innerText = data.preview ? "APERÇU — animation et son uniquement" : data.damageSummary || "→ " + pikaDisplayText(data.target || "") + "  •  -" + clampInteger(data.dmg, 0, 9999) + " HP"
   box.appendChild(damage)
 
   let sceneAudio = null
@@ -2257,7 +2257,8 @@ function showMobAttackPresentation(data) {
   panel.appendChild(targetLine)
   const damage = document.createElement("div")
   damage.className = "combatEventDamage"
-  damage.innerText = "-" + clampInteger(data.dmg, 0, 9999) + " HP"
+  damage.innerText = data.damageSummary || "-" + clampInteger(data.dmg, 0, 9999) + " HP"
+  if(data.target==="TOUS")damage.style.fontSize="clamp(16px,2vw,24px)"
   panel.appendChild(damage)
   notif.appendChild(panel)
   document.body.appendChild(notif)

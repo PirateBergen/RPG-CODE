@@ -476,6 +476,7 @@ function _startCombatSequence(mob, tierMob) {
 /* ========================= */
 
 function showMobIntro(mob) {
+  window.__cancelBalrogIntroSound?.()
   window.__witchIntroSoundPlaying = false
   const mobs = [mob]
   if (_state.pendingExtraMobs) {
@@ -517,6 +518,7 @@ function showMobIntro(mob) {
       title.innerText = heroDisplayName(mobName).toUpperCase()
       title.style.cssText = "position:absolute;bottom:10%;left:50%;transform:translateX(-50%);font-family:Cinzel;font-size:clamp(20px,3vw,40px);color:red;text-shadow:0 0 10px red;white-space:nowrap;"
       box.appendChild(title)
+      if(["balraug","balrog"].includes(mobName)){const scope=createPresentationScope("__cancelBalrogIntroSound"),definition=getMobSpecialPresentation("balraug"),sound=scope.audio(new Audio("audio/"+(definition?.sound||"balrog.mp3")));sound.__specialEffect=true;setManagedAudioBaseVolume(sound,definition?.soundVolume||.8);sound.play().catch(()=>{});scope.later(scope.cancel,4000)}
     setTimeout(() => {
       box.style.transition = "opacity 1s"; box.style.opacity = "0"
       setTimeout(() => { box.style.display = "none"; if (title.parentNode) title.remove(); box.style.opacity = "1"; box.style.transition = "" }, 1000)

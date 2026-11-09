@@ -997,6 +997,7 @@ function getMobDamageRange(attack, mobLvl, mobTier = "weak", mobData = null) {
 /* ========================= */
 
 const mapMusic = {
+  "prisonbrume.jpg":      "prison-brume.mp3",
   "taverne.jpg":         "ambiancetaverne.mp3",
   "village1.jpg":        "marche.mp3",
   "armurerie.jpg":       "armurerie.mp3",
@@ -1041,6 +1042,7 @@ const mapMusic = {
 }
 
 const mapNames = {
+  "prisonbrume.jpg":      "Prison de Brume",
   "taverne.jpg":         "La Taverne",
   "village1.jpg":        "Village Rivebois",
   "armurerie.jpg":       "Forge de Rivebois",

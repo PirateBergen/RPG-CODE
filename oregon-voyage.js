@@ -86,8 +86,8 @@ async function writeOregonShipPosition(value){
 function syncOregonBoardingButton(){
  let button=document.getElementById("oregonBoardingButton")
  const aboard=!!currentOregonBoarding(),visible=isGM&&gameStarted&&gameState==="GAME"&&!combatActive&&(aboard||currentMap==="bateau1.jpg")
- if(!button&&visible){button=document.createElement("button");button.id="oregonBoardingButton";button.onclick=toggleOregonBoarding;document.body.appendChild(button)}
- if(button){button.hidden=!visible;button.textContent=aboard?"⚓ Débarquer de l’Oregon":"⚓ Embarquer sur l’Oregon";button.setAttribute("aria-pressed",String(aboard))}
+ if(!button&&visible){button=document.createElement("button");button.id="oregonBoardingButton";button.onclick=toggleOregonBoarding;(document.getElementById("gmBar")||document.body).appendChild(button)}
+ if(button){button.hidden=!visible;button.textContent=aboard?"⚓ Sortir":"⚓ Entrer";button.title=aboard?"Débarquer de l’Oregon":"Embarquer sur l’Oregon";button.setAttribute("aria-label",button.title);button.setAttribute("aria-pressed",String(aboard))}
 }
 async function toggleOregonBoarding(){
  try{

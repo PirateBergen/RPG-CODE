@@ -111,6 +111,7 @@ function syncNightMode(){
  let darkness=document.getElementById("nightDarknessFilter")
  if(!darkness&&map){darkness=document.createElement("div");darkness.id="nightDarknessFilter";darkness.setAttribute("aria-hidden","true");map.appendChild(darkness)}
  if(darkness)darkness.classList.toggle("active",visible&&enabled&&!indoors&&!lit)
+ syncForestNightPaths(visible&&enabled&&!indoors&&!lit&&gameState==="GAME"&&!combatActive&&String(currentMap).toLowerCase()==="foret.jpg")
  const action=document.getElementById("nightToggleAction");if(action)action.textContent=enabled?"Faire revenir le jour":"Faire tomber la nuit"
  const interior=document.getElementById("nightInteriorAction");if(interior){interior.textContent=indoors?"Extérieur : rétablir les effets de nuit":"Intérieur : masquer les effets de nuit";interior.setAttribute("aria-pressed",String(indoors))}
  const status=document.getElementById("nightModeStatus");if(status)status.textContent=(enabled?"Nuit":"Jour")+" · "+(indoors?"Intérieur":lit?"Extérieur · lanterne dans le groupe":"Extérieur · sans lanterne")
@@ -327,4 +328,20 @@ function playSharedMapAudio(data){
  _musicTransitioning=false;_pendingMusic=null;stopAllMusic()
  setTimeout(()=>{if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority())return;if(currentMap!==map||window.__sharedMapAudioSignature!==signature)return;crossfadeMusic(typeof resolveAudioPath==="function"?resolveAudioPath(file):"audio/"+file);_state._pendingMapAudio=false},300)
  },1400)
+}
+
+function syncForestNightPaths(visible){
+ let svg=document.getElementById("forestNightPaths")
+ if(!visible){if(svg)svg.setAttribute("hidden","");return}
+ const map=document.getElementById("map");if(!map)return
+ if(!svg){
+  const ns="http://www.w3.org/2000/svg";svg=document.createElementNS(ns,"svg");svg.id="forestNightPaths";svg.setAttribute("viewBox","0 0 1000 1000");svg.setAttribute("preserveAspectRatio","none");svg.setAttribute("aria-hidden","true");svg.setAttribute("focusable","false")
+  const routes=[[[450,900],[400,700],[210,600],[140,280]],[[500,900],[580,650],[400,440],[520,120]],[[550,900],[680,720],[880,520],[880,280]]],colors=["#8cbad3","#c79bd1","#87c6ae","#d5bc82","#91a1d6","#d69ca9"]
+  routes.forEach((points,index)=>{const group=document.createElementNS(ns,"g");group.classList.add("forestLightPath");group.dataset.path=String(index+1);svg.appendChild(group)
+   for(let i=0;i<30;i++){const t=i/29,u=1-t,x=u*u*u*points[0][0]+3*u*u*t*points[1][0]+3*u*t*t*points[2][0]+t*t*t*points[3][0],y=u*u*u*points[0][1]+3*u*u*t*points[1][1]+3*u*t*t*points[2][1]+t*t*t*points[3][1],dot=document.createElementNS(ns,"g"),color=colors[(i+index*2)%colors.length];dot.classList.add("forestPathLight");dot.style.animationDelay=(-((i*7+index*11)%29)/10)+"s"
+    for(const [radius,opacity]of [[5,.10],[2,.66]]){const circle=document.createElementNS(ns,"circle");circle.setAttribute("cx",x.toFixed(2));circle.setAttribute("cy",y.toFixed(2));circle.setAttribute("r",String(radius));circle.setAttribute("fill",color);circle.setAttribute("opacity",String(opacity));dot.appendChild(circle)}group.appendChild(dot)
+   }
+  });map.appendChild(svg)
+ }
+ svg.removeAttribute("hidden")
 }

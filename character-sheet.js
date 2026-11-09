@@ -291,16 +291,23 @@ function addInventoryStatRow(){
  if(!canAccessCharacter(currentSheetPlayer))return
  const zone=document.getElementById("inventoryItemStats");if(!zone)return
  const row=document.createElement("div");row.className="inventoryStatRow";row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;align-items:center"
- const label=document.createElement("label");label.textContent="Caractéristique ";const select=document.createElement("select");select.className="inventoryStatChoice";select.setAttribute("aria-label","Caractéristique")
- for(const [value,text]of [["force","Force"],["charme","Charme"],["perspi","Perspicacité"],["chance","Chance"],["defense","Défense"]]){const option=document.createElement("option");option.value=value;option.textContent=text;select.appendChild(option)}
- label.appendChild(select);row.appendChild(label)
+ row.dataset.stat="force"
+ const choices=document.createElement("fieldset");choices.className="inventoryStatChoices"
+ const legend=document.createElement("legend");legend.textContent="Caractéristique";choices.appendChild(legend)
+ for(const [value,text]of [["force","Force"],["charme","Charme"],["perspi","Perspicacité"],["chance","Chance"],["defense","Défense"]]){
+  const button=document.createElement("button");button.type="button";button.dataset.stat=value;button.textContent=text;button.setAttribute("aria-pressed",String(value===row.dataset.stat))
+  button.onclick=()=>{row.dataset.stat=value;for(const other of choices.querySelectorAll("button"))other.setAttribute("aria-pressed",String(other===button))}
+  button.onkeydown=event=>{if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key))return;event.preventDefault();event.stopPropagation();const buttons=[...choices.querySelectorAll("button")],index=buttons.indexOf(button),next=buttons[(index+(["ArrowLeft","ArrowUp"].includes(event.key)?-1:1)+buttons.length)%buttons.length];next.click();next.focus()}
+  choices.appendChild(button)
+ }
+ row.appendChild(choices)
  const pointsLabel=document.createElement("label");pointsLabel.textContent="Points ";const points=document.createElement("input");points.className="inventoryStatValue";points.type="number";points.min="-1000";points.max="1000";points.step="1";points.value="1";points.style.width="80px";points.setAttribute("aria-label","Points de caractéristique");pointsLabel.appendChild(points);row.appendChild(pointsLabel)
- const remove=document.createElement("button");remove.type="button";remove.textContent="Retirer";remove.onclick=()=>row.remove();row.appendChild(remove);zone.appendChild(row);select.focus()
+ const remove=document.createElement("button");remove.type="button";remove.className="inventoryStatRemove";remove.textContent="Retirer";remove.onclick=()=>row.remove();row.appendChild(remove);zone.appendChild(row);choices.querySelector("button").focus()
 }
 function inventoryItemStatText(){
  const names={force:"Force",charme:"Charme",perspi:"Perspicacité",chance:"Chance",defense:"Défense"},totals={}
  for(const row of document.querySelectorAll("#inventoryItemStats .inventoryStatRow")){
-  const key=row.querySelector("select").value,input=row.querySelector("input"),value=Number(input.value)
+  const key=row.dataset.stat,input=row.querySelector(".inventoryStatValue"),value=Number(input.value)
   if(!Object.hasOwn(names,key)||!input.value.trim()||!Number.isSafeInteger(value)||Math.abs(value)>1000){input.focus();throw Error("Choisissez une caractéristique et un nombre entier entre -1000 et 1000.")}
   totals[key]=(totals[key]||0)+value
  }

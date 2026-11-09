@@ -1732,7 +1732,7 @@ function toggleGMShortcutHelp() {
   inventoryHelp.appendChild(heading)
   for (const text of [
     "Ouvre ta fiche avec I ou J. Le formulaire Objet · Quantité · Poids unitaire ajoute une ligne avec le bouton Ajouter ou la touche Entrée.",
-    "Le bouton Ajouter une caractéristique permet de choisir Force, Charme, Perspicacité, Chance ou Défense et un nombre de points. Répète pour plusieurs bonus : ils s’ajoutent à ta fiche et restent fixes quand tu montes de niveau. Ils sont comptés une fois par ligne d’objet, quelle que soit la quantité. Retirer la ligne retire ses bonus. Actuellement, les bonus des objets présents dans cet inventaire sont actifs sans bouton Équiper.",
+    "Le bouton Ajouter une caractéristique affiche cinq boutons : Force, Charme, Perspicacité, Chance et Défense. Clique sur la caractéristique souhaitée, puis indique le nombre de points. Répète pour plusieurs bonus : ils s’ajoutent à ta fiche et restent fixes quand tu montes de niveau. Ils sont comptés une fois par ligne d’objet, quelle que soit la quantité. Retirer la ligne retire ses bonus. Actuellement, les bonus des objets présents dans cet inventaire sont actifs sans bouton Équiper.",
     "Tu peux aussi écrire un objet par ligne : Épée (3), Potion x3 (0,5), Lettre (0). Le poids entre parenthèses est celui d’un seul objet, sans unité. Exemple : 3 potions de 0,5 comptent pour 1,5.",
     "Le total se calcule automatiquement sur 100. Au-delà, le personnage est surchargé et son déplacement manuel est bloqué. Si « Poids incomplet » apparaît, corrige les lignes signalées avant de te fier au total.",
     "Les raccourcis restent inactifs pendant que tu écris. Échap ferme la fiche ; l’inventaire reste privé."

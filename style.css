@@ -6378,3 +6378,10 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 #nightTransitionNotice span{display:block}#nightTransitionNotice span:first-child{font-size:1.5em;margin-bottom:8px}
 @keyframes nightNotice{0%{opacity:0;filter:blur(6px)}20%,75%{opacity:1;filter:blur(0)}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){#nightMapFilter,#nightDarknessFilter{transition:none}#nightTransitionNotice{animation:none}}
+
+/* Stable inventory stat choices, with no floating dropdown. */
+#inventoryItemStats .inventoryStatChoices{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%;min-width:0;margin:0;padding:0;border:0}
+#inventoryItemStats .inventoryStatChoices legend{margin-bottom:5px;padding:0}
+#inventoryItemStats .inventoryStatChoices button{min-height:36px;padding:6px 11px;border:1px solid #8b6a3a;border-radius:5px;background:#f8e7c7;color:#382712;font:inherit;cursor:pointer}
+#inventoryItemStats .inventoryStatChoices button[aria-pressed="true"]{background:#523b1b;color:#fff0ce;border-color:#38230e;box-shadow:inset 0 0 0 1px #cda95b;font-weight:bold}
+#inventoryItemStats .inventoryStatChoices button:focus-visible{outline:3px solid #287787;outline-offset:2px}

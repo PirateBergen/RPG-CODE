@@ -1743,6 +1743,13 @@ db.ref("game/powerSound").on("value", snap => {
 })
 
 function showMobSpecialAttackEvent(data) {
+  window.__cancelMobSpecialPresentation?.()
+  const timers=new Set(),sounds=new Set();let cancelled=false,overlay=null
+  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const audio of sounds){audio.pause();audio.currentTime=0}overlay?.querySelectorAll("audio,video").forEach(el=>el.pause());overlay?.remove();document.getElementById("powSound")?.pause();if(window.__cancelMobSpecialPresentation===cleanup)window.__cancelMobSpecialPresentation=null}
+  window.__cancelMobSpecialPresentation=cleanup
+  const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer);return timer}
+  const makeAudio=src=>{const audio=new Audio(src);sounds.add(audio);return audio}
+
   const baseStyle = typeof getMobAnimationStyle === "function" ? getMobAnimationStyle(data.animation) : { accent:"#ff9966", glow:"rgba(255,120,60,0.55)", bg:"radial-gradient(circle at center,rgba(70,15,0,0.94) 0%,rgba(10,0,0,0.98) 72%)" }
   const presentation = typeof getMobSpecialPresentation === "function" ? getMobSpecialPresentation(data.mobName) : null
   const scene = String((presentation && presentation.scene) || "").toLowerCase()
@@ -1789,7 +1796,7 @@ function showMobSpecialAttackEvent(data) {
         bg: "radial-gradient(circle at center,rgba(14,10,4,0.97) 0%,rgba(4,3,1,0.99) 55%,rgba(0,0,0,1) 100%)"
       }
     : baseStyle
-  const overlay = document.createElement("div")
+  overlay = document.createElement("div")
   overlay.className = "mobSpecialOverlay" + (scene ? " mobSpecialOverlay--" + scene : "")
   overlay.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:999999999;background:" + style.bg + ";opacity:0;transition:opacity 0.22s ease;"
 
@@ -1988,11 +1995,11 @@ function showMobSpecialAttackEvent(data) {
     overlay.appendChild(spear)
 
     // Flash divin au moment de l'impact
-    setTimeout(() => {
+    later(() => {
       const divFlash = document.createElement("div")
       divFlash.className = "mobSpecialValkyrieDivineFlash"
       overlay.appendChild(divFlash)
-      setTimeout(() => divFlash.remove(), 800)
+      later(() => divFlash.remove(), 800)
     }, 520)
 
     // Plumes qui tombent
@@ -2078,8 +2085,8 @@ function showMobSpecialAttackEvent(data) {
       overlay.appendChild(smoke2)
 
       // Son bombe au moment de l'impact
-      setTimeout(() => {
-        const bSnd = new Audio((typeof resolveAudioPath === "function") ? resolveAudioPath("bombe.mp3") : "audio/bombe.mp3")
+      later(() => {
+        const bSnd = makeAudio((typeof resolveAudioPath === "function") ? resolveAudioPath("bombe.mp3") : "audio/bombe.mp3")
         if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(bSnd, 0.68)
         bSnd.play().catch(() => {})
       }, 480 + i * 300)
@@ -2133,19 +2140,19 @@ function showMobSpecialAttackEvent(data) {
 
   const damage = document.createElement("div")
   damage.style.cssText = "position:relative;z-index:2;font-family:Cinzel,serif;font-size:30px;font-weight:bold;color:" + style.accent + ";text-shadow:0 0 18px " + style.accent + ";"
-  damage.innerText = "→ " + pikaDisplayText(data.target || "") + "  •  -" + clampInteger(data.dmg, 0, 9999) + " HP"
+  damage.innerText = data.preview ? "APERÇU — animation et son uniquement" : "→ " + pikaDisplayText(data.target || "") + "  •  -" + clampInteger(data.dmg, 0, 9999) + " HP"
   box.appendChild(damage)
 
   let sceneAudio = null
   if (presentation && presentation.sound) {
-    sceneAudio = new Audio((typeof resolveAudioPath === "function") ? resolveAudioPath(presentation.sound) : "audio/" + presentation.sound)
+    sceneAudio = makeAudio((typeof resolveAudioPath === "function") ? resolveAudioPath(presentation.sound) : "audio/" + presentation.sound)
     const specialVolume = Number.isFinite(parseFloat(presentation.soundVolume)) ? parseFloat(presentation.soundVolume) : 0.82
     setManagedAudioBaseVolume(sceneAudio, specialVolume)
     sceneAudio.play().catch(() => {})
   }
   if (scene === "balraug") {
-    setTimeout(() => {
-      const whipAudio = new Audio((typeof resolveAudioPath === "function") ? resolveAudioPath("whip.mp3") : "audio/whip.mp3")
+    later(() => {
+      const whipAudio = makeAudio((typeof resolveAudioPath === "function") ? resolveAudioPath("whip.mp3") : "audio/whip.mp3")
       if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(whipAudio, 0.88)
       else whipAudio.volume = 0.88
       whipAudio.play().catch(() => {})
@@ -2157,33 +2164,34 @@ function showMobSpecialAttackEvent(data) {
   overlay.appendChild(impactFlash)
 
   document.body.appendChild(overlay)
-  setTimeout(() => { overlay.style.opacity = "1" }, 20)
-  setTimeout(() => { playSound("powSound", 0.84) }, 80)
-  setTimeout(() => {
+  later(() => { overlay.style.opacity = "1" }, 20)
+  later(() => { playSound("powSound", 0.84) }, 80)
+  later(() => {
     impactFlash.style.transition = "opacity 0.12s ease"
     impactFlash.style.opacity = "1"
-    setTimeout(() => {
+    later(() => {
       impactFlash.style.transition = "opacity 0.4s ease"
       impactFlash.style.opacity = "0"
     }, 90)
   }, 75)
-  setTimeout(() => screenShakeHard(), 40)
-  setTimeout(() => screenShakeHard(), 150)
-  setTimeout(() => screenShake(), 310)
-  setTimeout(() => screenShakeHard(), 520)
-  setTimeout(() => screenShake(), 760)
+  later(() => screenShakeHard(), 40)
+  later(() => screenShakeHard(), 150)
+  later(() => screenShake(), 310)
+  later(() => screenShakeHard(), 520)
+  later(() => screenShake(), 760)
   if (scene === "gobelins") {
-    setTimeout(() => screenShakeHard(), 480)
-    setTimeout(() => screenShakeHard(), 780)
-    setTimeout(() => screenShakeHard(), 1080)
+    later(() => screenShakeHard(), 480)
+    later(() => screenShakeHard(), 780)
+    later(() => screenShakeHard(), 1080)
   }
-  setTimeout(() => {
+  later(() => {
     overlay.style.opacity = "0"
-    setTimeout(() => { if (overlay.parentNode) overlay.remove() }, 450)
+    later(cleanup,450)
 
   }, 6000)
   screenShakeHard()
   if (!scene || ["draugr", "ogre", "melenchon", "balraug", "dragon", "gobelins", "fenrir", "kraken", "jormungand", "nhiddog"].includes(scene)) screenShakeHard()
+  return cleanup
 }
 
 // ─── mobAttackEvent ───
@@ -2484,6 +2492,8 @@ function cleanupTransientGameUI(options = {}) {
   if(typeof window.__cancelEndikakiPresentation==="function")window.__cancelEndikakiPresentation()
   if(typeof window.__cancelOregonBombardment==="function")window.__cancelOregonBombardment()
   if(typeof closeSpecialPreviewPanel==="function")closeSpecialPreviewPanel()
+  if(typeof closeMobSpecialPreviewPanel==="function")closeMobSpecialPreviewPanel()
+  if(typeof window.__cancelMobSpecialPresentation==="function")window.__cancelMobSpecialPresentation()
   const {
     closeSavePanel = false
   } = options

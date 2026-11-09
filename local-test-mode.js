@@ -103,7 +103,7 @@ function openSpecialPreviewPanel(){
 document.addEventListener("DOMContentLoaded",()=>{
   if(!window.__isolatedTestMode)return
   const banner=document.createElement("aside");banner.id="isolatedTestBanner";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:8px 14px;background:#3f253d;color:#ffe4a3;font:14px Georgia;text-align:center";banner.textContent="ESSAI LOCAL — la campagne et ses sauvegardes ne sont pas modifiées. "
-  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);const previews=document.createElement("button");previews.id="testSpecialsBtn";previews.type="button";previews.textContent="Tester les spéciales";previews.onclick=openSpecialPreviewPanel;banner.appendChild(previews);const actions=document.createElement("button");actions.id="testPlayerActionsBtn";actions.type="button";actions.textContent="Actions des joueurs";actions.onclick=()=>openTestPlayerActions("greg");banner.appendChild(actions);document.body.appendChild(banner)
+  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);const previews=document.createElement("button");previews.id="testSpecialsBtn";previews.type="button";previews.textContent="Tester les spéciales";previews.onclick=openSpecialPreviewPanel;banner.appendChild(previews);const mobs=document.createElement("button");mobs.id="testMobSpecialsBtn";mobs.type="button";mobs.textContent="Tester les spéciales des mobs";mobs.onclick=openMobSpecialPreviewPanel;banner.appendChild(mobs);const actions=document.createElement("button");actions.id="testPlayerActionsBtn";actions.type="button";actions.textContent="Actions des joueurs";actions.onclick=()=>openTestPlayerActions("greg");banner.appendChild(actions);document.body.appendChild(banner)
 })
 
 function thuumEffectDescription(word,rank=1){
@@ -128,4 +128,36 @@ async function openTestPlayerActions(actor){
  if(root.game?.runeChallenge?.active)add("Défi runique","Le défi de runes est en cours.")
  if(panel.querySelectorAll("section").length===0)add("Aucune action spéciale disponible","Ce personnage n’a actuellement ni cri appris, ni allié découvert, ni pouvoir chargé, ni défi actif.")
  close.textContent="Fermer";close.onclick=()=>panel.remove();panel.appendChild(close);panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();panel.remove()}});document.body.appendChild(panel);panel.scrollTop=0;tabs.querySelector("button")?.focus({preventScroll:true})
+}
+
+function getMobSpecialPreviewEntries(){
+ const pnjNames=new Set();for(const b of document.querySelectorAll('[id^="pnjCombat"] button[onclick]')){const match=b.getAttribute("onclick")?.match(/openMobDiff\(['"]([^'"]+)/);if(match)pnjNames.add(match[1].toLowerCase())}
+ return [...new Set([...Object.keys(mobStats),...Object.keys(mobSpecialAttacks),...Object.keys(mobSpecialPresentations)])].map(key=>{const tier=WORLD_BOSS_NAMES.includes(key)?"boss":mobStats[key]?.tier||"medium",attack=getMobSpecialAttack(key,tier),name=typeof getPNJDisplayName==="function"?getPNJDisplayName(key+".png"):heroDisplayName(key);return {id:key,name:pikaDisplayText(name),tier,category:WORLD_BOSS_NAMES.includes(key)?"world":pnjNames.has(key)?"pnj":"mob",attack,generic:!Object.hasOwn(mobSpecialAttacks,key)}}).filter(e=>e.attack).sort((a,b)=>a.name.localeCompare(b.name,"fr"))
+}
+function closeMobSpecialPreviewPanel(){const panel=document.getElementById("mobSpecialPreviewPanel");if(panel?.__resize)window.removeEventListener("resize",panel.__resize);panel?.remove();if(panel)window.GameWindows?.closed(panel)}
+function playMobSpecialPreview(id){
+ if(!specialPreviewAllowed())return false
+ const entry=getMobSpecialPreviewEntries().find(e=>e.id===id);if(!entry)return false
+ if(specialPreviewPending||window.__sharedVisualBusy||window.__sessionBusy||(combatActive&&Date.now()<(window.__combatIntroUntil||0))){showNotification("Attendez la fin de l’animation en cours.");return false}
+ let cancelled=false,cancelEffect=null,timer=null
+ const cancel=()=>{cancelled=true;clearTimeout(timer);cancelEffect?.();specialPreviewPending=false;if(window.__cancelSpecialPreview===cancel)window.__cancelSpecialPreview=null}
+ specialPreviewPending=true;window.__cancelSpecialPreview=cancel;closeMobSpecialPreviewPanel()
+ const added=enqueueSharedVisual("mob-special-preview-"+(++specialPreviewSerial),()=>{
+  if(cancelled||!specialPreviewAllowed()){cancel();return}
+  cancelEffect=showMobSpecialAttackEvent({mobName:entry.id,attackName:entry.attack.name,icon:entry.attack.icon,animation:entry.attack.animation,flavor:entry.attack.flavor,dmg:0,target:"Cible d’essai",special:true,preview:true})
+  timer=setTimeout(cancel,6800)
+ },7000)
+ if(!added)cancel();return added
+}
+function openMobSpecialPreviewPanel(){
+ if(!specialPreviewAllowed())return
+ if(specialPreviewPending||window.__sharedVisualBusy){showNotification("Attendez la fin de l’animation en cours.");return}
+ if(document.getElementById("mobSpecialPreviewPanel"))return closeMobSpecialPreviewPanel()
+ const panel=document.createElement("section"),title=document.createElement("h2"),help=document.createElement("p"),search=document.createElement("input"),filters=document.createElement("nav"),list=document.createElement("div"),count=document.createElement("p")
+ panel.id="mobSpecialPreviewPanel";panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Tester les spéciales des mobs");title.textContent="Spéciales des monstres et PNJ";help.textContent="Animations et sons uniquement : aucun dégât, aucun tour consommé, aucune condition à remplir. Les fiches sans spéciale propre utilisent la présentation générique prévue par le jeu.";search.type="search";search.placeholder="Rechercher un personnage ou une attaque";search.setAttribute("aria-label","Rechercher une spéciale");list.className="mobPreviewList";panel.append(title,help,search,filters,count,list)
+ const entries=getMobSpecialPreviewEntries();let category="all"
+ const normalized=text=>String(text).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+ const paint=()=>{list.replaceChildren();const query=normalized(search.value),filtered=entries.filter(e=>(category==="all"||e.category===category)&&normalized(e.name+" "+e.attack.name).includes(query));count.textContent=filtered.length+" spéciale(s)";for(const entry of filtered){const button=document.createElement("button"),name=document.createElement("strong"),desc=document.createElement("span");button.type="button";button.dataset.mobSpecialPreview=entry.id;name.textContent=entry.name+" — "+entry.attack.name;desc.textContent=(entry.generic?"Présentation générique. ":"")+(entry.attack.flavor||"");button.append(name,desc);button.onclick=()=>playMobSpecialPreview(entry.id);list.appendChild(button)}}
+ for(const [key,label]of [["all","Tous"],["world","World boss"],["mob","Monstres"],["pnj","PNJ de combat"]]){const button=document.createElement("button");button.type="button";button.textContent=label;button.setAttribute("aria-pressed",String(key===category));button.onclick=()=>{category=key;for(const b of filters.children)b.setAttribute("aria-pressed",String(b===button));paint()};filters.appendChild(button)}
+ search.oninput=paint;const close=document.createElement("button");close.type="button";close.textContent="Fermer";close.onclick=closeMobSpecialPreviewPanel;panel.appendChild(close);document.body.appendChild(panel);const place=()=>{const top=Math.max(12,(document.getElementById("isolatedTestBanner")?.getBoundingClientRect().bottom||0)+12);panel.style.top=top+"px";panel.style.maxHeight="calc(100dvh - "+(top+12)+"px)"};panel.__resize=place;window.addEventListener("resize",place);place();paint();window.GameWindows?.register(panel,closeMobSpecialPreviewPanel);search.focus({preventScroll:true})
 }

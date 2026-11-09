@@ -3,8 +3,18 @@
 
 function isJormungandr(mob){return mob?.name==="jormungand"}
 function isForchurMap(map){return String(map||"").toLowerCase()==="bateau.jpg"}
-function combatHasJormungandr(root){return ["mob","mob2","mob3"].some(slot=>isJormungandr(root?.combat?.[slot]))}
-function combatHasWorldBoss(root){return ["mob","mob2","mob3"].some(slot=>{const mob=root?.combat?.[slot];return mob&&(mob.balanceClass==="world"||WORLD_BOSS_NAMES.includes(mob.name))})}
+function combatHasJormungandr(root){return COMBAT_MOBS.some(slot=>isJormungandr(root?.combat?.[slot]))}
+function combatHasWorldBoss(root){return COMBAT_MOBS.some(slot=>{const mob=root?.combat?.[slot];return mob&&(mob.balanceClass==="world"||WORLD_BOSS_NAMES.includes(mob.name))})}
+// Shared eligibility for the authoritative reducer and the MJ controls.
+function worldBossRetreatState(root){
+  const combat=root?.combat,worldBoss=combatHasWorldBoss(root),round=combat?.turnState?.round||1
+  const blockedUntilRound=combat?.retreatBlockedUntilRound||0,blocked=round<blockedUntilRound
+  let reason=""
+  if(!worldBoss||combat?.phase!=="active"||combat.turnState?.phase!=="active")reason="La fuite nécessite un combat world boss avec initiatives terminées"
+  else if(combat.pendingRetreat)reason="Une tentative attend déjà son dé"
+  else if(blocked)reason="Fuite indisponible jusqu’au round suivant"
+  return {worldBoss,round,blocked,blockedUntilRound,allowed:!reason,reason}
+}
 function combatExitSnapshot(root,type,request={}){
   const c=root.combat,state=root.game?.combatState||{},origin=state.returnMap||root.game?.map||"taverne.jpg"
   const map=type==="victory"&&c?.mob?.name==="balraug"?"prairie.jpg":type==="victory"&&c?.mob?.name==="kraken"?"niflheim.jpg":origin
@@ -17,7 +27,7 @@ function combatExitSnapshot(root,type,request={}){
 function sealCombatOutcome(root,type,request={}){
   root.game ||= {}
   if(root.game.combatOutcome?.combatId===root.combat.id&&root.combat.phase==="finished"&&root.game.combatOutcome.returnMap&&root.game.combatOutcome.returnTokens)return root.game.combatOutcome
-  if(type==="victory"&&!(request.manual&&root.roles?.[request.uid]==="gm")&&["mob","mob2","mob3"].some(slot=>isJormungandr(root.combat?.[slot])&&!root.combat[slot].defeatedByThor))throw Error("Seule l’invocation de Thor peut vaincre Jörmungandr.")
+  if(type==="victory"&&!(request.manual&&root.roles?.[request.uid]==="gm")&&COMBAT_MOBS.some(slot=>isJormungandr(root.combat?.[slot])&&!root.combat[slot].defeatedByThor))throw Error("Seule l’invocation de Thor peut vaincre Jörmungandr.")
   root.game.combatOutcome=combatExitSnapshot(root,type,request)
   const now=new Date();root.game.sessionLog ||= {}
   root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe prend la fuite":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
@@ -379,10 +389,9 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
     }
     else if(request.kind==="requestRetreat"){
       if(!gm)throw Error("Seul le MJ peut demander la fuite")
-      if(root.combat.phase!=="active"||root.combat.turnState?.phase!=="active"||!combatHasWorldBoss(root))throw Error("La fuite nécessite un combat world boss avec initiatives terminées")
+      const availability=worldBossRetreatState(root)
+      if(!availability.allowed)throw Error(availability.reason)
       if(!livingHeroes(root).includes(request.actor))throw Error("Choisissez un personnage vivant")
-      if(root.combat.pendingRetreat)throw Error("Une tentative attend déjà son dé")
-      if((root.combat.turnState.round||1)<(root.combat.retreatBlockedUntilRound||0))throw Error("Fuite indisponible jusqu’au round suivant")
       root.combat.pendingRetreat={id:request.id,actor:request.actor};result={actor:request.actor,mode:"control",skipTurnBanner:true,message:heroDisplayName(request.actor)+" doit lancer un D12 pour la fuite"}
     }
     else if(request.kind==="cancelRetreat"){

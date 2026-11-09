@@ -69,7 +69,7 @@ function partyHasLantern(characters){
 }
 let nightLightingTimer,nightLightingBusy=false,nightLightingDirty=false
 function queueNightLightingSync(){
- if(window.__authRole!=="gm")return
+ if(window.__authRole!=="gm"||!window.__explorationState.nightMode?.enabled){clearTimeout(nightLightingTimer);nightLightingDirty=false;return}
  nightLightingDirty=true;clearTimeout(nightLightingTimer)
  nightLightingTimer=setTimeout(syncPartyNightLighting,120)
 }

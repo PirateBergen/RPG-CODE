@@ -1,7 +1,8 @@
 "use strict"
 
 // Fiches privées : inventaire, notes, poids, points libres et affichage de l’or.
-const INVENTORY_EFFECT_STATS = ["force", "charme", "perspi", "chance", "defense"]
+const INVENTORY_STAT_LABELS=Object.freeze({force:"Force",charme:"Charme",perspi:"Perspicacité",chance:"Chance",defense:"Défense"})
+const INVENTORY_EFFECT_STATS=Object.keys(INVENTORY_STAT_LABELS)
 
 function refreshSheetEffectiveStatsDisplay() {
   if (!currentSheetPlayer) return
@@ -294,7 +295,7 @@ function addInventoryStatRow(){
  row.dataset.stat="force"
  const choices=document.createElement("fieldset");choices.className="inventoryStatChoices"
  const legend=document.createElement("legend");legend.textContent="Caractéristique";choices.appendChild(legend)
- for(const [value,text]of [["force","Force"],["charme","Charme"],["perspi","Perspicacité"],["chance","Chance"],["defense","Défense"]]){
+ for(const [value,text]of Object.entries(INVENTORY_STAT_LABELS)){
   const button=document.createElement("button");button.type="button";button.dataset.stat=value;button.textContent=text;button.setAttribute("aria-pressed",String(value===row.dataset.stat))
   button.onclick=()=>{row.dataset.stat=value;for(const other of choices.querySelectorAll("button"))other.setAttribute("aria-pressed",String(other===button))}
   button.onkeydown=event=>{if(!["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key))return;event.preventDefault();event.stopPropagation();const buttons=[...choices.querySelectorAll("button")],index=buttons.indexOf(button),next=buttons[(index+(["ArrowLeft","ArrowUp"].includes(event.key)?-1:1)+buttons.length)%buttons.length];next.click();next.focus()}
@@ -305,7 +306,7 @@ function addInventoryStatRow(){
  const remove=document.createElement("button");remove.type="button";remove.className="inventoryStatRemove";remove.textContent="Retirer";remove.onclick=()=>row.remove();row.appendChild(remove);zone.appendChild(row);choices.querySelector("button").focus()
 }
 function inventoryItemStatText(){
- const names={force:"Force",charme:"Charme",perspi:"Perspicacité",chance:"Chance",defense:"Défense"},totals={}
+ const names=INVENTORY_STAT_LABELS,totals={}
  for(const row of document.querySelectorAll("#inventoryItemStats .inventoryStatRow")){
   const key=row.dataset.stat,input=row.querySelector(".inventoryStatValue"),value=Number(input.value)
   if(!Object.hasOwn(names,key)||!input.value.trim()||!Number.isSafeInteger(value)||Math.abs(value)>1000){input.focus();throw Error("Choisissez une caractéristique et un nombre entier entre -1000 et 1000.")}

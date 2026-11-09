@@ -2471,6 +2471,8 @@ function resetLocalCombatVisualState() {
 }
 
 function cleanupTransientGameUI(options = {}) {
+  if(typeof cancelCombatRetreatPresentation==="function")cancelCombatRetreatPresentation()
+  if(typeof clearWorldBossFleeUI==="function")clearWorldBossFleeUI()
   if(typeof window.__cancelSpecialPreview==="function")window.__cancelSpecialPreview()
   if(typeof window.__cancelEndikakiPresentation==="function")window.__cancelEndikakiPresentation()
   if(typeof closeSpecialPreviewPanel==="function")closeSpecialPreviewPanel()

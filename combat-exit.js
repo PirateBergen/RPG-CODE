@@ -41,14 +41,15 @@ function observeCombatEnding(data){
   const added=enqueueSharedVisual("outcome-"+data.combatId+"-"+data.type,()=>{
     if(window.__localCombatId&&window.__localCombatId!==data.combatId&&combatActive)return
     window.__combatOutcomeQueued=false;window.__renderedCombatOutcome=frozen
-    if(data.type==="victory")_showVictoryNow(frozen);else if(data.type==="retreat")showJormungandrRetreat(frozen);else _showDefeatNow(frozen)
+    if(data.type==="victory")_showVictoryNow(frozen);else if(data.type==="retreat")showCombatRetreat(frozen);else _showDefeatNow(frozen)
   },data.type==="victory"?8100:data.type==="retreat"?3100:6100,3)
   if(added){window.__combatOutcomeQueued=true;window.__queuedCombatOutcomeId=data.combatId}
 }
 function completeCombatReturn(outcome){
   const data=outcome||window.__renderedCombatOutcome||window.__pendingCombatOutcome
   if(data?.combatId&&window.__localCombatId&&data.combatId!==window.__localCombatId&&combatActive)return
-  document.getElementById("worldBossFleePanel")?.remove();document.getElementById("worldBossFleePicker")?.remove()
+  cancelCombatRetreatPresentation()
+  if(typeof clearWorldBossFleeUI==="function")clearWorldBossFleeUI()
   window.__combatReturnInProgress=true
   if(isGM&&data?.combatId)finishReliableCombat(data.combatId).catch(error=>showNotification("Retour affiché ; synchronisation à confirmer : "+error.message))
   endCombat({force:true,skipFinish:true})
@@ -100,9 +101,20 @@ function scheduleAuthoritativeReturn(outcome){
  combatReturnTimers.set(id,timer)
 }
 
-function showJormungandrRetreat(outcome){
+let combatRetreatTimer=null
+function cancelCombatRetreatPresentation(){
+ clearTimeout(combatRetreatTimer);combatRetreatTimer=null
+ document.getElementById("combatRetreatOverlay")?.remove()
+}
+function showCombatRetreat(outcome){
+ cancelCombatRetreatPresentation()
  window.__combatOutcomeShowing=true
- const veil=document.createElement("div");veil.id="jormungandrRetreat";veil.style.cssText="position:fixed;inset:0;background:#03101cea;display:grid;place-items:center;z-index:999999999;pointer-events:none;color:#d9ecff;text-align:center;font:clamp(24px,4vw,44px) Georgia,serif"
- veil.textContent=outcome.returnMap==="bateau.jpg"?"Le Forchur échappe au combat…":"Le groupe parvient à s’échapper…";document.body.appendChild(veil)
- setTimeout(()=>{veil.remove();completeCombatReturn(outcome)},2800)
+ const veil=document.createElement("div");veil.id="combatRetreatOverlay";veil.className="combatRetreatOverlay"
+ veil.textContent=outcome.returnMap==="bateau.jpg"?"Le Forchur échappe au combat…":"Le groupe parvient à s’échapper…"
+ document.body.appendChild(veil)
+ combatRetreatTimer=setTimeout(()=>{
+   combatRetreatTimer=null;veil.remove()
+   if(window.__sessionBusy||(window.__localCombatId&&window.__localCombatId!==outcome.combatId))return
+   completeCombatReturn(outcome)
+ },2800)
 }

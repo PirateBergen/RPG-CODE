@@ -36,3 +36,9 @@ Première extraction de game.js et ui.js : raccourcis et aide dans shortcuts.js,
 ## Fiches et inventaire — styles
 
 Bases, jauges, animations, formulaire et adaptations mobiles regroupés. Onze styles fixes retirés du HTML/JS et centralisés dans le CSS ; valeurs effectives et coordonnées des champs conservées. Comparaison identique sur 30 configurations. Voir FICHES-STYLES-2026-11-10.md.
+
+## Prochaine étape après l’événement de l’Antre
+
+Reprendre le nettoyage des styles de l’écran de combat : regrouper HUD, panneaux d’attaques, initiative, états et notifications ; retirer les doublons après comparaison avant/après sur ordinateur et mobile. Les menus, fiches et inventaires ont déjà été traités.
+
+Événement demandé, à implémenter après validation du fonctionnement : première défaite collective face à un world boss → antre.jpg (L’Antre), pas trou.jpg (Passage). Pions affichés normalement et fonctionnalités disponibles, avec une indication de mort au-dessus. L’indication disparaît à la sortie de l’Antre. Événement unique à conserver dans la sauvegarde. Règle de récupération des PV encore à préciser.

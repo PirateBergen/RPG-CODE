@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261110.7"</script>
+  <script>window.GAME_V = "20261110.8"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -411,7 +411,6 @@
       <button onclick="setPNJImage('gardedunord.png')">Garde du Nord</button>
       <button onclick="setPNJImage('garde2.png')">Garde 2</button>
       <button onclick="setPNJImage('conseillerroinord.png')">Conseiller</button>
-      <button onclick="setPNJImage('pretre.png')">Prêtre</button>
     </div>
     <button class="mapCategoryButton" onclick="toggleCategory('pnjGenerique', this)"><span class="arrow">▶</span> 👥 Génériques</button>
     <div id="pnjGenerique" class="mapCategory">
@@ -428,6 +427,7 @@
     </div>
     <button class="mapCategoryButton" onclick="toggleCategory('pnjAutre', this)"><span class="arrow">▶</span> 📦 Autre</button>
     <div id="pnjAutre" class="mapCategory">
+      <button onclick="setPNJImage('pretre.png')">Prêtre</button>
       <button onclick="setPNJImage('oldmessager.png')">Vieux Messager</button>
       <button onclick="setPNJImage('ELO PION.png')">ELO PION</button>
       <button onclick="setPNJImage('ju pion.png')">PIKA</button>

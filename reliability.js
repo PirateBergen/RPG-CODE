@@ -35,6 +35,7 @@ async function reliablePut(path,value,providedSignal,allowSessionBusy=false,meth
   const token=await user.getIdToken();checkConnection()
   if(epoch!==reliableEpoch||signal.aborted||window.__authUid!==user.uid)throw Error("Connexion interrompue : réessayez")
   const url=new URL(db.ref(path).toString());url.pathname+=".json";const configured=db.app.options.databaseURL?new URL(db.app.options.databaseURL):null;if(configured?.searchParams.has("ns"))url.searchParams.set("ns",configured.searchParams.get("ns"));url.searchParams.set("auth",token)
+  url.searchParams.set("print","silent")
   const response=await fetch(url.href,{method,headers:{"Content-Type":"application/json"},body:JSON.stringify(value),signal,cache:"no-store"})
   if(!response.ok)throw Error(response.status===401||response.status===403?"Accès refusé : reconnectez-vous avec votre héros":"Enregistrement non confirmé. Vérifiez la partie avant de réessayer.")
   if(epoch!==reliableEpoch||!window.__actionOnline||window.__authUid!==user.uid)throw Error("Confirmation perdue : vérifiez l’état de la partie avant de réessayer")
@@ -164,8 +165,10 @@ async function reliableRootTransaction(update,allowSessionBusy=false){
    const snapshot=data=>({val:()=>data,child:path=>snapshot(String(path).split('/').filter(Boolean).reduce((v,key)=>v?.[key]??null,data)),exists:()=>data!=null})
    if(value===undefined)return {committed:false,snapshot:snapshot(current)}
    requireActionConnection(allowSessionBusy);if(epoch!==reliableEpoch||controller.signal.aborted||window.__authUid!==user.uid)throw Error("Connexion interrompue, aucune relance automatique")
+   const etag=read.headers.get("etag");if(!etag)throw Error("Confirmation de partie indisponible")
+   // Firebase rejects print=silent together with If-Match.
    const target=new URL(url)
-   const write=await fetch(target.href,{method:"PUT",headers:{"Content-Type":"application/json","if-match":read.headers.get("etag")},body:JSON.stringify(value),signal:controller.signal,cache:"no-store"})
+   const write=await fetch(target.href,{method:"PUT",headers:{"Content-Type":"application/json","if-match":etag},body:JSON.stringify(value),signal:controller.signal,cache:"no-store"})
    if(write.status===412){await write.body?.cancel();continue}
    if(!write.ok)throw Error("Action MJ non confirmée")
    await write.body?.cancel()
@@ -196,7 +199,8 @@ async function reliableCharacterTransaction(id,update){
    const current=await response.json(),next=update(current),etag=response.headers.get("etag");check()
    if(next===undefined)return {committed:false,snapshot:{val:()=>current}}
    if(!etag)throw Error("Confirmation de fiche indisponible")
-   const result=await fetch(url.href,{method:"PUT",headers:{"Content-Type":"application/json","if-match":etag},body:JSON.stringify(next),signal:controller.signal,cache:"no-store"})
+   const target=new URL(url)
+   const result=await fetch(target.href,{method:"PUT",headers:{"Content-Type":"application/json","if-match":etag},body:JSON.stringify(next),signal:controller.signal,cache:"no-store"})
    if(result.status===412){await result.body?.cancel();continue}
    if(!result.ok)throw Error(result.status===401||result.status===403?"Modification refusée : vérifiez votre accès au héros":"Modification non confirmée : vérifiez la fiche avant de réessayer")
    await result.body?.cancel();check();return {committed:true,snapshot:{val:()=>next}}

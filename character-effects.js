@@ -1,19 +1,22 @@
 "use strict"
 let characterEffectsRefs=[],characterEffectsTimer=null,characterEffectsQueue=Promise.resolve()
+let characterEffectsCache={characters:null,curse:{wheel:null},sessionControl:null,ready:new Set()}
 const characterEffectRequests=new Set(),seenPowerEvents=new Set()
 function syncCharacterEffects(){
  characterEffectsRefs.forEach(([r,e,cb])=>r.off(e,cb));characterEffectsRefs=[];clearTimeout(characterEffectsTimer)
+ characterEffectsCache={characters:null,curse:{wheel:null},sessionControl:null,ready:new Set()}
  if(window.__authRole!=="gm")return
  const schedule=()=>{clearTimeout(characterEffectsTimer);characterEffectsTimer=setTimeout(tickCharacterEffects,60)}
  const requests=db.ref("characterRequests"),cb=snap=>{if(snap.val()?.status!=="queued")return;const id=snap.key,seed=Math.floor(Math.random()*4294967296);characterEffectsQueue=characterEffectsQueue.catch(()=>{}).then(()=>window.__authRole==="gm"?transactCombatRoot(root=>reduceCharacterRequest(root,id,seed)):null).catch(error=>console.error(error))}
  requests.on("child_added",cb);characterEffectsRefs.push([requests,"child_added",cb])
- for(const branch of ["characters","curse/wheel","sessionControl",".info/connected"]){const ref=db.ref(branch);ref.on("value",schedule);characterEffectsRefs.push([ref,"value",schedule])}
+ for(const branch of ["characters","curse/wheel","sessionControl",".info/connected"]){const ref=db.ref(branch),callback=snap=>{if(branch==="curse/wheel")characterEffectsCache.curse.wheel=snap.val();else if(branch!==".info/connected")characterEffectsCache[branch]=snap.val();characterEffectsCache.ready.add(branch);schedule()};ref.on("value",callback);characterEffectsRefs.push([ref,"value",callback])}
 }
 async function tickCharacterEffects(){
  if(window.__authRole!=="gm"||window.__sessionBusy||(typeof requireActionConnection==="function"&&!window.__actionOnline))return
- try{await transactCombatRoot(advanceCharacterState)}catch(error){console.error("Malédiction non synchronisée",error)}
+ // A local dry run never applies effects; every change is rechecked in the transaction.
+ try{const cache=characterEffectsCache,ready=["characters","curse/wheel","sessionControl"].every(key=>cache.ready.has(key));if(!ready||advanceCharacterState(cache)!==undefined)await transactCombatRoot(advanceCharacterState)}catch(error){console.error("Malédiction non synchronisée",error)}
  if(window.__authRole==="gm"){
-  const w=window.__activeCurseWheel
+  const w=characterEffectsCache.ready.has("curse/wheel")?characterEffectsCache.curse.wheel:window.__activeCurseWheel
   if(w&&["spinning","result"].includes(w.state)){
    const deadline=w.state==="spinning"?w.startedAt+4500:(w.resultAt||w.time)+5000
    clearTimeout(characterEffectsTimer);characterEffectsTimer=setTimeout(tickCharacterEffects,Math.max(100,deadline-Date.now()))

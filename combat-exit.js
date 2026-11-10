@@ -4,6 +4,7 @@ let combatCompletionRefs=[]
 let combatCompletionTimer=null
 let combatCompletionPending=false
 let combatCompletionDirty=false
+let combatCompletionCache={characters:null,combat:null,ready:new Set()}
 const combatReturnTimers=new Map()
 window.__pendingCombatOutcome=null
 window.__combatReturnInProgress=false
@@ -12,14 +13,24 @@ function syncCombatExitCoordinator(){
   combatCompletionRefs.forEach(([ref,cb])=>ref.off("value",cb));combatCompletionRefs=[]
   clearTimeout(combatCompletionTimer);combatCompletionTimer=null
   for(const timer of combatReturnTimers.values())clearTimeout(timer);combatReturnTimers.clear()
+  combatCompletionCache={characters:null,combat:null,ready:new Set()}
   if(window.__authRole!=="gm")return
   const schedule=()=>{combatCompletionDirty=true;clearTimeout(combatCompletionTimer);combatCompletionTimer=setTimeout(checkCombatCompletion,40)}
-  for(const branch of ["characters","combat","game/combatOutcome"]){const ref=db.ref(branch),cb=snap=>{schedule();if(branch==="game/combatOutcome")scheduleAuthoritativeReturn(snap.val())};ref.on("value",cb);combatCompletionRefs.push([ref,cb])}
+  for(const branch of ["characters","combat","game/combatOutcome"]){const ref=db.ref(branch),cb=snap=>{if(branch==="characters"||branch==="combat"){combatCompletionCache[branch]=snap.val();combatCompletionCache.ready.add(branch)}schedule();if(branch==="game/combatOutcome")scheduleAuthoritativeReturn(snap.val())};ref.on("value",cb);combatCompletionRefs.push([ref,cb])}
+}
+// Local snapshots only skip unnecessary checks; the transaction still decides the outcome.
+function combatCompletionNeedsCheck(){
+  const cache=combatCompletionCache
+  if(!cache.ready.has("combat")||!cache.ready.has("characters"))return true
+  if(!cache.combat?.id||cache.combat.phase==="finished")return false
+  if(!COMBAT_HEROES.every(id=>cache.characters?.[id]))return true
+  return !livingHeroes(cache).length||!livingMobs(cache.combat).length
 }
 async function checkCombatCompletion(){
-  if(window.__authRole!=="gm"||window.__sessionBusy)return
+  if(window.__authRole!=="gm"||window.__sessionBusy||window.__actionOnline===false)return
   if(combatCompletionPending){combatCompletionDirty=true;return}
-  combatCompletionDirty=false;combatCompletionPending=true
+  combatCompletionDirty=false;if(!combatCompletionNeedsCheck())return
+  combatCompletionPending=true
   try{await transactCombatRoot(current=>{
     if(!current?.combat?.id||current.combat.phase==="finished"||current.sessionControl?.phase||!COMBAT_HEROES.every(id=>current.characters?.[id]))return undefined
     if(livingHeroes(current).length&&livingMobs(current.combat).length)return undefined

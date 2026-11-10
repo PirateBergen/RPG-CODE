@@ -315,9 +315,10 @@ async function saveGame() {
       await reconcilePartyProgression(true)
       await captureSessionPresentation()
       await drainSessionWrites()
-      const state = captureSession((await db.ref().once("value")).val() || {})
+      const root = (await db.ref().once("value")).val() || {}
+      const state = captureSession(root)
       sessionFromSave(state)
-      const records=(await db.ref("saves").once("value")).val()||{},previous=sortedSaveEntries(records)[0]?.[1]
+      const previous=sortedSaveEntries(root.saves||{})[0]?.[1]
       const now = Math.max(Date.now(),saveTimestamp(previous)+1), id = "current"
       const save = { ...state, _schemaVersion: SAVE_SCHEMA_VERSION, _savedAt: now, _saveName: name.trim(), _saveDate: new Date(now).toLocaleString("fr-FR") }
       const next={current:save,...(previous?{previous}:{})}

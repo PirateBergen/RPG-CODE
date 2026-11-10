@@ -16,3 +16,7 @@ Contre le Roi : lueur bleutée partagée à l’entrée du combat si équipée ;
 Corrigé en 20261109.23 : annulation des animations et délais après nettoyage ou retour de combat ; attaques propres au PNJ Elo ; tests de l'ancienne intervention remplacés par les états et PV MJ actuels ; aperçus des 9 pouvoirs alliés avec arrêt manuel, sans écriture de partie.
 
 Chantiers distincts restant à concevoir : garantir les champs calculés des fiches sans supprimer les éditions manuelles voulues ; mesurer et réduire les échanges sur la racine complète pour les longues campagnes ; concevoir les phases du Roi final. Ces points ne sont pas annoncés comme corrigés.
+
+## Réseau — 10 novembre
+
+Les contrôles automatiques sans effet utilisent les abonnements locaux avant de solliciter une transaction : huit éditions ordinaires passent de 16 à 0 lectures REST de la racine dans le scénario de test. Les modifications effectives restent recalculées sur la base serveur. Les écritures simples utilisent une réponse sans recopie, et la sauvegarde réutilise les archives de son instantané complet unique. La séparation structurelle des sauvegardes et de la partie active reste à concevoir ; les actions complexes utilisent toujours une transaction globale avec contrôle de version.

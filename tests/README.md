@@ -26,3 +26,5 @@ Documents attribués : `node tests/firebase-player-documents.cjs` avec la base �
 Invocations hors combat : tests/firebase-exploration-summons.cjs couvre autorisation ponctuelle, animation partagée, pion localisé par carte, sauvegarde, déplacement MJ et suppression réservée au MJ. Les médias restent simulés.
 
 John Pork et soins : tests/combat-health.cjs et tests/firebase-combat-health.cjs vérifient dégâts d’arrivée, interception mono-cible, zones, soins sur héros et invocation, Bibi KO, soins de groupe, expiration, sauvegarde et son d’entrée du Balrog. Les lectures audio restent simulées.
+
+Stockage plein en partie test : `tests/firebase-test-storage.cjs` avec l’émulateur local vérifie l’alerte visible, le maintien en mémoire, l’absence de fausse confirmation, l’export de secours de l’état actuel (mode test), son décodage, l’échec de téléchargement et le retour du stockage. La campagne réelle reste inchangée.

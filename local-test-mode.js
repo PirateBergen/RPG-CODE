@@ -4,6 +4,7 @@ if (window.__isolatedTestMode) document.body.dataset.testMode = "true"
 function rpgStorageKey(key) { return window.__isolatedTestMode ? "test." + key : key }
 function createIsolatedTestDatabase(live) {
   const storageKey = "rpg.test.session.v1", clone = value => value == null ? null : JSON.parse(JSON.stringify(value))
+  const storageStatus={failed:false,checked:false}
   let state
   try { state = JSON.parse(sessionStorage.getItem(storageKey) || "null") } catch (_) {}
   if (!state || state.testSchema !== 1) state = { ...initialSession(), roles:{}, profiles:{}, heroAssignments:{}, securityVersion:2, testSchema:1 }
@@ -33,7 +34,14 @@ function createIsolatedTestDatabase(live) {
       }
     }
   }
-  function persist(before) { try {sessionStorage.setItem(storageKey,JSON.stringify(state))} catch (_) {console.warn("Essai : stockage local plein ; gardez cet onglet ouvert.")} notify(before) }
+  function writeStorage() {
+    const previous=storageStatus.failed
+    try{sessionStorage.setItem(storageKey,JSON.stringify(state));storageStatus.failed=false}catch(_){storageStatus.failed=true}
+    storageStatus.checked=true
+    if(previous!==storageStatus.failed)window.dispatchEvent(new Event("rpg-test-storage"))
+    return !storageStatus.failed
+  }
+  function persist(before) { writeStorage();notify(before) }
   function put(root,path,value) {
     const keys=parts(path);if(!keys.length)return clone(value)||{}
     let node=root;for(const key of keys.slice(0,-1)) {if(!node[key]||typeof node[key]!=="object")node[key]={};node=node[key]}
@@ -62,8 +70,35 @@ function createIsolatedTestDatabase(live) {
       orderByChild:key=>ref(path,{...query,order:key}),limitToLast:limit=>ref(path,{...query,limit}),startAt:start=>ref(path,{...query,start})
     };return api
   }
-  return {__isolatedTest:true,ref,app:{options:{databaseURL:"local-test:///"}},goOnline(){},goOffline(){}}
+  return {__isolatedTest:true,__storageStatus:storageStatus,__retryStorage:writeStorage,ref,app:{options:{databaseURL:"local-test:///"}},goOnline(){},goOffline(){}}
 }
+function renderTestStorageStatus() {
+ if(!window.__isolatedTestMode||typeof db==="undefined"||!db.__isolatedTest)return
+ const banner=document.getElementById("isolatedTestBanner");if(!banner)return
+ let box=document.getElementById("testStorageStatus")
+ if(!box){box=document.createElement("span");box.id="testStorageStatus";box.setAttribute("role","status");box.setAttribute("aria-live","polite");banner.appendChild(box)}
+ const failed=db.__storageStatus.failed
+ box.dataset.failed=String(failed);box.replaceChildren()
+ const message=document.createElement("span");message.textContent=failed?"Stockage indisponible : essai conservé uniquement en mémoire. Gardez cet onglet ouvert.":"Essai conservé dans cet onglet.";box.appendChild(message)
+ if(failed){const retry=document.createElement("button"),backup=document.createElement("button");retry.type=backup.type="button";retry.textContent="Réessayer";backup.textContent="Exporter l’essai en cours";retry.onclick=()=>{db.__retryStorage()};backup.onclick=exportCurrentTestBackup;box.append(retry,backup)}
+}
+async function exportCurrentTestBackup() {
+ try{
+  requirePersistenceGM()
+  if(!window.__isolatedTestMode||!db.__isolatedTest)throw Error("Export réservé à la partie test")
+  return await withSessionOperation("saving",async()=>{
+   await captureSessionPresentation();await drainSessionWrites()
+   const state=captureSession((await db.ref().once("value")).val()||{}),now=Date.now(),save={...state,_schemaVersion:SAVE_SCHEMA_VERSION,_savedAt:now,_saveName:"Secours de l’essai en cours",_saveDate:new Date(now).toLocaleString("fr-FR")}
+   const text=await encodeSaveFile(save),blob=new Blob([text],{type:"application/json"}),url=URL.createObjectURL(blob),link=document.createElement("a")
+   try{link.href=url;link.download="prophetie-test-secours-"+new Date(now).toISOString().replace(/[:.]/g,"-")+".json";document.body.appendChild(link);link.click()}finally{link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+   showNotification("Export de secours préparé. Conservez le fichier téléchargé : il contient l’essai actuel et ses notes privées.")
+   return true
+  })
+ }catch(error){showNotification("Export de secours impossible : "+error.message);return false}
+}
+window.addEventListener("rpg-test-storage",renderTestStorageStatus)
+window.addEventListener("beforeunload",event=>{if(window.__isolatedTestMode&&typeof db!=="undefined"&&db.__storageStatus?.failed){event.preventDefault();event.returnValue=""}})
+
 function openIsolatedTest() {
   if(window.__authRole!=="gm")return entranceMessage("Connectez-vous d’abord avec le compte MJ.")
   const url=new URL(location.href);url.searchParams.set("test","1");location.assign(url.href)
@@ -103,7 +138,7 @@ function openSpecialPreviewPanel(){
 document.addEventListener("DOMContentLoaded",()=>{
   if(!window.__isolatedTestMode)return
   const banner=document.createElement("aside");banner.id="isolatedTestBanner";banner.style.cssText="position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:8px 14px;background:#3f253d;color:#ffe4a3;font:14px Georgia;text-align:center";banner.textContent="ESSAI LOCAL — la campagne et ses sauvegardes ne sont pas modifiées. "
-  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);const previews=document.createElement("button");previews.id="testSpecialsBtn";previews.type="button";previews.textContent="Tester les spéciales";previews.onclick=openSpecialPreviewPanel;banner.appendChild(previews);const mobs=document.createElement("button");mobs.id="testMobSpecialsBtn";mobs.type="button";mobs.textContent="Spéciales des mobs et alliés";mobs.onclick=openMobSpecialPreviewPanel;banner.appendChild(mobs);const actions=document.createElement("button");actions.id="testPlayerActionsBtn";actions.type="button";actions.textContent="Actions des joueurs";actions.onclick=()=>openTestPlayerActions("greg");banner.appendChild(actions);document.body.appendChild(banner)
+  const back=document.createElement("button");back.textContent="Revenir à la campagne";back.onclick=returnFromIsolatedTest;banner.appendChild(back);const previews=document.createElement("button");previews.id="testSpecialsBtn";previews.type="button";previews.textContent="Tester les spéciales";previews.onclick=openSpecialPreviewPanel;banner.appendChild(previews);const mobs=document.createElement("button");mobs.id="testMobSpecialsBtn";mobs.type="button";mobs.textContent="Spéciales des mobs et alliés";mobs.onclick=openMobSpecialPreviewPanel;banner.appendChild(mobs);const actions=document.createElement("button");actions.id="testPlayerActionsBtn";actions.type="button";actions.textContent="Actions des joueurs";actions.onclick=()=>openTestPlayerActions("greg");banner.appendChild(actions);document.body.appendChild(banner);renderTestStorageStatus()
 })
 
 function thuumEffectDescription(word,rank=1){

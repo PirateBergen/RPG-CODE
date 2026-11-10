@@ -324,6 +324,7 @@ async function saveGame() {
       if(typeof reliablePut==="function")await reliablePut("saves",next,undefined,true)
       else await db.ref("saves").set(next)
       try{localStorage.setItem(persistenceStorageKey("rpg_saves"),JSON.stringify(next));localStorage.setItem(persistenceStorageKey("rpg_save"),JSON.stringify(save))}catch(e){console.warn("Copie locale indisponible",e)}
+      if(db.__isolatedTest&&db.__storageStatus?.failed){showNotification("Sauvegarde de l’essai conservée uniquement en mémoire. Gardez cet onglet ouvert et utilisez l’export de secours.");return false}
       showNotification("Sauvegardé : " + save._saveName)
       return true
     })

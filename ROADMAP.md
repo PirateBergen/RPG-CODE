@@ -52,3 +52,7 @@ Acquis une fois à la sortie de l’Antre, affiché comme état permanent dans l
 ## Nettoyage des styles de combat — terminé
 
 Version 20261110.19 : bases HUD/attaques/états/initiative regroupées, 21 styles fixes d’initiative centralisés. Comparaison sans écart sur 30 configurations MJ/joueur et cinq tailles. Voir COMBAT-STYLES-2026-11-10.md. Prochaine passe possible : styles dynamiques des cartes d’initiative et panneaux de monstres ; mesures réseau des actions complexes restent un chantier distinct.
+
+## États dynamiques du combat — nettoyés
+
+Version 20261110.20 : treize assemblages de styles déplacés vers le CSS (initiative, recharges, spéciales MJ/joueurs et couleur des PV). Comparaison identique sur 36 configurations. Voir COMBAT-ETATS-STYLES-2026-11-10.md. Prochaine étape : mesurer le coût des échanges des actions complexes pour les campagnes longues, avant de modifier leur architecture.

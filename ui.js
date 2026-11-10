@@ -976,7 +976,7 @@ function buildMobSubPanel(mobData, slot) {
 
   const pct = Math.max(0,Math.min(100,((mobData.hp||0)/(mobData.maxHP||1))*100))
   const hpWrap = document.createElement("div"); hpWrap.style.cssText = "width:100%;height:6px;background:rgba(80,0,0,0.5);border-radius:3px;margin-bottom:8px;"
-  const hpFill = document.createElement("div"); hpFill.id = "subPanelHPFill_"+slot; hpFill.style.cssText = `width:${pct}%;height:100%;background:${pct>50?"#44ff44":pct>25?"#ffaa00":"#ff3333"};border-radius:3px;transition:width 0.3s;`; hpWrap.appendChild(hpFill); panel.appendChild(hpWrap)
+  const hpFill = document.createElement("div"); hpFill.id = "subPanelHPFill_"+slot; hpFill.classList.add("combatMobHpFill"); hpFill.dataset.health=pct>50?"healthy":pct>25?"wounded":"critical"; hpFill.style.width=pct+"%"; hpWrap.appendChild(hpFill); panel.appendChild(hpWrap)
 
   const tier = mobData.tier||"weak", atks = typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
   const getRange = (attack, lvl, mobTier) => {
@@ -1005,12 +1005,12 @@ function buildMobSubPanel(mobData, slot) {
       const btn = document.createElement("div")
       const range = getRange(atk, mobLvl, tier)
       const min = range.min, max = range.max
-      btn.style.cssText = `padding:6px 8px;margin-bottom:4px;background:rgba(120,10,10,${isCD?"0.2":"0.4"});border:1px solid rgba(180,40,40,${isCD?"0.2":"0.4"});border-radius:4px;cursor:${isCD?"not-allowed":"pointer"};opacity:${isCD?"0.5":"1"};`
+      btn.classList.add("combatMobAttack"); btn.classList.toggle("is-unavailable",isCD)
       const row = document.createElement("div")
       row.style.cssText = "display:flex;align-items:center;gap:6px;"
       row.appendChild(createCombatIcon(atk, mobData, "combatIcon combatIcon--small"))
       const name = document.createElement("span")
-      name.style.cssText = `font-family:Cinzel,serif;font-size:10px;color:${isCD?"#666":"#ffcccc"};font-weight:bold;`
+      name.classList.add("combatMobAttackName"); name.classList.toggle("is-unavailable",isCD)
       name.innerText = atk.name + (isCD?" Recharge":"")
       const dmg = document.createElement("span")
       dmg.style.cssText = "font-size:9px;color:#ff8888;margin-left:auto;"
@@ -1035,21 +1035,21 @@ function buildMobSubPanel(mobData, slot) {
       const specialRange = getRange(specialAtk, mobLvl, tier)
       const sMin = specialRange.min, sMax = specialRange.max
       const sBtn = document.createElement("div")
-      sBtn.style.cssText = `padding:8px 10px;margin:8px 0 4px;background:${specialUsed?"rgba(60,30,30,0.35)":"linear-gradient(135deg,rgba(120,20,20,0.88),rgba(40,0,0,0.96))"};border:1px solid ${specialUsed?"rgba(140,80,80,0.3)":"rgba(255,180,110,0.55)"};border-radius:6px;cursor:${specialUsed?"not-allowed":"pointer"};opacity:${specialUsed?"0.55":"1"};box-shadow:${specialUsed?"none":"0 0 24px rgba(255,120,60,0.18)"};`
+      sBtn.classList.add("combatMobSpecial"); sBtn.classList.toggle("is-unavailable",specialUsed)
       const sTop = document.createElement("div")
       sTop.style.cssText = "display:flex;align-items:center;gap:8px;"
       sTop.appendChild(createCombatIcon(specialAtk, mobData, "combatIcon"))
       const sName = document.createElement("span")
-      sName.style.cssText = `font-family:Cinzel,serif;font-size:10px;color:${specialUsed?"#aa8888":"#ffd6a0"};font-weight:bold;letter-spacing:0.5px;`
+      sName.classList.add("combatMobSpecialName"); sName.classList.toggle("is-unavailable",specialUsed)
       sName.innerText = specialAtk.name + (specialUsed ? " — UNIQUE DÉJÀ UTILISÉE" : "")
       const sDmg = document.createElement("span")
-      sDmg.style.cssText = `font-size:9px;color:${specialUsed?"#9a6a6a":"#ffb37a"};margin-left:auto;`
+      sDmg.classList.add("combatMobSpecialDamage"); sDmg.classList.toggle("is-unavailable",specialUsed)
       sDmg.innerText = sMin + "-" + sMax
       sTop.appendChild(sName)
       sTop.appendChild(sDmg)
       sBtn.appendChild(sTop)
       const sFlavor = document.createElement("div")
-      sFlavor.style.cssText = `font-size:9px;color:${specialUsed?"#8a6a6a":"#ffb988"};margin-top:4px;line-height:1.35;`
+      sFlavor.classList.add("combatMobSpecialFlavor"); sFlavor.classList.toggle("is-unavailable",specialUsed)
       sFlavor.innerText = specialAtk.flavor || "Attaque signature à usage unique."
       sBtn.appendChild(sFlavor)
       if (!specialUsed) {
@@ -1111,21 +1111,21 @@ function buildMobSubPanel(mobData, slot) {
       const specialRange = getRange(specialAtk, mobLvl, tier)
       const sMin = specialRange.min, sMax = specialRange.max
       const sRow = document.createElement("div")
-      sRow.style.cssText = `padding:6px 8px;margin-top:6px;background:${specialUsed?"rgba(55,35,35,0.45)":"rgba(96,28,12,0.5)"};border:1px solid ${specialUsed?"rgba(140,80,80,0.28)":"rgba(255,180,110,0.32)"};border-radius:4px;opacity:0.92;`
+      sRow.classList.add("combatMobReadonlySpecial"); sRow.classList.toggle("is-unavailable",specialUsed)
       const sLine = document.createElement("div")
       sLine.style.cssText = "display:flex;align-items:center;gap:6px;"
       sLine.appendChild(createCombatIcon(specialAtk, mobData, "combatIcon combatIcon--small"))
       const sName = document.createElement("span")
-      sName.style.cssText = `font-family:Cinzel,serif;font-size:10px;color:${specialUsed?"#b48b8b":"#ffd3a0"};`
+      sName.classList.add("combatMobReadonlySpecialName"); sName.classList.toggle("is-unavailable",specialUsed)
       sName.innerText = specialAtk.name
       const sState = document.createElement("span")
-      sState.style.cssText = `font-size:9px;color:${specialUsed?"#8e6767":"#c9855f"};margin-left:auto;`
+      sState.classList.add("combatMobReadonlySpecialState"); sState.classList.toggle("is-unavailable",specialUsed)
       sState.innerText = specialUsed ? "UNIQUE" : (sMin + "-" + sMax)
       sLine.appendChild(sName)
       sLine.appendChild(sState)
       sRow.appendChild(sLine)
       const sDesc = document.createElement("div")
-      sDesc.style.cssText = `margin-top:4px;font-size:9px;line-height:1.35;color:${specialUsed?"#b79f96":"#e2c6a2"};`
+      sDesc.classList.add("combatMobReadonlySpecialDescription"); sDesc.classList.toggle("is-unavailable",specialUsed)
       sDesc.innerText = specialAtk.flavor || specialAtk.effect || "Attaque signature à usage unique."
       sRow.appendChild(sDesc)
       panel.appendChild(sRow)

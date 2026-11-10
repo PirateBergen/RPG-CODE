@@ -191,7 +191,7 @@ function renderCombatInitiativeOverlay(state) {
   entries.forEach((entry, idx) => {
     const card = document.createElement("div")
     const isCurrent = state.phase === "active" && String(state.currentActorId || "") === String(entry.id || "")
-    card.style.cssText = "padding:14px 12px;border:1px solid " + (isCurrent ? "rgba(255,215,130,0.72)" : "rgba(80,120,150,0.22)") + ";border-radius:16px;background:" + (isCurrent ? "linear-gradient(180deg,rgba(72,50,18,0.94),rgba(18,14,10,0.98))" : "linear-gradient(180deg,rgba(12,22,28,0.9),rgba(7,14,18,0.95))") + ";text-align:center;box-shadow:" + (isCurrent ? "0 16px 32px rgba(0,0,0,0.26), 0 0 22px rgba(214,164,90,0.12)" : "0 12px 24px rgba(0,0,0,0.16)") + ";"
+    card.classList.add("combatInitiativeCard"); card.classList.toggle("is-current",isCurrent)
 
     const portrait = document.createElement("img")
     portrait.src = "images/" + sanitizeAssetName(entry.id === "ju" ? heroPortraitFile("ju") : entry.image || "")
@@ -234,7 +234,7 @@ function renderCombatInitiativeOverlay(state) {
       }
     } else {
       const status = document.createElement("div")
-      status.style.cssText = "font-size:11px;color:" + (isCurrent ? "#ffd48b" : "#96a7b5") + ";"
+      status.classList.add("combatInitiativeStatus"); status.classList.toggle("is-current",isCurrent)
       status.innerText = isCurrent ? "Tour actif" : "En attente"
       card.appendChild(status)
       if (isGM && entry.type === "player" && typeof setCombatPreviewPlayer === "function") {

@@ -289,15 +289,7 @@ async function withSessionOperation(phase, action) {
   }
 }
 
-function cacheSave(id, save) {
-  try {
-    const records = {current:save}
-    const old=sortedSaveEntries(parseLocalStorageJSON("rpg_saves",{})).find(([,entry])=>entry._savedAt!==save._savedAt)?.[1]
-    if(old)records.previous=old
-    localStorage.setItem(persistenceStorageKey("rpg_saves"), JSON.stringify(records))
-    localStorage.setItem(persistenceStorageKey("rpg_save"), JSON.stringify(save))
-  } catch (error) { console.warn("Copie locale indisponible ; sauvegarde en ligne conservée", error) }
-}
+
 
 async function listGameSaves() {
   requirePersistenceGM()

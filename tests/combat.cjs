@@ -2,7 +2,7 @@ const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('ass
 const base=path.resolve(__dirname,'..'),read=n=>fs.readFileSync(path.join(base,n),'utf8').replace(/\r\n/g,'\n'),results=[];
 const clone=x=>JSON.parse(JSON.stringify(x));
 const ctx=vm.createContext({window:{THUUMS:{"SKARO'H":{combatDamageByRank:()=>({main:0,splash:0}),combatOnly:true},SKRAA:{combatDamageByRank:rank=>({main:8+rank*4,splash:3+rank*2})},REIHKT:{combatDamageByRank:rank=>({main:6+rank*3,splash:0})}}},console,Date});
-vm.runInContext(read('config.js'),ctx);vm.runInContext(read('utils.js').split('function safeRemoveElement')[0],ctx);
+vm.runInContext(read('config.js'),ctx);vm.runInContext(read('utils.js').split('function inferNotificationType')[0],ctx);
 const source=read('ui.js');function functionSource(name){const start=source.indexOf('function '+name+'(');if(start<0)throw Error('helper '+name);const next=/^function \w+\(/m.exec(source.slice(start+1));return source.slice(start,next?start+1+next.index:source.length)}
 for(const name of ['getAttackStatKey','getPlayerAttackTypeKey','getPlayerSpecialAttack','getCharacterMaxHp','playerHasInventoryItem','isPhysicalMobAttack','getPlayerAttackPower','getPlayerLevelScaling','applyPlayerSpecialModifiers','isPlayerSpecialConditionMet'])vm.runInContext(functionSource(name),ctx);
 ctx.hasPlayerCombatTrigger=()=>false;

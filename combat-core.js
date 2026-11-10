@@ -132,7 +132,7 @@ function combatHeal(root, request, from, id, amount, resurrect = false) {
   const c = combatFriendlyTarget(root,id)
   if (!c || (!resurrect && combatInt(c.hp) <= 0)) throw new Error("La cible est KO ; une résurrection est nécessaire")
   const before = combatInt(c.hp), max = Math.max(before,combatFriendlyMaxHP(root,id))
-  const adjusted=arbitrationAmount(root,id,resurrect&&before<=0?max:amount)
+  const adjusted=Math.max(0,combatInt(resurrect&&before<=0?max:amount))
   c.hp = Math.min(max,before+adjusted)
   combatRecord(root, request, from, id, c.hp - before, "heal", from + " → " + combatFriendlyName(id).toUpperCase() + " : +" + (c.hp - before) + " PV")
   return c.hp - before
@@ -144,11 +144,11 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
   const before = combatInt(target.hp)
   if(isJormungandr(target)){
     const origin=root.game?.combatState?.returnMap||root.game?.map
-    if(!options.thorMjolnir||!isForchurMap(origin)||arbitrationAmount(root,slot,before)<=0){
+    if(!options.thorMjolnir||!isForchurMap(origin)||Math.max(0,combatInt(before))<=0){
       combatRecord(root,request,from,heroDisplayName(target.name),0,type,"Jörmungandr est invulnérable à cette attaque.");return 0
     }
     target.hp=0;target.defeatedByThor=true
-  }else target.hp = Math.max(0, before - arbitrationAmount(root,slot,gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount))))
+  }else target.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount)))))
   combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
   return before - target.hp
 }
@@ -181,7 +181,6 @@ function tickCombatRound(root, request) {
 }
 
 function nextCombatTurn(root, request, skipRemaining = false) {
-  delete root.__arbitration
   const state = root.combat.turnState
   const order = state.order || []
   if (!order.length || combatOutcome(root, request)) return
@@ -289,12 +288,12 @@ function resolveHeroCombatAction(root, request, dice) {
   if (!fail && mob.spiderSenseBuff?.active) damage = Math.round(damage * (mob.spiderSenseBuff.damageMult || 1.1))
   if (attack.name === "Je vais te raconter une histoire" && /foret|mine/i.test(root.game.combatState?.returnMap || root.game.map || "")) damage *= 2
   if(attack.name === "Spider Sense" && !fail)damage=Math.round(damage*.65)
-  if (attack.name === "Spider Sense" && !fail && arbitrationEffects(root,slot)) { c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
+  if (attack.name === "Spider Sense" && !fail) { c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
   if (attack.name === "Petite merde" && c.playerFlags?.[actor]?.spiderSense) damage *= 2
   if(attack.name==="Je suis jet laguée")damage=Math.round(damage*1.25)
   let amount = combatDamage(root, request, actor.toUpperCase() + " — " + attack.name, slot, Math.round(damage))
-  if (!fail&&actor==="greg"&&attack.name!=="Le Bibi"&&getPlayerAttackTypeKey(attack)==="physical"&&mob.name==="roi"&&balrogSwordIsEquipped(root)&&arbitrationEffects(root,slot))mob.balrogSwordWeaken=Math.max(mob.balrogSwordWeaken||0,crit?.25:.15)
-  if (!fail && arbitrationEffects(root,slot)) {
+  if (!fail&&actor==="greg"&&attack.name!=="Le Bibi"&&getPlayerAttackTypeKey(attack)==="physical"&&mob.name==="roi"&&balrogSwordIsEquipped(root))mob.balrogSwordWeaken=Math.max(mob.balrogSwordWeaken||0,crit?.25:.15)
+  if (!fail) {
     if ((actor === "greg" || actor === "bibi") && attack.name === "Le Bibi" && crit) mob.bibiRage = { damage: 2, turns: 3 }
     if (actor === "greg" && attack.name === "I know Frank (si arc)" && crit) mob.playerBleed = { damage: 1, turns: 2 }
     if (actor === "ju" && getPlayerAttackTypeKey(attack) === "charm") { mob.yuAggro = { turns: 3, allyBonus: 1 }; if (crit) mob.yuSkipNextTurn = { active: true } }
@@ -340,7 +339,6 @@ function resolveEnemyCombatAction(root, request, dice) {
     delete mob.chargingSpecial
   }
   let targets = chooseEnemyTarget(root, slot, attack, payload.target, dice)
-  if(root.__arbitration?.targets)targets=root.__arbitration.targets.filter(id=>livingHeroes(root).includes(id))
   const range = getMobDamageRange(attack, mob.lvl || 1, mob.tier || "weak",mob)
   let damage = range.min + dice(range.max - range.min + 1) - 1
   if (mob.attackMalus) damage = Math.max(0, damage - (mob.attackMalus.amount || 0))
@@ -350,11 +348,11 @@ function resolveEnemyCombatAction(root, request, dice) {
   let applied = 0
   targets.forEach(id => {
     const victim=combatFriendlyTarget(root,id),before = combatInt(victim.hp)
-    victim.hp = Math.max(0, before - arbitrationAmount(root,id,gmIncomingDamage(root,id,damage))); applied += before - victim.hp
+    victim.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,id,damage)))); applied += before - victim.hp
     if(id==="eloSummon"){if(attack.effect==="stun")victim.stunnedAttacks=1;if(attack.effect==="debuff")victim.debuffRounds=2;combatRecord(root,request,heroDisplayName(mob.name),"John Pork",before-victim.hp,"mob","John Pork encaisse "+(before-victim.hp)+" dégâts");return}
-    if (arbitrationEffects(root,id) && id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
-    if (arbitrationEffects(root,id) && attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
-    if (arbitrationEffects(root,id) && attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
+    if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
+    if (attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
+    if (attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
     combatRecord(root, request, heroDisplayName(mob.name).toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", heroDisplayName(mob.name) + " — " + attack.name + " → " + id.toUpperCase() + " : -" + (before - root.characters[id].hp) + " PV")
   })
   if (attack.special) mob.specialUsed = true
@@ -381,16 +379,16 @@ function resolveAllyCombatAction(root, request, dice) {
     targets.forEach(slot=>{
       if(!livingMobs(root.combat).includes(slot))throw Error("Choisissez un ennemi vivant")
       const dealt=combatDamage(root,request,pnj.name,slot,amount,"dmg",{thorMjolnir})
-      if(action.staggerOnCrit&&crit&&dealt>0&&root.combat[slot].hp>0&&arbitrationEffects(root,slot))root.combat[slot].allyStagger=true
+      if(action.staggerOnCrit&&crit&&dealt>0&&root.combat[slot].hp>0)root.combat[slot].allyStagger=true
       if(thorMjolnir&&isJormungandr(root.combat[slot])&&dealt>0){thorLethalDamage=dealt;thorVictory=true;fail=false}
     })
     if(thorVictory)amount=thorLethalDamage
   } else if (action.type === "heal") amount = combatHeal(root, request, pnj.name, payload.target, roll * (action.healMult || 1), crit)
-  else if (action.type === "buff" && arbitrationEffects(root,payload.target)) {
+  else if (action.type === "buff") {
     const target = root.characters[payload.target]; if (!target || target.hp <= 0) throw new Error("Choisissez un héros vivant")
     const stat = playerMainStat[payload.target]; amount = roll * (action.buffMult || 1); target[stat] = Math.min(999, combatInt(target[stat]) + amount)
     combatRecord(root, request, pnj.name, payload.target.toUpperCase(), amount, "buff", pnj.name + " renforce " + payload.target)
-  } else if (action.type === "malus" && arbitrationEffects(root,payload.target||livingMobs(root.combat)[0]) && roll >= (action.threshold || 10)) {
+  } else if (action.type === "malus" && roll >= (action.threshold || 10)) {
     const slot = payload.target || livingMobs(root.combat)[0]; if (!livingMobs(root.combat).includes(slot)) throw new Error("Choisissez un ennemi vivant")
     if (pnj.id === "odin") root.combat[slot].attackMalus = { amount: 15 }
     root.combat[slot].malus = { label: action.label, source: pnj.name, roll }
@@ -402,12 +400,11 @@ function resolveAllyCombatAction(root, request, dice) {
   return { actor: request.actor, attack: action.label, pnjId: pnj.id, actionId: action.id, target: payload.target || "", roll, dice: action.dice, crit, fail, amount, mode: "ally",...(thorVictory?{thorVictory:true,message:"Mjölnir frappe : Jörmungandr est vaincu par Thor."}:{}) }
 }
 
-function reduceCombatRequestNow(current, id, seed, options = {}) {
+function reduceCombatRequestNow(current, id, seed) {
   const queued = current?.combatRequests?.[id]
   if (!queued || queued.status !== "queued") return null
   const root = combatClone(current), request = root.combatRequests[id]
   request.id = id
-  if(options.decision)Object.defineProperty(root,"__arbitration",{value:options.decision,configurable:true})
   const fail = error => { const unchanged = combatClone(current); unchanged.combatRequests[id] = { ...queued, status: "failed", error: String(error.message || error).slice(0, 300) }; return unchanged }
   try {
     if(typeof validateReliableRequest==="function")validateReliableRequest(root,request)
@@ -465,13 +462,12 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
       if (!livingMobs(root.combat).includes(target)) throw new Error("Choisissez une cible vivante")
       const amounts = def.combatDamageByRank(learned.rank || 1)
       if(word!=="SKARO'H")livingMobs(root.combat).forEach(slot => combatDamage(root, request, word, slot, slot === target ? amounts.main : amounts.splash))
-      if (word === "REIHKT" && !isJormungandr(root.combat[target]) && arbitrationEffects(root,target)) root.combat[target].reihktParalyzed = true
+      if (word === "REIHKT" && !isJormungandr(root.combat[target])) root.combat[target].reihktParalyzed = true
       root.combat.usedThuum ||= {}; root.combat.usedThuum[request.actor] ||= {}; root.combat.usedThuum[request.actor][word] = true
       delete root.game.playerThuumAccess[request.actor][word]
       // Le cri et ses effets visuels sont transmis avec le résultat de cette action.
       if(word==="SKARO'H"){root.combat.heroHaste={actor:request.actor,remaining:2};root.combat.turnState.sequence=combatInt(root.combat.turnState.sequence)+1}else nextCombatTurn(root, request); result = { actor: request.actor, mode: "thuum", word, amount: amounts.main,message:word==="SKARO'H"?"Deux attaques basiques consécutives sont disponibles":word==="REIHKT"?"La cible perd son prochain tour, sauf Jörmungandr":"" }
     } else throw new Error("Action inconnue")
-    delete root.__arbitration
     request.status = "done"; request.result = result
     recordConfirmedCombatAction(root,request,result)
     const visual={id,combatId:root.combat.id,time:Date.now(),result,nextTurn:combatClone(root.combat.turnState)}
@@ -486,88 +482,14 @@ function reduceCombatRequestNow(current, id, seed, options = {}) {
 
 function getCombatHeroAttack(actor,name,special=false){if(special)return getPlayerSpecialAttack(actor);const list=actor==="bibi"?[attacks.greg.find(a=>a.name==="Le Bibi")]:attacks[actor]||[];return list.find(a=>a?.name===name)}
 
-// Decisions are replayed with the original seed. No preview mutation is committed.
-function arbitrationAmount(root, target, amount) {
-  const d=root.__arbitration
-  if(!d)return Math.max(0,combatInt(amount))
-  const rule=d.perTarget?.[target]||d
-  if(d.cancel||rule.mode==="none"||(Array.isArray(d.targets)&&!d.targets.includes(target)))return 0
-  if(rule.mode==="half")return Math.floor(Math.max(0,amount)/2)
-  if(rule.mode==="custom")return Math.max(0,Math.min(50000,combatInt(rule.amount)))
-  return Math.max(0,combatInt(amount))
-}
-function arbitrationEffects(root,target){const d=root.__arbitration;return !d||(!d.cancel&&d.effects!==false&&d.mode!=="none"&&(!Array.isArray(d.targets)||d.targets.includes(target))&&d.perTarget?.[target]?.mode!=="none")}
-function arbitrationCanonical(value){return JSON.stringify(value,(key,v)=>{if(key==="time")return undefined;if(Array.isArray(v))return v;if(v&&typeof v==="object")return Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>[k,v[k]]));return v})}
-function arbitrationComparable(preview){return arbitrationCanonical({result:preview.result,changes:preview.changes||[]})}
-function arbitrationFrame(root){
-  const c=combatClone(root.combat||{});for(const k of ["pendingResolution","interventionArmed","visualEvents","lastAction","hits","presentation"])delete c[k]
-  return arbitrationCanonical({combat:c,characters:Object.fromEntries(COMBAT_CHARACTERS.map(id=>[id,{hp:root.characters?.[id]?.hp||0,lvl:root.characters?.[id]?.lvl||1}])),map:root.game?.map||""})
-}
-function arbitrationChanges(before,after){return [...COMBAT_CHARACTERS,...COMBAT_MOBS].flatMap(id=>{const a=COMBAT_MOBS.includes(id)?before.combat?.[id]:before.characters?.[id],b=COMBAT_MOBS.includes(id)?after.combat?.[id]:after.characters?.[id];return a&&b&&a.hp!==b.hp?[{target:id,before:a.hp,after:b.hp,delta:b.hp-a.hp}]:[]})}
-
-function arbitrationSource(request,seed){
-  const allowed=["attack","special","target","random","pnjId","actionId","word"]
-  const payload={};for(const k of allowed)if(request.payload?.[k]!==undefined)payload[k]=combatClone(request.payload[k])
-  return {kind:request.kind,actor:request.actor,payload,sequence:request.sequence,seed}
-}
-function arbitrationReplay(root,pending,uid,id,decision){
-  const base=combatClone(root);delete base.combat.pendingResolution;delete base.combat.interventionArmed
-  if(decision?.targets?.length===1&&pending.source.kind!=="enemy"){
-    const target=decision.targets[0],old=pending.source.payload.target
-    if(COMBAT_MOBS.includes(target)===COMBAT_MOBS.includes(old))base.__redirectTarget=target
-  }
-  base.combatRequests||={};base.combatRequests[id]={...combatClone(pending.source),uid,status:"queued",combatId:base.combat.id,protocol:2,sessionRevision:base.sessionControl?.revision||"initial",expiresAt:(typeof reliableActionNow==="function"?reliableActionNow():Date.now())+15000,time:Date.now()};delete base.combatRequests[id].seed
-  if(base.__redirectTarget){base.combatRequests[id].payload.target=base.__redirectTarget;delete base.__redirectTarget}
-  return reduceCombatRequestNow(base,id,pending.source.seed,{decision})
-}
+// Retired preparations are discarded, never replayed as attacks.
 function reduceCombatRequest(current,id,seed){
-  if(current?.combat?.pendingResolution||current?.combat?.interventionArmed){current=combatClone(current);delete current.combat.pendingResolution;delete current.combat.interventionArmed}
-  const q=current?.combatRequests?.[id];if(!q||q.status!=="queued")return null
-  const fail=message=>{const r=combatClone(current);r.combatRequests[id]={...q,status:"failed",error:String(message).slice(0,300)};return r}
-  try{
-    if(typeof validateReliableRequest==="function")validateReliableRequest(current,q)
-    if(current.sessionControl?.phase)throw Error("La session est en cours de synchronisation")
-    if(!current.combat||current.combat.id!==q.combatId)throw Error("Ce combat a changé")
-    if(!Number.isFinite(q.time)||(typeof reliableActionNow==="function"?reliableActionNow():Date.now())-q.time>120000)throw Error("Cette action a expiré")
-    const gm=current.roles?.[q.uid]==="gm",pending=current.combat.pendingResolution
-    if(["armIntervention","resolveIntervention","refreshIntervention","dismissIntervention"].includes(q.kind)&&!gm)throw Error("Action réservée au MJ")
-    if(pending?.source?.kind==="free"){const r=fail("Cette ancienne préparation a été supprimée. Réessayez votre action.");delete r.combat.pendingResolution;return r}
-    if(q.kind==="armIntervention"){
-      if(pending)throw Error("Une décision est déjà en attente")
-      const r=combatClone(current);r.combat.interventionArmed=!r.combat.interventionArmed;r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"control",message:r.combat.interventionArmed?"La prochaine attaque attendra la décision du MJ":"Intervention désactivée"};return r
-    }
-    if(["resolveIntervention","refreshIntervention","dismissIntervention"].includes(q.kind)){
-      if(!pending||pending.id!==q.payload?.pendingId||pending.revision!==q.payload?.revision)throw Error("Cette décision a changé ; rouvrez-la")
-      if(q.kind==="dismissIntervention"){const r=combatClone(current);delete r.combat.pendingResolution;r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"control",message:"Préparation abandonnée, action non consommée"};return r}
-      if(q.kind==="refreshIntervention"){
-        const preview=arbitrationReplay(current,pending,q.uid,id)
-        if(preview.combatRequests[id].status!=="done")throw Error(preview.combatRequests[id].error)
-        const r=combatClone(current);r.combat.pendingResolution={...pending,revision:pending.revision+1,frame:arbitrationFrame(current),preview:{result:preview.combatRequests[id].result,changes:arbitrationChanges(current,preview)}};r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"control",message:"Prévision actualisée avec le même jet"};return r
-      }
-      if(pending.frame!==arbitrationFrame(current))throw Error("L’état de la partie a changé. Actualisez la prévision avant de confirmer")
-      const d={...(q.payload.decision||{})};if(d.targetsSpecified&&!d.targets)d.targets=[];if(!["normal","half","none","custom"].includes(d.mode||"normal"))throw Error("Décision invalide")
-      const recheck=arbitrationReplay(current,pending,q.uid,id)
-      if(recheck.combatRequests[id].status!=="done")throw Error(recheck.combatRequests[id].error)
-      if(arbitrationComparable({result:recheck.combatRequests[id].result,changes:arbitrationChanges(current,recheck)})!==arbitrationComparable(pending.preview))throw Error("La prévision a changé. Actualisez avant de confirmer")
-      const r=arbitrationReplay(current,pending,q.uid,id,d)
-      if(r.combatRequests[id].status!=="done")throw Error(r.combatRequests[id].error)
-      const original=r.combatRequests[id].result,changes=arbitrationChanges(current,r)
-      const message=(String(d.narrative||"").trim()||original.attack||"Décision du MJ")+(d.cancel?" — attaque annulée (action consommée)":d.mode==="none"?" — esquive totale":"")+(changes.length?" · "+changes.map(c=>c.target.toUpperCase()+" "+(c.delta>0?"+":"")+c.delta+" PV").join(" ; "):" · aucun changement de PV")
-      const result={...original,mode:"arbitrated",message:message.slice(0,1500),changes}
-      r.combatRequests[id].result=result;r.combat.lastAction.result=result;r.combat.visualEvents[id].result=result
-      if(r.game.combatOutcome?.combatId===r.combat.id)r.game.combatOutcome.finalAction=combatClone(r.combat.lastAction)
-      recordConfirmedCombatAction(r,{...q,id},result);r.game.sessionLog["decision-"+id]=r.game.sessionLog["action-"+id];delete r.game.sessionLog["action-"+id];return r
-    }
-    if(pending)throw Error("Décision du MJ en attente : les actions sont suspendues")
-    const preview=reduceCombatRequestNow(current,id,seed)
-    if(preview?.combatRequests[id].status!=="done")return preview
-    const result=preview.combatRequests[id].result
-    const intercepted=false // MJ adjustments now apply directly; attacks no longer wait for a preview.
-    if(!intercepted)return preview
-    const r=combatClone(current);delete r.combat.interventionArmed
-    r.combat.pendingResolution={id,revision:0,frame:arbitrationFrame(current),source:arbitrationSource(q,seed),preview:{result,changes:arbitrationChanges(current,preview)}}
-    r.combatRequests[id].status="done";r.combatRequests[id].result={mode:"pending",message:"Décision du MJ en attente"};return r
-  }catch(e){return fail(e.message||e)}
+ if(current?.combat?.pendingResolution||current?.combat?.interventionArmed){current=combatClone(current);delete current.combat.pendingResolution;delete current.combat.interventionArmed}
+ const q=current?.combatRequests?.[id];if(!q||q.status!=="queued")return null
+ if(["free","armIntervention","resolveIntervention","refreshIntervention","dismissIntervention"].includes(q.kind)){
+  const root=combatClone(current);root.combatRequests[id]={...q,status:"failed",error:"Cette ancienne commande a été supprimée. Utilisez les états et PV du menu Intervenir."};return root
+ }
+ return reduceCombatRequestNow(current,id,seed)
 }
 
 const GM_COMBAT_STATES={

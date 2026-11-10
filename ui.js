@@ -919,14 +919,7 @@ function togglePlayerAttacks(){
 }
 
 
-function openGMPlayerSheet(playerID) {
-  if (!isGM) return
-  if (window.__combatPreviewPlayerId === playerID) {
-    if (typeof closeCombatPreviewHUD === "function") closeCombatPreviewHUD()
-    return
-  }
-  if (typeof setCombatPreviewPlayer === "function") setCombatPreviewPlayer(playerID)
-}
+
 
 /* ========================= */
 /* MULTI-MOBS                */
@@ -1439,13 +1432,7 @@ async function toggleCurse(level) {
   }
 }
 
-function saveCurse() {
-  if((currentSheetPlayer || myToken?.id)==="bibi")return
-  if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
-  const targetId = currentSheetPlayer || (myToken && myToken.id)
-  if (!targetId) return
-  return persistCharacterEdits(targetId,{curse:curseLevel}).catch(error=>showNotification("Malédiction non confirmée : "+error.message))
-}
+
 async function setCorruption(level) {
   const targetId = currentSheetPlayer || (myToken && myToken.id)
   if (!isGM && targetId !== (myToken && myToken.id)) return
@@ -1470,13 +1457,7 @@ async function setCorruption(level) {
   if (level < 10 && targetToken) targetToken.classList.remove("powerReady", "powerFull")
 }
 
-function saveCorruption() {
-  if((currentSheetPlayer || myToken?.id)==="bibi")return
-  if (!canAccessCharacter(currentSheetPlayer || myToken?.id)) return
-  const targetId = currentSheetPlayer || (myToken && myToken.id)
-  if (!targetId) return
-  return persistCharacterEdits(targetId,{corruption:corruptionLevel}).catch(error=>showNotification("Don non confirmé : "+error.message))
-}
+
 
 
 function showCurseWheelScreen(playerID) {
@@ -1900,84 +1881,7 @@ function _playAllyAnim(animType, color, isCrit) {
 /* VUE LECTURE SEULE JOUEUR  */
 /* ========================= */
 
-function openAllyPNJViewer() {
-  const existing = document.getElementById("allyViewerPanel"); if (existing) { existing.remove(); return }
-  db.ref("game/playerAllyAccess").once("value", snap => {
-    const access = snap.val()
-    if (!access || (access.playerId&&access.playerId!==myToken?.id) || (access.combatId&&access.combatId!==window.__combatSnapshot?.id)) {
-      showNotification("Aucune invocation donnée par le MJ à votre personnage")
-      return
-    }
 
-    let granted = null
-    ALLY_PNJS.forEach(pnj => {
-      pnj.actions.forEach(action => {
-        if (action.id === access.actionId) granted = { pnj, action }
-      })
-    })
-    if (!granted) {
-      showNotification("Invocation introuvable")
-      return
-    }
-
-    const panel = document.createElement("div"); panel.id = "allyViewerPanel"
-    panel.style.cssText = "position:fixed;bottom:80px;left:84px;background:rgba(8,20,24,0.97);border:1px solid rgba(140,80,255,0.4);box-shadow:0 0 0 1px rgba(80,40,160,0.3),0 0 30px rgba(0,0,0,0.9);border-radius:3px;padding:14px;z-index:99999999;min-width:300px;max-width:88vw;max-height:75vh;overflow-y:auto;font-family:Cinzel,serif;"
-
-    const title = document.createElement("div"); title.style.cssText = "font-size:10px;letter-spacing:3px;color:#a880ff;margin-bottom:12px;border-bottom:1px solid rgba(140,80,255,0.2);padding-bottom:6px;display:flex;justify-content:space-between;"
-    const titleLeft = document.createElement("span")
-    titleLeft.innerText = "✦ INVOCATION AUTORISÉE"
-    const titleRight = document.createElement("span")
-    titleRight.style.cssText = "cursor:pointer;color:#ff8888;"
-    titleRight.innerText = "✕"
-    titleRight.onclick = () => {
-      const panelEl = document.getElementById("allyViewerPanel")
-      if (panelEl) panelEl.remove()
-    }
-    title.appendChild(titleLeft)
-    title.appendChild(titleRight)
-    panel.appendChild(title)
-
-    const block = document.createElement("div"); block.style.cssText = "margin-bottom:6px;border-bottom:1px solid rgba(140,80,255,0.1);padding-bottom:10px;"
-    const header = document.createElement("div"); header.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:6px;"
-    const img = document.createElement("img"); img.src = "images/"+granted.pnj.image; img.style.cssText = `width:36px;height:36px;border-radius:50%;border:1px solid ${granted.pnj.color}66;object-fit:contain;filter:grayscale(20%);`; img.onerror=()=>img.style.opacity="0.3"
-    const info = document.createElement("div")
-    info.innerHTML = `<div style="font-size:13px;color:${granted.pnj.color};letter-spacing:1px;">${granted.pnj.name}</div><div style="font-size:9px;color:#4a6a7a;font-style:italic;margin-top:2px;">${granted.pnj.lore}</div>`
-    header.appendChild(img); header.appendChild(info); block.appendChild(header)
-
-    const row = document.createElement("div"); row.style.cssText = "display:flex;align-items:flex-start;gap:8px;padding:8px 8px;margin-bottom:3px;border-radius:2px;border:1px solid rgba(140,80,255,0.2);background:rgba(8,15,22,0.6);"
-    const rowIcon = document.createElement("span")
-    rowIcon.style.cssText = "font-size:16px;margin-top:1px;"
-    rowIcon.innerText = granted.action.icon
-    const rowCenter = document.createElement("div")
-    rowCenter.style.flex = "1"
-    const rowLabel = document.createElement("div")
-    rowLabel.style.cssText = `font-size:11px;color:${granted.pnj.color};letter-spacing:1px;`
-    rowLabel.innerText = granted.action.label + " "
-    const rowDice = document.createElement("span")
-    rowDice.style.cssText = "color:#5555aa;font-size:9px;"
-    rowDice.innerText = "(D" + granted.action.dice + ")"
-    rowLabel.appendChild(rowDice)
-    const rowDesc = document.createElement("div")
-    rowDesc.style.cssText = "font-size:10px;color:#3a5a6a;margin-top:3px;line-height:1.5;"
-    rowDesc.innerText = granted.action.desc
-    rowCenter.appendChild(rowLabel)
-    rowCenter.appendChild(rowDesc)
-    const rowBadge = document.createElement("span")
-    rowBadge.style.cssText = "font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(80,40,160,0.25);color:#d8b0ff;letter-spacing:1px;"
-    rowBadge.innerText = "AUTORISÉE"
-    row.appendChild(rowIcon)
-    row.appendChild(rowCenter)
-    row.appendChild(rowBadge)
-    row.style.cursor = "pointer"
-    row.style.transition = "background 0.15s,border-color 0.15s,transform 0.15s"
-    row.onmouseenter = () => { row.style.background = "rgba(20,30,48,0.85)"; row.style.borderColor = granted.pnj.color + "88"; row.style.transform = "translateX(-2px)" }
-    row.onmouseleave = () => { row.style.background = "rgba(8,15,22,0.6)"; row.style.borderColor = "rgba(140,80,255,0.2)"; row.style.transform = "" }
-    row.onclick = () => triggerAllyAction(granted.pnj, granted.action, panel)
-    block.appendChild(row)
-    panel.appendChild(block)
-    document.body.appendChild(panel)
-  })
-}
 
 
 /* ========================= */

@@ -158,10 +158,7 @@ function parseLocalStorageJSON(key, fallback) {
   }
 }
 
-function safeRemoveElement(id) {
-  const el = typeof id === "string" ? document.getElementById(id) : id
-  if (el && el.parentNode) el.parentNode.removeChild(el)
-}
+
 
 /* ========================= */
 /* NOTIFICATIONS             */
@@ -466,7 +463,7 @@ function updateCamera() {
   document.getElementById("camera").style.transform = `scale(${cameraZoom}) translate(${cameraX}px, ${cameraY}px)`
 }
 
-function syncCameraZoomToPlayers() { /* Zoom interactif désactivé. */ }
+
 
 /* ========================= */
 /* AUDIO                     */
@@ -500,13 +497,9 @@ function setUserMusicVolume(volume) {
   return window.__userMusicVolume
 }
 
-function getUserAudioVolume() {
-  return getUserEffectsVolume()
-}
 
-function setUserAudioVolume(volume) {
-  return setUserEffectsVolume(volume)
-}
+
+
 
 const EFFECTS_CLIP_GAINS={
   "spébibi.mp3": 0.5,
@@ -984,18 +977,7 @@ function preloadAssets(mapName = typeof currentMap === "string" ? currentMap : n
   image.src = "images/" + mapName
 }
 
-function scanAssets() {
-  const images = Object.keys(mapMusic).concat([
-    "greg.png","pika.png","pika-token.svg","pika-full.png","elo.png","bibi.png",
-    "gregsheet.jpg","pika-sheet.svg","elosheet.jpg","bibisheet.jpg",
-    "paper.png","paper1.png"
-  ])
-  images.forEach(img => {
-    const test = new Image()
-    test.onerror = () => console.warn("❌ IMAGE MANQUANTE → " + img)
-    test.src = "images/" + img
-  })
-}
+
 
 /* ========================= */
 /* VOLUME SLIDER             */
@@ -1090,12 +1072,5 @@ document.addEventListener("DOMContentLoaded", () => {
     })
   }
 
-  document.addEventListener("click", e => {
-    if (e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") document.body.focus()
-  })
-  document.addEventListener("mouseup", e => {
-    if (e.target.tagName !== "INPUT" && e.target.tagName !== "TEXTAREA") {
-      setTimeout(() => document.body.focus(), 0)
-    }
-  })
+
 })

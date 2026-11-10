@@ -12,14 +12,7 @@ function normalizeWantedPosterData(data) {
   return { mob, tier, reward, id }
 }
 
-function removeWantedPosterElement(id) {
-  const safeId = String(id || "")
-  if (!safeId) return
-  cleanupMapElementDragHandlers(safeId)
-  const el = document.getElementById("elem_" + safeId)
-  if (el) el.remove()
-  db.ref("elements/" + safeId).remove().catch(() => {})
-}
+
 
 async function cleanupLegacyWantedElements() {
   if(!isGM)return

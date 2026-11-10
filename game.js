@@ -3019,24 +3019,7 @@ function updateTokenStats(id) {
   })
 }
 
-function updateTokenHP() {
-  if (!myToken) return
-  const hp = parseInt(document.getElementById("hp").value) || 0
-  db.ref("characters/" + myToken.id + "/lvl").once("value", lvlSnap => {
-    const lvl   = parseInt(lvlSnap.val()) || 1
-    const maxHP = getMaxHP(id, lvl)
-    const pct   = Math.max(0, Math.min(100, (hp / maxHP) * 100))
-    const bar   = document.getElementById("hp_" + myToken.id)
-    if (bar) bar.style.width = pct + "%"
-    const token = document.getElementById(myToken.id)
-    token.classList.remove("lowHP", "midHP", "fullHP")
-    if (pct > 60)      token.classList.add("fullHP")
-    else if (pct > 30) token.classList.add("midHP")
-    else               token.classList.add("lowHP")
-  })
-  db.ref("characters/" + myToken.id + "/hp").set(hp)
-  updateTokenStats(myToken.id)
-}
+
 
 /* ========================= */
 /* PERSONNAGES                */
@@ -3906,19 +3889,7 @@ document.addEventListener("click", e => {
 /* GM                        */
 /* ========================= */
 
-function requestGM() {
-  if (window.__authRole === "gm") {
-    activateGM(true)
-    return
-  }
-  if (auth) {
-    showGMAuthModal()
-    return
-  }
-  const password = prompt("Mot de passe MJ")
-  if (password && password.toLowerCase().trim() === "mouches") activateGM()
-  else showNotification("Accès refusé")
-}
+
 
 function togglePlayerPreviewPanel() {
   const panel = document.getElementById("playerPreviewPanel")
@@ -4143,9 +4114,7 @@ function _collapsePlayerMenu(id) {
   setTimeout(() => { if (myToken?.id === id) select.style.display = "none" }, 400)
 }
 
-function togglePlayerMenu() {
-  document.getElementById("playerMenu").classList.toggle("open")
-}
+
 
 function openPlayerMenuOnStart() {
   const menu = document.getElementById("playerMenu")

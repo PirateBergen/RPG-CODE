@@ -40,7 +40,7 @@ function resolvePikaHeroAction(root,request,attack,dice) {
   if(raw.cursedEffect==="critOnly"&&raw.cursedCombatId===c.id&&!crit){result.mode="curse-blocked";result.message="Malédiction : seul un critique produit un effet";nextCombatTurn(root,request);return result}
   if(kind==="hypnosis") {
     const threshold=pikaHypnosisThreshold(c[slot]),success=!fail&&roll>=threshold,turns=crit?2:1
-    result.mode="control";result.threshold=threshold;result.hypnotized=success&&arbitrationEffects(root,slot);result.hypnosisTurns=result.hypnotized?turns:0
+    result.mode="control";result.threshold=threshold;result.hypnotized=success;result.hypnosisTurns=result.hypnotized?turns:0
     if(result.hypnotized)c[slot].pikaHypnosisTurns=Math.max(c[slot].pikaHypnosisTurns||0,turns)
     result.message=fail?"Échec critique : la séduction échoue.":!success?result.targetName+" résiste à la séduction.":result.hypnotized?result.targetName+" hypnotisé : "+turns+" tour(s) complet(s) neutralisé(s).":"L’effet est annulé par la décision du MJ."
     combatRecord(root,request,"PIKA",result.targetName,0,"hypnosis",result.message)

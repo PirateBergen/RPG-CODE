@@ -57,7 +57,6 @@ async function migrateSharedFamiliarTurn() {
 async function submitCombatAction(kind,actor,payload={}){
  requireActionAccess()
  if(!window.__combatSnapshot?.id)throw Error("Attendez la synchronisation du combat")
- if(Array.isArray(payload.decision?.targets))payload={...payload,decision:{...payload.decision,targetsSpecified:true}}
  return submitReliableAction("combatRequests",{actor,kind,payload:{...payload,version:1},combatId:window.__combatSnapshot.id,sequence:combatInt(getCombatTurnState()?.sequence)})
 }
 

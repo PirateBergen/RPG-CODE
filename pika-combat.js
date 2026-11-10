@@ -65,22 +65,26 @@ function presentPikaAttack(result) {
   if(typeof window.__cancelEndikakiPresentation==="function")window.__cancelEndikakiPresentation()
   const timers=new Set(),nodes=new Set();let cancelled=false
   const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer)}
-  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const id of ["endikakiInvocationSound","endikakiExplosionSound","pikaSpecialMusic"])document.getElementById(id)?.pause();if(window.__cancelEndikakiPresentation===cleanup)window.__cancelEndikakiPresentation=null}
+  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const id of ["endikakiInvocationSound","endikakiExplosionSound","pikaSpecialMusic","powerSound"])document.getElementById(id)?.pause();if(window.__cancelEndikakiPresentation===cleanup)window.__cancelEndikakiPresentation=null}
   window.__cancelEndikakiPresentation=cleanup
-  const caption=document.createElement("section"),title=document.createElement("h2"),description=document.createElement("p");caption.className="endikaki-caption";caption.setAttribute("role","status");title.textContent=String(result.attack||"Endikaki").toUpperCase();description.textContent=result.preview?"Invocation d’Endikaki — animation et son uniquement":result.fail?"Endikaki manque sa cible…":result.message||"Endikaki fonce sur l’ennemi et explose !";caption.append(title,description);document.body.appendChild(caption);nodes.add(caption)
+  const caption=document.createElement("section"),title=document.createElement("h2"),description=document.createElement("p");caption.className="endikaki-caption";caption.setAttribute("role","status");title.textContent=String(result.attack||"Endikaki").toUpperCase();description.textContent=result.preview?"Invocation d’Endikaki — animation et son uniquement":result.fail?"Endikaki manque sa cible…":result.message||"Endikaki fonce sur l’ennemi et explose !";const frame=document.createElement("img");frame.src="images/cadre.png";frame.alt="";frame.className="endikaki-title-frame";caption.append(frame,title,description);
+  const intro=document.createElement("div"),portrait=document.createElement("img");intro.className="endikaki-intro";portrait.className="endikaki-portrait";portrait.src="images/endikaki-token.svg";portrait.alt="Endikaki";intro.append(portrait,caption);document.body.appendChild(intro);nodes.add(intro)
   const idFor=id=>id==="mob"?"mobToken":COMBAT_MOBS.includes(id)?"mobToken_"+id:id
   let from=document.getElementById(idFor(result.actor))?.getBoundingClientRect(),to=document.getElementById(idFor(result.target))?.getBoundingClientRect()
   if(!from?.width)from=null
   if((!to||!to.width)&&result.targetPosition){const map=document.getElementById("map")?.getBoundingClientRect(),scale=typeof cameraZoom!=="undefined"?cameraZoom:1;if(map)to={left:map.left+result.targetPosition.x*scale,top:map.top+result.targetPosition.y*scale,width:80*scale,height:80*scale}}
   if(!to?.width)to=null
   const x=(to?to.left+to.width/2:innerWidth*.7)+(result.fail?80:0),y=to?to.top+to.height/2:innerHeight*.55
-  const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb);nodes.add(bomb)
   playSound("powSound",.84,true)
-  playSound("pikaSpecialMusic",.45,true)
-  later(()=>setManagedAudioBaseVolume(document.getElementById("pikaSpecialMusic"),.85,"effects"),1950)
+  playSound("powerSound",.9,true)
   playSound("endikakiInvocationSound",1,true)
-  // The supplied recording lasts 1.92 s. Keep the same timeline on every screen.
-  later(()=>{requestAnimationFrame(()=>{if(cancelled)return;bomb.style.left=x+"px";bomb.style.top=y+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"})},2000)
-  later(()=>{bomb.remove();document.getElementById("endikakiInvocationSound")?.pause();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x+"px";blast.style.top=y+"px";blast.textContent="💥";blast.setAttribute("aria-label",result.fail?"Endikaki explose à côté de la cible":"Endikaki explose");const ring=document.createElement("span");ring.className="endikaki-shockwave";blast.appendChild(ring);document.body.appendChild(blast);nodes.add(blast);playSound("endikakiExplosionSound",.3,true);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},2950)
-  later(cleanup,4200)
+  // Presentation first; music and the attack begin only after its 3.2-second reveal.
+  later(()=>{
+   intro.remove();document.getElementById("endikakiInvocationSound")?.pause()
+   playSound("pikaSpecialMusic",.85,true)
+  const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb);nodes.add(bomb)
+   later(()=>requestAnimationFrame(()=>{if(cancelled)return;bomb.style.left=x+"px";bomb.style.top=y+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"}),80)
+  later(()=>{bomb.remove();document.getElementById("endikakiInvocationSound")?.pause();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x+"px";blast.style.top=y+"px";blast.textContent="💥";blast.setAttribute("aria-label",result.fail?"Endikaki explose à côté de la cible":"Endikaki explose");const ring=document.createElement("span");ring.className="endikaki-shockwave";blast.appendChild(ring);document.body.appendChild(blast);nodes.add(blast);playSound("endikakiExplosionSound",.3,true);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},950)
+  },3200)
+  later(cleanup,5400)
 }

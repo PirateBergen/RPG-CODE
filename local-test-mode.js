@@ -111,7 +111,7 @@ function playSpecialPreview(actor){
  if(!specialPreviewAllowed()||!CHARACTER_IDS.includes(actor))return false
  if(specialPreviewPending||window.__sharedVisualBusy||window.__sessionBusy||(combatActive&&Date.now()<(window.__combatIntroUntil||0))){showNotification("Attendez la fin de l’animation en cours.");return false}
  const attack=getPlayerSpecialAttack(actor);if(!attack)return false
- const duration=actor==="ju"?4200:6800
+ const duration=actor==="ju"?5400:6800
  let cancelled=false,cancelEffect=null,releaseTimer=null
  const cancel=()=>{document.getElementById("stopSpecialPreview")?.remove();cancelled=true;clearTimeout(releaseTimer);cancelEffect?.();specialPreviewPending=false;if(window.__cancelSpecialPreview===cancel)window.__cancelSpecialPreview=null}
  specialPreviewPending=true;window.__cancelSpecialPreview=cancel;closeSpecialPreviewPanel()

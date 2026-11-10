@@ -1502,74 +1502,6 @@ html, body {
 }
 
 /* ========================= */
-/* FICHE PERSONNAGE          */
-/* ========================= */
-
-#characterSheet {
-  overflow-y: auto; max-height: 90vh;
-  position: fixed; top: 50%; left: 50%;
-  transform: translate(-50%,-50%);
-  background: url("images/paper1.png"); background-size: cover;
-  padding: 40px; display: none;
-  z-index: 9999999;
-  font-family: var(--font-text);
-  color: black;
-  box-shadow: 0 0 40px black;
-}
-
-#sheetContainer { position: relative; }
-#sheetImage { width: 90vw; max-width: 900px; }
-
-.sheetField {
-  position: absolute;
-  background: rgba(255,255,255,0.2);
-  border: none; padding-left: 8px;
-  font-size: 20px; font-family: var(--font-body);
-  text-align: center; color: black; z-index: 10;
-}
-
-/* Malédiction */
-.curseGem {
-  display: inline-block; width: 20px; height: 20px;
-  background: url("mouche.png") center/contain no-repeat;
-  margin-right: 2px; cursor: pointer; transition: all 0.2s;
-  touch-action: manipulation;
-  filter: grayscale(100%) brightness(0.25);
-  border: none; border-radius: 0;
-}
-
-.curseGem.active {
-  filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.1) contrast(1.5);
-  box-shadow: 0 0 8px red, 0 0 18px darkred;
-  animation: curseFlyPulse 1s ease-in-out infinite alternate;
-}
-
-@keyframes curseFlyPulse {
-  0%   { filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.0) contrast(1.5); }
-  100% { filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.4) contrast(1.8); }
-}
-
-.corruptionPoint {
-  display: inline-block; width: 22px; height: 12px;
-  background: rgba(15,40,50,0.8); margin-right: 2px;
-  border-radius: 2px; cursor: pointer;
-  border: 1px solid rgba(30,90,102,0.5);
-  touch-action: manipulation;
-}
-
-.corruptionPoint.active {
-  background: linear-gradient(180deg, #ffe066, #caa300);
-  border: 1px solid #b89600;
-  box-shadow: 0 0 6px gold, 0 0 14px gold;
-  animation: powerPulse 1.2s infinite alternate;
-}
-
-@keyframes powerPulse {
-  0%   { box-shadow: 0 0 6px gold, 0 0 12px goldenrod; transform: scale(1); }
-  100% { box-shadow: 0 0 10px gold, 0 0 22px gold; transform: scale(1.15); }
-}
-
-/* ========================= */
 /* ONGLETS PNJ               */
 /* ========================= */
 
@@ -6163,8 +6095,7 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 .shopOverlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:9999990}.shopBox{background:url("images/shelf.png") center/100% 100% no-repeat;width:min(900px,92vw);max-height:85vh;min-height:min(400px,calc(100dvh - 24px));overflow:auto;padding:50px 50px 40px;border:0;border-radius:0;box-shadow:none;position:relative;color:#f5ead8;font:16px "IM Fell English",serif}.shopBox h2{text-align:center;font-family:"Cinzel Decorative",Cinzel,serif;font-size:28px;font-weight:400;color:#fff;text-shadow:0 1px 4px #000c;margin:0 0 6px;letter-spacing:3px}.shopTools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0 20px}.shopButton{padding:5px 12px;background:rgba(0,0,0,.25);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:3px;font:11px Cinzel,serif;text-shadow:0 1px 2px #000c;cursor:pointer}.shopButton[aria-pressed=true]{border-color:rgba(255,255,255,.5);background:rgba(0,0,0,.45)}.shopButton:disabled{opacity:.5;cursor:wait}.shopButton:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}.shopGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(180px,100%),1fr));gap:12px}.shopItem{padding:12px;background:rgba(0,0,0,.18);border:0;border-radius:0;display:flex;flex-direction:column;gap:6px;text-shadow:0 1px 3px #000c}.shopItem img{height:40px;width:40px;object-fit:contain;flex:0 0 auto}.shopItem h3,.shopItem p{margin:0;overflow-wrap:anywhere}.shopItem strong{color:#ffc840;font:bold 14px Cinzel,serif}.shopEditorOverlay{z-index:10000000}.shopEditor{width:min(640px,92vw);min-height:0;background:#18120e;padding:24px;border:1px solid #b59255;border-radius:10px}.shopField{display:flex;flex-direction:column;gap:6px;margin:12px 0}.shopField input,.shopField select,.shopField textarea{padding:9px;background:#17130e;color:#fff1d8;border:1px solid #a58a5b;border-radius:4px;font:16px Georgia,serif}.shopImageBank{display:flex;gap:8px;flex-wrap:wrap}.shopImageBank img{width:40px;height:40px;object-fit:contain}.shopImageBank button{padding:6px}.shopEditor fieldset{border:1px solid #746044;border-radius:5px}
 
 /* Fenêtres adaptées à la place disponible; la carte conserve son échelle. */
-.compactSheetLabel,.compactSheetClose{display:none!important}
-#characterSheet{z-index:1000000004;box-sizing:border-box;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overscroll-behavior:contain}
+
 .shopOverlay,.shopBox,#gmArbitrationModal,#gmArbitrationModal>div{box-sizing:border-box}
 .shopBox{max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overscroll-behavior:contain}
 #gmArbitrationModal>div{max-width:100%;max-height:calc(100dvh - 30px);min-width:0;overflow-wrap:anywhere}
@@ -6173,27 +6104,7 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 #freePointsPanel{z-index:1000000006!important}
 #notesEditorPanel{top:12px!important;max-height:calc(100dvh - 24px)}
 @media(max-width:1000px){
- #characterSheet{width:min(620px,calc(100vw - 16px));padding:16px;color:#302115}
- #sheetTitle{font-size:20px;margin:8px 0 16px;clear:both}
- .compactSheetClose{display:block!important;position:sticky;top:0;margin-left:auto;z-index:20;padding:9px 14px;background:#30251b;color:#fff1d8;border:1px solid #a58a5b;border-radius:5px}
- #sheetContainer{display:grid;grid-template-columns:minmax(105px,1fr) minmax(0,2fr);gap:10px;align-items:center}
- #sheetImage{grid-column:1/-1;display:block;width:100%;max-height:230px;object-fit:contain;margin-bottom:8px}
- #sheetContainer>.compactSheetLabel{display:block!important;font:16px Georgia,serif;text-shadow:none}
- #sheetContainer>.compactSheetLabel.playerOnly[style*="none"]{display:none!important}
- #sheetContainer>.sheetField{position:static!important;inset:auto!important;width:100%!important;height:auto!important;min-width:0;min-height:40px;font:18px Georgia,serif!important;box-sizing:border-box;background:#fff8e9;border:1px solid #8e724a;padding:8px;color:#302115;text-shadow:none}
- #sheetContainer>textarea.sheetField{grid-column:1/-1;min-height:180px;text-align:left;resize:vertical;line-height:1.5}
- #sheetContainer>label[for="notes"],#sheetContainer>label[for="inventaire"]{grid-column:1/-1;margin-top:8px}
- #weightContainer,#curseBar,#corruptionBar,#hpBarContainer{position:static!important;inset:auto!important;grid-column:1/-1;width:auto!important;max-width:100%;box-sizing:border-box}
- #weightContainer{padding:10px;background:#f5dfb4;border:1px solid #8e724a}
- #weightContainer::before{content:"Charge : ";font:16px Georgia,serif}
- #weightContainer .sheetField{width:55px!important;padding:0;font-size:18px}
- #weightBarContainer{max-width:100%}
- #curseBar,#corruptionBar{display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:36px}
- #curseBar::before{content:"Malédiction : ";font:16px Georgia,serif}
- #corruptionBar::before{content:"Don : ";font:16px Georgia,serif}
- #curseBar[style*="none"],#corruptionBar[style*="none"]{display:none!important}
- #goldZone{margin-top:18px;flex-wrap:wrap}
- #inventoryTools,#inventoryTools input{box-sizing:border-box;max-width:100%}
+
  #gmBar{width:calc(100vw - 16px)!important;bottom:8px!important;justify-content:flex-start;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px!important;scrollbar-width:thin}
  #gmBar>*{flex-shrink:0}
  .gmSection{left:8px!important;right:8px!important;bottom:82px!important;transform:none;width:auto!important;max-width:calc(100vw - 16px);max-height:calc(100dvh - 100px);box-sizing:border-box;padding:16px!important;overscroll-behavior:contain}
@@ -6214,7 +6125,7 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
  #locationText{font-size:clamp(18px,4vw,28px);letter-spacing:1px;padding:20px}
 }
 @media(max-height:600px){
- #characterSheet{padding:12px}
+
  #combatHUD{max-height:52dvh;bottom:76px}
  #combatHUDPortrait{display:none}
  #combatHUDInfo{max-height:none}
@@ -6222,7 +6133,6 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
  #gmShortcutHelp{bottom:12px!important;max-height:calc(100dvh - 24px)!important}
 }
 
-#characterSheet,#inventoryTools *{text-shadow:none}
 @media(max-width:1000px){#gmBar{box-sizing:border-box}}
 
 @media(max-width:600px){#combatHUD{bottom:200px;max-height:min(45dvh,calc(100dvh - 220px))}}
@@ -6270,11 +6180,6 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 @media(prefers-reduced-motion:reduce){#nightMapFilter,#nightDarknessFilter{transition:none}#nightTransitionNotice{animation:none}}
 
 /* Stable inventory stat choices, with no floating dropdown. */
-#inventoryItemStats .inventoryStatChoices{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%;min-width:0;margin:0;padding:0;border:0}
-#inventoryItemStats .inventoryStatChoices legend{margin-bottom:5px;padding:0}
-#inventoryItemStats .inventoryStatChoices button{min-height:36px;padding:6px 11px;border:1px solid #8b6a3a;border-radius:5px;background:#f8e7c7;color:#382712;font:inherit;cursor:pointer}
-#inventoryItemStats .inventoryStatChoices button[aria-pressed="true"]{background:#523b1b;color:#fff0ce;border-color:#38230e;box-shadow:inset 0 0 0 1px #cda95b;font-weight:bold}
-#inventoryItemStats .inventoryStatChoices button:focus-visible{outline:3px solid #287787;outline-offset:2px}
 
 .worldBossFleeBox{box-sizing:border-box;position:fixed;right:16px;bottom:100px;z-index:9999999;max-width:min(360px,90vw);padding:14px;color:#e2ecf4;background:#102330f5;border:1px solid #648fa5;border-radius:6px;box-shadow:0 6px 24px #0009;font:16px Georgia}.worldBossFleeBox button{margin:4px;padding:8px;min-height:36px;cursor:pointer}.worldBossFleeBox p{margin:0 0 8px}
 
@@ -6343,3 +6248,190 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 .allyManagementRow{display:grid;grid-template-columns:44px 1fr;gap:8px 12px;align-items:center;padding:12px 0;border-bottom:1px solid #bc945444}.allyManagementActions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}.allyDiscoveryBox .allyManagementActions button{width:auto;flex:1;justify-content:center;margin:0;font-size:14px;min-height:42px}
 
 .endikaki-intro{position:fixed;inset:0;z-index:2147483644;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(ellipse at 50% 36%,#58275bd9,#080915d9 65%,#0008);overflow:hidden}.endikaki-portrait{width:min(44vh,340px,70vw);height:min(44vh,340px,70vw);object-fit:contain;filter:drop-shadow(0 0 22px #ffcf69) drop-shadow(0 0 50px #b54cdd);animation:endikakiReveal 3.2s ease both}.endikaki-intro .endikaki-caption{position:relative;left:auto;top:auto;transform:none;min-height:170px;display:flex;flex-direction:column;justify-content:center;padding:28px 42px;background:none}.endikaki-title-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:-1}.endikaki-intro h2{font-size:clamp(26px,5vw,46px)}.endikaki-intro p{font-size:clamp(14px,2vw,20px);margin:0 5%}@keyframes endikakiReveal{0%{opacity:0;transform:scale(.6) rotate(-8deg)}20%,85%{opacity:1;transform:scale(1)}100%{opacity:1;transform:scale(1.04)}}@media(prefers-reduced-motion:reduce){.endikaki-portrait{animation:none}}
+
+/* FICHE ET INVENTAIRE — bases, formulaire et adaptations mobiles.
+   Les coordonnées propres aux personnages restent gérées par le jeu. */
+#characterSheet {
+  overflow-y: auto;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: url("images/paper1.png") 0% 0% / cover;
+  padding: 40px;
+  display: none;
+  font-family: var(--font-text);
+  color: black;
+  box-shadow: black 0px 0px 40px;
+  z-index: 1000000004;
+  box-sizing: border-box;
+  max-width: calc(-16px + 100vw);
+  max-height: calc(100dvh - 16px);
+  overscroll-behavior: contain;
+}
+
+#sheetContainer {
+  position: relative;
+}
+
+#sheetImage {
+  width: 90vw;
+  max-width: 900px;
+}
+
+.sheetField {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.2);
+  border-width: medium;
+  border-style: none;
+  border-color: currentcolor;
+  border-image: none;
+  padding-left: 8px;
+  font-size: 20px;
+  font-family: var(--font-body);
+  text-align: center;
+  color: black;
+  z-index: 10;
+}
+
+.curseGem {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: url("mouche.png") center center / contain no-repeat;
+  margin-right: 2px;
+  cursor: pointer;
+  transition: 0.2s;
+  touch-action: manipulation;
+  filter: grayscale(100%) brightness(0.25);
+  border-width: medium;
+  border-style: none;
+  border-color: currentcolor;
+  border-image: none;
+  border-radius: 0px;
+}
+
+.curseGem.active {
+  filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.1) contrast(1.5);
+  box-shadow: red 0px 0px 8px, darkred 0px 0px 18px;
+  animation: 1s ease-in-out 0s infinite alternate none running curseFlyPulse;
+}
+
+.corruptionPoint {
+  display: inline-block;
+  width: 22px;
+  height: 12px;
+  background: rgba(15, 40, 50, 0.8);
+  margin-right: 2px;
+  border-radius: 2px;
+  cursor: pointer;
+  border: 1px solid rgba(30, 90, 102, 0.5);
+  touch-action: manipulation;
+}
+
+.corruptionPoint.active {
+  background: linear-gradient(rgb(255, 224, 102), rgb(202, 163, 0));
+  border: 1px solid rgb(184, 150, 0);
+  box-shadow: gold 0px 0px 6px, gold 0px 0px 14px;
+  animation: 1.2s ease 0s infinite alternate none running powerPulse;
+}
+
+.compactSheetLabel,.compactSheetClose {
+  display: none !important;
+}
+
+#characterSheet,#inventoryTools * {
+  text-shadow: none;
+}
+
+#inventoryItemStats .inventoryStatChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 100%;
+  min-width: 0px;
+  margin: 0px;
+  padding: 0px;
+  border: 0px;
+}
+
+#inventoryItemStats .inventoryStatChoices legend {
+  margin-bottom: 5px;
+  padding: 0px;
+}
+
+#inventoryItemStats .inventoryStatChoices button {
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 1px solid rgb(139, 106, 58);
+  border-radius: 5px;
+  background: rgb(248, 231, 199);
+  color: rgb(56, 39, 18);
+  font: inherit;
+  cursor: pointer;
+}
+
+#inventoryItemStats .inventoryStatChoices button[aria-pressed="true"] {
+  background: rgb(82, 59, 27);
+  color: rgb(255, 240, 206);
+  border-color: rgb(56, 35, 14);
+  box-shadow: rgb(205, 169, 91) 0px 0px 0px 1px inset;
+  font-weight: bold;
+}
+
+#inventoryItemStats .inventoryStatChoices button:focus-visible {
+  outline: rgb(40, 119, 135) solid 3px;
+  outline-offset: 2px;
+}
+
+@keyframes curseFlyPulse {
+  0%   { filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.0) contrast(1.5); }
+  100% { filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.4) contrast(1.8); }
+}
+
+@keyframes powerPulse {
+  0%   { box-shadow: 0 0 6px gold, 0 0 12px goldenrod; transform: scale(1); }
+  100% { box-shadow: 0 0 10px gold, 0 0 22px gold; transform: scale(1.15); }
+}
+
+/* Formulaire : styles fixes, communs au HTML et aux lignes créées par le jeu. */
+#sheetTitle { text-align:center; font-family:'Cinzel'; margin-bottom:10px; }
+#inventoryTools { padding:12px; border:1px solid #795c34; background:#f5dfb4; color:#302115; max-width:850px; margin-bottom:14px; }
+#inventoryTools .inventoryHelp { margin:6px 0; font-size:15px; }
+#inventoryTools .inventoryItemForm { display:flex; gap:8px; flex-wrap:wrap; align-items:end; }
+#inventoryTools #inventoryItemName { max-width:200px; }
+#inventoryItemQuantity { width:70px; }
+#inventoryItemWeight { width:90px; }
+#inventoryItemStats { flex-basis:100%; display:grid; gap:6px; }
+#inventoryWeightStatus { margin-top:10px; font-size:15px; }
+#inventoryItemStats .inventoryStatRow { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+#inventoryItemStats .inventoryStatValue { width:80px; }
+
+@media(max-width:1000px) {
+  #characterSheet {width:min(620px,calc(100vw - 16px));padding:16px;color:#302115}
+  #sheetTitle {font-size:20px;margin:8px 0 10px;clear:both}
+  .compactSheetClose {display:block!important;position:sticky;top:0;margin-left:auto;z-index:20;padding:9px 14px;background:#30251b;color:#fff1d8;border:1px solid #a58a5b;border-radius:5px}
+  #sheetContainer {display:grid;grid-template-columns:minmax(105px,1fr) minmax(0,2fr);gap:10px;align-items:center}
+  #sheetImage {grid-column:1/-1;display:block;width:100%;max-height:230px;object-fit:contain;margin-bottom:8px}
+  #sheetContainer>.compactSheetLabel {display:block!important;font:16px Georgia,serif;text-shadow:none}
+  #sheetContainer>.compactSheetLabel.playerOnly[style*="none"] {display:none!important}
+  #sheetContainer>.sheetField {position:static!important;inset:auto!important;width:100%!important;height:auto!important;min-width:0;min-height:40px;font:18px Georgia,serif!important;box-sizing:border-box;background:#fff8e9;border:1px solid #8e724a;padding:8px;color:#302115;text-shadow:none}
+  #sheetContainer>textarea.sheetField {grid-column:1/-1;min-height:180px;text-align:left;resize:vertical;line-height:1.5}
+  #sheetContainer>label[for="notes"],#sheetContainer>label[for="inventaire"] {grid-column:1/-1;margin-top:8px}
+  #weightContainer,#curseBar,#corruptionBar,#hpBarContainer {position:static!important;inset:auto!important;grid-column:1/-1;width:auto!important;max-width:100%;box-sizing:border-box}
+  #weightContainer {padding:10px;background:#f5dfb4;border:1px solid #8e724a}
+  #weightContainer::before {content:"Charge : ";font:16px Georgia,serif}
+  #weightContainer .sheetField {width:55px!important;padding:0;font-size:18px}
+  #weightBarContainer {max-width:100%}
+  #curseBar,#corruptionBar {display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:36px}
+  #curseBar::before {content:"Malédiction : ";font:16px Georgia,serif}
+  #corruptionBar::before {content:"Don : ";font:16px Georgia,serif}
+  #curseBar[style*="none"],#corruptionBar[style*="none"] {display:none!important}
+  #goldZone {margin-top:18px;flex-wrap:wrap}
+  #inventoryTools {box-sizing:border-box}
+  #inventoryTools input {box-sizing:border-box;max-width:100%}
+}
+
+@media(max-height:600px) {
+  #characterSheet {padding:12px}
+}

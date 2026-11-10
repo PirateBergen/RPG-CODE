@@ -46,3 +46,5 @@ Découpage des raccourcis : shortcuts.js regroupe le gestionnaire clavier, son a
 Nettoyage du 10 novembre : control-focus-browser vérifie que les listes natives, boutons et textes éditables gardent leur focus. retired-combat-commands couvre les anciennes commandes pour MJ et joueurs. Les migrations des anciennes sauvegardes restent testées.
 
 menu-navigation-browser exerce les vrais onglets PNJ et catégories avec le CSS du jeu : navigation maintenue, choix final fermé et bonne sélection sur mobile et ordinateur.
+
+inventory-form-browser exerce le vrai formulaire et ses boutons de caractéristiques dans Edge, sur mobile et ordinateur : ajout, quantité, calcul de charge, bonus, navigation clavier et retrait. Les écritures de sauvegarde y sont simulées ; firebase-inventory-builder vérifie la sauvegarde réelle dans l’émulateur.

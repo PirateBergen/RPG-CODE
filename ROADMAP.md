@@ -32,3 +32,7 @@ Première extraction de game.js et ui.js : raccourcis et aide dans shortcuts.js,
 ## Menus — regroupement des styles
 
 51 blocs dispersés regroupés en 33 blocs de base ; 20 priorités dupliquées retirées, total 345. Comparaison finale identique sur 35 configurations de menus. Adaptations mobiles, restrictions de rôle et exception du menu Action conservées. Voir MENUS-STYLES-2026-11-10.md.
+
+## Fiches et inventaire — styles
+
+Bases, jauges, animations, formulaire et adaptations mobiles regroupés. Onze styles fixes retirés du HTML/JS et centralisés dans le CSS ; valeurs effectives et coordonnées des champs conservées. Comparaison identique sur 30 configurations. Voir FICHES-STYLES-2026-11-10.md.

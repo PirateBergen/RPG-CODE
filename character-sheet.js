@@ -302,7 +302,7 @@ function updateWeightBar() {
 function addInventoryStatRow(){
  if(!canAccessCharacter(currentSheetPlayer))return
  const zone=document.getElementById("inventoryItemStats");if(!zone)return
- const row=document.createElement("div");row.className="inventoryStatRow";row.style.cssText="display:flex;gap:8px;flex-wrap:wrap;align-items:center"
+ const row=document.createElement("div");row.className="inventoryStatRow"
  row.dataset.stat="force"
  const choices=document.createElement("fieldset");choices.className="inventoryStatChoices"
  const legend=document.createElement("legend");legend.textContent="Caractéristique";choices.appendChild(legend)
@@ -313,7 +313,7 @@ function addInventoryStatRow(){
   choices.appendChild(button)
  }
  row.appendChild(choices)
- const pointsLabel=document.createElement("label");pointsLabel.textContent="Points ";const points=document.createElement("input");points.className="inventoryStatValue";points.type="number";points.min="-1000";points.max="1000";points.step="1";points.value="1";points.style.width="80px";points.setAttribute("aria-label","Points de caractéristique");pointsLabel.appendChild(points);row.appendChild(pointsLabel)
+ const pointsLabel=document.createElement("label");pointsLabel.textContent="Points ";const points=document.createElement("input");points.className="inventoryStatValue";points.type="number";points.min="-1000";points.max="1000";points.step="1";points.value="1";points.setAttribute("aria-label","Points de caractéristique");pointsLabel.appendChild(points);row.appendChild(pointsLabel)
  const remove=document.createElement("button");remove.type="button";remove.className="inventoryStatRemove";remove.textContent="Retirer";remove.onclick=()=>row.remove();row.appendChild(remove);zone.appendChild(row);choices.querySelector("button").focus()
 }
 function inventoryItemStatText(){

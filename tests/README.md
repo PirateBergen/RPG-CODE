@@ -44,3 +44,5 @@ Réseau : network-safety.cjs couvre les réponses vides des écritures simples, 
 Découpage des raccourcis : shortcuts.js regroupe le gestionnaire clavier, son aide et son style. game.js garde seulement l’appel d’installation à la position d’origine. shortcuts.cjs et shortcuts-browser.cjs vérifient les frappes réelles, les champs de saisie, les droits de fiche, les modificateurs et Échap. browser-scripts.cjs fait charger les sessions simulées dans l’ordre réel de index.html, et modules.cjs vérifie l’unicité et le précache des scripts.
 
 Nettoyage du 10 novembre : control-focus-browser vérifie que les listes natives, boutons et textes éditables gardent leur focus. retired-combat-commands couvre les anciennes commandes pour MJ et joueurs. Les migrations des anciennes sauvegardes restent testées.
+
+menu-navigation-browser exerce les vrais onglets PNJ et catégories avec le CSS du jeu : navigation maintenue, choix final fermé et bonne sélection sur mobile et ordinateur.

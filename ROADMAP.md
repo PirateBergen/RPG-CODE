@@ -28,3 +28,7 @@ Première extraction de game.js et ui.js : raccourcis et aide dans shortcuts.js,
 ## Priorités CSS — 10 novembre
 
 114 priorités redondantes retirées (479 → 365), sans ajouter de spécificité artificielle. Styles calculés identiques dans 30 configurations contrôlées. Les priorités non couvertes ou nécessaires à la visibilité, aux interactions et aux transitions restent conservées. Voir STYLES-PRIORITES-2026-11-10.md.
+
+## Menus — regroupement des styles
+
+51 blocs dispersés regroupés en 33 blocs de base ; 20 priorités dupliquées retirées, total 345. Comparaison finale identique sur 35 configurations de menus. Adaptations mobiles, restrictions de rôle et exception du menu Action conservées. Voir MENUS-STYLES-2026-11-10.md.

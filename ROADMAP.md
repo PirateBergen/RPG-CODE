@@ -47,4 +47,4 @@ Reprendre le nettoyage des styles de l’écran de combat : regrouper HUD, panne
 
 Acquis une fois à la sortie de l’Antre, affiché comme état permanent dans les fiches et conservé dans la sauvegarde. Les KO restent possibles ; à la fin de tout combat, seuls les bénéficiaires KO retrouvent leurs PV maximum. Sans le don, une mort ordinaire reste un KO au retour. La Gardienne en tant que PNJ sera ajoutée ultérieurement. Voir IMMORTALITE-QUANTIQUE-2026-11-10.md. La reprise prévue du nettoyage concerne toujours les styles de combat.
 
-- Gardienne : PNJ Autres et invocation de soin ajoutés ; remplacer `images/gardienne.svg` par le portrait fourni lorsque son fichier sera reçu.
+- Gardienne : portrait reçu et intégré au PNJ Autres et à son invocation ; ancien nom d’image conservé pour les sauvegardes.

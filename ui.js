@@ -1269,6 +1269,7 @@ const PNJ_NAMES = {
   "garde2.png":            "Ketill",
   "conseillerroinord.png": "Conseiller Hákon",
   "gardienne.svg": "La Gardienne",
+  "gardienne.jpg": "La Gardienne",
   "pretre.png":            "Frère Osvald",
   "pnj1.png":              "Un passant",
   "pnj2.png":              "Une villageoise",

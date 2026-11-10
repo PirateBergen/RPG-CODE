@@ -108,10 +108,10 @@ function renderCombatInitiativeToggle(state) {
 
   const wrap = document.createElement("div")
   wrap.id = "combatInitiativeToggle"
-  wrap.style.cssText = "position:fixed;top:88px;right:22px;z-index:999999996;display:flex;gap:6px;"
+  wrap.classList.add("combatInitiativeToggleLayout")
 
   const btn = document.createElement("button")
-  btn.style.cssText = "padding:10px 14px;font-family:Cinzel,serif;font-size:12px;letter-spacing:0.8px;background:linear-gradient(180deg,rgba(12,24,30,0.94),rgba(6,12,18,0.94));color:#f3ddb0;border:1px solid rgba(214,164,90,0.4);border-radius:999px;cursor:pointer;box-shadow:0 12px 24px rgba(0,0,0,0.28);"
+  btn.classList.add("combatInitiativeOrderButton")
   btn.innerText = state.phase === "rolling" ? "🎲 Dés d'init" : "📋 Ordre"
   btn.onclick = () => {
     window.__combatInitiativeHidden = false
@@ -121,7 +121,7 @@ function renderCombatInitiativeToggle(state) {
 
   if (isGM && state.phase === "rolling") {
     const rollAllBtn = document.createElement("button")
-    rollAllBtn.style.cssText = "padding:10px 14px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(180deg,rgba(70,40,10,0.96),rgba(35,18,4,0.96));color:#ffe8bb;border:1px solid rgba(212,168,91,0.55);border-radius:999px;cursor:pointer;box-shadow:0 12px 24px rgba(0,0,0,0.28);"
+    rollAllBtn.classList.add("combatInitiativeRollAllToggle")
     rollAllBtn.innerText = "⚡ Tout lancer"
     rollAllBtn.onclick = () => {
       if (typeof submitAllInitiativeRollsForGMTest === "function") submitAllInitiativeRollsForGMTest()
@@ -145,15 +145,15 @@ function renderCombatInitiativeOverlay(state) {
 
   const overlay = document.createElement("div")
   overlay.id = "combatInitiativeOverlay"
-  overlay.style.cssText = "position:fixed;inset:0;background:radial-gradient(circle at center, rgba(6,14,22,0.68), rgba(0,0,0,0.9));display:flex;align-items:center;justify-content:center;z-index:999999995;backdrop-filter:blur(5px);"
+  overlay.classList.add("combatInitiativeOverlay")
 
   const box = document.createElement("div")
-  box.style.cssText = "width:min(980px,92vw);max-height:84vh;overflow:auto;padding:22px 24px;background:linear-gradient(180deg,rgba(10,16,22,0.94),rgba(6,8,12,0.96)), url('images/combat_panel.png') center/cover no-repeat;border:1px solid rgba(201,159,88,0.4);border-radius:18px;box-shadow:0 24px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,226,178,0.08);font-family:Cinzel,serif;color:#f2dfbc;"
+  box.classList.add("combatInitiativePanel")
 
   const topBar = document.createElement("div")
-  topBar.style.cssText = "display:flex;justify-content:flex-end;margin-bottom:6px;"
+  topBar.classList.add("combatInitiativeCloseRow")
   const hideBtn = document.createElement("button")
-  hideBtn.style.cssText = "padding:7px 12px;font-family:Cinzel,serif;font-size:11px;background:linear-gradient(#38444b,#171e22);color:#dbe8ef;border:1px solid rgba(132,158,173,0.45);border-radius:8px;cursor:pointer;"
+  hideBtn.classList.add("combatInitiativeCloseButton")
   hideBtn.innerText = "Fermer"
   hideBtn.onclick = () => {
     window.__combatInitiativeHidden = true
@@ -164,19 +164,19 @@ function renderCombatInitiativeOverlay(state) {
   box.appendChild(topBar)
 
   const title = document.createElement("div")
-  title.style.cssText = "text-align:center;font-size:34px;letter-spacing:5px;color:#f3d59a;margin-bottom:8px;text-shadow:0 2px 0 rgba(0,0,0,0.4),0 0 18px rgba(214,164,90,0.12);"
+  title.classList.add("combatInitiativeTitle")
   title.innerText = state.phase === "rolling" ? "Initiative du Combat" : "Ordre du Combat"
   box.appendChild(title)
 
   const sub = document.createElement("div")
-  sub.style.cssText = "text-align:center;font-size:14px;color:#c7b088;margin-bottom:20px;letter-spacing:0.5px;"
+  sub.classList.add("combatInitiativeSubtitle")
   sub.innerText = state.phase === "rolling"
     ? "Chaque combattant lance un D12. Le MJ lance pour les mobs."
     : "Round " + (state.round || 1) + " — tour actuel : " + heroDisplayName(state.currentActorId).toUpperCase() + (window.__combatSnapshot?.[state.currentActorId]?.actionsPerTurn>1?" — action "+((state.actorActionIndex||0)+1)+"/2":"")
   box.appendChild(sub)
 
   const grid = document.createElement("div")
-  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(164px,1fr));gap:14px;"
+  grid.classList.add("combatInitiativeGrid")
   box.appendChild(grid)
 
   let entries = state.phase === "active"
@@ -195,12 +195,12 @@ function renderCombatInitiativeOverlay(state) {
 
     const portrait = document.createElement("img")
     portrait.src = "images/" + sanitizeAssetName(entry.id === "ju" ? heroPortraitFile("ju") : entry.image || "")
-    portrait.style.cssText = "width:74px;height:74px;object-fit:contain;border-radius:50%;border:2px solid rgba(214,172,96,0.45);margin-bottom:10px;background:rgba(0,0,0,0.22);box-shadow:0 0 0 2px rgba(63,117,136,0.18);"
+    portrait.classList.add("combatInitiativePortrait")
     portrait.onerror = () => { portrait.style.display = "none" }
     card.appendChild(portrait)
 
     const name = document.createElement("div")
-    name.style.cssText = "font-size:15px;letter-spacing:1px;color:#f0ddba;margin-bottom:8px;text-transform:uppercase;"
+    name.classList.add("combatInitiativeName")
     name.innerText = state.phase === "active" ? (idx + 1) + ". " + combatParticipantDisplayName(entry) : combatParticipantDisplayName(entry)
     card.appendChild(name)
 
@@ -209,26 +209,26 @@ function renderCombatInitiativeOverlay(state) {
       : (state.phase === "active" ? parseInt(entry.roll, 10) : null)
 
     const roll = document.createElement("div")
-    roll.style.cssText = "font-size:26px;color:#8fd8ff;text-shadow:0 0 12px rgba(120,200,255,0.35);margin-bottom:10px;"
+    roll.classList.add("combatInitiativeRoll")
     roll.innerText = Number.isFinite(rollVal) ? "D12 : " + rollVal : "—"
     card.appendChild(roll)
 
     if (state.phase === "rolling") {
       if (canRollInitiativeForActor(entry.id, state)) {
         const btn = document.createElement("button")
-        btn.style.cssText = "padding:8px 14px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(#234d66,#142f40);color:#e8f4ff;border:1px solid rgba(125,178,212,0.55);border-radius:8px;cursor:pointer;"
+        btn.classList.add("combatInitiativeRollButton")
         btn.innerText = "Lancer D12"
         btn.onclick = () => submitInitiativeRoll(entry.id)
         card.appendChild(btn)
       } else if (isGM && !Number.isFinite(rollVal) && !initiativeRollsInFlight.has(initiativeRollKey(entry.id))) {
         const gmBtn = document.createElement("button")
-        gmBtn.style.cssText = "padding:8px 14px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(#6a4b1b,#342109);color:#ffe8bb;border:1px solid rgba(212,168,91,0.55);border-radius:8px;cursor:pointer;"
+        gmBtn.classList.add("combatInitiativeTestRollButton")
         gmBtn.innerText = "Test MJ"
         gmBtn.onclick = () => submitInitiativeRollForGMTest(entry.id)
         card.appendChild(gmBtn)
       } else {
         const waiting = document.createElement("div")
-        waiting.style.cssText = "font-size:11px;color:#9aa9b2;"
+        waiting.classList.add("combatInitiativeWaiting")
         waiting.innerText = Number.isFinite(rollVal) ? "Jet validé" : "En attente"
         card.appendChild(waiting)
       }
@@ -239,7 +239,7 @@ function renderCombatInitiativeOverlay(state) {
       card.appendChild(status)
       if (isGM && entry.type === "player" && typeof setCombatPreviewPlayer === "function") {
         const previewBtn = document.createElement("button")
-        previewBtn.style.cssText = "margin-top:8px;padding:7px 12px;font-family:Cinzel,serif;font-size:11px;background:linear-gradient(#4d2f68,#231132);color:#f1dcff;border:1px solid rgba(179,120,219,0.55);border-radius:8px;cursor:pointer;"
+        previewBtn.classList.add("combatInitiativePreviewButton")
         previewBtn.innerText = isCurrent ? "Tester le tour" : "Test HUD"
         previewBtn.onclick = () => setCombatPreviewPlayer(entry.id)
         card.appendChild(previewBtn)
@@ -251,11 +251,11 @@ function renderCombatInitiativeOverlay(state) {
 
   if (isGM) {
     const tools = document.createElement("div")
-    tools.style.cssText = "display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:18px;"
+    tools.classList.add("combatInitiativeTools")
 
     if (state.phase === "rolling") {
       const allBtn = document.createElement("button")
-      allBtn.style.cssText = "padding:10px 16px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(#6a4b1b,#342109);color:#ffe8bb;border:1px solid rgba(212,168,91,0.55);border-radius:9px;cursor:pointer;"
+      allBtn.classList.add("combatInitiativeRollAllButton")
       allBtn.innerText = "MJ Test : lancer tous les D12"
       allBtn.onclick = () => submitAllInitiativeRollsForGMTest()
       tools.appendChild(allBtn)
@@ -263,14 +263,14 @@ function renderCombatInitiativeOverlay(state) {
       const currentEntry = entries.find(entry => String(entry.id || "") === String(state.currentActorId || ""))
       if (currentEntry && currentEntry.type === "player" && typeof setCombatPreviewPlayer === "function") {
         const currentBtn = document.createElement("button")
-        currentBtn.style.cssText = "padding:10px 16px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(#4d2f68,#231132);color:#f1dcff;border:1px solid rgba(179,120,219,0.55);border-radius:9px;cursor:pointer;"
+        currentBtn.classList.add("combatInitiativePreviewCurrentButton")
         currentBtn.innerText = "MJ Test : ouvrir le HUD de " + combatParticipantDisplayName(currentEntry)
         currentBtn.onclick = () => setCombatPreviewPlayer(currentEntry.id)
         tools.appendChild(currentBtn)
       }
       if (typeof closeCombatPreviewHUD === "function") {
         const closeBtn = document.createElement("button")
-        closeBtn.style.cssText = "padding:10px 16px;font-family:Cinzel,serif;font-size:12px;background:linear-gradient(#38444b,#171e22);color:#dbe8ef;border:1px solid rgba(132,158,173,0.45);border-radius:9px;cursor:pointer;"
+        closeBtn.classList.add("combatInitiativeClosePreviewButton")
         closeBtn.innerText = "Fermer le HUD test"
         closeBtn.onclick = () => closeCombatPreviewHUD()
         tools.appendChild(closeBtn)

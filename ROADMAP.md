@@ -41,4 +41,4 @@ Bases, jauges, animations, formulaire et adaptations mobiles regroupés. Onze st
 
 Reprendre le nettoyage des styles de l’écran de combat : regrouper HUD, panneaux d’attaques, initiative, états et notifications ; retirer les doublons après comparaison avant/après sur ordinateur et mobile. Les menus, fiches et inventaires ont déjà été traités.
 
-Événement demandé, à implémenter après validation du fonctionnement : première défaite collective face à un world boss → antre.jpg (L’Antre), pas trou.jpg (Passage). Pions affichés normalement et fonctionnalités disponibles, avec une indication de mort au-dessus. L’indication disparaît à la sortie de l’Antre. Événement unique à conserver dans la sauvegarde. Règle de récupération des PV encore à préciser.
+Événement de l’Antre implémenté : première défaite collective world boss → antre.jpg, une seule fois dans l’état de partie sauvegardé. PV maximum pour Greg, Pika, Elo et Bibi ; marque narrative uniquement ; toute sortie, dont trou.jpg, termine cet état. Cinématique partagée et sauvegarde/reconnexion couvertes par les tests. Voir ANTRE-PREMIERE-DEFAITE-2026-11-10.md.

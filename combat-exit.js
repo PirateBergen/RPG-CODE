@@ -53,7 +53,7 @@ function observeCombatEnding(data){
     if(window.__localCombatId&&window.__localCombatId!==data.combatId&&combatActive)return
     window.__combatOutcomeQueued=false;window.__renderedCombatOutcome=frozen
     if(data.type==="victory")_showVictoryNow(frozen);else if(data.type==="retreat")showCombatRetreat(frozen);else _showDefeatNow(frozen)
-  },data.type==="victory"?8100:data.type==="retreat"?3100:6100,3)
+  },data.antrePassage?12100:data.type==="victory"?8100:data.type==="retreat"?3100:6100,3)
   if(added){window.__combatOutcomeQueued=true;window.__queuedCombatOutcomeId=data.combatId}
 }
 function completeCombatReturn(outcome){
@@ -88,7 +88,7 @@ function restoreCombatMap(data){
   }
   if(data?.returnAudio){window.__sharedMapAudioSignature=null;playSharedMapAudio(data.returnAudio)}
   else if(mapMusic[target])crossfadeMusic(mapMusic[target])
-  updateWorldMapFogTopLeft();updateThuumButton()
+  updateWorldMapFogTopLeft();updateThuumButton();if(typeof syncAntreAfterlifeView==="function")syncAntreAfterlifeView()
 }
 function suspendExplorationForCombat(){
   for(const id of ["mapLoreBookOverlay","runeChallengeOverlay","spellMiniGame","glipheOverlay","shopOverlay","shopItemEditor","documentOverlay","wantedBoardOverlay","wantedOverlay"])document.getElementById(id)?.remove()
@@ -109,7 +109,7 @@ function scheduleAuthoritativeReturn(outcome){
  if(window.__authRole!=="gm")return
  if(window.__sessionBusy){scheduleAuthoritativeReturn({...outcome,time:Date.now()-7000});return}
  try{await finishReliableCombat(id)}catch(error){showNotification("Retour à synchroniser : "+error.message)}
- },Math.max(1000,(outcome.time||Date.now())+8000-Date.now()))
+ },Math.max(1000,(outcome.time||Date.now())+(outcome.antrePassage?30000:8000)-Date.now()))
  combatReturnTimers.set(id,timer)
 }
 

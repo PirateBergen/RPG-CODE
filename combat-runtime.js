@@ -193,6 +193,15 @@ async function finishReliableCombat(combatId){
  const outcome=sealCombatOutcome(root,type)
  for(const hero of COMBAT_CHARACTERS){const c=root.characters?.[hero];if(c?.cursedCombatId===combatId){delete c.cursedEffect;delete c.cursedCombatId}}
  root.game.map=outcome.returnMap;root.tokens=combatClone(outcome.returnTokens)
+ const afterlife=root.game.antreAfterlife
+ if(outcome.antrePassage&&afterlife?.combatId===combatId&&afterlife.phase==="pending"){
+  for(const id of COMBAT_CHARACTERS){const c=root.characters?.[id];if(c)c.hp=getCharacterMaxHp(id,c)}
+  afterlife.phase="active";afterlife.enteredAt=Date.now()
+  // Disembark so the heroes, rather than a ship marker, appear in the Antre.
+  if(root.events?.oregonBoarding)root.events.oregonBoarding.active=false
+  if(root.events?.aurora?.oregonVoyage)root.events.aurora.oregonVoyage.active=false
+ }
+ if(afterlife?.phase==="active"&&root.game.map!=="antre.jpg"){afterlife.phase="complete";afterlife.exitedAt=Date.now()}
  root.game.mapAudio=outcome.returnAudio||null
  root.game.combatOutcome.returnedAt=Date.now()
  if(root.game.balrogSword?.combatId===combatId&&root.game.balrogSword.status==="pending")root.game.balrogSword.status="available"

@@ -17,10 +17,12 @@ function worldBossRetreatState(root){
 }
 function combatExitSnapshot(root,type,request={}){
   const c=root.combat,state=root.game?.combatState||{},origin=state.returnMap||root.game?.map||"taverne.jpg"
-  const map=type==="victory"&&c?.mob?.name==="balraug"?"prairie.jpg":type==="victory"&&c?.mob?.name==="kraken"?"niflheim.jpg":origin
+  const antrePassage=type==="defeat"&&combatHasWorldBoss(root)&&!root.game?.antreAfterlife?.used
+  const map=antrePassage?"antre.jpg":type==="victory"&&c?.mob?.name==="balraug"?"prairie.jpg":type==="victory"&&c?.mob?.name==="kraken"?"niflheim.jpg":origin
   const tokens=combatClone(state.returnTokens||root.tokens||{})
   if(tokens.bibi&&root.tokens?.bibi)tokens.bibi.followGreg=root.tokens.bibi.followGreg!==false
-  const result={type,combatId:c.id,time:Date.now(),returnMap:map,returnTokens:tokens,returnAudio:map===origin?(state.returnAudio||(root.game.mapAudio&&(!root.game.mapAudio.map||root.game.mapAudio.map===origin)?root.game.mapAudio:null)):null,lootBonus:!!COMBAT_MOBS.some(slot=>c?.[slot]?.victoryLootBonus?.active)}
+  if(antrePassage){for(const [i,id]of COMBAT_CHARACTERS.entries())tokens[id]={...tokens[id],x:id==="bibi"?640:640+i*120,y:id==="bibi"?630:520};}
+  const result={...(antrePassage?{antrePassage:true}:{}),type,combatId:c.id,time:Date.now(),returnMap:map,returnTokens:tokens,returnAudio:map===origin?(state.returnAudio||(root.game.mapAudio&&(!root.game.mapAudio.map||root.game.mapAudio.map===origin)?root.game.mapAudio:null)):null,lootBonus:!!COMBAT_MOBS.some(slot=>c?.[slot]?.victoryLootBonus?.active)}
   if(c.lastAction)result.finalAction=combatClone(c.lastAction)
   return result
 }
@@ -29,6 +31,7 @@ function sealCombatOutcome(root,type,request={}){
   if(root.game.combatOutcome?.combatId===root.combat.id&&root.combat.phase==="finished"&&root.game.combatOutcome.returnMap&&root.game.combatOutcome.returnTokens)return root.game.combatOutcome
   if(type==="victory"&&!(request.manual&&root.roles?.[request.uid]==="gm")&&COMBAT_MOBS.some(slot=>isJormungandr(root.combat?.[slot])&&!root.combat[slot].defeatedByThor))throw Error("Seule l’invocation de Thor peut vaincre Jörmungandr.")
   root.game.combatOutcome=combatExitSnapshot(root,type,request)
+  if(root.game.combatOutcome.antrePassage)root.game.antreAfterlife={used:true,phase:"pending",combatId:root.combat.id,time:Date.now()}
   const now=new Date();root.game.sessionLog ||= {}
   root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe prend la fuite":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
   delete root.combat.pendingRetreat

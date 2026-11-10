@@ -1533,6 +1533,7 @@ db.ref("game/map").on("value", snap => {
   const isFirst = firstMapLoad
   if (isFirst) firstMapLoad = false
   currentMap = mapName
+  if(typeof syncAntreAfterlifeView==="function")syncAntreAfterlifeView()
   preloadAssets(mapName)
   if(typeof refreshExplorationMapEvents==="function")refreshExplorationMapEvents()
   if(typeof playSharedMapAudio==="function")playSharedMapAudio(window.__explorationState?.mapAudio)
@@ -2497,6 +2498,8 @@ function resetLocalCombatVisualState() {
 }
 
 function cleanupTransientGameUI(options = {}) {
+  window.__cancelAntrePassage?.()
+  if(typeof syncAntreAfterlifeView==="function")syncAntreAfterlifeView()
   if(typeof closePersonalDocument==="function")closePersonalDocument()
   if(typeof closeDocumentGrantPanel==="function")closeDocumentGrantPanel()
   if(typeof cancelSharedVisuals==="function")cancelSharedVisuals()
@@ -3239,7 +3242,7 @@ async function changeMap(mapName,customAudio){
  requireExplorationConnection();_musicTransitioning=false;_pendingMusic=null
  if(musicFadeInterval){clearInterval(musicFadeInterval);musicFadeInterval=null}
  _state._pendingMapAudio=!!customAudio
- await db.ref("game").update({map:mapName,forchurFog:null,mapAudio:customAudio?{file:customAudio,map:mapName,time:Date.now()}:null})
+ await db.ref("game").update({...((typeof antreDepartureUpdate==="function")?antreDepartureUpdate(mapName):{}),map:mapName,forchurFog:null,mapAudio:customAudio?{file:customAudio,map:mapName,time:Date.now()}:null})
  maybeSpawnMapLoreBook(mapName)
  document.querySelectorAll(".gmSection").forEach(sec=>{sec.style.display="none"})
  }catch(error){showNotification("Carte non changée : "+error.message)}

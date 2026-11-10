@@ -109,7 +109,7 @@ function syncNightMode(){
  let filter=document.getElementById("nightMapFilter")
  const map=document.getElementById("map")
  if(!filter&&map){filter=document.createElement("div");filter.id="nightMapFilter";filter.setAttribute("aria-hidden","true");map.appendChild(filter)}
- const indoors=state?.indoors===true,lit=state?.groupLantern===true
+ const indoors=state?.indoors===true||(typeof isAntreSoulScene==="function"&&isAntreSoulScene()),lit=state?.groupLantern===true
  if(filter)filter.classList.toggle("active",visible&&enabled&&!indoors)
  let darkness=document.getElementById("nightDarknessFilter")
  if(!darkness&&map){darkness=document.createElement("div");darkness.id="nightDarknessFilter";darkness.setAttribute("aria-hidden","true");map.appendChild(darkness)}

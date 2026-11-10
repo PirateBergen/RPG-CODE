@@ -48,3 +48,5 @@ Nettoyage du 10 novembre : control-focus-browser vérifie que les listes natives
 menu-navigation-browser exerce les vrais onglets PNJ et catégories avec le CSS du jeu : navigation maintenue, choix final fermé et bonne sélection sur mobile et ordinateur.
 
 inventory-form-browser exerce le vrai formulaire et ses boutons de caractéristiques dans Edge, sur mobile et ordinateur : ajout, quantité, calcul de charge, bonus, navigation clavier et retrait. Les écritures de sauvegarde y sont simulées ; firebase-inventory-builder vérifie la sauvegarde réelle dans l’émulateur.
+
+antre-event et firebase-antre-event couvrent la première défaite world boss, l’unicité avec deux MJ, les PV maximum, la marque narrative, la reconnexion et le chargement, la sortie par le Passage et la seconde défaite normale. antre-event-browser vérifie dans Edge le passage, son annulation, les marques et la fermeture du souffle synthétisé.

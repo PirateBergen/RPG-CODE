@@ -710,7 +710,8 @@ function _showDefeatNow(outcome) {
   flashRed(); screenShakeHard()
   setTimeout(() => {
     screen.style.display = "none"
-    if(typeof completeCombatReturn==="function")completeCombatReturn(outcome)
+    if(outcome?.antrePassage&&typeof playAntreSoulPassage==="function")playAntreSoulPassage(outcome,completeCombatReturn)
+    else if(typeof completeCombatReturn==="function")completeCombatReturn(outcome)
     else{endCombat();returnToMap();window.__combatOutcomeShowing=false}
   }, 5000)
 }

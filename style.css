@@ -202,24 +202,24 @@ html, body {
   left: 50% !important;
   bottom: 20px !important;
   top: auto !important;
-  transform: translateX(-50%) !important;
+  transform: translateX(-50%);
   display: none;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 12px !important;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   min-width: 0 !important;
   min-height: 0 !important;
   width: auto !important;
   height: auto !important;
   padding: 0 !important;
-  margin: 0 !important;
+  margin: 0;
   background: transparent !important;
   background-image: none !important;
   border: none !important;
   border-radius: 0 !important;
-  box-shadow: none !important;
-  overflow: visible !important;
-  isolation: isolate !important;
+  box-shadow: none;
+  overflow: visible;
+  isolation: isolate;
   z-index: 1000000002 !important;
   pointer-events: auto !important;
 }
@@ -247,41 +247,41 @@ html, body {
 #introBox {
   position: relative !important;
   width: auto !important;
-  max-width: 90vw !important;
-  aspect-ratio: auto !important;
+  max-width: 90vw;
+  aspect-ratio: auto;
   padding: 0 !important;
   display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 20px !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
   background: none !important;
   border: none !important;
-  box-shadow: none !important;
+  box-shadow: none;
   border-radius: 0 !important;
-  overflow: visible !important;
+  overflow: visible;
 }
 
 #introBox > #startButton,
 #introBox .menuButton {
   width: min(760px, 80vw) !important;
-  max-width: min(760px, 80vw) !important;
-  align-self: center !important;
-  margin: 0 auto !important;
+  max-width: min(760px, 80vw);
+  align-self: center;
+  margin: 0 auto;
 }
 
 #introBox > div,
 .intro-actions {
   width: 100% !important;
   display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 16px !important;
-  margin-top: 0 !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 0;
 }
 
 #introBox > #startButton {
-  margin-top: 0 !important;
+  margin-top: 0;
 }
 
 /* gmBar merged above */
@@ -302,7 +302,7 @@ html, body {
   background: url("images/boutonrond1.png") center / 100% 100% no-repeat !important;
   box-shadow:
     0 0 0 1px rgba(32, 19, 6, 0.45),
-    0 8px 18px rgba(0,0,0,0.42) !important;
+    0 8px 18px rgba(0,0,0,0.42);
 }
 
 .gmIcon img {
@@ -343,7 +343,7 @@ html, body {
 #diceBar {
   background: transparent !important;
   border: none !important;
-  box-shadow: none !important;
+  box-shadow: none;
   padding: 18px 18px !important;
 }
 
@@ -355,14 +355,14 @@ html, body {
   border-radius: 999px !important;
   background: linear-gradient(180deg, rgba(52,35,8,0.96), rgba(26,18,5,0.98)) !important;
   color: #f4d37b !important;
-  font-family: Cinzel, serif !important;
+  font-family: Cinzel, serif;
   font-size: 15px !important;
   line-height: 1 !important;
   padding: 0 !important;
   display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-shadow: 0 0 10px rgba(0,0,0,0.45) !important;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(0,0,0,0.45);
 }
 
 #diceBar.collapsed {
@@ -397,12 +397,12 @@ html, body {
   border-radius: 6px !important;
   box-shadow:
     0 0 26px rgba(0,0,0,0.85),
-    inset 0 0 0 1px rgba(255,220,150,0.06) !important;
-  box-sizing: border-box !important;
+    inset 0 0 0 1px rgba(255,220,150,0.06);
+  box-sizing: border-box;
 }
 
 #playerMenu.open {
-  max-height: 70vh !important;
+  max-height: 70vh;
 }
 
 /* #introBox override removed - handled by main rule */
@@ -412,46 +412,46 @@ html, body {
 #introBox > #startButton,
 #introBox .menuButton {
   width: calc(100% - 140px) !important;
-  max-width: calc(100% - 140px) !important;
+  max-width: calc(100% - 140px);
   min-width: 0 !important;
   display: block !important;
-  align-self: center !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+  align-self: center;
+  margin-left: auto;
+  margin-right: auto;
   left: auto !important;
   right: auto !important;
-  transform: none !important;
+  transform: none;
 }
 
 #startButton {
   height: 128px !important;
-  margin-top: 26px !important;
+  margin-top: 26px;
 }
 
 .menuButton {
   height: 120px !important;
-  margin-top: 6px !important;
+  margin-top: 6px;
 }
 
 #startButton .btn-inner,
 .menuButton .btn-inner {
-  background-position: center center !important;
-  background-size: 100% 100% !important;
+  background-position: center center;
+  background-size: 100% 100%;
   color: #f9e5a5 !important;
   text-shadow:
     0 0 2px rgba(255,245,210,0.55),
     0 2px 5px rgba(0,0,0,0.96),
-    0 0 16px rgba(27,86,141,0.55) !important;
+    0 0 16px rgba(27,86,141,0.55);
 }
 
 #startButton .btn-inner {
   font-size: 21px !important;
-  letter-spacing: 2px !important;
+  letter-spacing: 2px;
 }
 
 .menuButton .btn-inner {
   font-size: 17px !important;
-  letter-spacing: 1px !important;
+  letter-spacing: 1px;
 }
 
 .intro-actions {
@@ -4194,15 +4194,15 @@ body {
     url("images/charac.png") center/100% 100% no-repeat,
     linear-gradient(160deg, rgba(18,18,18,0.96) 0%, #060606 40%, rgba(18,18,18,0.98) 100%) !important;
   border: none !important;
-  box-shadow: 0 0 30px rgba(0,0,0,0.9) !important;
-  box-sizing: border-box !important;
-  max-height: 0 !important;
-  overflow: hidden !important;
+  box-shadow: 0 0 30px rgba(0,0,0,0.9);
+  box-sizing: border-box;
+  max-height: 0;
+  overflow: hidden;
 }
 
 #playerMenu.open {
-  max-height: 640px !important;
-  overflow-y: auto !important;
+  max-height: 640px;
+  overflow-y: auto;
 }
 
 #playerMenu::before {
@@ -4293,23 +4293,23 @@ body {
   left: 50% !important;
   bottom: 20px !important;
   top: auto !important;
-  transform: translateX(-50%) !important;
+  transform: translateX(-50%);
   display: none;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 12px !important;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   background: transparent !important;
   background-image: none !important;
   border: none !important;
   border-radius: 0 !important;
-  box-shadow: none !important;
+  box-shadow: none;
   padding: 0 !important;
   min-width: 0 !important;
   min-height: 0 !important;
   width: auto !important;
   height: auto !important;
-  overflow: visible !important;
-  isolation: isolate !important;
+  overflow: visible;
+  isolation: isolate;
 }
 
 #gmBar::before,
@@ -4337,7 +4337,7 @@ body {
   box-shadow:
     0 0 0 1px rgba(75,49,18,0.9),
     0 16px 44px rgba(0,0,0,0.82),
-    inset 0 1px 0 rgba(255,236,185,0.06) !important;
+    inset 0 1px 0 rgba(255,236,185,0.06);
 }
 
 .gmSection::before {
@@ -4352,7 +4352,7 @@ body {
   background: linear-gradient(180deg, rgba(29,38,45,0.96), rgba(12,16,20,0.98)) !important;
   border: 1px solid rgba(181,145,82,0.42) !important;
   color: #f1e2ba !important;
-  box-shadow: inset 0 1px 0 rgba(255,224,164,0.05) !important;
+  box-shadow: inset 0 1px 0 rgba(255,224,164,0.05);
 }
 
 .gmButton:hover {
@@ -4375,18 +4375,18 @@ body {
   align-items: center;
   justify-content: center;
   min-width: 86px;
-  margin: 0 !important;
+  margin: 0;
   padding: 9px 14px !important;
-  font-family: var(--font-body) !important;
+  font-family: var(--font-body);
   font-size: 12px !important;
-  letter-spacing: 0.8px !important;
+  letter-spacing: 0.8px;
   color: #f0dfae !important;
   background: linear-gradient(180deg, rgba(20,74,102,0.92), rgba(10,40,58,0.97)) !important;
   border: 1px solid rgba(52, 196, 240, 0.58) !important;
   border-radius: 3px !important;
   box-shadow:
     inset 0 1px 0 rgba(136, 232, 255, 0.14),
-    0 0 0 1px rgba(16, 84, 116, 0.34) !important;
+    0 0 0 1px rgba(16, 84, 116, 0.34);
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
@@ -4407,7 +4407,7 @@ body {
   color: #ffd6d6 !important;
   box-shadow:
     inset 0 1px 0 rgba(255,186,186,0.1),
-    0 0 0 1px rgba(92,18,18,0.42) !important;
+    0 0 0 1px rgba(92,18,18,0.42);
 }
 
 #gmCharacters button[onclick*="startEndSession"]:hover {
@@ -4424,7 +4424,7 @@ body {
 #diceBar {
   background: transparent !important;
   border: none !important;
-  box-shadow: none !important;
+  box-shadow: none;
   padding: 18px 18px !important;
 }
 
@@ -4445,7 +4445,7 @@ body {
     0 0 0 1px rgba(74, 120, 152, 0.45),
     inset 0 1px 0 rgba(226, 245, 255, 0.08),
     0 18px 42px rgba(0,0,0,0.72),
-    0 0 28px rgba(72, 156, 210, 0.12) !important;
+    0 0 28px rgba(72, 156, 210, 0.12);
   backdrop-filter: blur(4px);
 }
 
@@ -4458,13 +4458,13 @@ body {
     0 0 0 1px rgba(86, 134, 170, 0.44),
     inset 0 1px 0 rgba(235,246,255,0.1),
     0 10px 30px rgba(0,0,0,0.72),
-    0 0 22px rgba(76, 178, 226, 0.14) !important;
+    0 0 22px rgba(76, 178, 226, 0.14);
   color: #f8eed0 !important;
-  letter-spacing: 1.2px !important;
+  letter-spacing: 1.2px;
   min-width: 280px;
   max-width: 420px;
   padding: 14px 20px !important;
-  font-family: Cinzel, serif !important;
+  font-family: Cinzel, serif;
   font-size: 14px !important;
   line-height: 1.35;
 }
@@ -4530,7 +4530,7 @@ body {
 
 .dice-log-head,
 .mj-log-head {
-  margin-bottom: 10px !important;
+  margin-bottom: 10px;
   padding-bottom: 7px;
   border-bottom: 1px solid rgba(214, 182, 108, 0.2);
   color: #f5dfaf !important;
@@ -4679,7 +4679,7 @@ body {
     linear-gradient(180deg, rgba(24,18,12,0.98), rgba(8,8,8,0.99)) !important;
   border-radius: 16px !important;
   border: 1px solid rgba(196,161,90,0.74) !important;
-  box-shadow: 0 0 0 1px rgba(85,56,18,0.92), 0 18px 36px rgba(0,0,0,0.86) !important;
+  box-shadow: 0 0 0 1px rgba(85,56,18,0.92), 0 18px 36px rgba(0,0,0,0.86);
 }
 
 /* — Écrans combat — */
@@ -4691,13 +4691,13 @@ body {
 }
 
 #combatIntroText {
-  font-family: "Cinzel Decorative", "Cinzel", serif !important;
+  font-family: "Cinzel Decorative", "Cinzel", serif;
   color: #f1db9b !important;
   text-shadow:
     0 0 4px rgba(255,243,210,0.6),
     0 0 18px rgba(186,40,24,0.56),
-    0 0 36px rgba(104,6,6,0.7) !important;
-  letter-spacing: 8px !important;
+    0 0 36px rgba(104,6,6,0.7);
+  letter-spacing: 8px;
 }
 
 #victoryScreen {
@@ -4707,12 +4707,12 @@ body {
 }
 
 #victoryText {
-  font-family: "Cinzel Decorative", "Cinzel", serif !important;
+  font-family: "Cinzel Decorative", "Cinzel", serif;
   color: #f7dc8d !important;
   text-shadow:
     0 0 6px rgba(255,240,186,0.6),
     0 0 22px rgba(255,197,67,0.84),
-    0 0 48px rgba(161,102,12,0.66) !important;
+    0 0 48px rgba(161,102,12,0.66);
 }
 
 #defeatScreen {
@@ -4722,70 +4722,70 @@ body {
 }
 
 #defeatText {
-  font-family: "Cinzel Decorative", "Cinzel", serif !important;
+  font-family: "Cinzel Decorative", "Cinzel", serif;
   color: #d55858 !important;
   text-shadow:
     0 0 10px rgba(255,96,96,0.28),
     0 0 24px rgba(140,0,0,0.9),
-    0 0 44px rgba(80,0,0,0.85) !important;
+    0 0 44px rgba(80,0,0,0.85);
 }
 
 /* — Intro / Menu principal — */
 
 #intro {
   display: none;
-  justify-content: flex-start !important;
-  align-items: center !important;
+  justify-content: flex-start;
+  align-items: center;
   padding-top: 22px !important;
-  box-sizing: border-box !important;
+  box-sizing: border-box;
 }
 
 #gameTitle {
   position: relative !important;
   top: auto !important;
-  margin: 28px 0 22px !important;
+  margin: 28px 0 22px;
   font-size: clamp(48px, 4.5vw, 74px) !important;
-  letter-spacing: 4px !important;
-  text-align: center !important;
+  letter-spacing: 4px;
+  text-align: center;
   z-index: 2 !important;
 }
 
 #introBox > #startButton,
 #introBox .menuButton {
   width: min(760px, 80vw) !important;
-  max-width: min(760px, 80vw) !important;
-  align-self: center !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+  max-width: min(760px, 80vw);
+  align-self: center;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-#introBox > #startButton { margin-top: 0 !important; }
+#introBox > #startButton { margin-top: 0; }
 
 #introBox > div,
 .intro-actions {
   width: 100% !important;
   display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  gap: 12px !important;
-  margin-top: 0 !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 0;
 }
 
 #startButton        { height: 140px !important; }
 .menuButton         { height: 130px !important; }
 
-#startButton .btn-inner { font-size: 22px !important; letter-spacing: 3px !important; }
-.menuButton .btn-inner  { font-size: 18px !important; letter-spacing: 2px !important; }
+#startButton .btn-inner { font-size: 22px !important; letter-spacing: 3px; }
+.menuButton .btn-inner  { font-size: 18px !important; letter-spacing: 2px; }
 
 #startButton .btn-inner,
 .menuButton .btn-inner {
-  background-position: center center !important;
-  background-size: 100% 100% !important;
+  background-position: center center;
+  background-size: 100% 100%;
   color: #f9e5a5 !important;
   text-shadow:
     0 0 2px rgba(255,245,210,0.55),
     0 2px 5px rgba(0,0,0,0.96),
-    0 0 16px rgba(27,86,141,0.55) !important;
+    0 0 16px rgba(27,86,141,0.55);
 }
 
 @keyframes bookFloatIdle {
@@ -6271,7 +6271,7 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 
 .shopOverlay{position:fixed;inset:0;background:rgba(0,0,0,.88);display:flex;align-items:center;justify-content:center;z-index:9999990}.shopBox{background:url("images/shelf.png") center/100% 100% no-repeat;width:min(900px,92vw);max-height:85vh;min-height:min(400px,calc(100dvh - 24px));overflow:auto;padding:50px 50px 40px;border:0;border-radius:0;box-shadow:none;position:relative;color:#f5ead8;font:16px "IM Fell English",serif}.shopBox h2{text-align:center;font-family:"Cinzel Decorative",Cinzel,serif;font-size:28px;font-weight:400;color:#fff;text-shadow:0 1px 4px #000c;margin:0 0 6px;letter-spacing:3px}.shopTools{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0 20px}.shopButton{padding:5px 12px;background:rgba(0,0,0,.25);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:3px;font:11px Cinzel,serif;text-shadow:0 1px 2px #000c;cursor:pointer}.shopButton[aria-pressed=true]{border-color:rgba(255,255,255,.5);background:rgba(0,0,0,.45)}.shopButton:disabled{opacity:.5;cursor:wait}.shopButton:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}.shopGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(180px,100%),1fr));gap:12px}.shopItem{padding:12px;background:rgba(0,0,0,.18);border:0;border-radius:0;display:flex;flex-direction:column;gap:6px;text-shadow:0 1px 3px #000c}.shopItem img{height:40px;width:40px;object-fit:contain;flex:0 0 auto}.shopItem h3,.shopItem p{margin:0;overflow-wrap:anywhere}.shopItem strong{color:#ffc840;font:bold 14px Cinzel,serif}.shopEditorOverlay{z-index:10000000}.shopEditor{width:min(640px,92vw);min-height:0;background:#18120e;padding:24px;border:1px solid #b59255;border-radius:10px}.shopField{display:flex;flex-direction:column;gap:6px;margin:12px 0}.shopField input,.shopField select,.shopField textarea{padding:9px;background:#17130e;color:#fff1d8;border:1px solid #a58a5b;border-radius:4px;font:16px Georgia,serif}.shopImageBank{display:flex;gap:8px;flex-wrap:wrap}.shopImageBank img{width:40px;height:40px;object-fit:contain}.shopImageBank button{padding:6px}.shopEditor fieldset{border:1px solid #746044;border-radius:5px}
 
-/* Fenêtres adaptées à la place disponible ; la carte conserve son échelle. */
+/* Fenêtres adaptées à la place disponible; la carte conserve son échelle. */
 .compactSheetLabel,.compactSheetClose{display:none!important}
 #characterSheet{z-index:1000000004;box-sizing:border-box;max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);overscroll-behavior:contain}
 .shopOverlay,.shopBox,#gmArbitrationModal,#gmArbitrationModal>div{box-sizing:border-box}
@@ -6303,9 +6303,9 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
  #curseBar[style*="none"],#corruptionBar[style*="none"]{display:none!important}
  #goldZone{margin-top:18px;flex-wrap:wrap}
  #inventoryTools,#inventoryTools input{box-sizing:border-box;max-width:100%}
- #gmBar{width:calc(100vw - 16px)!important;bottom:8px!important;justify-content:flex-start!important;gap:8px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:4px!important;scrollbar-width:thin}
- #gmBar>*{flex-shrink:0!important}
- .gmSection{left:8px!important;right:8px!important;bottom:82px!important;transform:none!important;width:auto!important;max-width:calc(100vw - 16px);max-height:calc(100dvh - 100px);box-sizing:border-box;padding:16px!important;overscroll-behavior:contain}
+ #gmBar{width:calc(100vw - 16px)!important;bottom:8px!important;justify-content:flex-start;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px!important;scrollbar-width:thin}
+ #gmBar>*{flex-shrink:0}
+ .gmSection{left:8px!important;right:8px!important;bottom:82px!important;transform:none;width:auto!important;max-width:calc(100vw - 16px);max-height:calc(100dvh - 100px);box-sizing:border-box;padding:16px!important;overscroll-behavior:contain}
  .pnjTabs{flex-wrap:wrap}.pnjTab{flex:1 1 120px;min-width:0;box-sizing:border-box;white-space:normal}.pnjTabContent{max-height:calc(100dvh - 180px)}
  .gmSection .gmButton{min-width:0!important;max-width:100%;white-space:normal}
  #combatHUD{left:8px;bottom:82px;width:min(360px,calc(100vw - 16px));max-height:48dvh;box-sizing:border-box;padding:10px;gap:6px}
@@ -6332,7 +6332,7 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 }
 
 #characterSheet,#inventoryTools *{text-shadow:none}
-@media(max-width:1000px){#gmBar{box-sizing:border-box!important}}
+@media(max-width:1000px){#gmBar{box-sizing:border-box}}
 
 
 @media(max-width:600px){#combatHUD{bottom:200px;max-height:min(45dvh,calc(100dvh - 220px))}}
@@ -6346,8 +6346,8 @@ body:not([data-entry-stage="playing"]) #gmBar,body:not([data-entry-stage="playin
 .gmDiagnosticsHeader h2{font:18px Cinzel,serif;margin:0}.gmDiagnosticsHeader button{padding:8px 10px;background:#30251b;color:#fff1d8;border:1px solid #a58a5b;border-radius:5px;cursor:pointer}
 #gmDiagnosticsContent h3{font-size:15px;color:#e6c17c;margin:18px 0 5px}#gmDiagnosticsContent p{margin:5px 0}.gmDiagnosticsMuted{color:#b9c6cc;font-size:13px}.gmDiagnosticsWarning{color:#ffd99b}
 
-@media(min-width:1001px) and (max-width:1200px){#gmBar{width:calc(100vw - 16px)!important;box-sizing:border-box!important;bottom:8px!important;justify-content:flex-start!important;gap:8px!important;overflow-x:auto!important;overflow-y:hidden!important;padding:4px!important;scrollbar-width:thin}#gmBar>*{flex-shrink:0!important}#diceBar{bottom:76px;right:8px}#combatHUD{bottom:82px}}
-@media(min-width:1201px){#gmBar{gap:4px!important}body[data-entry-role="gm"] #combatHUD{bottom:90px}}
+@media(min-width:1001px) and (max-width:1200px){#gmBar{width:calc(100vw - 16px)!important;box-sizing:border-box;bottom:8px!important;justify-content:flex-start;gap:8px;overflow-x:auto;overflow-y:hidden;padding:4px!important;scrollbar-width:thin}#gmBar>*{flex-shrink:0}#diceBar{bottom:76px;right:8px}#combatHUD{bottom:82px}}
+@media(min-width:1201px){#gmBar{gap:4px}body[data-entry-role="gm"] #combatHUD{bottom:90px}}
 
 #combatHUDTurnSummary{margin:0;padding:8px;border:1px solid #b5925555;border-radius:6px;background:#0a141ccc;color:#ffe2a0;font:13px Georgia,serif;line-height:1.45}.combatActionTarget{font:12px Georgia,serif;color:#d8e4ec;line-height:1.4;margin-top:5px;overflow-wrap:anywhere}.combatTargetNumber{position:absolute;top:-10px;left:-10px;min-width:22px;height:22px;padding:1px 3px;box-sizing:border-box;border-radius:50%;border:1px solid #dfbb72;background:#101a22;color:#ffe5a6;text-align:center;font:bold 14px Georgia,serif;line-height:18px;pointer-events:none;z-index:20}.combatTargetPickerPanel{box-sizing:border-box;max-width:calc(100vw - 24px);max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;overflow-wrap:anywhere}.combatTargetPickerPanel button{box-sizing:border-box;white-space:normal;font:16px Georgia,serif}.combatTargetPickerPanel button:disabled{opacity:.6;cursor:not-allowed!important}.combatTargetPickerHint{font:14px Georgia,serif;line-height:1.5;color:#d7c9b2;max-width:480px}
 
@@ -6403,7 +6403,7 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 #gmBar #oregonBoardingButton{position:relative;inset:auto;min-width:64px;padding:6px;font:12px Georgia,serif;color:#f6dfab;cursor:pointer;white-space:nowrap}
 #oregonBoardingButton[hidden],.oregonVoyageView #worldPartyMarker{display:none!important}
 
-#notification{top:auto!important;right:auto!important;left:50%!important;bottom:var(--notice-bottom,110px)!important;transform:translateX(-50%);z-index:1000000015!important;box-sizing:border-box;min-width:0!important;width:max-content;max-width:min(620px,calc(100vw - 24px))!important;max-height:35dvh;overflow-y:auto;overflow-wrap:anywhere;text-align:center;pointer-events:none!important;font-size:clamp(13px,1.3vw,16px);line-height:1.5}
+#notification{top:auto!important;right:auto!important;left:50%!important;bottom:var(--notice-bottom,110px)!important;transform:translateX(-50%);z-index:1000000015!important;box-sizing:border-box;min-width:0!important;width:max-content;max-width:min(620px,calc(100vw - 24px));max-height:35dvh;overflow-y:auto;overflow-wrap:anywhere;text-align:center;pointer-events:none!important;font-size:clamp(13px,1.3vw,16px);line-height:1.5}
 #allyGrantPicker{position:fixed;inset:0;z-index:1000000012;background:#0009;display:grid;place-items:center;padding:16px;box-sizing:border-box}#allyGrantPicker .allyGrantBox{width:min(420px,100%);max-height:80dvh;overflow:auto;box-sizing:border-box;background:#0c1c25;border:1px solid #bc9454;border-radius:10px;padding:20px;color:#f0e1bc;font:16px/1.5 Georgia,serif;box-shadow:0 16px 48px #000b}#allyGrantPicker button{display:block;width:100%;padding:12px;margin-top:10px;background:#1b3544;color:#ffe2a6;border:1px solid #79909c;border-radius:5px;font:16px Georgia,serif;cursor:pointer}#allyGrantPicker button:disabled{opacity:.5;cursor:wait}#allyGrantPicker button:focus-visible{outline:2px solid #ffe2a6;outline-offset:2px}
 
 #allyDiscoveryAnnouncement{position:fixed;inset:0;z-index:1000000010;display:grid;place-items:center;pointer-events:none;background:radial-gradient(ellipse,#071320aa,transparent 75%)}.allyDiscoveryCard{width:min(620px,calc(100vw - 32px));box-sizing:border-box;padding:28px;text-align:center;color:#f4e4bd;background:linear-gradient(#102330f5,#080d16f5);border:1px solid var(--ally-color);border-radius:18px;box-shadow:0 0 45px #000b;font:clamp(16px,2vw,21px)/1.5 Georgia,serif;animation:allyDiscoveryReveal 7s ease both}.allyDiscoveryCard img{width:132px;height:132px;object-fit:contain;border-radius:50%;border:2px solid var(--ally-color);filter:drop-shadow(0 0 12px var(--ally-color))}.allyDiscoveryCard h2{color:var(--ally-color);margin:12px 0}.allyDiscoveryCard small{font-size:14px;color:#ded4bd}.discoveredAlly{padding:14px 0;border-bottom:1px solid #b5925555;color:#e9dfca;font:15px/1.5 Georgia,serif}.discoveredAlly img{width:48px;height:48px;object-fit:contain;float:left;margin:0 12px 8px 0}.discoveredAlly h3{margin:0;color:#f4d291}.discoveredAlly p{font-size:13px;color:#d3c39f}.discoveredAlly ul{clear:both;padding-left:20px}#allyDiscoveryPanel{position:fixed;inset:0;z-index:1000000012;display:grid;place-items:center;background:#0009;padding:16px;box-sizing:border-box}.allyDiscoveryBox{width:min(480px,100%);box-sizing:border-box;max-height:85dvh;overflow:auto;background:#0c1c25;border:1px solid #bc9454;border-radius:12px;padding:20px;color:#f0e1bc;font:16px/1.5 Georgia,serif}.allyDiscoveryBox button{width:100%;display:flex;align-items:center;gap:12px;margin-top:10px;padding:10px;background:#1b3544;color:#ffe2a6;border:1px solid #79909c;border-radius:5px;cursor:pointer;font:16px Georgia,serif}.allyDiscoveryBox button:disabled{opacity:.5;cursor:default}.allyDiscoveryBox img{width:44px;height:44px;object-fit:contain}@keyframes allyDiscoveryReveal{0%{opacity:0;transform:translateY(20px) scale(.95)}12%,85%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-10px)}}@media(prefers-reduced-motion:reduce){.allyDiscoveryCard{animation:none}}

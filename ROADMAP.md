@@ -24,3 +24,7 @@ Les contrôles automatiques sans effet utilisent les abonnements locaux avant de
 ## Découpage progressif — raccourcis
 
 Première extraction de game.js et ui.js : raccourcis et aide dans shortcuts.js, fonctions déplacées sans changement. Installation du clavier conservée à sa position de démarrage ; chargement et cache vérifiés. Les fenêtres et les mécanismes de jeu restent leurs propres responsables.
+
+## Priorités CSS — 10 novembre
+
+114 priorités redondantes retirées (479 → 365), sans ajouter de spécificité artificielle. Styles calculés identiques dans 30 configurations contrôlées. Les priorités non couvertes ou nécessaires à la visibilité, aux interactions et aux transitions restent conservées. Voir STYLES-PRIORITES-2026-11-10.md.

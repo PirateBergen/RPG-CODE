@@ -259,8 +259,19 @@ function queueCharacterAutoSave(delay = 220) {
 }
 
 function updateHPBar() {
-  const hp = parseInt(document.getElementById("hp").value) || 0
-  document.getElementById("hpBar").style.width = Math.max(0, Math.min(100, hp)) + "%"
+  const bar = document.getElementById("hpBar")
+  if (!bar || !currentSheetPlayer) return
+  const hp = Math.max(0, parseInt(document.getElementById("hp")?.value, 10) || 0)
+  const level = Math.max(1, Math.min(99, parseInt(document.getElementById("lvl")?.value, 10) || 1))
+  const maxHP = Math.max(1, getMaxHP(currentSheetPlayer, level))
+  bar.style.width = Math.max(0, Math.min(100, hp / maxHP * 100)) + "%"
+  bar.setAttribute("role", "progressbar")
+  bar.setAttribute("aria-label", "Points de vie")
+  bar.setAttribute("aria-valuemin", "0")
+  bar.setAttribute("aria-valuemax", String(maxHP))
+  bar.setAttribute("aria-valuenow", String(Math.min(hp, maxHP)))
+  bar.setAttribute("aria-valuetext", hp + " / " + maxHP + " PV")
+  bar.title = hp + " / " + maxHP + " PV"
 }
 
 function _parseInventoryWeight(text) { return parseInventoryWeight(text).total }

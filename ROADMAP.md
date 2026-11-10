@@ -42,3 +42,7 @@ Bases, jauges, animations, formulaire et adaptations mobiles regroupés. Onze st
 Reprendre le nettoyage des styles de l’écran de combat : regrouper HUD, panneaux d’attaques, initiative, états et notifications ; retirer les doublons après comparaison avant/après sur ordinateur et mobile. Les menus, fiches et inventaires ont déjà été traités.
 
 Événement de l’Antre implémenté : première défaite collective world boss → antre.jpg, une seule fois dans l’état de partie sauvegardé. PV maximum pour Greg, Pika, Elo et Bibi ; marque narrative uniquement ; toute sortie, dont trou.jpg, termine cet état. Cinématique partagée et sauvegarde/reconnexion couvertes par les tests. Voir ANTRE-PREMIERE-DEFAITE-2026-11-10.md.
+
+## Don de la Gardienne — Immortalité quantique
+
+Acquis une fois à la sortie de l’Antre, affiché comme état permanent dans les fiches et conservé dans la sauvegarde. Les KO restent possibles ; à la fin de tout combat, seuls les bénéficiaires KO retrouvent leurs PV maximum. Sans le don, une mort ordinaire reste un KO au retour. La Gardienne en tant que PNJ sera ajoutée ultérieurement. Voir IMMORTALITE-QUANTIQUE-2026-11-10.md. La reprise prévue du nettoyage concerne toujours les styles de combat.

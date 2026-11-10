@@ -1,6 +1,8 @@
 "use strict"
 
 window.__antreAfterlife=null
+window.__quantumImmortality=null
+let knownQuantumGiftId
 let antreDeparturePending=false
 function isAntreSoulScene(){return currentMap==="antre.jpg"&&window.__antreAfterlife?.phase==="active"}
 function syncAntreAfterlifeView(){
@@ -14,12 +16,29 @@ function syncAntreAfterlifeView(){
  if(typeof syncNightMode==="function")syncNightMode()
 }
 async function reconcileAntreDeparture(){
- if(antreDeparturePending||window.__authRole!=="gm"||window.__sessionBusy||window.__antreAfterlife?.phase!=="active")return
+ if(antreDeparturePending||window.__authRole!=="gm"||window.__sessionBusy||!window.__antreAfterlife?.combatId)return
  antreDeparturePending=true
- try{await reliableRootTransaction(root=>{const state=root?.game?.antreAfterlife;if(root?.roles?.[window.__authUid]!=="gm"||root.sessionControl?.phase||state?.phase!=="active"||root.game.map==="antre.jpg")return undefined;state.phase="complete";state.exitedAt=Date.now();return root})}catch(error){console.warn("Sortie de l’Antre à synchroniser",error.message)}finally{antreDeparturePending=false}
+ try{await reliableRootTransaction(root=>{if(root?.roles?.[window.__authUid]!=="gm"||root.sessionControl?.phase||!completeAntreDeparture(root))return undefined;return root})}catch(error){console.warn("Sortie de l’Antre à synchroniser",error.message)}finally{antreDeparturePending=false}
 }
-function antreDepartureUpdate(mapName){
- return mapName!=="antre.jpg"&&window.__antreAfterlife?.phase==="active"?{"antreAfterlife/phase":"complete","antreAfterlife/exitedAt":Date.now()}:{}
+async function writeExplorationMap(mapName,payload){
+ const state=window.__antreAfterlife
+ if(!(state?.phase==="active"&&mapName!=="antre.jpg"))return db.ref("game").update(payload)
+ const uid=window.__authUid,revision=persistenceRevision||"initial",origin=currentMap
+ const result=await reliableRootTransaction(root=>{if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!==origin)return undefined;Object.assign(root.game,payload);completeAntreDeparture(root);return root})
+ if(!result.committed)throw Error("La carte ou la partie a changé. Réessayez.")
+}
+function playQuantumGuardianGift(){
+ const scope=createPresentationScope("__cancelQuantumGift"),overlay=scope.node(document.createElement("section")),symbol=document.createElement("div"),source=document.createElement("p"),title=document.createElement("h2"),description=document.createElement("p")
+ overlay.id="quantumGuardianGift";overlay.setAttribute("role","status");overlay.setAttribute("aria-live","polite");symbol.className="quantumGiftInfinity";symbol.textContent="∞";symbol.setAttribute("aria-hidden","true");source.className="quantumGiftSource";source.textContent="Don de la Gardienne";title.textContent="Immortalité quantique";description.textContent="Vous pouvez tomber au combat. Vous reviendrez vivants à son terme.";overlay.append(symbol,source,title,description)
+ document.body.appendChild(overlay)
+ const sound=document.getElementById("powerSound");if(sound){scope.audio(sound);playSound("powerSound",.55,true)}
+ scope.later(()=>overlay.classList.add("quantumGiftFade"),4000);scope.later(scope.cancel,5000)
+ return scope.cancel
+}
+function observeQuantumImmortality(gift){
+ const previous=knownQuantumGiftId;knownQuantumGiftId=gift?.id||null;window.__quantumImmortality=gift||null
+ if(typeof renderPermanentCharacterStates==="function")renderPermanentCharacterStates()
+ if(previous!==undefined&&gift?.id&&gift.id!==previous&&gameStarted&&!window.__sessionBusy&&Math.abs(Date.now()-Number(gift.grantedAt))<30000)enqueueSharedVisual("guardian-gift-"+gift.id,playQuantumGuardianGift,5100,2)
 }
 function playAntreSoulPassage(outcome,done){
  let context=null
@@ -36,8 +55,9 @@ function playAntreSoulPassage(outcome,done){
 const antreOriginalShowTavern=showTavern
 showTavern=function(...args){const result=antreOriginalShowTavern(...args);syncAntreAfterlifeView();return result}
 document.addEventListener("DOMContentLoaded",()=>{
- const refresh=()=>setTimeout(()=>{syncAntreAfterlifeView();if(window.__antreAfterlife?.phase==="active"&&window.__latestMapValue&&window.__latestMapValue!=="antre.jpg")reconcileAntreDeparture()},0)
+ const refresh=()=>setTimeout(()=>{syncAntreAfterlifeView();if((window.__antreAfterlife?.phase==="active"&&window.__latestMapValue&&window.__latestMapValue!=="antre.jpg")||(window.__antreAfterlife?.phase==="complete"&&!window.__quantumImmortality))reconcileAntreDeparture()},0)
  db.ref("game/antreAfterlife").on("value",s=>{window.__antreAfterlife=s.val()||null;refresh()})
+ db.ref("game/quantumImmortality").on("value",s=>observeQuantumImmortality(s.val()))
  db.ref("game/map").on("value",refresh)
  db.ref("sessionControl").on("value",refresh)
 })

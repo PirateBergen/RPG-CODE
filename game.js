@@ -2499,6 +2499,7 @@ function resetLocalCombatVisualState() {
 
 function cleanupTransientGameUI(options = {}) {
   window.__cancelAntrePassage?.()
+  window.__cancelQuantumGift?.()
   if(typeof syncAntreAfterlifeView==="function")syncAntreAfterlifeView()
   if(typeof closePersonalDocument==="function")closePersonalDocument()
   if(typeof closeDocumentGrantPanel==="function")closeDocumentGrantPanel()
@@ -3242,7 +3243,7 @@ async function changeMap(mapName,customAudio){
  requireExplorationConnection();_musicTransitioning=false;_pendingMusic=null
  if(musicFadeInterval){clearInterval(musicFadeInterval);musicFadeInterval=null}
  _state._pendingMapAudio=!!customAudio
- await db.ref("game").update({...((typeof antreDepartureUpdate==="function")?antreDepartureUpdate(mapName):{}),map:mapName,forchurFog:null,mapAudio:customAudio?{file:customAudio,map:mapName,time:Date.now()}:null})
+ await writeExplorationMap(mapName,{map:mapName,forchurFog:null,mapAudio:customAudio?{file:customAudio,map:mapName,time:Date.now()}:null})
  maybeSpawnMapLoreBook(mapName)
  document.querySelectorAll(".gmSection").forEach(sec=>{sec.style.display="none"})
  }catch(error){showNotification("Carte non changée : "+error.message)}

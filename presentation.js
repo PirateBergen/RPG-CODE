@@ -12,7 +12,7 @@ function cancelSharedVisuals(){
  sharedVisualEpoch++;clearTimeout(sharedVisualTimer);sharedVisualTimer=null
  for(const timer of sharedVisualDelays)clearTimeout(timer);sharedVisualDelays.clear();sharedVisualQueue.length=0
  sharedVisualRunning=false;window.__sharedVisualBusy=false;window.__combatOutcomeQueued=false
- for(const key of ["__cancelDicePresentation","__cancelAllyPresentation","__cancelAllyEffect","__cancelBalrogIntroSound"])window[key]?.()
+ for(const key of ["__cancelDicePresentation","__cancelAllyPresentation","__cancelAllyEffect","__cancelBalrogIntroSound","__cancelQuantumGift"])window[key]?.()
  if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
 }
 function createPresentationScope(key,onCleanup=()=>{}){

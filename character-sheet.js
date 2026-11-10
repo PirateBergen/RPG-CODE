@@ -51,6 +51,7 @@ function openCharacterSheet(id = null) {
   clearTimeout(window.__sheetFreePointsTimer)
   window.__sheetConfirmedCharacterData=null
   currentSheetPlayer = playerID
+  renderPermanentCharacterStates()
   document.getElementById("inventoryItemStats")?.replaceChildren()
   // Marquer la fiche avec l'ID du joueur pour éviter les sauvegardes croisées
   const sheet = document.getElementById("characterSheet")
@@ -508,3 +509,12 @@ function persistCharacterEdits(id,data,sourceGeneration=null){
 function persistCharacterTransaction(id,update){return enqueueCharacterMutation(id,()=>reliableCharacterTransaction(id,update))}
 
 function confirmSheetGold(id,value,generation){if(value==null||currentSheetPlayer!==id||generation!==window.__sheetViewGeneration)return;const field=document.getElementById("goldInput");if(field&&Number(field.value)===value)field.dataset.dirty="false"}
+
+function renderPermanentCharacterStates(){
+ const section=document.getElementById("permanentCharacterStates");if(!section)return
+ section.replaceChildren();section.hidden=true
+ if(!currentSheetPlayer||!canAccessCharacter(currentSheetPlayer)||window.__quantumImmortality?.players?.[currentSheetPlayer]!==true)return
+ const title=document.createElement("h3"),source=document.createElement("p"),description=document.createElement("p")
+ title.textContent="∞ Immortalité quantique";source.textContent="État permanent — don de la Gardienne";description.textContent="Vous pouvez mourir pendant le combat. À sa fin, vous revenez à la vie avec tous vos PV."
+ section.append(title,source,description);section.hidden=false
+}

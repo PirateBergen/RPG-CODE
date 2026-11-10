@@ -8,7 +8,7 @@ L’issue et la consommation de l’événement sont scellées ensemble par le m
 
 À l’arrivée, Greg, Pika, Elo et Bibi récupèrent leurs PV maximum et leurs pions reprennent un affichage normal. Une petite marque « ✧ Mort » indique seulement leur état narratif ; aucune classe KO ni restriction d’action n’est ajoutée par cette marque. Les inventaires, notes, caractéristiques et dons restent conservés.
 
-Le premier changement vers n’importe quelle autre carte met fin à cet état, y compris un déplacement vers le Passage. La marque disparaît avec une courte lueur dorée. Revenir ensuite dans l’Antre ne la fait pas réapparaître. Les défaites suivantes suivent la règle ordinaire de retour, sans cette réanimation.
+Le premier changement vers n’importe quelle autre carte met fin à cet état, y compris un déplacement vers le Passage. La marque disparaît avec une courte lueur dorée. Revenir ensuite dans l’Antre ne la fait pas réapparaître. Les défaites suivantes ne rejouent pas ce passage. À la sortie de l’Antre, le groupe reçoit désormais le don permanent Immortalité quantique de la Gardienne : les KO restent possibles en combat et les bénéficiaires reviennent vivants à sa fin. Voir IMMORTALITE-QUANTIQUE-2026-11-10.md.
 
 ## Présentation
 

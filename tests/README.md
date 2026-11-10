@@ -50,3 +50,5 @@ menu-navigation-browser exerce les vrais onglets PNJ et catégories avec le CSS 
 inventory-form-browser exerce le vrai formulaire et ses boutons de caractéristiques dans Edge, sur mobile et ordinateur : ajout, quantité, calcul de charge, bonus, navigation clavier et retrait. Les écritures de sauvegarde y sont simulées ; firebase-inventory-builder vérifie la sauvegarde réelle dans l’émulateur.
 
 antre-event et firebase-antre-event couvrent la première défaite world boss, l’unicité avec deux MJ, les PV maximum, la marque narrative, la reconnexion et le chargement, la sortie par le Passage et la seconde défaite normale. antre-event-browser vérifie dans Edge le passage, son annulation, les marques et la fermeture du souffle synthétisé.
+
+quantum-immortality couvre l’acquisition et la résurrection conditionnelle. firebase-quantum-immortality couvre fiche, protection des écritures, KO pendant le combat, résurrection après défaite et victoire, blessures conservées et sauvegarde. quantum-gift-browser vérifie l’animation unique, son annulation et l’état permanent non cliquable dans les fiches.

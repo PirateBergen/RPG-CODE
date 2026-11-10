@@ -201,7 +201,8 @@ async function finishReliableCombat(combatId){
   if(root.events?.oregonBoarding)root.events.oregonBoarding.active=false
   if(root.events?.aurora?.oregonVoyage)root.events.aurora.oregonVoyage.active=false
  }
- if(afterlife?.phase==="active"&&root.game.map!=="antre.jpg"){afterlife.phase="complete";afterlife.exitedAt=Date.now()}
+ completeAntreDeparture(root)
+ restoreQuantumCombatants(root,outcome)
  root.game.mapAudio=outcome.returnAudio||null
  root.game.combatOutcome.returnedAt=Date.now()
  if(root.game.balrogSword?.combatId===combatId&&root.game.balrogSword.status==="pending")root.game.balrogSword.status="available"

@@ -26,6 +26,21 @@ function combatExitSnapshot(root,type,request={}){
   if(c.lastAction)result.finalAction=combatClone(c.lastAction)
   return result
 }
+function completeAntreDeparture(root){
+ const state=root.game?.antreAfterlife
+ if(!state?.used||!state.combatId||!["active","complete"].includes(state.phase)||(state.phase==="active"&&root.game.map==="antre.jpg"))return false
+ let changed=false
+ if(state.phase==="active"){state.phase="complete";state.exitedAt=Date.now();changed=true}
+ if(!root.game.quantumImmortality){root.game.quantumImmortality={id:"guardian-"+state.combatId,source:"Gardienne",grantedAt:Date.now(),players:Object.fromEntries(COMBAT_CHARACTERS.filter(id=>root.characters?.[id]).map(id=>[id,true]))};changed=true}
+ return changed
+}
+function restoreQuantumCombatants(root,outcome){
+ const revived=[]
+ for(const id of COMBAT_CHARACTERS){const c=root.characters?.[id];if(c&&c.hp<=0&&root.game?.quantumImmortality?.players?.[id]===true){c.hp=getCharacterMaxHp(id,c);revived.push(id)}}
+ if(revived.length)outcome.quantumRevived=revived
+ return revived
+}
+
 function sealCombatOutcome(root,type,request={}){
   root.game ||= {}
   if(root.game.combatOutcome?.combatId===root.combat.id&&root.combat.phase==="finished"&&root.game.combatOutcome.returnMap&&root.game.combatOutcome.returnTokens)return root.game.combatOutcome

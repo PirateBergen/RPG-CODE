@@ -22,10 +22,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Vérifier la procédure et le cache
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Vérifier les tests du jeu et la publication
         run: |
-          node tests/release.cjs
-          node tests/service-worker.cjs
+          npm ci --prefix tests --ignore-scripts --no-audit --no-fund
+          node tests/run.cjs
       - name: Préparer la version exacte
         run: node tools/release.cjs _site
       - uses: actions/configure-pages@v5

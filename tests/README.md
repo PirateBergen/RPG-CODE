@@ -28,3 +28,11 @@ Invocations hors combat : tests/firebase-exploration-summons.cjs couvre autorisa
 John Pork et soins : tests/combat-health.cjs et tests/firebase-combat-health.cjs vérifient dégâts d’arrivée, interception mono-cible, zones, soins sur héros et invocation, Bibi KO, soins de groupe, expiration, sauvegarde et son d’entrée du Balrog. Les lectures audio restent simulées.
 
 Stockage plein en partie test : `tests/firebase-test-storage.cjs` avec l’émulateur local vérifie l’alerte visible, le maintien en mémoire, l’absence de fausse confirmation, l’export de secours de l’état actuel (mode test), son décodage, l’échec de téléchargement et le retour du stockage. La campagne réelle reste inchangée.
+
+## Nettoyage du 10 novembre
+
+Le lanceur standard couvre les tests unitaires actifs. --firebase découvre tous les fichiers firebase-*.cjs et exige un émulateur local ; aucun ancien scénario d’interface ne peut rester oublié par une liste partielle. Utiliser --list pour afficher les scénarios sans les lancer. --browser lance les contrôles Edge des fenêtres, ressources, spéciales et tailles d’écran. L’affichage des interventions est désormais vérifié sur le panneau états/PV actuel, avec conservation de la saisie pendant les rafraîchissements.
+
+Les anciens scénarios arbitration.cjs, firebase-arbitration.cjs et arbitration-dropdown-browser.cjs ont été remplacés : leur attente d’une attaque suspendue ne correspond plus au jeu. Les contrôles de compatibilité restent dans firebase-retired-actions.cjs et retired-combat-commands.cjs ; les états/PV et permissions dans gm-statuses.cjs et firebase-gm-statuses.cjs ; la reconnexion de l’interface dans firebase-reconnect-ui.cjs ; les fins de combat dans combat-exit.cjs et firebase-combat-exit.cjs. L’historique Git conserve les anciens scénarios.
+
+Installation reproductible : npm ci --prefix tests. Puis node tests/run.cjs, ou dans l’émulateur node tests/run.cjs --firebase. Les navigateurs graphiques utilisent Edge installé sur Windows. RPG_LAYOUT_OUTPUT choisit le dossier des captures ; RPG_TEST_REPORT peut conserver le bilan du lanceur.

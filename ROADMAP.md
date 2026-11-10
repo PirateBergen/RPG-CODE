@@ -20,3 +20,7 @@ Chantiers distincts restant à concevoir : garantir les champs calculés des fic
 ## Réseau — 10 novembre
 
 Les contrôles automatiques sans effet utilisent les abonnements locaux avant de solliciter une transaction : huit éditions ordinaires passent de 16 à 0 lectures REST de la racine dans le scénario de test. Les modifications effectives restent recalculées sur la base serveur. Les écritures simples utilisent une réponse sans recopie, et la sauvegarde réutilise les archives de son instantané complet unique. La séparation structurelle des sauvegardes et de la partie active reste à concevoir ; les actions complexes utilisent toujours une transaction globale avec contrôle de version.
+
+## Découpage progressif — raccourcis
+
+Première extraction de game.js et ui.js : raccourcis et aide dans shortcuts.js, fonctions déplacées sans changement. Installation du clavier conservée à sa position de démarrage ; chargement et cache vérifiés. Les fenêtres et les mécanismes de jeu restent leurs propres responsables.

@@ -1533,6 +1533,7 @@ db.ref("game/map").on("value", snap => {
   const isFirst = firstMapLoad
   if (isFirst) firstMapLoad = false
   currentMap = mapName
+  preloadAssets(mapName)
   if(typeof refreshExplorationMapEvents==="function")refreshExplorationMapEvents()
   if(typeof playSharedMapAudio==="function")playSharedMapAudio(window.__explorationState?.mapAudio)
   if (previousMap && previousMap !== mapName) { closeMapLoreBookOverlay(); if (isGM) addSessionLog("🗺 Carte : " + (mapNames[mapName] || mapName)) }

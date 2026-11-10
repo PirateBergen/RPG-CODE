@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261110.3"</script>
+  <script>window.GAME_V = "20261110.4"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -179,7 +179,7 @@
     <div id="inventoryWeightStatus" role="status" style="margin-top:10px;font-size:15px;"></div>
   </section>
   <div id="sheetContainer">
-    <img id="sheetImage" src="images/elosheet.jpg">
+    <img loading="lazy" decoding="async" id="sheetImage" src="images/elosheet.jpg">
     <label class="compactSheetLabel" for="lvl">Niveau</label>
     <input id="lvl"     class="sheetField" oninput="updateHPBar()" style="top:270px;left:420px;width:120px;height:60px;font-size:32px;font-weight:bold;text-align:center;border:2px solid black;background:white;">
     <label class="compactSheetLabel" for="xp">Expérience</label>
@@ -248,42 +248,42 @@
 <!-- SONS -->
 <audio id="victorySound"><source src="audio/victoire.mp3"></audio>
 <audio id="combatSound"><source src="audio/combat.mp3"></audio>
-<audio id="combatMusic" loop><source src="audio/lowcombat.mp3"></audio>
+<audio id="combatMusic" loop preload="none"><source src="audio/lowcombat.mp3"></audio>
 <audio id="parcheminSound"><source src="audio/parchemin.mp3"></audio>
-<audio id="critSound"><source src="audio/crit.mp3" type="audio/mpeg"></audio>
-  <audio id="critFailSound"><source src="audio/critfail.mp3" type="audio/mpeg"></audio>
+<audio id="critSound" preload="auto"><source src="audio/crit.mp3" type="audio/mpeg"></audio>
+  <audio id="critFailSound" preload="auto"><source src="audio/critfail.mp3" type="audio/mpeg"></audio>
 <audio id="pikaSpecialMusic" preload="auto"><source src="audio/pika-special-music.wav" type="audio/wav"></audio>
 <audio id="endikakiInvocationSound" preload="auto"><source src="audio/endikaki-invocation.wav" type="audio/wav"></audio>
 <audio id="endikakiExplosionSound" preload="auto"><source src="audio/bombe.mp3" type="audio/mpeg"></audio>
 <audio id="powerSound"><source src="audio/power.mp3" type="audio/mpeg"></audio>
-<audio id="powSound"><source src="audio/pow.mp3" type="audio/mpeg"></audio>
+<audio id="powSound" preload="auto"><source src="audio/pow.mp3" type="audio/mpeg"></audio>
 <audio id="power1Sound" loop><source src="audio/power.mp3" type="audio/mpeg"></audio>
 <audio id="curseSound"><source src="audio/curse.mp3" type="audio/mpeg"></audio>
 <audio id="curse1Sound"><source src="audio/curse1.mp3" type="audio/mpeg"></audio>
 <audio id="curse2Sound"><source src="audio/curse2.mp3" type="audio/mpeg"></audio>
 <audio id="bark"><source src="audio/bark.mp3" type="audio/mpeg"></audio>
-<audio id="music" loop><source src="audio/trine.mp3" type="audio/mpeg"></audio>
+<audio id="music" loop preload="none"><source src="audio/trine.mp3" type="audio/mpeg"></audio>
 <audio id="levelUpSound"><source src="audio/lvlup.mp3" type="audio/mpeg"></audio>
 <audio id="defeatSound"><source src="audio/defaite.mp3" type="audio/mpeg"></audio>
 <audio id="musicA" loop></audio>
-<audio id="diceinvSound"><source src="audio/diceinv.mp3" type="audio/mpeg"></audio>
-<audio id="forsureMusic" loop><source src="audio/forsure.mp3" type="audio/mpeg"></audio>
+<audio id="diceinvSound" preload="auto"><source src="audio/diceinv.mp3" type="audio/mpeg"></audio>
+<audio id="forsureMusic" loop preload="none"><source src="audio/forsure.mp3" type="audio/mpeg"></audio>
 <audio id="musicB" loop></audio>
-<audio id="auroraMusic" loop><source src="audio/aurore.mp3" type="audio/mpeg"></audio>
-<audio id="madnessLow" loop><source src="audio/madness_low.mp3" type="audio/mpeg"></audio>
-<audio id="madnessMid" loop><source src="audio/madness_mid.mp3" type="audio/mpeg"></audio>
-<audio id="madnessHigh" loop><source src="audio/madness_high.mp3" type="audio/mpeg"></audio>
-<audio id="madnessPeak" loop><source src="audio/madness_peak.mp3" type="audio/mpeg"></audio>
+<audio id="auroraMusic" loop preload="none"><source src="audio/aurore.mp3" type="audio/mpeg"></audio>
+<audio id="madnessLow" loop preload="none"><source src="audio/madness_low.mp3" type="audio/mpeg"></audio>
+<audio id="madnessMid" loop preload="none"><source src="audio/madness_mid.mp3" type="audio/mpeg"></audio>
+<audio id="madnessHigh" loop preload="none"><source src="audio/madness_high.mp3" type="audio/mpeg"></audio>
+<audio id="madnessPeak" loop preload="none"><source src="audio/madness_peak.mp3" type="audio/mpeg"></audio>
 <audio id="whisperHit"><source src="audio/whisper hit.mp3" type="audio/mpeg"></audio>
 <audio id="thuumSound"><source src="audio/thuum.mp3" type="audio/mpeg"></audio>
 <audio id="criSound"><source src="audio/cri.mp3" type="audio/mpeg"></audio>
-<audio id="flySwarmSound" loop><source src="audio/tremblement.mp3" type="audio/mpeg"></audio>
-<audio id="endingSound"><source src="audio/ending.mp3" type="audio/mpeg"></audio>
+<audio id="flySwarmSound" loop preload="none"><source src="audio/tremblement.mp3" type="audio/mpeg"></audio>
+<audio id="endingSound" preload="none"><source src="audio/ending.mp3" type="audio/mpeg"></audio>
 
 <!-- Fin de session — image de fond transparente -->
 <div id="endSessionBg" style="display:none;position:fixed;inset:0;z-index:9999990;pointer-events:none;background:url('images/end.jpg') center/cover no-repeat;mix-blend-mode:multiply;"></div>
 <!-- Fin de session — logo en bas à gauche, opaque, au-dessus de tout -->
-<div id="endSessionLogo" style="display:none;position:fixed;bottom:0;left:0;z-index:9999999;pointer-events:none;"><img src="images/ending.png" style="display:block;max-height:40vh;width:auto;"></div>
+<div id="endSessionLogo" style="display:none;position:fixed;bottom:0;left:0;z-index:9999999;pointer-events:none;"><img loading="lazy" decoding="async" src="images/ending.png" style="display:block;max-height:40vh;width:auto;"></div>
 
 <div id="audioSliders" style="position:fixed;top:12px;right:18px;z-index:1000000002;display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:rgba(0,0,0,0.45);border:1px solid rgba(212,168,53,0.35);border-radius:10px;backdrop-filter:blur(4px);">
   <label style="display:flex;align-items:center;gap:8px;font-family:Cinzel,serif;font-size:12px;color:#f0d8a0;letter-spacing:1px;">

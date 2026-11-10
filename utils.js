@@ -954,15 +954,34 @@ function _showLocationImpl(name) {
 /* CHARGEMENT ASSETS         */
 /* ========================= */
 
-function preloadAssets() {
-  Object.keys(mapMusic).forEach(map => {
-    const img = new Image()
-    img.src = "images/" + map
-  })
-  Object.values(mapMusic).forEach(aud => {
-    const a = new Audio()
-    a.src = aud.startsWith("audio/") ? aud : "audio/" + aud
-  })
+// Prepare only the requested map. Music is loaded by its real playback channel.
+const preparedMapAssets = new Set()
+let pendingMapAsset = null
+function preloadAssets(mapName = typeof currentMap === "string" ? currentMap : null) {
+  if (typeof mapName !== "string" || !/^[^/\\?#]+\.(?:jpe?g|png|webp|svg)$/i.test(mapName)) return
+  if (pendingMapAsset?.mapName === mapName) return
+  if (pendingMapAsset) {
+    pendingMapAsset.image.onload = pendingMapAsset.image.onerror = null
+    pendingMapAsset.image.removeAttribute("src")
+    pendingMapAsset = null
+  }
+  if (preparedMapAssets.has(mapName)) return
+  const image = new Image()
+  image.decoding = "async"
+  image.fetchPriority = "low"
+  pendingMapAsset = { mapName, image }
+  const finish = loaded => {
+    if (pendingMapAsset?.image !== image) return
+    pendingMapAsset = null
+    image.onload = image.onerror = null
+    if (loaded) {
+      preparedMapAssets.add(mapName)
+      while (preparedMapAssets.size > 8) preparedMapAssets.delete(preparedMapAssets.values().next().value)
+    }
+  }
+  image.onload = () => finish(true)
+  image.onerror = () => finish(false)
+  image.src = "images/" + mapName
 }
 
 function scanAssets() {

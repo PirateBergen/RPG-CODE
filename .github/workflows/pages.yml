@@ -13,7 +13,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -33,10 +33,14 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
+          name: pages-${{ github.run_id }}-${{ github.run_attempt }}
           path: _site
       - name: Publier
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+          timeout: 900000
       - name: Confirmer les fichiers réellement disponibles
         env:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}

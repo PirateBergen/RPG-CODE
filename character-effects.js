@@ -76,3 +76,27 @@ document.addEventListener("DOMContentLoaded",()=>{
  db.ref("curse/wheel").on("value",s=>presentSavedCurseWheel(s.val()))
  db.ref("game/powerEvents").on("child_added",s=>presentCharacterPower(s.val()))
 })
+
+function updateFlyBlessingButton(){
+ const button=document.getElementById("flyBlessingBtn");if(!button)return
+ button.disabled=!(isGM&&window.__authRole==="gm"&&gameStarted&&gameState==="GAME"&&!combatActive&&currentMap==="chapelle.jpg"&&!window.__sessionBusy)
+ button.title=button.disabled?"Utilisable uniquement à la chapelle, hors combat":"Remettre les malédictions de tous les héros à zéro"
+}
+async function blessPartyWithFlies(){
+ const button=document.getElementById("flyBlessingBtn");if(button)button.disabled=true
+ try{
+  requireActionAccess({gmOnly:true});requireExplorationConnection()
+  if(!gameStarted||gameState!=="GAME"||combatActive||currentMap!=="chapelle.jpg")throw Error("La bénédiction est disponible uniquement à la chapelle, hors combat.")
+  const uid=window.__authUid,revision=persistenceRevision||"initial"
+  const result=await reliableRootTransaction(root=>{
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!=="chapelle.jpg"||root.game?.combatState?.active||root.combat?.phase==="active")return undefined
+   for(const id of PLAYABLE_HEROES){const c=root.characters?.[id];if(c){c.curse=0;delete c.cursedEffect}}
+   if(root.curse)delete root.curse.wheel
+   return root
+  })
+  if(!result.committed)throw Error("La carte ou la partie a changé.")
+  showNotification("Bénédiction des mouches : toutes les malédictions actives sont dissipées.")
+  document.querySelectorAll(".gmSection").forEach(menu=>menu.style.display="none");return true
+ }catch(error){showNotification("Bénédiction non appliquée : "+error.message);return false}finally{updateFlyBlessingButton()}
+}
+document.addEventListener("DOMContentLoaded",()=>{db.ref("game/map").on("value",()=>setTimeout(updateFlyBlessingButton,0));db.ref("combat").on("value",()=>setTimeout(updateFlyBlessingButton,0));setInterval(updateFlyBlessingButton,1000);updateFlyBlessingButton()})

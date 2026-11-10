@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261110.8"</script>
+  <script>window.GAME_V = "20261110.9"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -608,6 +608,7 @@
   </div>
   <div id="elemEffets" class="pnjTabContent">
     <div class="panel-divider elem-stack">
+      <button id="flyBlessingBtn" type="button" onclick="blessPartyWithFlies()" class="elem-full-btn" disabled>🪰 Bénédiction des mouches</button>
       <button onclick="triggerAurora()" class="elem-full-btn elem-effect-aurora">🌌 Déclencher Aurore</button>
       <button onclick="cemeteryEventDone=false;triggerCemeteryEvent()" class="elem-full-btn elem-effect-cemetery">⚡ Sort Cimetière</button>
       <div class="spacer-8"></div>

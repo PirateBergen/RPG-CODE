@@ -36,9 +36,17 @@ function openAllyDiscoveryPanel(){
  if(!isGM||!gameStarted)return
  document.getElementById("allyDiscoveryPanel")?.remove()
  const panel=document.createElement("div"),box=document.createElement("div"),title=document.createElement("h2"),intro=document.createElement("p"),close=document.createElement("button")
- panel.id="allyDiscoveryPanel";panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-label","Débloquer un allié");box.className="allyDiscoveryBox";title.textContent="Débloquer un allié";intro.textContent="Annonce au groupe et ajoute l’allié au menu Action. Votre autorisation reste nécessaire : pion hors combat, pouvoir contre les world boss."
+ panel.id="allyDiscoveryPanel";panel.setAttribute("role","dialog");panel.setAttribute("aria-modal","true");panel.setAttribute("aria-label","Alliés");box.className="allyDiscoveryBox";title.textContent="Alliés";intro.textContent="Débloquez un allié pour annoncer son soutien en combat. Invoquer place seulement son pion sur la carte actuelle ; aucun pouvoir n’est lancé."
  box.append(title,intro)
- for(const pnj of ALLY_PNJS){const button=document.createElement("button"),image=document.createElement("img"),label=document.createElement("span");button.type="button";button.dataset.ally=pnj.id;image.src="images/"+pnj.image;image.alt="";label.textContent=pnj.name+(window.__explorationState?.allyDiscoveries?.[pnj.id]?" — déjà découvert":" — débloquer");button.disabled=!!window.__explorationState?.allyDiscoveries?.[pnj.id];button.append(image,label);button.onclick=async()=>{button.disabled=true;if(await unlockAllyDiscovery(pnj.id)){panel.remove();window.GameWindows?.closed(panel);document.querySelectorAll(".gmSection").forEach(menu=>menu.style.display="none")}else button.disabled=false};box.appendChild(button)}
+ for(const pnj of ALLY_PNJS){
+  const row=document.createElement("section"),image=document.createElement("img"),label=document.createElement("strong"),actions=document.createElement("div"),unlock=document.createElement("button"),summon=document.createElement("button")
+  row.className="allyManagementRow";row.dataset.ally=pnj.id;image.src="images/"+pnj.image;image.alt="";label.textContent=pnj.name;actions.className="allyManagementActions"
+  unlock.type=summon.type="button";unlock.dataset.action="unlock";summon.dataset.action="summon";unlock.textContent=window.__explorationState?.allyDiscoveries?.[pnj.id]?"Déjà débloqué":"Débloquer pour les combats";unlock.disabled=!!window.__explorationState?.allyDiscoveries?.[pnj.id];summon.textContent="Invoquer";summon.disabled=combatActive||gameState!=="GAME";summon.title="Placer le personnage sur cette carte, sans attaque ni cinématique"
+  const done=()=>{panel.remove();window.GameWindows?.closed(panel);document.querySelectorAll(".gmSection").forEach(menu=>menu.style.display="none")}
+  unlock.onclick=async()=>{unlock.disabled=true;if(await unlockAllyDiscovery(pnj.id))done();else unlock.disabled=false}
+  summon.onclick=async()=>{summon.disabled=true;if(await placeAllyOnMap(pnj.id))done();else summon.disabled=combatActive||gameState!=="GAME"}
+  actions.append(unlock,summon);row.append(image,label,actions);box.appendChild(row)
+ }
  const previous=document.activeElement,finish=()=>{panel.remove();previous?.focus?.()};close.textContent="Fermer";close.onclick=finish;box.appendChild(close);panel.appendChild(box)
  panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();finish()}if(event.key==="Tab"){const buttons=[...box.querySelectorAll("button:not(:disabled)")],first=buttons[0],last=buttons.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}})
  document.body.appendChild(panel);box.querySelector("button:not(:disabled)")?.focus()
@@ -76,12 +84,19 @@ async function giveExplorationAllyAccess(pnj,action,actor){
   showNotification(known.name+" : invocation hors combat autorisée pour "+heroDisplayName(actor)+".");return true
  }catch(e){showNotification("Autorisation non donnée : "+e.message);return false}
 }
-function openExplorationAlliesPanel(){
- if(!isGM||window.__authRole!=="gm"||!gameStarted||gameState!=="GAME"||combatActive)return
- const existing=document.getElementById("allyPNJPanel");if(existing){existing.remove();return}
- const panel=document.createElement("section"),title=document.createElement("h2"),help=document.createElement("p"),close=document.createElement("button");panel.id="allyPNJPanel";panel.className="explorationAlliesPanel";panel.setAttribute("role","dialog");panel.setAttribute("aria-label","Invocations hors combat");title.textContent="Invocations hors combat";help.textContent="Autorisez un joueur à invoquer un allié. La cinématique pose un pion sur cette carte, sans dégâts ni soins. Le pion reste ici jusqu’à votre suppression.";panel.append(title,help)
- for(const pnj of ALLY_PNJS){const card=document.createElement("section"),name=document.createElement("h3"),image=document.createElement("img");image.src="images/"+pnj.image;image.alt="";name.textContent=pnj.name;card.append(image,name);for(const action of pnj.actions){const button=document.createElement("button");button.type="button";button.textContent=action.label+" — Donner…";button.onclick=()=>openAllyGrantPicker(pnj,action);card.appendChild(button)}panel.appendChild(card)}
- close.type="button";close.textContent="Fermer";close.onclick=()=>{panel.remove();window.GameWindows?.closed(panel)};panel.appendChild(close);document.body.appendChild(panel);window.GameWindows?.register(panel,close.onclick)
+async function placeAllyOnMap(id){
+ try{
+  requireActionAccess({gmOnly:true});requireExplorationConnection()
+  if(!gameStarted||gameState!=="GAME"||combatActive)throw Error("Placez cet allié hors combat.")
+  const pnj=ALLY_PNJS.find(p=>p.id===id);if(!pnj)throw Error("Allié inconnu")
+  const uid=window.__authUid,revision=persistenceRevision||"initial",map=currentMap,tokenId=db.ref("game/summonedAllies").push().key,time=Date.now(),el=document.getElementById("map"),x=Math.round((el?.offsetWidth||800)/2),y=Math.round((el?.offsetHeight||600)/2)
+  const result=await reliableRootTransaction(root=>{
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!==map||root.game?.combatState?.active||root.combat?.phase==="active")return undefined
+   root.game.summonedAllies||={};if(!Object.values(root.game.summonedAllies).some(t=>t?.pnjId===id&&t.map===map))root.game.summonedAllies[tokenId]={pnjId:id,map,x,y,time};return root
+  })
+  if(!result.committed)throw Error("La carte ou la partie a changé.")
+  showNotification(pnj.name+" est présent sur cette carte.");return true
+ }catch(error){showNotification("Invocation non placée : "+error.message);return false}
 }
 async function requestExplorationSummon(pnj,action){
  if(window.__sharedVisualBusy||window.__sessionBusy)return showNotification("Attendez la fin de l’animation en cours.")
@@ -103,7 +118,7 @@ async function updateSummonedAlly(id,change){
 }
 function syncSummonedAllies(){
  const visible=gameStarted&&gameState==="GAME"&&!combatActive&&!window.__sessionBusy,gm=isGM&&window.__authRole==="gm",map=document.getElementById("map"),button=document.getElementById("allyBtn")
- if(button)button.style.display=gm&&gameStarted&&["GAME","COMBAT"].includes(gameState)&&(!combatActive||combatHasWorldBoss({combat:window.__combatSnapshot}))?"flex":"none"
+ if(button)button.style.display=gm&&gameStarted&&gameState==="COMBAT"&&combatActive&&combatHasWorldBoss({combat:window.__combatSnapshot})?"flex":"none"
  const entries=visible?Object.entries(window.__summonedAllies||{}).filter(([,t])=>t?.map===currentMap&&ALLY_PNJS.some(p=>p.id===t.pnjId)):[],wanted=new Set(entries.map(([id])=>id))
  document.querySelectorAll(".summonedAllyToken").forEach(el=>{if(!wanted.has(el.dataset.summonId))el.remove()})
  if(!map)return

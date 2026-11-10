@@ -1673,7 +1673,7 @@ function showSpellFreed() {
 /* ========================= */
 
 function openAllyPNJPanel() {
-  if(!combatActive)return openExplorationAlliesPanel()
+  if(!combatActive)return openAllyDiscoveryPanel()
   if (!isGM) return
   if(!combatHasWorldBoss({combat:window.__combatSnapshot})){showNotification("Les invocations sont réservées aux combats de world boss.");return}
   const existing = document.getElementById("allyPNJPanel")

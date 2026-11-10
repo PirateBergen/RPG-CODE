@@ -16,7 +16,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig)
 firebase.database().goOnline()
-const db   = typeof createIsolatedTestDatabase === "function" && window.__isolatedTestMode ? createIsolatedTestDatabase(firebase.database()) : firebase.database()
+const db   = typeof createIsolatedTestDatabase === "function" && window.__isolatedTestMode ? createIsolatedTestDatabase(createCampaignDatabase(firebase.database())) : createCampaignDatabase(firebase.database())
 installSessionWriteTracking(db)
 const auth = typeof firebase.auth === "function" ? firebase.auth() : null
 

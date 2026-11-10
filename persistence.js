@@ -232,7 +232,7 @@ function startPersistenceSync(uid) {
     if (wasBusy && !control.phase && typeof syncCharacterSubscriptions === "function") syncCharacterSubscriptions()
     if (!control.phase || !control.id) return
     const ackPath = "sessionAcks/" + control.id + "/" + uid + "/" + persistenceClientId
-    flushSessionEdits(control.phase === "saving").then(() => db.ref(ackPath).set({ ok: true }))
+    flushSessionEdits(["saving","migrating"].includes(control.phase)).then(() => db.ref(ackPath).set({ ok: true }))
       .catch(error => db.ref(ackPath).set({ ok: false, error: String(error.message).slice(0, 300) }).catch(() => {}))
   })
 }
@@ -265,7 +265,7 @@ async function withSessionOperation(phase, action) {
     const previous = (await db.ref("sessionControl").once("value")).val() || {}
     const connected = (await db.ref(".info/connected").once("value")).val()
     if (!connected) throw new Error("Connexion nécessaire pour enregistrer ou restaurer la partie")
-    await flushSessionEdits(phase === "saving")
+    await flushSessionEdits(["saving","migrating"].includes(phase))
     const clients = (await db.ref("sessionClients").once("value")).val() || {}
     const control = { id, phase, revision: previous.revision || null, startedAt: Date.now(), owner: window.__authUid }
     const lock = await db.ref("sessionControl").transaction(current => {
@@ -310,7 +310,8 @@ async function saveGame() {
       const root = (await db.ref().once("value")).val() || {}
       const state = captureSession(root)
       sessionFromSave(state)
-      const previous=sortedSaveEntries(root.saves||{})[0]?.[1]
+      const archives=db.__campaignLayout?.()===2?(await db.ref("saves").once("value")).val():root.saves
+      const previous=sortedSaveEntries(archives||{})[0]?.[1]
       const now = Math.max(Date.now(),saveTimestamp(previous)+1), id = "current"
       const save = { ...state, _schemaVersion: SAVE_SCHEMA_VERSION, _savedAt: now, _saveName: name.trim(), _saveDate: new Date(now).toLocaleString("fr-FR") }
       const next={current:save,...(previous?{previous}:{})}

@@ -1,18 +1,18 @@
 {
   "rules": {
-    ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
-    ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+    ".read": "auth != null && (root.child('active').child('roles').child(auth.uid).val() === 'gm' || (!root.child('active').exists() && root.child('roles').child(auth.uid).val() === 'gm'))",
+    ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm' && !data.child('active').exists()",
     "roles": {
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'gm')",
-        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
         ".validate": "newData.val() === 'gm' || newData.val() === 'player'"
       }
     },
     "profiles": {
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || root.child('roles').child(auth.uid).val() === 'gm')",
-        ".write": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && newData.exists() && (!data.child('playerId').exists() || newData.child('playerId').val() === data.child('playerId').val())))",
+        ".write": "!root.child('active').exists() && (auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && newData.exists() && (!data.child('playerId').exists() || newData.child('playerId').val() === data.child('playerId').val()))))",
         "playerId": {
           ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && (newData.val() === 'greg' || newData.val() === 'ju' || newData.val() === 'elo') && root.child('heroAssignments').child(newData.val()).child('uid').val() === auth.uid)"
         }
@@ -20,9 +20,9 @@
     },
     "characters": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
-      ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+      ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')",
       "$playerId": {
-        ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".write": "!root.child('active').exists() && (((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
         ".validate": "newData.hasChildren()",
         "lvl": {
           ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99",
@@ -113,9 +113,9 @@
     },
     "tokens": {
       ".read": "auth != null",
-      ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+      ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')",
       "$playerId": {
-        ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".write": "!root.child('active').exists() && (((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
         "x": {
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         },
@@ -127,7 +127,7 @@
         }
       },
       "bibi": {
-        ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || root.child('profiles').child(auth.uid).child('playerId').val() === 'greg')) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".write": "!root.child('active').exists() && (((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || root.child('profiles').child(auth.uid).child('playerId').val() === 'greg')) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
         "x": {
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         },
@@ -144,241 +144,238 @@
     },
     "elements": {
       ".read": "auth != null",
-      ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+      ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
     },
     "combat": {
       ".read": "auth != null",
-      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+      ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
       "turnState": {
         "rolls": {
           "$actorId": {
-            ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+            ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
             ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 12 && newData.val() % 1 === 0"
           }
         },
         "currentIndex": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
           ".validate": "newData.isNumber() && newData.val() >= 0"
         },
         "currentActorId": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
           ".validate": "newData.isString()"
         },
         "round": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
           ".validate": "newData.isNumber() && newData.val() >= 1"
         }
       },
       "mob": {
         "hp": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
           ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000"
         },
         "bibiRage": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "yuAggro": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "yuSkipNextTurn": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "playerBleed": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "playerPoison": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "spiderSenseBuff": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "victoryLootBonus": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "attackMalus": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         },
         "revealedWeakness": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         }
       },
       "usedThuum": {
         "$playerId": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         }
       },
       "eloSummon": {
-        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
         "x": {
-          ".write": "(auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          ".write": "!root.child('active').exists() && ((auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         },
         "y": {
-          ".write": "(auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          ".write": "!root.child('active').exists() && ((auth != null && root.child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !root.child('sessionControl').child('phase').exists()) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
           ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
         }
       },
       "allyBroadcast": {
-        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
         ".validate": "newData.hasChildren(['pnjId', 'actionId', 'time']) && newData.child('pnjId').isString() && newData.child('actionId').isString() && newData.child('time').isNumber()"
       },
       "hits": {
         "$hitId": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
           ".validate": "newData.hasChildren(['from','to','amount','type','round','time']) && newData.child('from').isString() && newData.child('to').isString() && newData.child('amount').isNumber() && newData.child('amount').val() >= 0 && newData.child('amount').val() <= 9999 && newData.child('round').isNumber() && newData.child('round').val() >= 1 && newData.child('time').isNumber()"
         }
       },
       "playerSpecials": {
         "$playerId": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         }
       },
       "playerFlags": {
         "$playerId": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
         }
       }
     },
     "events": {
       ".read": "auth != null",
-      ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+      ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
     },
     "curse": {
       ".read": "auth != null",
-      ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+      ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')",
       "wheel": {
-        ".write": "(auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || ((!root.child('sessionControl').child('phase').exists() || root.child('sessionControl').child('phase').val() === 'saving') && ((data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === data.child('player').val()) || (!data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('player').val()))))) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
+        ".write": "!root.child('active').exists() && ((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || ((!root.child('sessionControl').child('phase').exists() || root.child('sessionControl').child('phase').val() === 'saving') && ((data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === data.child('player').val()) || (!data.exists() && root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('player').val()))))) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))"
       }
     },
     "diceRoll": {
       ".read": "auth != null",
       "$entry": {
-        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
         ".validate": "newData.hasChildren(['player', 'dice', 'result', 'time', 'sender']) && newData.child('result').isNumber() && newData.child('result').val() >= 1 && newData.child('time').isNumber()"
       }
     },
     "game": {
       ".read": "auth != null",
       "playerThuum": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')",
         "$playerId": {
-          ".write": "((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
+          ".write": "!root.child('active').exists() && (((auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && root.child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && root.child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))"
         }
       },
       "playerThuumAccess": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'",
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')",
         "$playerId": {
-          ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm' && !root.child('sessionControl').child('phase').exists()"
+          ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm' && !root.child('sessionControl').child('phase').exists())"
         }
       },
       "thuumCast": {
-        ".write": false
+        ".write": "!root.child('active').exists() && (false)"
       },
       "readLoreBooks": {
-        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+        ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
       },
       "sessionLog": {
         ".indexOn": "time",
-        ".write": "(auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null) && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "combatState": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "combatOutcome": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "map": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "mapAudio": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "storyImage": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "storyImage2": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "storyImage3": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "shop": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "runeChallenge": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "mapLoreBook": {
-        ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+        ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
       },
       "highPNJName": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "bifrostFlash": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "odinVision": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "powerSound": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "mobAttackEvent": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "cemeterySpell": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "playerDeath": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "playerRevive": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "wantedPosters": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "wantedOpen": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "simonState": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "document": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "playerAllyAccess": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "allyAction": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "newGame": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "endSession": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       },
       "$other": {
-        ".write": "(auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting'"
+        ".write": "!root.child('active').exists() && ((auth != null && root.child('roles').child(auth.uid).val() === 'gm') && root.child('sessionControl').child('phase').val() !== 'loading' && root.child('sessionControl').child('phase').val() !== 'resetting')"
       }
     },
     "saves": {
-      ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
-      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
-      ".indexOn": [
-        "_savedAt"
-      ]
+      ".read": "auth != null && (root.child('active').child('roles').child(auth.uid).val() === 'gm' || (!root.child('active').exists() && root.child('roles').child(auth.uid).val() === 'gm'))",
+      ".write": "auth != null && (root.child('active').child('roles').child(auth.uid).val() === 'gm' || (!root.child('active').exists() && root.child('roles').child(auth.uid).val() === 'gm'))"
     },
     "sessionControl": {
       ".read": "auth != null",
-      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'"
+      ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')"
     },
     "sessionClients": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && auth.uid === $uid",
+        ".write": "!root.child('active').exists() && (auth != null && auth.uid === $uid)",
         "$client": {
           ".validate": "newData.val() === true"
         }
@@ -388,7 +385,7 @@
       ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
       "$operation": {
         "$uid": {
-          ".write": "auth != null && auth.uid === $uid && root.child('sessionControl').child('id').val() === $operation",
+          ".write": "!root.child('active').exists() && (auth != null && auth.uid === $uid && root.child('sessionControl').child('id').val() === $operation)",
           "$client": {
             ".validate": "newData.hasChildren(['ok']) && newData.child('ok').isBoolean()"
           }
@@ -397,49 +394,490 @@
     },
     "combatRequests": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
-      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+      ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
-        ".write": "(auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'queued' && newData.child('combatId').val() === root.child('combat').child('id').val() && (root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('actor').val() || (root.child('profiles').child(auth.uid).child('playerId').val() === 'greg' && newData.child('actor').val() === 'bibi'))) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".write": "!root.child('active').exists() && ((auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'queued' && newData.child('combatId').val() === root.child('combat').child('id').val() && (root.child('profiles').child(auth.uid).child('playerId').val() === newData.child('actor').val() || (root.child('profiles').child(auth.uid).child('playerId').val() === 'greg' && newData.child('actor').val() === 'bibi'))) && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
         ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','status','combatId','sequence','time']) && newData.child('sequence').isNumber() && newData.child('sequence').val() >= 0 && newData.child('sequence').val() % 1 === 0 && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && ((newData.child('kind').val() === 'hero' || newData.child('kind').val() === 'initiative') || newData.child('kind').val() === 'pass' || newData.child('kind').val() === 'ally' || (newData.child('kind').val() === 'thuum' || (newData.child('kind').val() === 'rollRetreat' && root.child('combat').child('pendingRetreat').child('actor').val() === newData.child('actor').val() && root.child('combat').child('pendingRetreat').child('id').val() === newData.child('payload').child('pendingId').val()))))))",
         "status": {
-          ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
+          ".write": "!root.child('active').exists() && (auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled')"
         }
       }
     },
     "explorationRequests": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
-      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+      ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
-        ".write": "(auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && (newData.child('actor').val() === 'greg' || newData.child('actor').val() === 'ju' || newData.child('actor').val() === 'elo') && newData.child('status').val() === 'queued') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".write": "!root.child('active').exists() && ((auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && (newData.child('actor').val() === 'greg' || newData.child('actor').val() === 'ju' || newData.child('actor').val() === 'elo') && newData.child('status').val() === 'queued') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
         ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && ((newData.child('kind').val() === 'book' || newData.child('kind').val() === 'dice') || newData.child('kind').val() === 'spell' || newData.child('kind').val() === 'summon' || newData.child('kind').val() === 'hint' || (newData.child('kind').val() === 'relic' && newData.child('actor').val() === 'greg')))))",
         "status": {
-          ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
+          ".write": "!root.child('active').exists() && (auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled')"
         }
       }
     },
     "characterRequests": {
       ".read": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
-      ".write": "auth != null && root.child('roles').child(auth.uid).val() === 'gm'",
+      ".write": "!root.child('active').exists() && (auth != null && root.child('roles').child(auth.uid).val() === 'gm')",
       "$request": {
         ".read": "auth != null && (root.child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
-        ".write": "(auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && newData.child('status').val() === 'queued') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+        ".write": "!root.child('active').exists() && ((auth != null && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === root.child('profiles').child(auth.uid).child('playerId').val() && newData.child('status').val() === 'queued') && (root.child('heroAssignments').child(root.child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid))",
         ".validate": "root.child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === (root.child('sessionControl').child('revision').exists() ? root.child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && (root.child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'power' || newData.child('kind').val() === 'curse-spin' || newData.child('kind').val() === 'thuum-outside'))))",
         "status": {
-          ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
+          ".write": "!root.child('active').exists() && (auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled')"
         }
       }
     },
     "heroAssignments": {
       ".read": "auth != null",
       "$hero": {
-        ".write": "root.child('securityVersion').val() === 2 && (auth != null && ($hero === 'greg' || $hero === 'ju' || $hero === 'elo') && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('claimedAt').val() >= now - 15000 && (!root.child('profiles').child(auth.uid).child('playerId').exists() || root.child('profiles').child(auth.uid).child('playerId').val() === $hero) && root.child('heroAssignments').child('greg').child('uid').val() !== auth.uid && root.child('heroAssignments').child('ju').child('uid').val() !== auth.uid && root.child('heroAssignments').child('elo').child('uid').val() !== auth.uid)",
+        ".write": "!root.child('active').exists() && (root.child('securityVersion').val() === 2 && (auth != null && ($hero === 'greg' || $hero === 'ju' || $hero === 'elo') && !data.exists() && !root.child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('claimedAt').val() >= now - 15000 && (!root.child('profiles').child(auth.uid).child('playerId').exists() || root.child('profiles').child(auth.uid).child('playerId').val() === $hero) && root.child('heroAssignments').child('greg').child('uid').val() !== auth.uid && root.child('heroAssignments').child('ju').child('uid').val() !== auth.uid && root.child('heroAssignments').child('elo').child('uid').val() !== auth.uid))",
         ".validate": "($hero === 'greg' || $hero === 'ju' || $hero === 'elo') && newData.hasChildren(['uid','claimedAt']) && newData.child('uid').isString() && newData.child('claimedAt').isNumber()"
       }
     },
     "securityVersion": {
       ".read": "auth != null"
+    },
+    "active": {
+      ".read": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+      ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+      "roles": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm')",
+          ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+          ".validate": "newData.val() === 'gm' || newData.val() === 'player'"
+        }
+      },
+      "profiles": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm')",
+          ".write": "auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && newData.exists() && (!data.child('playerId').exists() || newData.child('playerId').val() === data.child('playerId').val())))",
+          "playerId": {
+            ".validate": "(root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (auth.uid === $uid && (newData.val() === 'greg' || newData.val() === 'ju' || newData.val() === 'elo') && (root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child(newData.val()).child('uid').val() === auth.uid)"
+          }
+        }
+      },
+      "characters": {
+        ".read": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'",
+        "$playerId": {
+          ".write": "((auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting') && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          ".validate": "newData.hasChildren()",
+          "lvl": {
+            ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 99",
+            ".read": "auth != null"
+          },
+          "xp": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999"
+          },
+          "force": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999",
+            ".read": "auth != null"
+          },
+          "charme": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999",
+            ".read": "auth != null"
+          },
+          "perspi": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999",
+            ".read": "auth != null"
+          },
+          "chance": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999",
+            ".read": "auth != null"
+          },
+          "defense": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999",
+            ".read": "auth != null"
+          },
+          "hp": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000",
+            ".read": "auth != null"
+          },
+          "poids": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999",
+            ".read": "auth != null"
+          },
+          "curse": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 8",
+            ".read": "auth != null"
+          },
+          "corruption": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 10",
+            ".read": "auth != null"
+          },
+          "freePoints": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999"
+          },
+          "gold": {
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 999999"
+          },
+          "inventaire": {
+            ".validate": "newData.isString() && newData.val().length <= 10000"
+          },
+          "notes": {
+            ".validate": "newData.isString() && newData.val().length <= 10000"
+          },
+          "$other": {
+            ".validate": true
+          },
+          ".read": "(auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          "equipmentModifiers": {
+            ".read": "auth != null",
+            ".validate": "newData.hasChildren(['force','charme','perspi','chance','defense'])",
+            "force": {
+              ".validate": "newData.isNumber()"
+            },
+            "charme": {
+              ".validate": "newData.isNumber()"
+            },
+            "perspi": {
+              ".validate": "newData.isNumber()"
+            },
+            "chance": {
+              ".validate": "newData.isNumber()"
+            },
+            "defense": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "carriedWeight": {
+            ".read": "auth != null",
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          }
+        }
+      },
+      "tokens": {
+        ".read": "auth != null",
+        ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'",
+        "$playerId": {
+          ".write": "((auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting') && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          "x": {
+            ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+          },
+          "y": {
+            ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+          },
+          "$other": {
+            ".validate": true
+          }
+        },
+        "bibi": {
+          ".write": "((auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'greg')) && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting') && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          "x": {
+            ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+          },
+          "y": {
+            ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+          },
+          "$other": {
+            ".validate": true
+          },
+          "followGreg": {
+            ".validate": "newData.isBoolean()"
+          }
+        }
+      },
+      "elements": {
+        ".read": "auth != null",
+        ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+      },
+      "combat": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        "turnState": {
+          "rolls": {
+            "$actorId": {
+              ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+              ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 12 && newData.val() % 1 === 0"
+            }
+          },
+          "currentIndex": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+            ".validate": "newData.isNumber() && newData.val() >= 0"
+          },
+          "currentActorId": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+            ".validate": "newData.isString()"
+          },
+          "round": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+            ".validate": "newData.isNumber() && newData.val() >= 1"
+          }
+        },
+        "mob": {
+          "hp": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+            ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50000"
+          },
+          "bibiRage": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "yuAggro": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "yuSkipNextTurn": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "playerBleed": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "playerPoison": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "spiderSenseBuff": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "victoryLootBonus": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "attackMalus": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          },
+          "revealedWeakness": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          }
+        },
+        "usedThuum": {
+          "$playerId": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          }
+        },
+        "eloSummon": {
+          ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+          "x": {
+            ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists()) && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+            ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+          },
+          "y": {
+            ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'elo' && !(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists()) && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+            ".validate": "newData.isNumber() && newData.val() >= -5000 && newData.val() <= 5000"
+          }
+        },
+        "allyBroadcast": {
+          ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+          ".validate": "newData.hasChildren(['pnjId', 'actionId', 'time']) && newData.child('pnjId').isString() && newData.child('actionId').isString() && newData.child('time').isNumber()"
+        },
+        "hits": {
+          "$hitId": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+            ".validate": "newData.hasChildren(['from','to','amount','type','round','time']) && newData.child('from').isString() && newData.child('to').isString() && newData.child('amount').isNumber() && newData.child('amount').val() >= 0 && newData.child('amount').val() <= 9999 && newData.child('round').isNumber() && newData.child('round').val() >= 1 && newData.child('time').isNumber()"
+          }
+        },
+        "playerSpecials": {
+          "$playerId": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          }
+        },
+        "playerFlags": {
+          "$playerId": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+          }
+        }
+      },
+      "events": {
+        ".read": "auth != null",
+        ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+      },
+      "curse": {
+        ".read": "auth != null",
+        ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'",
+        "wheel": {
+          ".write": "(auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || ((!(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists() || (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() === 'saving') && ((data.exists() && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === data.child('player').val()) || (!data.exists() && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === newData.child('player').val()))))) && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
+        }
+      },
+      "diceRoll": {
+        ".read": "auth != null",
+        "$entry": {
+          ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+          ".validate": "newData.hasChildren(['player', 'dice', 'result', 'time', 'sender']) && newData.child('result').isNumber() && newData.child('result').val() >= 1 && newData.child('time').isNumber()"
+        }
+      },
+      "game": {
+        ".read": "auth != null",
+        "playerThuum": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'",
+          "$playerId": {
+            ".write": "((auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (($playerId === 'greg' || $playerId === 'ju' || $playerId === 'elo') && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === $playerId) || ($playerId === 'bibi' && (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'greg'))) && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting') && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)"
+          }
+        },
+        "playerThuumAccess": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'",
+          "$playerId": {
+            ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' && !(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists()"
+          }
+        },
+        "thuumCast": {
+          ".write": false
+        },
+        "readLoreBooks": {
+          ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+        },
+        "sessionLog": {
+          ".indexOn": "time",
+          ".write": "(auth != null) && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "combatState": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "combatOutcome": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "map": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "mapAudio": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "storyImage": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "storyImage2": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "storyImage3": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "shop": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "runeChallenge": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "mapLoreBook": {
+          ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+        },
+        "highPNJName": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "bifrostFlash": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "odinVision": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "powerSound": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "mobAttackEvent": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "cemeterySpell": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "playerDeath": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "playerRevive": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "wantedPosters": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "wantedOpen": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "simonState": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "document": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "playerAllyAccess": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "allyAction": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "newGame": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "endSession": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        },
+        "$other": {
+          ".write": "(auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm') && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'loading' && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').val() !== 'resetting'"
+        }
+      },
+      "sessionControl": {
+        ".read": "auth != null",
+        ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'"
+      },
+      "sessionClients": {
+        ".read": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        "$uid": {
+          ".read": "auth != null && auth.uid === $uid",
+          ".write": "auth != null && auth.uid === $uid",
+          "$client": {
+            ".validate": "newData.val() === true"
+          }
+        }
+      },
+      "sessionAcks": {
+        ".read": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        "$operation": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('id').val() === $operation",
+            "$client": {
+              ".validate": "newData.hasChildren(['ok']) && newData.child('ok').isBoolean()"
+            }
+          }
+        }
+      },
+      "combatRequests": {
+        ".read": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        "$request": {
+          ".read": "auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
+          ".write": "(auth != null && !data.exists() && !(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'queued' && newData.child('combatId').val() === (root.child('active').exists() ? root.child('active') : root).child('combat').child('id').val() && ((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === newData.child('actor').val() || ((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === 'greg' && newData.child('actor').val() === 'bibi'))) && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          ".validate": "(root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === ((root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('revision').exists() ? (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','status','combatId','sequence','time']) && newData.child('sequence').isNumber() && newData.child('sequence').val() >= 0 && newData.child('sequence').val() % 1 === 0 && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && ((newData.child('kind').val() === 'hero' || newData.child('kind').val() === 'initiative') || newData.child('kind').val() === 'pass' || newData.child('kind').val() === 'ally' || (newData.child('kind').val() === 'thuum' || (newData.child('kind').val() === 'rollRetreat' && (root.child('active').exists() ? root.child('active') : root).child('combat').child('pendingRetreat').child('actor').val() === newData.child('actor').val() && (root.child('active').exists() ? root.child('active') : root).child('combat').child('pendingRetreat').child('id').val() === newData.child('payload').child('pendingId').val()))))))",
+          "status": {
+            ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
+          }
+        }
+      },
+      "explorationRequests": {
+        ".read": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        "$request": {
+          ".read": "auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
+          ".write": "(auth != null && !data.exists() && !(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() && (newData.child('actor').val() === 'greg' || newData.child('actor').val() === 'ju' || newData.child('actor').val() === 'elo') && newData.child('status').val() === 'queued') && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          ".validate": "(root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === ((root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('revision').exists() ? (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && ((newData.child('kind').val() === 'book' || newData.child('kind').val() === 'dice') || newData.child('kind').val() === 'spell' || newData.child('kind').val() === 'summon' || newData.child('kind').val() === 'hint' || (newData.child('kind').val() === 'relic' && newData.child('actor').val() === 'greg')))))",
+          "status": {
+            ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
+          }
+        }
+      },
+      "characterRequests": {
+        ".read": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        ".write": "auth != null && (root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm'",
+        "$request": {
+          ".read": "auth != null && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || data.child('uid').val() === auth.uid)",
+          ".write": "(auth != null && !data.exists() && !(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('actor').val() === (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() && newData.child('status').val() === 'queued') && ((root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child((root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val()).child('uid').val() === auth.uid)",
+          ".validate": "(root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (newData.child('protocol').val() === 2 && newData.child('sessionRevision').val() === ((root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('revision').exists() ? (root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('revision').val() : 'initial') && newData.child('expiresAt').isNumber() && newData.child('expiresAt').val() > now && newData.child('expiresAt').val() <= now + 16000 && ((root.child('active').exists() ? root.child('active') : root).child('roles').child(auth.uid).val() === 'gm' || (newData.hasChildren(['uid','actor','kind','payload','time','status']) && newData.child('time').isNumber() && newData.child('time').val() >= now - 120000 && newData.child('time').val() <= now + 60000 && (newData.child('kind').val() === 'power' || newData.child('kind').val() === 'curse-spin' || newData.child('kind').val() === 'thuum-outside'))))",
+          "status": {
+            ".write": "auth != null && data.parent().child('uid').val() === auth.uid && data.val() === 'queued' && newData.val() === 'cancelled'"
+          }
+        }
+      },
+      "heroAssignments": {
+        ".read": "auth != null",
+        "$hero": {
+          ".write": "(root.child('active').exists() ? root.child('active') : root).child('securityVersion').val() === 2 && (auth != null && ($hero === 'greg' || $hero === 'ju' || $hero === 'elo') && !data.exists() && !(root.child('active').exists() ? root.child('active') : root).child('sessionControl').child('phase').exists() && newData.child('uid').val() === auth.uid && newData.child('claimedAt').val() >= now - 15000 && (!(root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').exists() || (root.child('active').exists() ? root.child('active') : root).child('profiles').child(auth.uid).child('playerId').val() === $hero) && (root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child('greg').child('uid').val() !== auth.uid && (root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child('ju').child('uid').val() !== auth.uid && (root.child('active').exists() ? root.child('active') : root).child('heroAssignments').child('elo').child('uid').val() !== auth.uid)",
+          ".validate": "($hero === 'greg' || $hero === 'ju' || $hero === 'elo') && newData.hasChildren(['uid','claimedAt']) && newData.child('uid').isString() && newData.child('claimedAt').isNumber()"
+        }
+      },
+      "securityVersion": {
+        ".read": "auth != null"
+      }
+    },
+    "storageLayout": {
+      ".read": true,
+      ".write": false,
+      ".validate": "newData.val() === 2"
     }
   }
 }

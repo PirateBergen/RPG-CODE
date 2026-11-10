@@ -56,3 +56,9 @@ Version 20261110.19 : bases HUD/attaques/états/initiative regroupées, 21 style
 ## États dynamiques du combat — nettoyés
 
 Version 20261110.20 : treize assemblages de styles déplacés vers le CSS (initiative, recharges, spéciales MJ/joueurs et couleur des PV). Comparaison identique sur 36 configurations. Voir COMBAT-ETATS-STYLES-2026-11-10.md. Prochaine étape : mesurer le coût des échanges des actions complexes pour les campagnes longues, avant de modifier leur architecture.
+
+## Séparation des sauvegardes — version 20261110.21
+
+Adaptateur compatible avec les anciennes parties et les nouvelles parties sous active. Les archives restent sous saves. Bouton MJ « Optimiser les données de la partie » dans les fiches : migration volontaire, atomique, après synchronisation des fiches et contrôle des versions des écrans. Les notes ouvertes sont conservées ; les présences sont recréées. Le mode test reste local. Le déploiement du code ne migre pas la campagne : le MJ choisit le moment du déplacement.
+
+Mesures synthétiques : 926 511 ou 6 026 511 octets JSON REST par action avant séparation, 13 848 après dans les mêmes profils migrés. Voir SEPARATION-SAUVÉGARDES-2026-11-10.md et tests/firebase-storage-migration.cjs. Suite : contrôler le comportement après activation réelle, puis mesurer les réponses aux transactions et les abonnements avant toute nouvelle optimisation.

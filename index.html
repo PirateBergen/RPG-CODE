@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261110.20"</script>
+  <script>window.GAME_V = "20261110.21"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -350,6 +350,7 @@
   <button onclick="openCharacterSheet('bibi')">Bibi</button>
   <button onclick="openResurrectionMenu()">✦ Ressusciter…</button>
   <button onclick="showSaveMenu()">Sauvegarder</button>
+  <button onclick="optimizeCampaignStorage()">Optimiser les données de la partie</button>
   <button onclick="resetAllPlayerStats()">Reset stats</button>
   <button onclick="openSessionLog()">Journal</button>
   <button onclick="startEndSession()" style="background:linear-gradient(#3a0a0a,#1a0404);border-color:#8a2020;color:#ffaaaa;">Fin de session</button>
@@ -980,6 +981,7 @@
 <script>document.write('<script src="access.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="persistence.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="local-test-mode.js?v='+GAME_V+'"><\/script>')</script>
+<script>document.write('<script src="campaign-storage.js?v='+GAME_V+'"><\/script>')</script>
 <!-- 4. Logique principale + Firebase listeners -->
 <script>document.write('<script src="presentation.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="rune-challenge.js?v='+GAME_V+'"><\/script>')</script>

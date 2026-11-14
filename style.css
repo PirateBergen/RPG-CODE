@@ -5577,7 +5577,7 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 
 .allyManagementRow{display:grid;grid-template-columns:44px 1fr;gap:8px 12px;align-items:center;padding:12px 0;border-bottom:1px solid #bc945444}.allyManagementActions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}.allyDiscoveryBox .allyManagementActions button{width:auto;flex:1;justify-content:center;margin:0;font-size:14px;min-height:42px}
 
-.endikaki-intro{position:fixed;inset:0;z-index:2147483644;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(ellipse at 50% 36%,#58275bd9,#080915d9 65%,#0008);overflow:hidden}.endikaki-portrait{width:min(44vh,340px,70vw);height:min(44vh,340px,70vw);object-fit:contain;filter:drop-shadow(0 0 22px #ffcf69) drop-shadow(0 0 50px #b54cdd);animation:endikakiReveal 3.2s ease both}.endikaki-intro .endikaki-caption{position:relative;left:auto;top:auto;transform:none;min-height:170px;display:flex;flex-direction:column;justify-content:center;padding:28px 42px;background:none}.endikaki-title-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:-1}.endikaki-intro h2{font-size:clamp(26px,5vw,46px)}.endikaki-intro p{font-size:clamp(14px,2vw,20px);margin:0 5%}@keyframes endikakiReveal{0%{opacity:0;transform:scale(.6) rotate(-8deg)}20%,85%{opacity:1;transform:scale(1)}100%{opacity:1;transform:scale(1.04)}}@media(prefers-reduced-motion:reduce){.endikaki-portrait{animation:none}}
+.endikaki-intro{position:fixed;inset:0;z-index:2147483644;pointer-events:none;display:flex;align-items:center;justify-content:center;flex-direction:column;background:radial-gradient(ellipse at 50% 36%,#58275bd9,#080915d9 65%,#0008);overflow:hidden}.endikaki-portrait{width:min(44vh,340px,70vw);height:min(44vh,340px,70vw);object-fit:contain;filter:drop-shadow(0 0 22px #ffcf69) drop-shadow(0 0 50px #b54cdd);animation:endikakiReveal 3.2s ease both}.endikaki-intro .endikaki-caption{position:relative;left:auto;top:auto;transform:none;min-height:170px;display:flex;flex-direction:column;justify-content:center;padding:28px 42px;background:none}.endikaki-title-frame{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:-1}.endikaki-intro h2{font-size:clamp(26px,5vw,46px)}.endikaki-intro p{font-size:clamp(14px,2vw,20px);margin:0 5%}@keyframes endikakiReveal{0%{opacity:0;transform:scale(.6) rotate(-8deg)}20%,85%{opacity:1;transform:scale(1)}100%{opacity:1;transform:scale(1.04)}}@media(prefers-reduced-motion:reduce){.endikaki-portrait{animation:none}}
 
 /* FICHE ET INVENTAIRE — bases, formulaire et adaptations mobiles.
    Les coordonnées propres aux personnages restent gérées par le jeu. */
@@ -6626,3 +6626,15 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 .combatMobReadonlySpecialDescription.is-unavailable{color:rgb(183, 159, 150);}
 
 .combatMobHpFill{height:100%;background:#ff3333;border-radius:3px;transition:width .3s}.combatMobHpFill[data-health="healthy"]{background:#44ff44}.combatMobHpFill[data-health="wounded"]{background:#ffaa00}
+
+/* Bénédiction : un voile de fumée et un essaim éphémère. */
+.flyBlessingScene{position:fixed;inset:0;z-index:2147483644;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at center,#26312580,#06090de6);animation:flyBlessingFade 4.8s ease both;display:grid;place-items:center}
+.flyBlessingScene h2{z-index:1;text-align:center;color:#d9d7ac;font:clamp(22px,4vw,42px) Georgia,serif;text-shadow:0 0 18px #809360;padding:24px}
+.flyBlessingSmoke{position:absolute;inset:-40%;background:radial-gradient(ellipse at 30% 50%,#70816c66,transparent 40%),radial-gradient(ellipse at 70% 60%,#a5a59b44,transparent 45%);filter:blur(30px);animation:flyBlessingSmoke 4.8s ease-in-out both}
+.flyBlessingFly{position:absolute;width:var(--size);height:var(--size);object-fit:contain;filter:brightness(.25);animation:flyBlessingFlight var(--duration) linear infinite alternate}
+@keyframes flyBlessingFade{0%,100%{opacity:0}15%,80%{opacity:1}}
+@keyframes flyBlessingSmoke{from{transform:translate(-8%,10%) rotate(-8deg)}to{transform:translate(10%,-8%) rotate(12deg)}}
+@keyframes flyBlessingFlight{0%{transform:translate(-15vw,12vh) rotate(-30deg)}35%{transform:translate(12vw,-18vh) rotate(40deg)}70%{transform:translate(-8vw,-8vh) rotate(-15deg)}100%{transform:translate(22vw,16vh) rotate(35deg)}}
+@media(prefers-reduced-motion:reduce){.flyBlessingFly,.flyBlessingSmoke{animation:none}}
+
+.endikaki-intro .endikaki-caption{width:min(540px,66vh,calc(100vw - 28px));aspect-ratio:3/2;min-height:0;flex-shrink:0;padding:6% 7%;isolation:isolate}.endikaki-intro h2{font-size:clamp(22px,4vw,38px)}.endikaki-intro p{font-size:clamp(13px,1.8vw,18px)}

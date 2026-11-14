@@ -60,15 +60,12 @@ function presentPikaAttack(result) {
   showNotification(result.message||result.attack)
   if(result.mode==="curse-blocked")return
   if(result.pikaKind!=="endikaki") {
-    const effect=document.createElement("div");effect.className="pika-attack-effect";effect.textContent=result.pikaKind==="cancan"?"👢 × "+(result.kicks||0):result.pikaKind==="hypnosis"?(result.hypnotized?"✧ HYPNOSE ✧":"RÉSISTANCE"):"KRRKRR";document.body.appendChild(effect);setTimeout(()=>effect.remove(),1800);return
+    const effect=document.createElement("div");effect.className="pika-attack-effect";effect.textContent=result.pikaKind==="cancan"?"👢 × "+(result.kicks||0):result.pikaKind==="hypnosis"?(result.hypnotized?"✧ HYPNOSE ✧":"RÉSISTANCE"):"KRRKRR";document.body.appendChild(effect);const scope=createPresentationScope("__cancelPikaAttack");scope.node(effect);scope.later(scope.cancel,1800);return
   }
-  if(typeof window.__cancelEndikakiPresentation==="function")window.__cancelEndikakiPresentation()
-  const timers=new Set(),nodes=new Set();let cancelled=false
-  const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer)}
-  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const node of nodes)node.remove();for(const id of ["endikakiInvocationSound","endikakiExplosionSound","pikaSpecialMusic","powerSound"])document.getElementById(id)?.pause();if(window.__cancelEndikakiPresentation===cleanup)window.__cancelEndikakiPresentation=null}
-  window.__cancelEndikakiPresentation=cleanup
+  const scope=createPresentationScope("__cancelEndikakiPresentation"),later=scope.later,cleanup=scope.cancel
+  for(const id of ["powSound","endikakiInvocationSound","endikakiExplosionSound","pikaSpecialMusic","powerSound"]){const sound=document.getElementById(id);if(sound)scope.audio(sound)}
   const caption=document.createElement("section"),title=document.createElement("h2"),description=document.createElement("p");caption.className="endikaki-caption";caption.setAttribute("role","status");title.textContent=String(result.attack||"Endikaki").toUpperCase();description.textContent=result.preview?"Invocation d’Endikaki — animation et son uniquement":result.fail?"Endikaki manque sa cible…":result.message||"Endikaki fonce sur l’ennemi et explose !";const frame=document.createElement("img");frame.src="images/cadre.png";frame.alt="";frame.className="endikaki-title-frame";caption.append(frame,title,description);
-  const intro=document.createElement("div"),portrait=document.createElement("img");intro.className="endikaki-intro";portrait.className="endikaki-portrait";portrait.src="images/endikaki-token.svg";portrait.alt="Endikaki";intro.append(portrait,caption);document.body.appendChild(intro);nodes.add(intro)
+  const intro=document.createElement("div"),portrait=document.createElement("img");intro.className="endikaki-intro";portrait.className="endikaki-portrait";portrait.src="images/endikaki-token.svg";portrait.alt="Endikaki";intro.append(portrait,caption);document.body.appendChild(intro);scope.node(intro)
   const idFor=id=>id==="mob"?"mobToken":COMBAT_MOBS.includes(id)?"mobToken_"+id:id
   let from=document.getElementById(idFor(result.actor))?.getBoundingClientRect(),to=document.getElementById(idFor(result.target))?.getBoundingClientRect()
   if(!from?.width)from=null
@@ -82,9 +79,9 @@ function presentPikaAttack(result) {
   later(()=>{
    intro.remove();document.getElementById("endikakiInvocationSound")?.pause()
    playSound("pikaSpecialMusic",.85,true)
-  const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb);nodes.add(bomb)
-   later(()=>requestAnimationFrame(()=>{if(cancelled)return;bomb.style.left=x+"px";bomb.style.top=y+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"}),80)
-  later(()=>{bomb.remove();document.getElementById("endikakiInvocationSound")?.pause();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x+"px";blast.style.top=y+"px";blast.textContent="💥";blast.setAttribute("aria-label",result.fail?"Endikaki explose à côté de la cible":"Endikaki explose");const ring=document.createElement("span");ring.className="endikaki-shockwave";blast.appendChild(ring);document.body.appendChild(blast);nodes.add(blast);playSound("endikakiExplosionSound",.3,true);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},950)
+  const bomb=document.createElement("img");bomb.className="endikaki-bomb-token";bomb.src="images/endikaki-token.svg";bomb.alt="Endikaki, invocation bombe";bomb.style.left=(from?from.left+from.width/2:innerWidth*.3)+"px";bomb.style.top=(from?from.top+from.height/2:innerHeight*.55)+"px";document.body.appendChild(bomb);scope.node(bomb)
+   later(()=>scope.frame(()=>{bomb.style.left=x+"px";bomb.style.top=y+"px";bomb.style.transform="translate(-50%,-50%) rotate(720deg) scale(.7)"}),80)
+  later(()=>{bomb.remove();document.getElementById("endikakiInvocationSound")?.pause();const blast=document.createElement("div");blast.className="endikaki-blast";blast.style.left=x+"px";blast.style.top=y+"px";blast.textContent="💥";blast.setAttribute("aria-label",result.fail?"Endikaki explose à côté de la cible":"Endikaki explose");const ring=document.createElement("span");ring.className="endikaki-shockwave";blast.appendChild(ring);document.body.appendChild(blast);scope.node(blast);playSound("endikakiExplosionSound",.3,true);if(typeof screenShake==="function")screenShake();later(()=>blast.remove(),900)},950)
   },3200)
   later(cleanup,5400)
 }

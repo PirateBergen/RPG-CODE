@@ -1,5 +1,9 @@
 # Suite de la campagne
 
+## Nettoyage des animations — 14 novembre 2026
+
+Version 20261114.2 : portées d'annulation communes pour les spéciales des héros/monstres, Pika, l'essaim, les voix de pouvoir et de portrait, et la fin de session. Délais, sons et écouteurs sont arrêtés ensemble ; relances et changements de carte couverts par des tests ciblés. Voir NETTOYAGE-ANIMATIONS-2026-11-14.md. Le découpage général des gros fichiers et les mesures réseau restent à poursuivre.
+
 ## À rappeler quand on cherche la prochaine amélioration
 
 - Reprendre le combat du **Roi**, boss final, pour en faire une rencontre aboutie : phases, rythme, attaques annoncées, possibilités de réponse et mise en scène. Demande du joueur du 8 novembre 2026. La conception détaillée est volontairement reportée.

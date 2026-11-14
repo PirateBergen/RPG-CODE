@@ -1532,6 +1532,7 @@ db.ref("game/map").on("value", snap => {
   const previousMap = currentMap
   const isFirst = firstMapLoad
   if (isFirst) firstMapLoad = false
+  if(previousMap&&previousMap!==mapName)cancelMapPresentations()
   currentMap = mapName
   if(typeof syncAntreAfterlifeView==="function")syncAntreAfterlifeView()
   preloadAssets(mapName)
@@ -1605,32 +1606,13 @@ db.ref(".info/connected").on("value", snap => {
 
 })
 
-// ─── endSession — signal fin de session pour les joueurs ───
+// Un signal partagé, une présentation locale annulable par écran.
 db.ref("game/endSession").on("value", snap => {
-  if (window.__sessionBusy) return
-  const data = snap.val()
-  const snd  = document.getElementById("endingSound")
-  const bg   = document.getElementById("endSessionBg")
-  const logo = document.getElementById("endSessionLogo")
-  if (isGM) return
-
-  // Signal supprimé ou désactivé → fermer chez les joueurs aussi
-  if (!data || !data.time || data.active === false) {
-    if (snd) { snd.pause(); snd.currentTime = 0 }
-    if (bg)   bg.style.display = "none"
-    if (logo) logo.style.display = "none"
-    return
-  }
-
-  if (!gameStarted) return
-  if (Date.now() - data.time > 5 * 60 * 1000) return
-  if (!snd || !bg || !logo) return
-
-  stopAllMusic()
-  setManagedAudioBaseVolume(snd, 1, "music")
-  snd.currentTime = 0
-  snd.play().catch(() => {})
-  setTimeout(() => { bg.style.display = "block"; logo.style.display = "block" }, 3700)
+  if(window.__sessionBusy||isGM)return
+  const data=snap.val()
+  if(!data?.time||data.active===false){window.__cancelEndSession?.();return}
+  if(!gameStarted||Date.now()-data.time>5*60*1000)return
+  showEndSessionPresentation(data.time)
 })
 
 // ─── newGame — signal nouvelle partie ───
@@ -1730,36 +1712,16 @@ db.ref("game/powerSound").on("value", snap => {
   if (!data.time || data.time < (window.__pageLoadTime || 0)) { void 0; return }
   const pInfo = playerPowerSounds[data.player]
   if (!pInfo) return
-  const snd = new Audio((typeof resolveAudioPath === "function") ? resolveAudioPath(pInfo.file) : (/^(https?:|data:|blob:|\/|audio\/)/i.test(String(pInfo.file || "")) ? String(pInfo.file || "") : "audio/" + pInfo.file))
-  let sndBase = 0
-  setManagedAudioBaseVolume(snd, sndBase)
-  snd.play().catch(() => {})
-  const inIv = setInterval(() => {
-    if (sndBase < 0.85) {
-      sndBase = Math.min(0.85, sndBase + 0.06)
-      setManagedAudioBaseVolume(snd, sndBase)
-    } else clearInterval(inIv)
-  }, 80)
-  if (pInfo.fadeAt) {
-    setTimeout(() => {
-      const outIv = setInterval(() => {
-        if (sndBase > 0.01) {
-          sndBase = Math.max(0, sndBase - 0.06)
-          setManagedAudioBaseVolume(snd, sndBase)
-        } else { snd.pause(); clearInterval(outIv) }
-      }, 80)
-    }, pInfo.fadeAt)
-  }
+  playCharacterPowerSound(pInfo,{fadeIn:true})
   void 0
 })
 
 function showMobSpecialAttackEvent(data) {
-  window.__cancelMobSpecialPresentation?.()
-  const timers=new Set(),sounds=new Set();let cancelled=false,overlay=null
-  const cleanup=()=>{cancelled=true;for(const timer of timers)clearTimeout(timer);for(const audio of sounds){audio.pause();audio.currentTime=0}overlay?.querySelectorAll("audio,video").forEach(el=>el.pause());overlay?.remove();document.getElementById("powSound")?.pause();if(window.__cancelMobSpecialPresentation===cleanup)window.__cancelMobSpecialPresentation=null}
-  window.__cancelMobSpecialPresentation=cleanup
-  const later=(fn,ms)=>{const timer=setTimeout(()=>{timers.delete(timer);if(!cancelled)fn()},ms);timers.add(timer);return timer}
-  const makeAudio=src=>{const audio=new Audio(src);audio.__specialEffect=true;sounds.add(audio);return audio}
+  let overlay=null
+  const scope=createPresentationScope("__cancelMobSpecialPresentation",()=>overlay?.querySelectorAll("audio,video").forEach(el=>el.pause()))
+  const cleanup=scope.cancel,later=scope.later
+  const pow=document.getElementById("powSound");if(pow)scope.audio(pow)
+  const makeAudio=src=>{const audio=scope.audio(new Audio(src));audio.__specialEffect=true;return audio}
 
   const baseStyle = typeof getMobAnimationStyle === "function" ? getMobAnimationStyle(data.animation) : { accent:"#ff9966", glow:"rgba(255,120,60,0.55)", bg:"radial-gradient(circle at center,rgba(70,15,0,0.94) 0%,rgba(10,0,0,0.98) 72%)" }
   const presentation = typeof getMobSpecialPresentation === "function" ? getMobSpecialPresentation(data.mobName) : null
@@ -1807,7 +1769,7 @@ function showMobSpecialAttackEvent(data) {
         bg: "radial-gradient(circle at center,rgba(14,10,4,0.97) 0%,rgba(4,3,1,0.99) 55%,rgba(0,0,0,1) 100%)"
       }
     : baseStyle
-  overlay = document.createElement("div")
+  overlay = scope.node(document.createElement("div"))
   overlay.className = "mobSpecialOverlay" + (scene ? " mobSpecialOverlay--" + scene : "")
   overlay.style.cssText = "position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:999999999;background:" + style.bg + ";opacity:0;transition:opacity 0.22s ease;"
 
@@ -2524,7 +2486,7 @@ function cleanupTransientGameUI(options = {}) {
 
   stopCombatStatsSubscription()
   disposeHighPNJScroll()
-  document.querySelectorAll("audio[id^=pnjSound_]").forEach(sound=>{clearTimeout(sound._pnjFadeDelay);clearInterval(sound._pnjFadeInterval);sound.pause()})
+  document.querySelectorAll("audio[id^=pnjSound_]").forEach(sound=>sound.pause())
   resetLocalCombatVisualState()
   resetMadnessPresentation()
   if (typeof resetAuroraPresentation === "function") resetAuroraPresentation()
@@ -3683,43 +3645,25 @@ function clearSessionLog() {
   if (content) content.innerHTML = '<div class="logEmpty" style="color:#555;font-size:11px;text-align:center;padding:20px;">Aucune entrée</div>'
 }
 
-function startEndSession() {
-  if (!isGM) return
-
-  const snd = document.getElementById("endingSound")
-  const bg  = document.getElementById("endSessionBg")
-  const logo = document.getElementById("endSessionLogo")
-  if (!snd || !bg || !logo) return
-
+function showEndSessionPresentation(time,canClose=false){
+  const snd=document.getElementById("endingSound"),bg=document.getElementById("endSessionBg"),logo=document.getElementById("endSessionLogo")
+  if(!snd||!bg||!logo)return
+  cancelSharedVisuals();stopAllMusic()
+  const scope=createPresentationScope("__cancelEndSession",()=>{bg.style.display="none";logo.style.display="none"})
+  scope.audio(snd);setManagedAudioBaseVolume(snd,1,"music");snd.currentTime=0;snd.play().catch(()=>{})
+  scope.later(()=>{bg.style.display="block";logo.style.display="block"},Math.max(0,3700-(Date.now()-time)))
+  if(canClose)scope.listen(document,"keydown",event=>{
+    if(event.code!=="Space"&&event.code!=="Escape")return
+    event.preventDefault();scope.cancel()
+    db.ref("game/endSession").update({active:false,closedAt:Date.now()}).catch(error=>showNotification("Fermeture à synchroniser : "+error.message))
+  })
+}
+function startEndSession(){
+  if(!isGM)return
+  const time=Date.now()
   addSessionLog("🌙 Fin de session")
-  db.ref("game/endSession").set({ time: Date.now(), active: true })
-
-  // Stopper toute musique en cours
-  stopAllMusic()
-
-  // Lancer ending.mp3 géré par le système audio
-  setManagedAudioBaseVolume(snd, 1, "music")
-  snd.currentTime = 0
-  snd.play().catch(() => {})
-
-  // À 3,7s : afficher end.jpg en transparence + ending.png opaque
-  const trigger = setTimeout(() => {
-    bg.style.display = "block"
-    logo.style.display = "block"
-  }, 3700)
-
-  // Space ou Escape ferment pour tout le monde
-  function closeEndSession(e) {
-    if (e.code !== "Space" && e.code !== "Escape") return
-    e.preventDefault()
-    clearTimeout(trigger)
-    snd.pause(); snd.currentTime = 0
-    bg.style.display = "none"
-    logo.style.display = "none"
-    db.ref("game/endSession").update({ active: false, closedAt: Date.now() })
-    document.removeEventListener("keydown", closeEndSession)
-  }
-  document.addEventListener("keydown", closeEndSession)
+  db.ref("game/endSession").set({time,active:true})
+  showEndSessionPresentation(time,true)
 }
 
 function showIntroLayer() {

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261110.21"</script>
+  <script>window.GAME_V = "20261114.2"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -282,9 +282,9 @@
 <audio id="endingSound" preload="none"><source src="audio/ending.mp3" type="audio/mpeg"></audio>
 
 <!-- Fin de session — image de fond transparente -->
-<div id="endSessionBg" style="display:none;position:fixed;inset:0;z-index:9999990;pointer-events:none;background:url('images/end.jpg') center/cover no-repeat;mix-blend-mode:multiply;"></div>
+<div id="endSessionBg" style="display:none;position:fixed;inset:0;z-index:2147483646;pointer-events:none;background:#080a10 url('images/end.jpg') center/cover no-repeat;"></div>
 <!-- Fin de session — logo en bas à gauche, opaque, au-dessus de tout -->
-<div id="endSessionLogo" style="display:none;position:fixed;bottom:0;left:0;z-index:9999999;pointer-events:none;"><img loading="lazy" decoding="async" src="images/ending.png" style="display:block;max-height:40vh;width:auto;"></div>
+<div id="endSessionLogo" style="display:none;position:fixed;bottom:0;left:0;z-index:2147483647;pointer-events:none;"><img loading="eager" decoding="async" src="images/ending.png" style="display:block;max-height:40vh;width:auto;"></div>
 
 <div id="audioSliders" style="position:fixed;top:12px;right:18px;z-index:1000000002;display:flex;flex-direction:column;gap:6px;padding:8px 10px;background:rgba(0,0,0,0.45);border:1px solid rgba(212,168,53,0.35);border-radius:10px;backdrop-filter:blur(4px);">
   <label style="display:flex;align-items:center;gap:8px;font-family:Cinzel,serif;font-size:12px;color:#f0d8a0;letter-spacing:1px;">
@@ -430,7 +430,7 @@
     </div>
     <button class="mapCategoryButton" onclick="toggleCategory('pnjAutre', this)"><span class="arrow">▶</span> 📦 Autre</button>
     <div id="pnjAutre" class="mapCategory">
-      <button onclick="setPNJImage('gardienne.jpg')">La Gardienne</button>
+      <button onclick="setPNJImage('gardienne.png')">La Gardienne</button>
       <button onclick="setPNJImage('pretre.png')">Prêtre</button>
       <button onclick="setPNJImage('oldmessager.png')">Vieux Messager</button>
       <button onclick="setPNJImage('ELO PION.png')">ELO PION</button>

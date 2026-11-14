@@ -309,7 +309,7 @@ window.addEventListener("resize",()=>{calculateMinZoom();cameraZoom=minZoom;upda
 
 async function finishCemeteryByGM(){if(!isGM)return;try{await transactCombatRoot(current=>{if(!current?.game?.cemeterySpell?.active||current.game.cemeterySpell.freed)return undefined;const root=combatClone(current);root.game.cemeterySpell.freed=true;root.game.cemeterySpell.failedByZombie=false;root.game.completedEvents ||= {};root.game.completedEvents.cemetery=true;return root})}catch(error){showNotification(error.message)}}
 
-function clearFlySwarmVisuals(){document.querySelectorAll(".fly-particle,#flySwarmOverlay,#flySwarmRings,#flySwarmGlow,#flySwarmFlash").forEach(el=>el.remove());document.getElementById("flySwarmSound")?.pause()}
+function clearFlySwarmVisuals(){window.__cancelFlySwarm?.();document.querySelectorAll(".fly-particle,#flySwarmOverlay,#flySwarmRings,#flySwarmGlow,#flySwarmFlash").forEach(el=>el.remove());document.getElementById("flySwarmSound")?.pause()}
 function refreshExplorationMapEvents(){
  if(!gameStarted||window.__sessionBusy||!["GAME","COMBAT"].includes(gameState))return
  const events=window.__explorationWorldEvents||{}
@@ -318,7 +318,7 @@ function refreshExplorationMapEvents(){
  if(events.aurora?.active){if(!document.getElementById("auroraOverlay")||window.__auroraPresentedEvent!==events.aurora.time)showAuroraEvent(events.aurora)}
  else if(document.getElementById("auroraOverlay")&&!window.__auroraClosing){window.__auroraClosing=true;showAuroraEndSequence();setTimeout(()=>{window.__auroraClosing=false},8000)}
  if(events.flySwarm?.active){if(currentMap==="epouventail.jpg")showFlySwarmEffect();else clearFlySwarmVisuals()}
- else if(document.getElementById("flySwarmOverlay")&&!window.__fliesClosing){window.__fliesClosing=true;resetFlySwarmPresentation();setTimeout(()=>{window.__fliesClosing=false},9000)}
+ else if(document.getElementById("flySwarmOverlay")&&!window.__flySwarmScope?.resetting)resetFlySwarmPresentation()
 }
 function playSharedMapAudio(data){
  if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}

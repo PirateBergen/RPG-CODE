@@ -12,14 +12,53 @@ function cancelSharedVisuals(){
  sharedVisualEpoch++;clearTimeout(sharedVisualTimer);sharedVisualTimer=null
  for(const timer of sharedVisualDelays)clearTimeout(timer);sharedVisualDelays.clear();sharedVisualQueue.length=0
  sharedVisualRunning=false;window.__sharedVisualBusy=false;window.__combatOutcomeQueued=false
- for(const key of ["__cancelDicePresentation","__cancelAllyPresentation","__cancelAllyEffect","__cancelBalrogIntroSound","__cancelQuantumGift"])window[key]?.()
+ for(const cancel of [...(window.__presentationScopes||[])])cancel()
  if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
 }
 function createPresentationScope(key,onCleanup=()=>{}){
- window[key]?.();const timers=new Set(),intervals=new Set(),nodes=new Set(),sounds=new Set();let cancelled=false
- const cleanup=()=>{if(cancelled)return;cancelled=true;for(const t of timers)clearTimeout(t);for(const t of intervals)clearInterval(t);for(const n of nodes)n.remove();for(const a of sounds){a.pause();a.currentTime=0}onCleanup();if(window[key]===cleanup)window[key]=null}
- window[key]=cleanup
- return {cancel:cleanup,later(fn,ms){const t=setTimeout(()=>{timers.delete(t);if(!cancelled)fn()},ms);timers.add(t);return t},every(fn,ms){const t=setInterval(()=>{if(!cancelled)fn()},ms);intervals.add(t);return t},node(n){nodes.add(n);return n},audio(a){sounds.add(a);return a}}
+ window[key]?.()
+ const timers=new Set(),intervals=new Set(),frames=new Set(),listeners=new Set(),nodes=new Set(),sounds=new Set()
+ const registry=window.__presentationScopes||=new Set()
+ let cancelled=false
+ const stopTimers=()=>{for(const t of timers)clearTimeout(t);timers.clear();for(const t of intervals)clearInterval(t);intervals.clear();for(const f of frames)cancelAnimationFrame(f);frames.clear()}
+ const cleanup=()=>{
+  if(cancelled)return
+  cancelled=true;stopTimers();registry.delete(cleanup)
+  if(window[key]===cleanup)window[key]=null
+  for(const remove of listeners)remove();listeners.clear()
+  for(const n of nodes)n.remove();nodes.clear()
+  for(const a of sounds){a.pause();a.currentTime=0}sounds.clear()
+  onCleanup()
+ }
+ window[key]=cleanup;registry.add(cleanup)
+ return {
+  cancel:cleanup,stopTimers,get cancelled(){return cancelled},
+  later(fn,ms){if(cancelled)return null;const t=setTimeout(()=>{timers.delete(t);if(!cancelled)fn()},ms);timers.add(t);return t},
+  every(fn,ms){if(cancelled)return null;const t=setInterval(()=>{if(!cancelled)fn()},ms);intervals.add(t);return t},
+  frame(fn){if(cancelled)return null;const f=requestAnimationFrame(time=>{frames.delete(f);if(!cancelled)fn(time)});frames.add(f);return f},
+  listen(target,type,fn,options){if(cancelled)return;target.addEventListener(type,fn,options);listeners.add(()=>target.removeEventListener(type,fn,options))},
+  node(n){if(cancelled)n.remove();else nodes.add(n);return n},
+  audio(a){if(cancelled){a.pause();a.currentTime=0}else sounds.add(a);return a}
+ }
+}
+
+function cancelMapPresentations(){
+ for(const key of ["__cancelFlySwarm","__cancelFlyBlessing","__cancelPNJVoice","__cancelCharacterPowerSound","__cancelEndSession"])window[key]?.()
+}
+
+function playCharacterPowerSound(info,{fadeIn=false}={}){
+ const scope=createPresentationScope("__cancelCharacterPowerSound")
+ const audio=scope.audio(new Audio(resolveAudioPath(info.file)))
+ let volume=fadeIn?0:.85
+ setManagedAudioBaseVolume(audio,volume);audio.play().catch(scope.cancel)
+ scope.listen(audio,"ended",scope.cancel);scope.listen(audio,"error",scope.cancel)
+ if(fadeIn){const fade=scope.every(()=>{volume=Math.min(.85,volume+.06);setManagedAudioBaseVolume(audio,volume);if(volume>=.85)clearInterval(fade)},80)}
+ if(info.fadeAt)scope.later(()=>{
+  scope.stopTimers()
+  if(!fadeIn){scope.cancel();return}
+  const fade=scope.every(()=>{volume=Math.max(0,volume-.06);setManagedAudioBaseVolume(audio,volume);if(volume<=.01){clearInterval(fade);scope.cancel()}},80)
+ },info.fadeAt)
+ return scope
 }
 
 function enqueueSharedVisual(id, play, duration = 0, priority = 1) {

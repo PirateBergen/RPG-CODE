@@ -333,6 +333,8 @@ function getPlayerSpecialPresentation(playerId) {
 }
 
 function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
+  const scope=createPresentationScope("__cancelPlayerSpecial")
+  for(const id of ["powSound","critSound","critFailSound"]){const audio=document.getElementById(id);if(audio)scope.audio(audio)}
   const presentation = getPlayerSpecialPresentation(playerId)
   const specialSoundMap = {
     greg: "spégreg.mp3",
@@ -340,7 +342,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     bibi: "spébibi.mp3"
   }
   playSound("powSound",0.84,true)
-  const overlay = document.createElement("div")
+  const overlay = scope.node(document.createElement("div"))
   overlay.className = "playerSpecialOverlay playerSpecialOverlay--" + presentation.scene
 
   const stage = document.createElement("div")
@@ -348,7 +350,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   overlay.appendChild(stage)
 
   if (presentation.video) {
-    const heroVideo = document.createElement("video")
+    const heroVideo = scope.audio(document.createElement("video"))
     heroVideo.className = "playerSpecialVideo playerSpecialVideo--" + presentation.scene
     heroVideo.src = "images/" + presentation.video
     heroVideo.autoplay = true
@@ -360,7 +362,7 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(heroVideo, 0.88)
     heroVideo.onerror = () => heroVideo.style.display = "none"
     stage.appendChild(heroVideo)
-    heroVideo.play().catch(()=>{heroVideo.muted=true;heroVideo.play().catch(()=>{})})
+    heroVideo.play().catch(()=>{if(scope.cancelled)return;heroVideo.muted=true;heroVideo.play().catch(()=>{})})
   } else if (presentation.image) {
     const heroImage = document.createElement("img")
     heroImage.className = "playerSpecialImage playerSpecialImage--" + presentation.scene
@@ -425,10 +427,9 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
   overlay.appendChild(box)
   document.body.appendChild(overlay)
 
-  let previewVoice=null
   const specialSound = specialSoundMap[String(playerId || "").toLowerCase()]
   if (specialSound) {
-    const voice = new Audio("audio/" + specialSound);voice.__specialEffect=true;if(meta.preview)previewVoice=voice
+    const voice = scope.audio(new Audio("audio/" + specialSound));voice.__specialEffect=true
     const isEloSpecial = String(playerId || "").toLowerCase() === "elo"
     const baseVolume = isEloSpecial ? (meta.crit ? 1.25 : 1.12) : (meta.crit ? 0.96 : 0.88)
     if (typeof setManagedAudioBaseVolume === "function") setManagedAudioBaseVolume(voice, baseVolume)
@@ -445,22 +446,22 @@ function showPlayerSpecialCinematic(playerId, attack, outcome, meta = {}) {
     flashGold()
     flashGold()
     screenShakeHard()
-    setTimeout(() => screenShake(), 180)
-    setTimeout(() => screenShakeHard(), 360)
+    scope.later(() => screenShake(), 180)
+    scope.later(() => screenShakeHard(), 360)
     powerExplosion()
   } else {
     flashGold()
     screenShake()
-    setTimeout(() => screenShake(), 160)
+    scope.later(() => screenShake(), 160)
   }
 
-  setTimeout(() => {
+  scope.later(() => {
     overlay.querySelectorAll("video").forEach(video=>video.pause())
     overlay.style.transition = "opacity 0.42s ease"
     overlay.style.opacity = "0"
-    setTimeout(() => overlay.remove(), 450)
+    scope.later(scope.cancel,450)
   }, 6000)
-  return ()=>{overlay.querySelectorAll("video").forEach(video=>video.pause());previewVoice?.pause();overlay.remove()}
+  return scope.cancel
 }
 
 function showPlayerAttackImpact(playerId, attack, outcome, meta = {}) {
@@ -1270,6 +1271,7 @@ const PNJ_NAMES = {
   "conseillerroinord.png": "Conseiller Hákon",
   "gardienne.svg": "La Gardienne",
   "gardienne.jpg": "La Gardienne",
+  "gardienne.png": "La Gardienne",
   "pretre.png":            "Frère Osvald",
   "pnj1.png":              "Un passant",
   "pnj2.png":              "Une villageoise",
@@ -1312,6 +1314,7 @@ function resolvePNJImageSrc(image) {
 }
 
 function showStoryImage(image) {
+  window.__cancelPNJVoice?.()
   const box=document.getElementById("storyImage"), img=document.getElementById("storyImageContent")
   if(!image){ box.style.display="none"; return }
   img.src=resolvePNJImageSrc(image); box.style.opacity="0"; box.style.left="50%"; box.style.transform="translateX(-50%)"; box.style.right="auto"; box.style.display="flex"
@@ -1341,20 +1344,20 @@ function showStoryImage(image) {
       setManagedAudioBaseVolume(snd,1)
       document.body.appendChild(snd)
     }
-    clearTimeout(snd._pnjFadeDelay);clearInterval(snd._pnjFadeInterval)
-    setManagedAudioBaseVolume(snd,1)
-    snd.currentTime = 0
-    snd.play().catch(() => {})
-    snd._pnjFadeDelay=setTimeout(() => {
-      snd._pnjFadeInterval=setInterval(() => {
-        if (snd.__baseVolume > 0.05) setManagedAudioBaseVolume(snd,Math.max(0,snd.__baseVolume-0.05))
-        else { snd.pause(); setManagedAudioBaseVolume(snd,1); clearInterval(snd._pnjFadeInterval) }
-      }, 100)
-    }, 2000)
+    const scope=createPresentationScope("__cancelPNJVoice")
+    scope.audio(snd);setManagedAudioBaseVolume(snd,1);snd.currentTime=0;snd.play().catch(scope.cancel)
+    scope.listen(snd,"ended",scope.cancel);scope.listen(snd,"error",scope.cancel)
+    scope.later(()=>{
+      const fade=scope.every(()=>{
+        if(snd.__baseVolume>.05)setManagedAudioBaseVolume(snd,Math.max(0,snd.__baseVolume-.05))
+        else{clearInterval(fade);scope.cancel();setManagedAudioBaseVolume(snd,1)}
+      },100)
+    },2000)
   }
 }
 
 function hideStoryImage() {
+  window.__cancelPNJVoice?.()
   const box=document.getElementById("storyImage"); if(!box) return
   box.style.opacity="0"
   // Retirer le tag nom seulement si aucun autre PNJ n'est affiché
@@ -1971,21 +1974,27 @@ toggleDiceLog = function () {
 /* ========================= */
 
 function showFlySwarmEffect() {
-  if (document.getElementById("flySwarmOverlay")) return // déjà actif
+  if (document.getElementById("flySwarmOverlay")&&!window.__flySwarmScope?.resetting) return // déjà actif
+
+  const scope=createPresentationScope("__cancelFlySwarm",()=>{
+    if(scope.wordScreen){scope.wordScreen.classList.remove("active");scope.wordScreen.style.display="none"}
+    if(window.__flySwarmScope===scope)window.__flySwarmScope=null
+  })
+  window.__flySwarmScope=scope
 
   // Base overlay — bleu brillant pulsant
   const ov = document.createElement("div")
   ov.id = "flySwarmOverlay"
   ov.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999974;opacity:0;transition:opacity 2s ease;background:radial-gradient(ellipse at center,rgba(140,210,255,0.28) 0%,rgba(60,140,255,0.18) 45%,rgba(0,20,80,0.22) 100%);animation:flySwarmPulse 2s ease-in-out infinite;"
-  document.body.appendChild(ov)
-  setTimeout(() => { ov.style.opacity = "1" }, 30)
+  document.body.appendChild(scope.node(ov))
+  scope.later(() => { ov.style.opacity = "1" }, 30)
 
   // Lueur centrale (orbe Thu'um)
   const glow = document.createElement("div")
   glow.id = "flySwarmGlow"
   glow.style.cssText = "position:fixed;top:50%;left:50%;width:500px;height:500px;pointer-events:none;z-index:9999975;border-radius:50%;background:radial-gradient(ellipse at center,rgba(255,255,255,0.75) 0%,rgba(160,225,255,0.55) 18%,rgba(80,170,255,0.3) 45%,transparent 72%);animation:flySwarmCenterPulse 1.8s ease-in-out infinite;filter:blur(22px);opacity:0;transition:opacity 2s ease;"
-  document.body.appendChild(glow)
-  setTimeout(() => { glow.style.opacity = "1" }, 100)
+  document.body.appendChild(scope.node(glow))
+  scope.later(() => { glow.style.opacity = "1" }, 100)
 
   // Anneaux de vent tourbillonnants
   const rings = document.createElement("div")
@@ -2008,15 +2017,15 @@ function showFlySwarmEffect() {
     arc2.style.cssText = `position:absolute;top:${-r+8}px;left:${-r+8}px;width:${r*2-16}px;height:${r*2-16}px;border:${Math.max(2,t-2)}px solid transparent;border-bottom-color:rgba(200,240,255,${alpha*0.7});border-left-color:rgba(150,220,255,${alpha*0.25});border-radius:50%;filter:blur(3px);animation:${anim==="windSwirlCW"?"windSwirlCCW":"windSwirlCW"} ${dur*1.35}s linear infinite;animation-delay:-${delay+0.5}s;`
     rings.appendChild(arc2)
   })
-  document.body.appendChild(rings)
-  setTimeout(() => { rings.style.opacity = "1" }, 200)
+  document.body.appendChild(scope.node(rings))
+  scope.later(() => { rings.style.opacity = "1" }, 200)
 
   // Vignette bleue brillante sur les bords
   const flash = document.createElement("div")
   flash.id = "flySwarmFlash"
   flash.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999977;background:radial-gradient(ellipse at center,transparent 38%,rgba(40,110,255,0.35) 72%,rgba(100,200,255,0.6) 100%);opacity:0;transition:opacity 2.5s ease;"
-  document.body.appendChild(flash)
-  setTimeout(() => { flash.style.opacity = "1" }, 350)
+  document.body.appendChild(scope.node(flash))
+  scope.later(() => { flash.style.opacity = "1" }, 350)
 
   // Mouches (sombres pour contraster avec le bleu brillant)
   const buzzes = ["flyBuzz1", "flyBuzz2", "flyBuzz3"]
@@ -2031,21 +2040,24 @@ function showFlySwarmEffect() {
     const dur = (0.25 + Math.random() * 0.42).toFixed(2)
     const delay = (Math.random() * 2).toFixed(2)
     fly.style.cssText = `position:fixed;left:${x}%;top:${y}%;width:${size}px;height:${size}px;object-fit:contain;pointer-events:none;z-index:9999979;opacity:0;transition:opacity 1.5s ease;animation:${anim} ${dur}s linear infinite;animation-delay:-${delay}s;filter:brightness(0.15) contrast(3);`
-    document.body.appendChild(fly)
-    setTimeout(() => { fly.style.opacity = (0.65 + Math.random() * 0.35).toFixed(2) }, 100 + i * 35)
+    document.body.appendChild(scope.node(fly))
+    scope.later(() => { fly.style.opacity = (0.65 + Math.random() * 0.35).toFixed(2) }, 100 + i * 35)
   }
 
   // Son
   const snd = document.getElementById("flySwarmSound")
   if (snd) {
-    snd.currentTime = 0; setManagedAudioBaseVolume(snd,0); snd.play().catch(() => {})
+    scope.audio(snd);snd.currentTime = 0; setManagedAudioBaseVolume(snd,0); snd.play().catch(() => {})
     let v = 0
-    const fade = setInterval(() => { v = Math.min(v + 0.05, 0.75); setManagedAudioBaseVolume(snd,v); if (v >= 0.75) clearInterval(fade) }, 100)
+    const fade = scope.every(() => { v = Math.min(v + 0.05, 0.75); setManagedAudioBaseVolume(snd,v); if (v >= 0.75) clearInterval(fade) }, 100)
   }
 
 }
 
 function resetFlySwarmPresentation() {
+  const scope=window.__flySwarmScope
+  if(!scope||scope.cancelled||scope.resetting)return
+  scope.resetting=true;scope.stopTimers()
   // 1. Mouches qui s'envolent
   document.querySelectorAll(".fly-particle").forEach(f => {
     const dx = ((Math.random() - 0.5) * 400).toFixed(0)
@@ -2054,12 +2066,12 @@ function resetFlySwarmPresentation() {
     f.style.transition = "opacity 0.9s ease, transform 0.9s ease"
     f.style.transform = `translate(${dx}px, ${dy}px) scale(2.5)`
     f.style.opacity = "0"
-    setTimeout(() => { if (f.parentNode) f.remove() }, 950)
+    scope.later(() => { if (f.parentNode) f.remove() }, 950)
   })
 
   // 2. pow.mp3 + message style Thu'um exact
-  setTimeout(() => {
-    const pow = new Audio("audio/pow.mp3")
+  scope.later(() => {
+    const pow = scope.audio(new Audio("audio/pow.mp3"))
     setManagedAudioBaseVolume(pow,.85)
     pow.play().catch(() => {})
 
@@ -2075,40 +2087,42 @@ function resetFlySwarmPresentation() {
     words.innerText          = "apparaît gravé dans le sol"
     if (player) player.innerText = ""
 
+    scope.wordScreen=screen
     screen.style.display = "flex"
-    requestAnimationFrame(() => screen.classList.add("active"))
+    scope.frame(() => screen.classList.add("active"))
     if (typeof screenShakeHard === "function") screenShakeHard()
 
-    setTimeout(() => {
+    scope.later(() => {
       screen.classList.remove("active")
-      setTimeout(() => { screen.style.display = "none" }, 600)
+      scope.later(() => { screen.style.display = "none" }, 600)
     }, 6200)
   }, 500)
 
   // 3. Anneaux/lueur s'estompent pendant le message
   ;["flySwarmRings", "flySwarmGlow"].forEach(id => {
-    setTimeout(() => {
+    scope.later(() => {
       const el = document.getElementById(id)
-      if (el) { el.style.transition = "opacity 2s ease"; el.style.opacity = "0"; setTimeout(() => { if (el.parentNode) el.remove() }, 2100) }
+      if (el) { el.style.transition = "opacity 2s ease"; el.style.opacity = "0"; scope.later(() => { if (el.parentNode) el.remove() }, 2100) }
     }, 4500)
   })
 
   // 4. Atmosphère bleue disparaît après le message
   ;["flySwarmOverlay", "flySwarmFlash"].forEach(id => {
-    setTimeout(() => {
+    scope.later(() => {
       const el = document.getElementById(id)
-      if (el) { el.style.transition = "opacity 2.5s ease"; el.style.opacity = "0"; setTimeout(() => { if (el.parentNode) el.remove() }, 2600) }
+      if (el) { el.style.transition = "opacity 2.5s ease"; el.style.opacity = "0"; scope.later(() => { if (el.parentNode) el.remove() }, 2600) }
     }, 6000)
   })
 
   // 5. Son qui s'estompe
   const snd = document.getElementById("flySwarmSound")
   if (snd) {
-    setTimeout(() => {
+    scope.later(() => {
       let v = snd.__baseVolume || 0
-      const fade = setInterval(() => { v = Math.max(v - 0.03, 0); setManagedAudioBaseVolume(snd,v); if (v <= 0) { clearInterval(fade); snd.pause(); snd.currentTime = 0 } }, 100)
+      const fade = scope.every(() => { v = Math.max(v - 0.03, 0); setManagedAudioBaseVolume(snd,v); if (v <= 0) { clearInterval(fade); snd.pause(); snd.currentTime = 0 } }, 100)
     }, 3000)
   }
+  scope.later(scope.cancel,8700)
 }
 
 

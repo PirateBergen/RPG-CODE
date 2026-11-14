@@ -1341,7 +1341,7 @@ const ALLY_PNJS = [
   },
   {
     id:      "gardienne",
-    name: "La Gardienne", image: "gardienne.jpg", role: "Gardienne des âmes", color: "#a9dfff",
+    name: "La Gardienne", image: "gardienne.png", role: "Gardienne des âmes", color: "#a9dfff",
     lore: "Elle veille sur les âmes qui traversent l’Antre.",
     actions: [{id:"gardienne_souffle",label:"Souffle de la Gardienne",type:"heal",icon:"✦",desc:"Restaure D20 × 12 PV à un allié. Sur un critique (20), relève une cible KO avec tous ses PV. Une utilisation par combat, sur autorisation du MJ. Ne donne pas l’Immortalité quantique.",dice:20,healMult:12,dialogue:"Votre histoire ne s’achève pas ici."}]
   },

@@ -68,7 +68,7 @@ function presentCharacterPower(event){
  seenPowerEvents.add(event.id)
  enqueueSharedVisual("power-"+event.id,()=>{
   playSound("powerSound",.9);powerExplosion();flashGold();screenShakeHard();showNotification(event.player==="ju"?"PIKA — APPÉTIT ABYSSAL !":heroDisplayName(event.player).toUpperCase()+" LIBÈRE SON POUVOIR !")
-  const info=playerPowerSounds[event.player];if(info){const audio=new Audio(resolveAudioPath(info.file));setManagedAudioBaseVolume(audio,.85);audio.play().catch(()=>{});if(info.fadeAt)setTimeout(()=>audio.pause(),info.fadeAt)}
+  const info=playerPowerSounds[event.player];if(info)playCharacterPowerSound(info)
  },3000)
 }
 document.addEventListener("DOMContentLoaded",()=>{
@@ -92,6 +92,7 @@ async function blessPartyWithFlies(){
    if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!=="chapelle.jpg"||root.game?.combatState?.active||root.combat?.phase==="active")return undefined
    for(const id of PLAYABLE_HEROES){const c=root.characters?.[id];if(c){c.curse=0;delete c.cursedEffect}}
    if(root.curse)delete root.curse.wheel
+   root.game.flyBlessing={id:uid+"-"+Date.now(),time:Date.now()}
    return root
   })
   if(!result.committed)throw Error("La carte ou la partie a changé.")
@@ -100,3 +101,16 @@ async function blessPartyWithFlies(){
  }catch(error){showNotification("Bénédiction non appliquée : "+error.message);return false}finally{updateFlyBlessingButton()}
 }
 document.addEventListener("DOMContentLoaded",()=>{db.ref("game/map").on("value",()=>setTimeout(updateFlyBlessingButton,0));db.ref("combat").on("value",()=>setTimeout(updateFlyBlessingButton,0));setInterval(updateFlyBlessingButton,1000);updateFlyBlessingButton()})
+
+function presentFlyBlessing(event){
+ if(!event?.id||!gameStarted||window.__sessionBusy||event.time<(window.__pageLoadTime||0)||Date.now()-event.time>15000)return
+ const map=currentMap
+ enqueueSharedVisual("fly-blessing-"+event.id,()=>{
+  if(currentMap!==map||!gameStarted||window.__sessionBusy)return
+  const scope=createPresentationScope("__cancelFlyBlessing"),scene=scope.node(document.createElement("div")),smoke=document.createElement("div"),title=document.createElement("h2")
+  scene.className="flyBlessingScene";scene.setAttribute("role","status");smoke.className="flyBlessingSmoke";title.textContent="Bénédiction des mouches";scene.append(smoke,title)
+  for(let i=0;i<32;i++){const fly=document.createElement("img");fly.src="images/mouche.png";fly.alt="";fly.className="flyBlessingFly";fly.style.cssText="left:"+Math.random()*100+"%;top:"+Math.random()*100+"%;--size:"+(12+Math.random()*18)+"px;--duration:"+(1+Math.random()*1.7)+"s;animation-delay:-"+Math.random()*3+"s";scene.appendChild(fly)}
+  document.body.appendChild(scene);const sound=document.getElementById("powSound");if(sound)scope.audio(sound);playSound("powSound",.85,true);scope.later(scope.cancel,4800)
+ },4800)
+}
+document.addEventListener("DOMContentLoaded",()=>db.ref("game/flyBlessing").on("value",s=>presentFlyBlessing(s.val())))

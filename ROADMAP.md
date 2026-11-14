@@ -1,5 +1,17 @@
 # Suite de la campagne
 
+## Styles du menu Action — 14 novembre 2026
+
+Version 20261114.5 : styles fixes des onglets, états, icône runique et bouton de fiche centralisés, onglet actif piloté par classe. Comparaison Edge sans écart sur quinze configurations à 320, 390 et 1000 px. Cette version regroupe également les extractions carte et menu Action précédentes. Voir NETTOYAGE-STYLES-ACTION-2026-11-14.md.
+
+## Découpage du menu Action — 14 novembre 2026
+
+Version locale 20261114.4 : 25 fonctions et environ 520 lignes extraites vers player-actions.js, avec corps conservés à l'identique. Documents, catalogue des alliés, autorisations, cris, runes et fiche couverts par douze scénarios d'interface et des contrôles Edge à 320, 390 et 1000 px. Voir NETTOYAGE-MENU-ACTION-2026-11-14.md. Les passes carte et menu restent locales ; suite possible : consolidation des styles.
+
+## Découpage des contrôles de carte — 14 novembre 2026
+
+Version locale 20261114.3 : contrôles de pions, caméra souris/tactile et changement de carte MJ extraits vers map-controls.js, sans modification de leurs gestionnaires. Chargement et cache adaptés ; 39 suites locales et contrôles Edge souris/tactile réussis. Voir NETTOYAGE-CARTE-2026-11-14.md. Prochain groupe possible : menu Action des joueurs.
+
 ## Nettoyage des animations — 14 novembre 2026
 
 Version 20261114.2 : portées d'annulation communes pour les spéciales des héros/monstres, Pika, l'essaim, les voix de pouvoir et de portrait, et la fin de session. Délais, sons et écouteurs sont arrêtés ensemble ; relances et changements de carte couverts par des tests ciblés. Voir NETTOYAGE-ANIMATIONS-2026-11-14.md. Le découpage général des gros fichiers et les mesures réseau restent à poursuivre.

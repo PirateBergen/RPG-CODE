@@ -1,5 +1,13 @@
 # Suite de la campagne
 
+## Archives au démarrage — 14 novembre 2026
+
+Version 20261114.6 : contrôle authentifié des seuls noms pour les archives current/previous ; maintien de la transaction de nettoyage pour les anciens noms. Validation au chargement et sélection de la dernière copie valide à conserver lors des sauvegardes/imports. Profil à quatre écrans : contrôle d'archives de 32 octets et environ 90 % de caractères SDK reçus en moins à la reconnexion dans le grand profil séparé. Voir OPTIMISATION-ARCHIVES-2026-11-14.md. Prochaine piste : partager l'instantané de combat entre les modules qui le retraitent.
+
+## Diagnostic réseau — 14 novembre 2026
+
+Quatre profils synthétiques sur quatre écrans et émulateur local : repos, carte, attaque, sauvegarde et reconnexion. La séparation des archives maintient les actions à environ 6,3 Ko et 16,5 Ko de corps REST dans les profils testés. La maintenance du démarrage MJ charge encore les archives ; plusieurs modules retraitent aussi la branche combat. Prochaine optimisation proposée : maintenance des archives à la reconnexion. Mesures et limites dans DIAGNOSTIC-RESEAU-2026-11-14.md et reports/network-profile-2026-11-14.json. Aucune modification du jeu publié ou de la campagne.
+
 ## Styles du menu Action — 14 novembre 2026
 
 Version 20261114.5 : styles fixes des onglets, états, icône runique et bouton de fiche centralisés, onglet actif piloté par classe. Comparaison Edge sans écart sur quinze configurations à 320, 390 et 1000 px. Cette version regroupe également les extractions carte et menu Action précédentes. Voir NETTOYAGE-STYLES-ACTION-2026-11-14.md.

@@ -111,16 +111,51 @@ async function cleanupCompletedActionRequests(){
  for(const branch of ["combatRequests","explorationRequests","characterRequests"]){const records=(await db.ref(branch).once("value")).val()||{};for(const [id,r]of Object.entries(records))if(["done","failed","cancelled"].includes(r?.status)&&now-(r.time||0)>300000)updates[branch+"/"+id]=null}
  if(Object.keys(updates).length)await db.ref().update(updates)
 }
+async function readSaveHistoryKeys(){
+ requireActionAccess({gmOnly:true})
+ if(db.__isolatedTest)return Object.keys((await db.ref("saves").once("value")).val()||{})
+ const epoch=reliableEpoch,user=auth?.currentUser,uid=window.__authUid,controller=new AbortController()
+ if(!user||user.uid!==uid)throw Error("Compte MJ nécessaire")
+ const cancel=()=>controller.abort(),timer=setTimeout(cancel,15000)
+ reliablePending.add(cancel)
+ try{
+  const work=async()=>{
+  const token=await user.getIdToken()
+  requireActionAccess({gmOnly:true})
+  if(epoch!==reliableEpoch||window.__authUid!==uid||controller.signal.aborted)throw Error("Lecture des archives interrompue")
+  const url=new URL(db.ref("saves").toString());url.pathname=url.pathname.replace(/\/$/,"")+".json"
+  const configured=db.app.options.databaseURL?new URL(db.app.options.databaseURL):null
+  if(configured?.searchParams.has("ns"))url.searchParams.set("ns",configured.searchParams.get("ns"))
+  url.searchParams.set("auth",token);url.searchParams.set("shallow","true")
+  const response=await fetch(url.href,{signal:controller.signal,cache:"no-store"})
+  if(!response.ok)throw Error("Liste des archives non confirmée")
+  const keys=await response.json()
+  requireActionAccess({gmOnly:true})
+  if(epoch!==reliableEpoch||window.__authUid!==uid||controller.signal.aborted)throw Error("Lecture des archives interrompue")
+  if(keys===null)return []
+  if(typeof keys!=="object"||Array.isArray(keys)||Object.values(keys).some(value=>value!==true))throw Error("Liste des archives invalide")
+  return Object.keys(keys)
+  }
+  return await Promise.race([work(),new Promise((_,reject)=>controller.signal.addEventListener("abort",()=>reject(Error("Lecture des archives interrompue")),{once:true}))])
+ }finally{clearTimeout(timer);reliablePending.delete(cancel);controller.abort()}
+}
 async function trimSaveHistory(){
  if(window.__authRole!=="gm"||!window.__actionOnline||window.__sessionBusy||saveTrimPromise)return
- const ref=db.ref("saves"),keepCache=()=>{};ref.on("value",keepCache)
- saveTrimPromise=(async()=>{try{await ref.once("value");await ref.transaction(records=>{
-  if(!records||window.__sessionBusy)return undefined
-  const entries=sortedSaveEntries(records).filter(([,save])=>{try{sessionFromSave(save);return true}catch(e){return false}})
-  if(!entries.length)return undefined
-  const next={current:entries[0][1],...(entries[1]?{previous:entries[1][1]}:{})}
-  return JSON.stringify(records)===JSON.stringify(next)?undefined:next
- },undefined,false)}finally{ref.off("value",keepCache);saveTrimPromise=null}})();return saveTrimPromise
+ saveTrimPromise=(async()=>{
+  const keys=await readSaveHistoryKeys()
+  // The normal two-slot format needs no startup rewrite. Contents are validated when used.
+  if(keys.every(key=>key==="current"||key==="previous"))return
+  requireActionAccess({gmOnly:true})
+  const ref=db.ref("saves"),keepCache=()=>{};ref.on("value",keepCache)
+  try{await ref.once("value");await ref.transaction(records=>{
+   if(!records||window.__sessionBusy||window.__authRole!=="gm"||!window.__actionOnline)return undefined
+   const entries=sortedSaveEntries(records).filter(([,save])=>{try{sessionFromSave(save);return true}catch(e){return false}})
+   if(!entries.length)return undefined
+   const next={current:entries[0][1],...(entries[1]?{previous:entries[1][1]}:{})}
+   return JSON.stringify(records)===JSON.stringify(next)?undefined:next
+  },undefined,false)}finally{ref.off("value",keepCache)}
+ })()
+ try{return await saveTrimPromise}finally{saveTrimPromise=null}
 }
 function renderReliableNetwork(){
  let banner=document.getElementById("actionOfflineBanner")

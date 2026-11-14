@@ -137,6 +137,13 @@ function sortedSaveEntries(records) {
   return entries.sort(([a, x], [b, y]) => saveTimestamp(y) - saveTimestamp(x) || b.localeCompare(a))
 }
 
+function latestValidSave(entries) {
+  for (const [, save] of entries) {
+    try { sessionFromSave(save); return save } catch (_) {}
+  }
+  return null
+}
+
 function validSaveId(id) {
   return typeof id === "string" && id.length > 0 && id.length <= 1024 &&
     !/[.#$\[\]\u0000-\u001f\u007f]/.test(id) && id.split("/").every(part => part.length > 0)
@@ -311,7 +318,7 @@ async function saveGame() {
       const state = captureSession(root)
       sessionFromSave(state)
       const archives=db.__campaignLayout?.()===2?(await db.ref("saves").once("value")).val():root.saves
-      const previous=sortedSaveEntries(archives||{})[0]?.[1]
+      const previous=latestValidSave(sortedSaveEntries(archives||{}))
       const now = Math.max(Date.now(),saveTimestamp(previous)+1), id = "current"
       const save = { ...state, _schemaVersion: SAVE_SCHEMA_VERSION, _savedAt: now, _saveName: name.trim(), _saveDate: new Date(now).toLocaleString("fr-FR") }
       const next={current:save,...(previous?{previous}:{})}
@@ -356,7 +363,7 @@ async function loadGame() {
   try {
     requirePersistenceGM()
     const { entries, local } = await listGameSaves()
-    const data = entries[0]?.[1] || parseLocalStorageJSON("rpg_save", null)
+    const data = latestValidSave(entries) || parseLocalStorageJSON("rpg_save", null)
     if (!data) throw new Error("Aucune sauvegarde disponible")
     if (local) showNotification("Chargement de la copie locale : serveur inaccessible")
     return await _applyLoadData(data)
@@ -384,7 +391,7 @@ async function deleteSave(id) {
     const records = parseLocalStorageJSON("rpg_saves", {}); delete records[id]
     try {
       localStorage.setItem(persistenceStorageKey("rpg_saves"), JSON.stringify(records))
-      const latest = sortedSaveEntries(records)[0]?.[1]
+      const latest = latestValidSave(sortedSaveEntries(records))
       if (latest) localStorage.setItem(persistenceStorageKey("rpg_save"), JSON.stringify(latest)); else localStorage.removeItem(persistenceStorageKey("rpg_save"))
     } catch (error) { console.warn(error) }
     showSaveMenu(); return true
@@ -598,7 +605,7 @@ async function importSaveFile(file) {
     const message="Copie vérifiée : "+save._saveName+"\n"+(save._saveDate||"Date inconnue")+"\nCarte : "+save.game.map+(save.combat?.id?"\nCombat en cours":"")+"\n\nAjouter cette copie aux sauvegardes ? La sauvegarde actuelle deviendra la précédente ; l’ancienne précédente sera remplacée. La partie en cours ne sera pas chargée automatiquement."
     if(!confirm(message))return false
     await withSessionOperation("saving",async()=>{
-      const records=(await db.ref("saves").once("value")).val()||{},previous=sortedSaveEntries(records)[0]?.[1]
+      const records=(await db.ref("saves").once("value")).val()||{},previous=latestValidSave(sortedSaveEntries(records))
       const imported={...save,_savedAt:Math.max(Date.now(),saveTimestamp(previous)+1),_saveName:("Copie — "+save._saveName).slice(0,120)}
       const next={current:imported,...(previous?{previous}:{})}
       if(typeof reliablePut==="function")await reliablePut("saves",next,undefined,true);else await db.ref("saves").set(next)

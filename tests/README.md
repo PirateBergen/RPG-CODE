@@ -1,5 +1,9 @@
 # Vérifications RPG
 
+Maintenance des archives : `node tests/save-history.cjs` couvre les noms d'archives, l'authentification, les réponses refusées, les interruptions et la concurrence. Avec l'émulateur local, `node tests/firebase-save-history.cjs` vérifie les vraies permissions, les anciens dossiers et la conservation de la dernière copie valide. Le profil réseau de version 2 contrôle aussi l'absence de lecture des contenus d'archives canoniques au démarrage.
+
+Profil réseau complet : avec l'émulateur local sur 127.0.0.1:9005 et FIREBASE_DATABASE_EMULATOR_HOST défini à cette adresse, lancer `node tests/firebase-network-profile.cjs`. Quatre clients et deux tailles d'archives sont mesurés pour les deux structures de partie. Le rapport JSON est écrit dans `_site/network-profile.json`, ou au chemin RPG_NETWORK_PROFILE_REPORT. Corps REST complets, caractères SDK et données de callbacks sont des mesures distinctes ; voir DIAGNOSTIC-RESEAU-2026-11-14.md pour leurs limites.
+
 Les tests access.cjs, persistence.cjs et combat.cjs utilisent Node sans dépendances.
 
 Pour les présentations : npm install --prefix tests puis node tests/presentation.cjs.

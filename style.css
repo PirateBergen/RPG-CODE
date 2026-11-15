@@ -6639,3 +6639,5 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 
 /* Petit écran : Action reste sous les volumes, au-dessus de la carte. */
 @media(max-width:600px){#playerThuumBtn{top:92px;left:12px}#playerThuumPanel{top:156px;max-height:calc(100dvh - 168px)}}
+
+#combatHUDRules{font:12px/1.5 Georgia,serif;color:#e6d7ab;margin:6px 0;padding:6px;border:1px solid #987b4c66;border-radius:5px}#combatHUDRules[hidden]{display:none}

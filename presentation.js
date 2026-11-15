@@ -118,7 +118,7 @@ function presentCombatResolution(action) {
         sharedVisualLater(()=>_playAllyAnim(def.type,pnj.color,result.crit),2400)
       })
     } else {
-      if(Number.isFinite(result.roll)) _showDiceAnimationNow(result.actor?.startsWith("mob")?"MOB":result.actor||"MJ",result.dice||20,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
+      if(Number.isFinite(result.roll)) _showDiceAnimationNow(result.actor?.startsWith("mob")?"MOB":result.actor||"MJ",result.dice||20,result.rollTotal??result.roll,result.roll,{crit:result.crit,fail:result.fail,bonus:result.luckBonus||0,eventId:action.id})
       const impact=()=>{
         if(result.message&&result.attack==="Je suis jet laguée")showNotification(result.message)
         if(result.pikaKind){presentPikaAttack(result);return}

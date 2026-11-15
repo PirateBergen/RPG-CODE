@@ -20,7 +20,7 @@ function reduceCharacterRequest(current,id,seed){
    root.game.thuumCast={playerId:r.actor,word,time:Date.now(),outsideCombat:true,requestId:id}
   }else if(r.kind==="power"){
    if(combatInt(c.corruption)<10)throw new Error("Le pouvoir nécessite dix points")
-   c.corruption=0;root.game.powerEvents ||= {};root.game.powerEvents[id]={id,player:r.actor,time:Date.now()}
+   c.corruption=0;if(root.combat?.balanceVersion===3&&root.combat.phase==="active"){root.combat.heroPowerBuffs||={};root.combat.heroPowerBuffs[r.actor]={turns:2,multiplier:1.25}}root.game.powerEvents ||= {};root.game.powerEvents[id]={id,player:r.actor,time:Date.now()}
    const old=Object.keys(root.game.powerEvents);old.slice(0,Math.max(0,old.length-80)).forEach(k=>delete root.game.powerEvents[k])
   }else if(r.kind==="curse-spin"){
    const w=root.curse?.wheel

@@ -107,7 +107,7 @@ function appendAttackDiceLine(container, dice, stat) {
     const statEl = document.createElement("span")
     statEl.className = "attackStat"
     statEl.innerText = String(stat).toUpperCase()
-    line.appendChild(document.createTextNode(" + "))
+    line.appendChild(document.createTextNode(window.__combatSnapshot?.balanceVersion===3?" · puissance : ":" + "))
     line.appendChild(statEl)
   }
   container.appendChild(line)
@@ -124,8 +124,9 @@ function populateAttackBlock(block, attack) {
   block.appendChild(head)
   appendAttackLine(block, "Type", attack.type)
   appendAttackDiceLine(block, attack.dice, attack.stat)
-  appendAttackLine(block, "Effet", attack.effect)
-  appendAttackLine(block, "Crit", attack.crit)
+  const calibrated=window.__combatSnapshot?.balanceVersion===3
+  appendAttackLine(block, "Effet", calibrated?calibratedAttackDescription(attack):attack.effect)
+  appendAttackLine(block, "Crit", calibrated&&(attack.pikaKind==="endikaki"||!attack.pikaKind&&getPlayerAttackTypeKey(attack)!=="summon")?"Maximum naturel : puissance ×1,6 ; effets propres conservés":attack.crit)
   if (attack.condition) appendAttackLine(block, "Condition", attack.condition)
 }
 
@@ -225,6 +226,7 @@ function chooseCombatTarget(playerIds,titleText){
 }
 
 function getPlayerAttackPower(attack, roll, statValue, context = {}) {
+  if(context.balanceVersion===3)return calibratedAttackPower(attack,roll,statValue,context)
   const type = getPlayerAttackTypeKey(attack)
   const scaling = getPlayerLevelScaling(context.playerId || context.actorId || "", context.charData || null)
   const lvl = Math.max(1, scaling.lvl || 1)
@@ -762,6 +764,8 @@ function getCombatStatusEntries(){
   if(effects.length){entries.push({kind:"section",title:combatEnemyLabel(slot)});entries.push(...effects)}
  }
  for(const [id,e]of Object.entries(c.heroDebuffs||{}))if(e.turns>0)entries.push({kind:"warn",title:heroDisplayName(id)+" affaibli",text:"Force et défense −"+(e.amount||2),meta:e.turns+" round(s) restant(s)"})
+ for(const [id,buff]of Object.entries(c.heroBuffs||{}))if(buff.turns>0)entries.push({kind:"buff",title:heroDisplayName(id)+" — élixir",text:"+"+buff.amount+" "+buff.stat,meta:buff.turns+" round(s) restant(s)"})
+ for(const [id,buff]of Object.entries(c.heroPowerBuffs||{}))if(buff.turns>0)entries.push({kind:"buff",title:heroDisplayName(id)+" — pouvoir",text:"Dégâts +25 %",meta:buff.turns+" round(s) restant(s)"})
  for(const [id,n]of Object.entries(c.heroStuns||{}))if(n>0)entries.push({kind:"warn",title:heroDisplayName(id)+" étourdi",text:"Action neutralisée",meta:n+" action(s) à sauter"})
  for(const [id,states]of Object.entries(c.gmStates||{}))for(const [key,value]of Object.entries(states)){const def=GM_COMBAT_STATES[key];if(def)entries.push({kind:"warn",title:(COMBAT_MOBS.includes(id)?combatEnemyLabel(id):heroDisplayName(id))+" — "+def.label,text:def.description,meta:value.turns+" "+def.unit+" restant(s)"+(value.amount?" · "+value.amount+(value.mode==="percent"?" %":" points"):"")})}
  const summon=c.eloSummon;if(summon?.active)entries.push({kind:"ally",title:"John Pork",text:"Tank : encaisse les attaques à cible unique. Bonus D4 aux attaques d’Elo"+(summon.frenzy?", doublé et en zone":""),meta:(summon.turnsLeft||0)+" round(s) · "+(summon.hp||0)+" / "+(summon.maxHP||0)+" PV"})
@@ -1723,7 +1727,7 @@ function openAllyPNJPanel() {
         }
         const descEl = document.createElement("div")
         descEl.style.cssText = "font-size:10px;color:#5a7a8a;margin-top:2px;"
-        descEl.innerText = action.desc
+        descEl.innerText = typeof allyActionDescription==="function"?allyActionDescription(pnj,action):action.desc
         center.appendChild(labelEl)
         center.appendChild(descEl)
         const badge = document.createElement("span")
@@ -2260,6 +2264,8 @@ function refreshCombatHUDContext(){
  document.querySelectorAll(".combatTargetNumber").forEach(el=>{if(!combatActive||!c)el.remove()})
  if(combatActive&&c)COMBAT_MOBS.forEach((slot,i)=>{const token=document.getElementById(slot==="mob"?"mobToken":"mobToken_"+slot);if(!token||!c[slot])return;let badge=token.querySelector(".combatTargetNumber");if(!badge){badge=document.createElement("span");badge.className="combatTargetNumber";badge.setAttribute("aria-hidden","true");token.appendChild(badge)}badge.textContent=String(i+1);token.title=combatEnemyLabel(slot)+" — "+c[slot].hp+" / "+c[slot].maxHP+" PV"})
  if(!hud||!info||!player)return
+ let rules=document.getElementById("combatHUDRules")
+ if(c?.balanceVersion===3){if(!rules){rules=document.createElement("p");rules.id="combatHUDRules";info.appendChild(rules)}const raw=window.__publicCharacters?.[player]||{};rules.textContent=calibratedRuleSummary(getEffectiveCharacterData(player,raw));rules.hidden=false}else if(rules)rules.hidden=true
  let summary=document.getElementById("combatHUDTurnSummary");if(!summary){summary=document.createElement("p");summary.id="combatHUDTurnSummary";summary.setAttribute("role","status");info.insertBefore(summary,document.getElementById("combatHUDAttacks"))}
  const current=state?.currentActorId,label=current==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(current)?combatEnemyLabel(current):heroDisplayName(current||"—")
  const pill=document.querySelector("#combatHUDMeta .combatHUDMetaPill--turn");if(pill)pill.textContent="Round "+(state?.round||1)+" · "+(state?.phase==="rolling"?"Initiative":label)

@@ -137,7 +137,7 @@ async function requestAllyCombatAction(pnj, action, targetId, panel) {
   finally { window.__playerAttackResolving = false }
 }
 
-function calculateCombatMob(mobName,tier,partyLevel,enemyCount=1){return balancedCombatMob(mobName,tier,partyLevel,enemyCount)}
+function calculateCombatMob(mobName,tier,partyLevel,enemyCount=1,version=3){return version===3?calibratedCombatMob(mobName,tier,partyLevel,enemyCount):balancedCombatMob(mobName,tier,partyLevel,enemyCount)}
 
 async function launchReliableCombat(mainMob, forceTier, extraMobs) {
   if (!isGM || window.__authRole !== "gm" || combatStarting || window.__sessionBusy) return
@@ -152,7 +152,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       const tier = WORLD_BOSS_NAMES.includes(mainMob)?"boss":forceTier || (CLASSIC_BOSS_NAMES.includes(mainMob)?"boss":mobStats[mainMob].tier)
       root.game ||= {}; root.tokens ||= {}
       const returnTokens = combatClone(root.tokens)
-      root.combat = { id, phase: "active", createdAt: now, mob: calculateCombatMob(mainMob, tier, level,1+extraMobs.slice(0,2).length), presentation: { positions: {} } }
+      root.combat = { id, phase: "active",balanceVersion:3, createdAt: now, mob: calculateCombatMob(mainMob, tier, level,1+extraMobs.slice(0,2).length), presentation: { positions: {} } }
       extraMobs.slice(0, 2).forEach((mob, index) => { root.combat["mob" + (index + 2)] = { ...calculateCombatMob(mob, null, level,1+extraMobs.slice(0,2).length), slot: "mob" + (index + 2) } })
       if(livingMobs(root.combat).some(slot=>root.combat[slot].name==="roi")&&balrogSwordIsEquipped(root))root.combat.visualEvents={[id+"-sword-glow"]:{id:id+"-sword-glow",combatId:id,time:now,result:{mode:"control",message:"L’épée se met à briller d’une lueur bleutée."}}}
       COMBAT_CHARACTERS.forEach((hero, index) => {
@@ -167,6 +167,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
         root.combat.presentation.positions[slot === "mob" ? "mobToken" : "mobToken_" + slot] = position
       })
       root.combat.turnState = { phase: "rolling", round: 1, sequence: 0, currentIndex: 0, currentActorId: "", participants: combatParticipants(root), rolls: {}, order: [] }
+      root.combat.turnState.initiativeBonuses=Object.fromEntries(root.combat.turnState.participants.map(p=>[p.id,p.type==="player"?calibratedInitiativeBonus(combatCharacter(root,p.id)):Math.min(3,Math.floor((root.combat[p.id].lvl-level)/2))]))
       root.game.combatState = { active: true, id, mainMob, tier, extraMobs: extraMobs.slice(0, 2), returnMap: root.game.map || currentMap || "taverne.jpg", returnTokens, returnAudio:root.game.mapAudio||null, time: now }
       for(const hero of COMBAT_HEROES)if(root.characters?.[hero]?.cursedEffect==="critOnly")root.characters[hero].cursedCombatId=id
       delete root.game.combatOutcome
@@ -240,15 +241,17 @@ async function addReliableCombatMob(name, tier) {
     const slot=COMBAT_MOBS.find(s=>!current.combat[s] || combatInt(current.combat[s].hp)<=0)
     if(!slot) return undefined
     const root=combatClone(current), level=Math.max(1,Math.round(COMBAT_HEROES.reduce((sum,id)=>sum+combatInt(root.characters[id].lvl,1),0)/3))
-    root.combat[slot]={...calculateCombatMob(name,tier,level,COMBAT_MOBS.filter(s=>current.combat[s]?.hp>0).length+1),slot,x:600+COMBAT_MOBS.indexOf(slot)*100,y:180}
+    root.combat[slot]={...calculateCombatMob(name,tier,level,COMBAT_MOBS.filter(s=>current.combat[s]?.hp>0).length+1,root.combat.balanceVersion===3?3:2),slot,x:600+COMBAT_MOBS.indexOf(slot)*100,y:180}
     const entry={id:slot,type:"mob",label:heroDisplayName(name).toUpperCase(),image:name+".png"},ts=root.combat.turnState
     if(ts){
       ts.participants=(ts.participants||[]).filter(p=>p.id!==slot);ts.participants.push(entry)
+      const bonus=root.combat.balanceVersion===3?Math.min(3,Math.floor((root.combat[slot].lvl-level)/2)):0
+      if(root.combat.balanceVersion===3){ts.initiativeBonuses||={};ts.initiativeBonuses[slot]=bonus}
       if(ts.phase==="active"){
         const actor=ts.currentActorId,roll=combatRandom(seed)(12)
         ts.rolls ||= {};ts.rolls[slot]=roll
-        ts.order=(ts.order||[]).filter(p=>p.id!==slot);ts.order.push({...entry,roll,index:ts.order.length})
-        ts.order.sort((a,b)=>b.roll-a.roll||(a.type===b.type?a.index-b.index:a.type==="player"?-1:1))
+        ts.order=(ts.order||[]).filter(p=>p.id!==slot);ts.order.push({...entry,roll,...(root.combat.balanceVersion===3?{bonus,total:roll+bonus}:{}),index:ts.order.length})
+        ts.order.sort((a,b)=>(b.total??b.roll)-(a.total??a.roll)||(a.type===b.type?a.index-b.index:a.type==="player"?-1:1))
         ts.currentIndex=Math.max(0,ts.order.findIndex(p=>p.id===actor))
       }
     }

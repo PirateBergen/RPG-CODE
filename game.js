@@ -2885,7 +2885,7 @@ function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
     cube.style.transform = "rotateX(" + rot.rx + "deg) rotateY(" + rot.ry + "deg)"
 
     scope.later(() => {
-      resLabel.textContent = String(final)
+      resLabel.textContent = rollMeta.bonus?naturalRoll+" + "+rollMeta.bonus+" Chance = "+final:String(final)
       addDiceLog(playerName, max, final)
 
       if (playerName === "MJ") { resultBox.classList.add("mjRoll"); flashGold(); screenShake() }

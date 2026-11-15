@@ -69,7 +69,7 @@ function renderDiscoveredAllies(panel){
  for(const pnj of discoveredAllies()){
   const card=document.createElement("section"),image=document.createElement("img"),title=document.createElement("h3"),state=document.createElement("p"),list=document.createElement("ul")
   card.className="discoveredAlly";image.src="images/"+pnj.image;image.alt="";title.textContent=pnj.name;state.textContent="Sur autorisation du MJ : pion hors combat, pouvoir contre les world boss."
-  for(const action of pnj.actions){const item=document.createElement("li");item.textContent=action.label+" : "+action.desc;list.appendChild(item)}
+  for(const action of pnj.actions){const item=document.createElement("li");item.textContent=action.label+" : "+(typeof allyActionDescription==="function"?allyActionDescription(pnj,action):action.desc);list.appendChild(item)}
   card.append(image,title,state,list);panel.appendChild(card)
  }
 }

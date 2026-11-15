@@ -113,7 +113,7 @@ function finalizedInitiative(state) {
   if (!state || state.phase !== "rolling") return null
   const participants = (state.participants || []).filter(p => p.id !== "bibi")
   if (!participants.length || participants.some(p => !Number.isInteger(state.rolls?.[p.id]) || state.rolls[p.id] < 1 || state.rolls[p.id] > 12)) return null
-  const order = participants.map((p, index) => ({ ...p, index, roll: state.rolls[p.id] })).sort((a, b) => b.roll - a.roll || (a.type === b.type ? a.index - b.index : a.type === "player" ? -1 : 1))
+  const order = participants.map((p, index) => ({ ...p, index, roll: state.rolls[p.id],...(state.initiativeBonuses?{bonus:state.initiativeBonuses[p.id]||0,total:state.rolls[p.id]+(state.initiativeBonuses[p.id]||0)}:{}) })).sort((a, b) => (b.total??b.roll) - (a.total??a.roll) || (a.type === b.type ? a.index - b.index : a.type === "player" ? -1 : 1))
   return { ...state, phase: "active", order, currentIndex: 0, currentActorId: order[0].id, round: 1, sequence: 0 }
 }
 
@@ -121,7 +121,7 @@ function recordConfirmedCombatAction(root,request,result){
   root.game ||= {}; root.game.sessionLog ||= {}
   const label=id=>heroDisplayName(root.combat?.[id]?.name||({greg:"Greg",ju:"Pika",elo:"Elo",bibi:"Bibi"})[id]||id||"MJ")
   const effects=Object.entries(root.combat?.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,h])=>!["dmg","mob","manual","heal"].includes(h.type)?String(h.detail||"Effet appliqué"):label(h.from)+" → "+label(h.to)+" : "+(h.type==="heal"?"+":h.type==="buff"||h.type==="malus"?"effet ":"−")+h.amount+(h.type==="buff"||h.type==="malus"?"":" PV"))
-  const text=[label(result.actor||request.actor),(result.mode==="arbitrated"?result.message:result.attack||result.message)||({pass:"Tour passé",skip:"Acteur KO : tour passé",manual:"Ajustement MJ",thuum:"Cri"})[result.mode]||"Action",result.roll!=null?"dé : "+result.roll+(result.crit?" (critique)":result.fail?" (échec critique)":""):"",...effects,...(!effects.length&&result.message&&result.attack&&result.mode!=="arbitrated"?[result.message]:[])].filter(Boolean).join(" · ")
+  const text=[label(result.actor||request.actor),(result.mode==="arbitrated"?result.message:result.attack||result.message)||({pass:"Tour passé",skip:"Acteur KO : tour passé",manual:"Ajustement MJ",thuum:"Cri"})[result.mode]||"Action",result.roll!=null?"dé : "+result.roll+(result.luckBonus?" + "+result.luckBonus+" Chance = "+result.rollTotal:"")+(result.controlBonus?" + "+result.controlBonus+" Charme (contrôle)":"")+(result.crit?" (critique)":result.fail?" (échec critique)":""):"",...effects,...(!effects.length&&result.message&&result.attack&&result.mode!=="arbitrated"?[result.message]:[])].filter(Boolean).join(" · ")
   root.game.sessionLog["action-"+request.id]={text:text.slice(0,1500),time:request.time,display:new Date(request.time).toTimeString().slice(0,5),status:"applied",combatId:root.combat.id,requestId:request.id}
   const entries=Object.entries(root.game.sessionLog).sort((a,b)=>(b[1].time||0)-(a[1].time||0));entries.slice(200).forEach(([key])=>delete root.game.sessionLog[key])
 }
@@ -138,6 +138,7 @@ function combatCharacter(root, id) {
   const raw = root.characters?.[id]
   if (!raw) throw new Error("Personnage introuvable")
   const data = getEffectiveCharacterData(id, raw, root.game?.balrogSword)
+  const buff=root.combat.heroBuffs?.[id];if(root.combat.balanceVersion===3&&buff?.turns>0)data[buff.stat]=(Number(data[buff.stat])||0)+buff.amount
   const debuff = root.combat.heroDebuffs?.[id]
   if (debuff?.turns > 0) { data.force = Math.max(0, data.force - (debuff.amount || 2)); data.defense = Math.max(0, data.defense - (debuff.amount || 2)) }
   return data
@@ -192,6 +193,7 @@ function tickCombatRound(root, request) {
     })
   })
   Object.entries(root.combat.heroDebuffs || {}).forEach(([id, effect]) => { if (--effect.turns <= 0) delete root.combat.heroDebuffs[id] })
+  for(const field of ["heroBuffs","heroPowerBuffs"])for(const [id,buff]of Object.entries(root.combat[field]||{}))if(--buff.turns<=0)delete root.combat[field][id]
   const summon = root.combat.eloSummon
   if(summon)for(const key of ["debuffRounds"])if(summon[key]>0)summon[key]--
   if (summon && (--summon.turnsLeft <= 0 || combatInt(summon.hp) <= 0)) delete root.combat.eloSummon
@@ -281,8 +283,9 @@ function resolveHeroCombatAction(root, request, dice) {
   const players = Object.fromEntries(COMBAT_CHARACTERS.map(id => [id, combatCharacter(root, id)]))
   if (special && !isPlayerSpecialConditionMet(actor, attack, { mob, charData: data, players })) throw new Error(attack.conditionText || "Condition de spéciale non remplie")
   const max = Math.max(2, combatInt(attack.dice, 20)), roll = dice(max), crit = roll === max, fail = roll === 1
+  const adjusted=c.balanceVersion===3?calibratedHeroRoll(data,roll,max):{total:roll,bonus:0}
   const stat = combatInt(data[getAttackStatKey(attack.stat)])
-  const power = getPlayerAttackPower(attack, roll, stat, { playerId: actor, charData: data, isSpecial: special })
+  const power = getPlayerAttackPower(attack, adjusted.total, stat, { playerId: actor, charData: data, isSpecial: special,balanceVersion:c.balanceVersion })
   recordHeroCritical(root,actor,crit,fail)
   if(actor!=="bibi"&&raw.cursedEffect==="critOnly"&&raw.cursedCombatId===c.id&&!crit){
     if(special){c.playerSpecials ||= {};c.playerSpecials[actor]=true}
@@ -291,12 +294,13 @@ function resolveHeroCombatAction(root, request, dice) {
   }
   if (heal) {
     if (![...COMBAT_CHARACTERS,...(c.eloSummon?.active?["eloSummon"]:[])].includes(payload.target)) throw new Error("Choisissez un héros à soigner")
-    const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * 2 : power)
+    const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * (c.balanceVersion===3?1.6:2) : power)
     nextCombatTurn(root, request)
-    return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, mode: "heal", special, target: payload.target, targetName: combatFriendlyName(payload.target).toUpperCase() }
+    return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, mode: "heal", special, target: payload.target, targetName: combatFriendlyName(payload.target).toUpperCase() }
   }
-  let damage = fail ? 0 : power * (crit ? 2 : 1), groupHeal = 0
-  if (special) {
+  let damage = fail ? 0 : power * (crit ? (c.balanceVersion===3?1.6:2) : 1), groupHeal = 0
+  if(special&&c.balanceVersion===3){damage=calibratedSpecialDamage(actor,power,crit,fail);if(actor==="elo")groupHeal=fail?Math.round(calibratedHealth(data.lvl)*.025):Math.round(calibratedHealth(data.lvl)*.08*(crit?1.6:1))}
+  else if (special) {
     damage = Math.round(damage * (attack.damageBonus || 1.75))
     const modified = applyPlayerSpecialModifiers(actor, { charData: data, mobHpRatio: mob.hp / Math.max(1, mob.maxHP), mobSpecialUsed: !!mob.specialUsed, gregCriticalHp: root.characters.greg.hp <= getCharacterMaxHp("greg", root.characters.greg) * .2, anyAllyQuarterHp: COMBAT_CHARACTERS.some(id => root.characters[id].hp > 0 && root.characters[id].hp <= getCharacterMaxHp(id, root.characters[id]) * .25), crit, fail, damage, flatBonus: 0, multiplier: 1, basePower: power })
     damage = Math.round(modified.damage*SPECIAL_DAMAGE_MULTIPLIER); groupHeal = modified.groupHeal || 0
@@ -304,23 +308,25 @@ function resolveHeroCombatAction(root, request, dice) {
   if (!fail && mob.bibiRage?.turns > 0) damage += mob.bibiRage.damage || 2
   if (!fail && mob.yuAggro?.turns > 0) damage += mob.yuAggro.allyBonus || 1
   if (!fail && mob.spiderSenseBuff?.active) damage = Math.round(damage * (mob.spiderSenseBuff.damageMult || 1.1))
-  if (attack.name === "Je vais te raconter une histoire" && /foret|mine/i.test(root.game.combatState?.returnMap || root.game.map || "")) damage *= 2
+  if (attack.name === "Je vais te raconter une histoire" && /foret|mine/i.test(root.game.combatState?.returnMap || root.game.map || "")) damage *= c.balanceVersion===3?1.25:2
   if(attack.name === "Spider Sense" && !fail)damage=Math.round(damage*.65)
   if (attack.name === "Spider Sense" && !fail) { c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
   if (attack.name === "Petite merde" && c.playerFlags?.[actor]?.spiderSense) damage *= 2
-  if(attack.name==="Je suis jet laguée")damage=Math.round(damage*1.25)
+  if(attack.name==="Je suis jet laguée"&&c.balanceVersion!==3)damage=Math.round(damage*1.25)
+  if(c.balanceVersion===3)damage=calibratedOutgoingDamage(root,actor,damage)
   let amount = combatDamage(root, request, actor.toUpperCase() + " — " + attack.name, slot, Math.round(damage))
   if (!fail&&actor==="greg"&&attack.name!=="Le Bibi"&&getPlayerAttackTypeKey(attack)==="physical"&&mob.name==="roi"&&balrogSwordIsEquipped(root))mob.balrogSwordWeaken=Math.max(mob.balrogSwordWeaken||0,crit?.25:.15)
   if (!fail) {
-    if ((actor === "greg" || actor === "bibi") && attack.name === "Le Bibi" && crit) mob.bibiRage = { damage: 2, turns: 3 }
-    if (actor === "greg" && attack.name === "I know Frank (si arc)" && crit) mob.playerBleed = { damage: 1, turns: 2 }
+    if ((actor === "greg" || actor === "bibi") && attack.name === "Le Bibi" && crit) mob.bibiRage = { damage: c.balanceVersion===3?Math.max(1,Math.round(calibratedHealth(data.lvl)*.025)):2, turns: 3 }
+    if (actor === "greg" && attack.name === "I know Frank (si arc)" && crit) mob.playerBleed = { damage: c.balanceVersion===3?Math.max(1,Math.round(calibratedHealth(data.lvl)*.01)):1, turns: 2 }
     if (actor === "ju" && getPlayerAttackTypeKey(attack) === "charm") { mob.yuAggro = { turns: 3, allyBonus: 1 }; if (crit) mob.yuSkipNextTurn = { active: true } }
     if (attack.name === "Petite merde" && crit) mob.attackMalus = { amount: 1, turns: 2 }
-    if (attack.name === "Je vais te raconter une histoire" && crit) mob.playerPoison = { damage: 2, turns: 2 }
-    if (attack.name === "Je suis jet laguée") c.eloSummon = { name:"John Pork", active: true, hp: Math.round(getCharacterMaxHp("elo", raw) * .8), maxHP: Math.round(getCharacterMaxHp("elo", raw) * .8), turnsLeft: 3, damageBonus: 4, frenzy: crit, x: 720, y: 430 }
+    if (attack.name === "Je vais te raconter une histoire" && crit) mob.playerPoison = { damage: c.balanceVersion===3?Math.max(1,Math.round(calibratedHealth(data.lvl)*.015)):2, turns: 2 }
+    if (attack.name === "Je suis jet laguée") c.eloSummon = { name:"John Pork", active: true, hp: Math.round(getCharacterMaxHp("elo", raw) * (c.balanceVersion===3?.35:.8)), maxHP: Math.round(getCharacterMaxHp("elo", raw) * (c.balanceVersion===3?.35:.8)), turnsLeft: 3, ...(c.balanceVersion===3?{defense:data.defense,lvl:data.lvl}:{}),damageBonus: 4, frenzy: crit, x: 720, y: 430 }
     else if (actor === "elo" && c.eloSummon?.active) {
       if(c.eloSummon.stunnedAttacks>0)c.eloSummon.stunnedAttacks--;else{
-      const bonus = Math.max(0,dice(4) * (c.eloSummon.frenzy ? 2 : 1)-(c.eloSummon.debuffRounds>0?2:0))
+      const bonusRoll=dice(4)
+      const bonus = Math.max(0,(c.balanceVersion===3?Math.round(calibratedHealth(data.lvl)*.012*bonusRoll):bonusRoll) * (c.eloSummon.frenzy ? 2 : 1)-(c.eloSummon.debuffRounds>0?2:0))
       ;(c.eloSummon.frenzy ? livingMobs(c) : [slot]).forEach(s => {const hit=combatDamage(root, request, "JOHN PORK", s, bonus);if(s===slot)amount+=hit})
       }
     }
@@ -329,7 +335,7 @@ function resolveHeroCombatAction(root, request, dice) {
   if (groupHeal > 0) [...COMBAT_CHARACTERS,...(c.eloSummon?.active?["eloSummon"]:[])].filter(id=>combatFriendlyTarget(root,id)?.hp>0).forEach(id=>{groupHealAmount+=combatHeal(root,request,"ELO",id,groupHeal)})
   if (special) { c.playerSpecials ||= {}; c.playerSpecials[actor] = true }
   nextCombatTurn(root, request)
-  return { actor, attack: attack.name, roll, dice: max, crit, fail, amount, groupHealAmount, mode: "damage", special, target: slot, targetName: heroDisplayName(mob.name).toUpperCase(),...(attack.name==="Je suis jet laguée"&&!fail?{message:"John Pork arrive : "+amount+" dégâts. Il protège le groupe pendant 3 rounds."}:{}) }
+  return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, groupHealAmount, mode: "damage", special, target: slot, targetName: heroDisplayName(mob.name).toUpperCase(),...(attack.name==="Je suis jet laguée"&&!fail?{message:"John Pork arrive : "+amount+" dégâts. Il protège le groupe pendant 3 rounds."}:{}) }
 }
 
 function resolveEnemyCombatAction(root, request, dice) {
@@ -366,7 +372,8 @@ function resolveEnemyCombatAction(root, request, dice) {
   let applied = 0
   targets.forEach(id => {
     const victim=combatFriendlyTarget(root,id),before = combatInt(victim.hp)
-    victim.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,id,damage)))); applied += before - victim.hp
+    const protectedDamage=gmIncomingDamage(root,id,damage),taken=c.balanceVersion===3?calibratedIncomingDamage(id==="eloSummon"?victim:combatCharacter(root,id),protectedDamage):protectedDamage
+    victim.hp = Math.max(0, before - Math.max(0,combatInt(taken))); applied += before - victim.hp
     if(id==="eloSummon"){if(attack.effect==="stun")victim.stunnedAttacks=1;if(attack.effect==="debuff")victim.debuffRounds=2;combatRecord(root,request,heroDisplayName(mob.name),"John Pork",before-victim.hp,"mob","John Pork encaisse "+(before-victim.hp)+" dégâts");return}
     if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
     if (attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
@@ -389,26 +396,28 @@ function resolveAllyCombatAction(root, request, dice) {
   if (root.combat.usedAllies?.[action.id]) throw new Error("Cette intervention a déjà été utilisée")
   if (root.roles?.[request.uid] !== "gm" && (root.game.playerAllyAccess?.scope === "exploration" || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
   const roll = dice(action.dice), crit = roll >= (action.critMin || action.dice);let fail = roll === 1,thorVictory=false
-  let amount = 0,thorLethalDamage=0
+  let amount = 0,thorLethalDamage=0,totalAllyDamage=0
   if (action.type === "damage") {
-    amount = Math.round((action.dmgBase + roll * action.dmgBonus) * (crit && action.critMult ? action.critMult : 1) * (fail ? .2 : 1))
+    amount = root.combat.balanceVersion===3?calibratedAllyDamage(pnj,action,roll,crit,fail,root.combat.mob.partyLevel):Math.round((action.dmgBase + roll * action.dmgBonus) * (crit && action.critMult ? action.critMult : 1) * (fail ? .2 : 1))
     const targets=action.chainMin&&roll>=action.chainMin?livingMobs(root.combat):[payload.target||livingMobs(root.combat)[0]]
     const thorMjolnir=pnj.id==="thor"&&action.id==="thor_mjolnir"
     targets.forEach(slot=>{
       if(!livingMobs(root.combat).includes(slot))throw Error("Choisissez un ennemi vivant")
-      const dealt=combatDamage(root,request,pnj.name,slot,amount,"dmg",{thorMjolnir})
+      const dealt=combatDamage(root,request,pnj.name,slot,root.combat.balanceVersion===3&&!isJormungandr(root.combat[slot])?Math.min(amount,Math.round(root.combat[slot].maxHP*.4)):amount,"dmg",{thorMjolnir})
+      totalAllyDamage+=dealt
       if(action.staggerOnCrit&&crit&&dealt>0&&root.combat[slot].hp>0)root.combat[slot].allyStagger=true
       if(thorMjolnir&&isJormungandr(root.combat[slot])&&dealt>0){thorLethalDamage=dealt;thorVictory=true;fail=false}
     })
     if(thorVictory)amount=thorLethalDamage
-  } else if (action.type === "heal") amount = combatHeal(root, request, pnj.name, payload.target, roll * (action.healMult || 1), crit)
+    else if(root.combat.balanceVersion===3)amount=totalAllyDamage
+  } else if (action.type === "heal") amount = combatHeal(root, request, pnj.name, payload.target, root.combat.balanceVersion===3?calibratedAllyHeal(pnj,roll,action.dice,root.combat.mob.partyLevel):roll * (action.healMult || 1), crit)
   else if (action.type === "buff") {
     const target = root.characters[payload.target]; if (!target || target.hp <= 0) throw new Error("Choisissez un héros vivant")
-    const stat = playerMainStat[payload.target]; amount = roll * (action.buffMult || 1); target[stat] = Math.min(999, combatInt(target[stat]) + amount)
+    const stat = playerMainStat[payload.target]; amount = root.combat.balanceVersion===3?Math.max(1,Math.round(combatInt(target[stat])*(.15+.15*roll/action.dice))):roll * (action.buffMult || 1); if(root.combat.balanceVersion===3){root.combat.heroBuffs||={};root.combat.heroBuffs[payload.target]={stat,amount,turns:3}}else target[stat] = Math.min(999, combatInt(target[stat]) + amount)
     combatRecord(root, request, pnj.name, payload.target.toUpperCase(), amount, "buff", pnj.name + " renforce " + payload.target)
   } else if (action.type === "malus" && roll >= (action.threshold || 10)) {
     const slot = payload.target || livingMobs(root.combat)[0]; if (!livingMobs(root.combat).includes(slot)) throw new Error("Choisissez un ennemi vivant")
-    if (pnj.id === "odin") root.combat[slot].attackMalus = { amount: 15 }
+    if (pnj.id === "odin") root.combat[slot].attackMalus = { amount: root.combat.balanceVersion===3?Math.max(1,Math.round(calibratedHealth(root.combat.mob.partyLevel)*.04)):15 }
     root.combat[slot].malus = { label: action.label, source: pnj.name, roll }
     combatRecord(root, request, pnj.name, root.combat[slot].name, 0, "malus", pnj.name + " — " + action.label)
   }
@@ -478,7 +487,7 @@ function reduceCombatRequestNow(current, id, seed) {
       if (root.combat.usedThuum?.[request.actor]?.[word]) throw new Error("Ce Thu’um est déjà utilisé")
       const target = request.payload.target || livingMobs(root.combat)[0]
       if (!livingMobs(root.combat).includes(target)) throw new Error("Choisissez une cible vivante")
-      const amounts = def.combatDamageByRank(learned.rank || 1)
+      const amounts = root.combat.balanceVersion===3?calibratedThuumDamage(word,learned.rank,root.characters[request.actor].lvl):def.combatDamageByRank(learned.rank || 1)
       if(word!=="SKARO'H")livingMobs(root.combat).forEach(slot => combatDamage(root, request, word, slot, slot === target ? amounts.main : amounts.splash))
       if (word === "REIHKT" && !isJormungandr(root.combat[target])) root.combat[target].reihktParalyzed = true
       root.combat.usedThuum ||= {}; root.combat.usedThuum[request.actor] ||= {}; root.combat.usedThuum[request.actor][word] = true

@@ -1,0 +1,59 @@
+{
+  "scope": "Cinq sessions JSDOM et émulateur officiel Firebase, sons simulés, aucune partie réelle modifiée",
+  "passed": 13,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Boutons prêts hors combat : chaque héros voit uniquement le sien",
+      "ok": true
+    },
+    {
+      "name": "greg : pouvoir confirmé, partagé et unique avec deux MJ",
+      "ok": true
+    },
+    {
+      "name": "ju : pouvoir confirmé, partagé et unique avec deux MJ",
+      "ok": true
+    },
+    {
+      "name": "elo : pouvoir confirmé, partagé et unique avec deux MJ",
+      "ok": true
+    },
+    {
+      "name": "greg : jets libres critique réussi/raté et jet normal",
+      "ok": true
+    },
+    {
+      "name": "ju : jets libres critique réussi/raté et jet normal",
+      "ok": true
+    },
+    {
+      "name": "elo : jets libres critique réussi/raté et jet normal",
+      "ok": true
+    },
+    {
+      "name": "Usurpation et modification de résultat refusées par Firebase",
+      "ok": true
+    },
+    {
+      "name": "Deux roues successives : Greg puis Elo, rotation pour tous et application unique",
+      "ok": true
+    },
+    {
+      "name": "Bibi exclue : ancien état ignoré, pouvoir refusé, accès au familier conservé",
+      "ok": true
+    },
+    {
+      "name": "Joueur absent : le MJ crée la roue de Yu",
+      "ok": true
+    },
+    {
+      "name": "MJ déconnectés : aucune consommation, demande annulée sans rejeu",
+      "ok": true
+    },
+    {
+      "name": "Prochain combat : restriction liée au combat puis effacée au retour",
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,2994 @@
+{
+  "scope": "Audit local du moteur réel : toutes les espèces sauf Jörmungandr (victoire scénarisée testée séparément), niveaux 1/10/50, groupes mixtes, équipement, une intervention de Mélenchon, niveaux mélangés et stratégie sans soutien. Décisions scriptées ; aucune donnée de partie réelle.",
+  "fights": 5220,
+  "rows": [
+    {
+      "label": "espèce gobelins niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "gobelins"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9882777777777779,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce loup niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "loup"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9873686868686868,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce draugr niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "draugr"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9873686868686868,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce fantome niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "fantome"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9879595959595957,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce vampire niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "vampire"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9870505050505048,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce witch niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "witch"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9879595959595957,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "garde"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.987513888888889,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce bandit niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "bandit"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9884305555555557,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ogre niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "ogre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9745151515151514,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce dragon niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "dragon"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.811078282828283,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce liquorice niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "liquorice"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.968584595959596,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce valkyrie niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "valkyrie"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9654027777777778,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce golem niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "golem"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.7767878787878788,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pretre niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "pretre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.921125,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce balraug niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "balraug"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9666666666666667,
+      "medianRounds": 8,
+      "p90Rounds": 9,
+      "meanDeaths": 0.6666666666666666,
+      "meanRemainingHP": 0.3037272727272727,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce fenrir niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "fenrir"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9666666666666667,
+      "medianRounds": 8,
+      "p90Rounds": 10,
+      "meanDeaths": 0.3333333333333333,
+      "meanRemainingHP": 0.5098080808080807,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce kraken niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "kraken"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.8666666666666667,
+      "medianRounds": 10,
+      "p90Rounds": 11,
+      "meanDeaths": 1.3333333333333333,
+      "meanRemainingHP": 0.18198863636363635,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce nhiddog niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "nhiddog"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9333333333333333,
+      "medianRounds": 8,
+      "p90Rounds": 9,
+      "meanDeaths": 0.5666666666666667,
+      "meanRemainingHP": 0.32606944444444436,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce roi niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "roi"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.4666666666666667,
+      "medianRounds": 11,
+      "p90Rounds": 12,
+      "meanDeaths": 2.8333333333333335,
+      "meanRemainingHP": 0.0639368686868687,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce tavernier niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "tavernier"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9879595959595957,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce soulard niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "soulard"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9875858585858587,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce serveuse niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "serveuse"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9879595959595957,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce marchand niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "marchand"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9874457070707072,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce forgeron niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "forgeron"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9639520202020203,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce forgeron1 niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "forgeron1"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.966486111111111,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce voyantepnj niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "voyantepnj"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9742727272727273,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde baldur niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "garde baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.973683080808081,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce child baldur niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "child baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9879595959595957,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pnj1 niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "pnj1"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9882777777777779,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pnj2 niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "pnj2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9880555555555558,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce oldmessager niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "oldmessager"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9882083333333335,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce maire niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "maire"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9064242424242424,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce generalmelenchon niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "generalmelenchon"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8261148989898989,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce jarl baldur niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "jarl baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9179419191919193,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce marchand2 niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "marchand2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9883535353535353,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce gardedunord niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "gardedunord"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9653219696969699,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde2 niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "garde2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9700138888888888,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce conseillerroinord niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "conseillerroinord"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9017752525252527,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce intendantbrume niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "intendantbrume"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.88322601010101,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce zombie niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "zombie"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 7,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8466654040404038,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce zombie2 niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "zombie2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 7,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8653042929292929,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce troll niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "troll"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9503977272727273,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce cyclope niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "cyclope"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9525454545454546,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce serpentgeant niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "serpentgeant"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 6,
+      "meanDeaths": 0.03333333333333333,
+      "meanRemainingHP": 0.8519873737373735,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce hydre niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "hydre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.5333333333333333,
+      "medianRounds": 11,
+      "p90Rounds": 13,
+      "meanDeaths": 2.7333333333333334,
+      "meanRemainingHP": 0.07799494949494949,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce basilic niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "basilic"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9,
+      "medianRounds": 11,
+      "p90Rounds": 14,
+      "meanDeaths": 1.2,
+      "meanRemainingHP": 0.34042424242424235,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce odin niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "odin"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.3333333333333333,
+      "medianRounds": 12,
+      "p90Rounds": 14,
+      "meanDeaths": 3.3333333333333335,
+      "meanRemainingHP": 0.03205176767676768,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce thor niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "thor"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.36666666666666664,
+      "medianRounds": 13,
+      "p90Rounds": 14,
+      "meanDeaths": 3.1666666666666665,
+      "meanRemainingHP": 0.05303156565656566,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce freya niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "freya"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.6666666666666666,
+      "medianRounds": 13,
+      "p90Rounds": 16,
+      "meanDeaths": 2.3,
+      "meanRemainingHP": 0.16608459595959593,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce heimdall niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "heimdall"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.4,
+      "medianRounds": 12,
+      "p90Rounds": 14,
+      "meanDeaths": 3.1,
+      "meanRemainingHP": 0.04545454545454545,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ELO PION niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "ELO PION"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.987513888888889,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ju pion niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "ju pion"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9847411616161617,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce greg pion niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "greg pion"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9873686868686868,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce gobelins niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "gobelins"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9900412949697411,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce loup niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "loup"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9889624259221221,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce draugr niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "draugr"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9889624259221221,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce fantome niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "fantome"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.989769627547081,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce vampire niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "vampire"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.989769627547081,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce witch niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "witch"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.989769627547081,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "garde"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9891856402078364,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce bandit niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "bandit"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9902665448518253,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ogre niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "ogre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9790941637758228,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce dragon niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "dragon"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8007517472251701,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce liquorice niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "liquorice"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9733907526036616,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce valkyrie niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "valkyrie"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9681851472666311,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce golem niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "golem"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.7927274679392087,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pretre niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "pretre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9415115393649274,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce balraug niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "balraug"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 8,
+      "p90Rounds": 9,
+      "meanDeaths": 0.36666666666666664,
+      "meanRemainingHP": 0.3678751095953198,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce fenrir niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "fenrir"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9666666666666667,
+      "medianRounds": 9,
+      "p90Rounds": 10,
+      "meanDeaths": 0.26666666666666666,
+      "meanRemainingHP": 0.5329966338070894,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce kraken niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "kraken"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9666666666666667,
+      "medianRounds": 10,
+      "p90Rounds": 11,
+      "meanDeaths": 0.9,
+      "meanRemainingHP": 0.2301612263644974,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce nhiddog niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "nhiddog"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 8,
+      "p90Rounds": 10,
+      "meanDeaths": 0.43333333333333335,
+      "meanRemainingHP": 0.3356300387696415,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce roi niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "roi"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.6333333333333333,
+      "medianRounds": 11,
+      "p90Rounds": 12,
+      "meanDeaths": 2.1666666666666665,
+      "meanRemainingHP": 0.12148462610641347,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce tavernier niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "tavernier"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.989769627547081,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce soulard niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "soulard"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9895834670586423,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce serveuse niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "serveuse"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9896206694395947,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce marchand niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "marchand"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9891115326132849,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce forgeron niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "forgeron"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.965335547111248,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce forgeron1 niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "forgeron1"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.971893721543254,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce voyantepnj niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "voyantepnj"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9788708009064316,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde baldur niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "garde baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9779608061223131,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce child baldur niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "child baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.989769627547081,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pnj1 niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "pnj1"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.989893926707595,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pnj2 niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "pnj2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9895602493733335,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce oldmessager niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "oldmessager"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.990263216577469,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce maire niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "maire"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9257314120631877,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce generalmelenchon niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "generalmelenchon"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8645098646485914,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce jarl baldur niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "jarl baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9415115393649274,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce marchand2 niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "marchand2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9901435383692976,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce gardedunord niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "gardedunord"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.96698703684685,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde2 niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "garde2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9732794842315869,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce conseillerroinord niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "conseillerroinord"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9211160226931255,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce intendantbrume niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "intendantbrume"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9075346604114125,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce zombie niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "zombie"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8730597378888855,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce zombie2 niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "zombie2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8963538070941693,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce troll niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "troll"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9567105945391575,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce cyclope niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "cyclope"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9571721964756427,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce serpentgeant niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "serpentgeant"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.873100431986238,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce hydre niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "hydre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.6333333333333333,
+      "medianRounds": 12,
+      "p90Rounds": 13,
+      "meanDeaths": 2.2,
+      "meanRemainingHP": 0.11459468809790072,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce basilic niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "basilic"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9666666666666667,
+      "medianRounds": 12,
+      "p90Rounds": 15,
+      "meanDeaths": 0.9,
+      "meanRemainingHP": 0.3833969836087244,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce odin niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "odin"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.4666666666666667,
+      "medianRounds": 12,
+      "p90Rounds": 14,
+      "meanDeaths": 2.7,
+      "meanRemainingHP": 0.08940441481329331,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce thor niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "thor"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.4666666666666667,
+      "medianRounds": 12,
+      "p90Rounds": 14,
+      "meanDeaths": 2.7333333333333334,
+      "meanRemainingHP": 0.09232088653817626,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce freya niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "freya"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.7333333333333333,
+      "medianRounds": 14,
+      "p90Rounds": 16,
+      "meanDeaths": 2.066666666666667,
+      "meanRemainingHP": 0.20856530216927413,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce heimdall niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "heimdall"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.4,
+      "medianRounds": 13,
+      "p90Rounds": 14,
+      "meanDeaths": 2.933333333333333,
+      "meanRemainingHP": 0.07228012230932793,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ELO PION niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "ELO PION"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.989893926707595,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ju pion niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "ju pion"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9871159022809141,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce greg pion niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "greg pion"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9889624259221221,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce gobelins niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "gobelins"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.991776853624567,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce loup niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "loup"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9908458179307797,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce draugr niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "draugr"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9908725110075577,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce fantome niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "fantome"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9915607422525657,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce vampire niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "vampire"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9916586392772138,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce witch niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "witch"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9916229896406539,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "garde"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9910231228953189,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce bandit niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "bandit"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9919895443252378,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ogre niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "ogre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9825563332089087,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce dragon niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "dragon"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8259046235756403,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce liquorice niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "liquorice"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9753626935102571,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce valkyrie niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "valkyrie"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9721022599108157,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce golem niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "golem"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.804489432945209,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pretre niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "pretre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9580303274773527,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce balraug niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "balraug"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 8,
+      "p90Rounds": 9,
+      "meanDeaths": 0.2,
+      "meanRemainingHP": 0.4063894207034402,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce fenrir niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "fenrir"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 9,
+      "p90Rounds": 11,
+      "meanDeaths": 0.13333333333333333,
+      "meanRemainingHP": 0.597596576519083,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce kraken niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "kraken"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 10,
+      "p90Rounds": 12,
+      "meanDeaths": 0.6,
+      "meanRemainingHP": 0.2710022998470783,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce nhiddog niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "nhiddog"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 8,
+      "p90Rounds": 9,
+      "meanDeaths": 0.13333333333333333,
+      "meanRemainingHP": 0.3859908929266657,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce roi niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "roi"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.7,
+      "medianRounds": 11,
+      "p90Rounds": 13,
+      "meanDeaths": 1.7666666666666666,
+      "meanRemainingHP": 0.14345596976885133,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce tavernier niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "tavernier"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9915607422525657,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce soulard niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "soulard"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9914007864834816,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce serveuse niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "serveuse"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9915253745780602,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce marchand niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "marchand"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9909699454538886,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce forgeron niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "forgeron"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9701278030640544,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce forgeron1 niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "forgeron1"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.973690828105496,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce voyantepnj niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "voyantepnj"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9824051473628018,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde baldur niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "garde baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9816208041838752,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce child baldur niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "child baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9915874333224963,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pnj1 niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "pnj1"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9917237514399131,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce pnj2 niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "pnj2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9914752184453356,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce oldmessager niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "oldmessager"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9919010724592306,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce maire niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "maire"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9401889767888034,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce generalmelenchon niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "generalmelenchon"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8898157152203318,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce jarl baldur niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "jarl baldur"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 4,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9580214622291258,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce marchand2 niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "marchand2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 1,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.991943276459279,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce gardedunord niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "gardedunord"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9709502201511558,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce garde2 niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "garde2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 3,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9753248855093578,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce conseillerroinord niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "conseillerroinord"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9408674186323739,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce intendantbrume niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "intendantbrume"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 5,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.93016317073856,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce zombie niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "zombie"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8952995360168896,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce zombie2 niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "zombie2"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9108234134868172,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce troll niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "troll"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9635825787587247,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce cyclope niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "cyclope"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 3,
+      "p90Rounds": 4,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9624211068164576,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce serpentgeant niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "serpentgeant"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.8926557303519608,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce hydre niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "hydre"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.8,
+      "medianRounds": 12,
+      "p90Rounds": 13,
+      "meanDeaths": 1.7,
+      "meanRemainingHP": 0.1509352621143341,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce basilic niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "basilic"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 11,
+      "p90Rounds": 14,
+      "meanDeaths": 0.4,
+      "meanRemainingHP": 0.4995083565124204,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce odin niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "odin"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.6333333333333333,
+      "medianRounds": 13,
+      "p90Rounds": 14,
+      "meanDeaths": 2.3,
+      "meanRemainingHP": 0.10846011892577476,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce thor niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "thor"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.6333333333333333,
+      "medianRounds": 12,
+      "p90Rounds": 14,
+      "meanDeaths": 2.066666666666667,
+      "meanRemainingHP": 0.10506207379579123,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce freya niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "freya"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.9333333333333333,
+      "medianRounds": 14,
+      "p90Rounds": 17,
+      "meanDeaths": 1.1666666666666667,
+      "meanRemainingHP": 0.3449384289194732,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce heimdall niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "heimdall"
+        ]
+      },
+      "samples": 30,
+      "winRate": 0.7,
+      "medianRounds": 13,
+      "p90Rounds": 14,
+      "meanDeaths": 2.066666666666667,
+      "meanRemainingHP": 0.108490416300417,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ELO PION niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "ELO PION"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9917237514399131,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce ju pion niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "ju pion"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9891628315813557,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "espèce greg pion niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "greg pion"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 2,
+      "p90Rounds": 2,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.9908192201792516,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "groupe mixte niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "garde",
+          "golem",
+          "gobelins"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 8,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.7141603535353535,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "équipement niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "roi"
+        ],
+        "gear": 15
+      },
+      "samples": 30,
+      "winRate": 0.8666666666666667,
+      "medianRounds": 9,
+      "p90Rounds": 11,
+      "meanDeaths": 1.2,
+      "meanRemainingHP": 0.21460101010101015,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "renfort allié niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "roi"
+        ],
+        "ally": true
+      },
+      "samples": 30,
+      "winRate": 0.9333333333333333,
+      "medianRounds": 8,
+      "p90Rounds": 10,
+      "meanDeaths": 0.7666666666666667,
+      "meanRemainingHP": 0.2645568181818182,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "niveaux mélangés autour de 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "kraken"
+        ],
+        "heroLevels": {
+          "greg": 1,
+          "ju": 1,
+          "elo": 4
+        }
+      },
+      "samples": 30,
+      "winRate": 0.7,
+      "medianRounds": 10,
+      "p90Rounds": 11,
+      "meanDeaths": 1.7666666666666666,
+      "meanRemainingHP": 0.15513801054018445,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "sans soins ni hypnose niveau 1",
+      "options": {
+        "level": 1,
+        "names": [
+          "kraken"
+        ],
+        "policy": "basic"
+      },
+      "samples": 30,
+      "winRate": 0.26666666666666666,
+      "medianRounds": 9,
+      "p90Rounds": 10,
+      "meanDeaths": 3.6,
+      "meanRemainingHP": 0.0204760101010101,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "groupe mixte niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "garde",
+          "golem",
+          "gobelins"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 6,
+      "p90Rounds": 7,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.7232284724837295,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "équipement niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "roi"
+        ],
+        "gear": 15
+      },
+      "samples": 30,
+      "winRate": 0.8,
+      "medianRounds": 11,
+      "p90Rounds": 12,
+      "meanDeaths": 1.5,
+      "meanRemainingHP": 0.15249017921331004,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "renfort allié niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "roi"
+        ],
+        "ally": true
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 8,
+      "p90Rounds": 10,
+      "meanDeaths": 0.43333333333333335,
+      "meanRemainingHP": 0.3178472055808505,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "niveaux mélangés autour de 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "kraken"
+        ],
+        "heroLevels": {
+          "greg": 7,
+          "ju": 10,
+          "elo": 13
+        }
+      },
+      "samples": 30,
+      "winRate": 0.7666666666666667,
+      "medianRounds": 11,
+      "p90Rounds": 13,
+      "meanDeaths": 1.4666666666666666,
+      "meanRemainingHP": 0.1896278095237576,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "sans soins ni hypnose niveau 10",
+      "options": {
+        "level": 10,
+        "names": [
+          "kraken"
+        ],
+        "policy": "basic"
+      },
+      "samples": 30,
+      "winRate": 0.3333333333333333,
+      "medianRounds": 9,
+      "p90Rounds": 10,
+      "meanDeaths": 3.3333333333333335,
+      "meanRemainingHP": 0.0286242173800585,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "groupe mixte niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "garde",
+          "golem",
+          "gobelins"
+        ]
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 5,
+      "p90Rounds": 6,
+      "meanDeaths": 0,
+      "meanRemainingHP": 0.7643097829795262,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "équipement niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "roi"
+        ],
+        "gear": 15
+      },
+      "samples": 30,
+      "winRate": 0.6666666666666666,
+      "medianRounds": 11,
+      "p90Rounds": 13,
+      "meanDeaths": 1.8,
+      "meanRemainingHP": 0.14876299534010043,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "renfort allié niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "roi"
+        ],
+        "ally": true
+      },
+      "samples": 30,
+      "winRate": 0.9666666666666667,
+      "medianRounds": 8,
+      "p90Rounds": 10,
+      "meanDeaths": 0.23333333333333334,
+      "meanRemainingHP": 0.3652787531055963,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "niveaux mélangés autour de 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "kraken"
+        ],
+        "heroLevels": {
+          "greg": 47,
+          "ju": 50,
+          "elo": 53
+        }
+      },
+      "samples": 30,
+      "winRate": 1,
+      "medianRounds": 10,
+      "p90Rounds": 12,
+      "meanDeaths": 0.3333333333333333,
+      "meanRemainingHP": 0.2781800229520952,
+      "timeouts": 0,
+      "errors": []
+    },
+    {
+      "label": "sans soins ni hypnose niveau 50",
+      "options": {
+        "level": 50,
+        "names": [
+          "kraken"
+        ],
+        "policy": "basic"
+      },
+      "samples": 30,
+      "winRate": 0.5666666666666667,
+      "medianRounds": 8,
+      "p90Rounds": 9,
+      "meanDeaths": 2.7333333333333334,
+      "meanRemainingHP": 0.054809070548712216,
+      "timeouts": 0,
+      "errors": []
+    }
+  ]
+}

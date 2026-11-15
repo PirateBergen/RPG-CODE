@@ -144,13 +144,13 @@ const attacks = {
     { name:"I know Frank (si arc)",type:"Distance", dice:12, stat:"Perspicacité", effect:"Tir précis arc",                                              crit:"Dégâts x2 et saignement, -1 HP pendant 2 tours" }
   ],
   ju: [
-    {name:"French cancan",type:"Mêlée",dice:12,stat:"Force",pikaKind:"cancan",effect:"Contact obligatoire. 1 à 3 coups selon le jet ; dégâts par coup : 3 + Force, avec progression de niveau.",crit:"4 coups de pied",condition:"À 180 ou moins de la cible"},
+    {name:"French cancan",type:"Mêlée",dice:12,stat:"Force",pikaKind:"cancan",effect:"Contact obligatoire. Coups selon le jet ; dégâts fondés sur la Force et le niveau.",crit:"4 coups de pied",condition:"À 180 ou moins de la cible"},
     {name:"Je suis une fille",type:"Charme",dice:12,stat:"Charme",pikaKind:"hypnosis",effect:"Hypnose 1 tour complet. Recharge : 3 tours. Faible/normal : sauf échec critique ; fort : 7+ ; boss : 10+ ; world boss : critique uniquement.",crit:"Hypnose pendant 2 tours complets"},
-    {name:"Rire KRRKRR",type:"Sort à distance",dice:12,stat:"Charme",pikaKind:"laugh",effect:"Ce rire est tellement bizarre que l’ennemi en reste sans voix. D12 + Charme + progression de niveau.",crit:"Ricochet à 50 % sur une autre cible ; si elle est seule, +50 % de dégâts."}
+    {name:"Rire KRRKRR",type:"Sort à distance",dice:12,stat:"Charme",pikaKind:"laugh",effect:"Ce rire est tellement bizarre que l’ennemi en reste sans voix. Dégâts à distance fondés sur le Charme et le niveau.",crit:"Ricochet à 50 % sur une autre cible ; si elle est seule, +50 % de dégâts."}
   ],
   elo: [
     { name:"Mains magiques",                  type:"Soin",      dice:12, stat:"Defense", effect:"Restaure HP à soi ou allié",                                                     crit:"Pv restaurés x2" },
-    { name:"Je vais te raconter une histoire",type:"Sort",      dice:12, stat:"Charme",  effect:"invoque les forces de la nature. Dégats double en forêt ou mine",                crit:"L'ennemi est empoisonné, -2 hp pendant 2 tours" },
+    { name:"Je vais te raconter une histoire",type:"Sort",      dice:12, stat:"Charme",  effect:"invoque les forces de la nature. Bonus de dégâts en forêt ou mine",                crit:"L'ennemi est empoisonné, -2 hp pendant 2 tours" },
     { name:"Je suis jet laguée",              type:"Invocation",dice:12, stat:"Chance",  effect:"John Pork frappe à son arrivée, encaisse les attaques à cible unique et donne un bonus D4 aux attaques d’Elo pendant 3 rounds",    crit:"Le familier devient fou, dégats x2 et attaque tous les mobs" }
   ]
 }
@@ -1489,4 +1489,4 @@ function resolveBalrogSwordRequest(root,request){
 }
 
 const SPECIAL_DAMAGE_MULTIPLIER=1.35
-function getMobDamageRange(attack,lvl,tier="weak",data=null){const range=getMobBaseDamageRange(attack,lvl,tier,data);return attack?.special?{min:Math.round(range.min*SPECIAL_DAMAGE_MULTIPLIER),max:Math.round(range.max*SPECIAL_DAMAGE_MULTIPLIER)}:range}
+function getMobDamageRange(attack,lvl,tier="weak",data=null){if(data?.balanceVersion===3)return getCalibratedMobDamageRange(attack,data);const range=getMobBaseDamageRange(attack,lvl,tier,data);return attack?.special?{min:Math.round(range.min*SPECIAL_DAMAGE_MULTIPLIER),max:Math.round(range.max*SPECIAL_DAMAGE_MULTIPLIER)}:range}

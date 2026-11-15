@@ -1,0 +1,27 @@
+{
+  "scope": "Cinq sessions JSDOM et émulateur officiel Firebase ; audio et horloges simulés ; aucune partie de production modifiée.",
+  "passed": 5,
+  "failed": 0,
+  "results": [
+    {
+      "name": "World boss créé : mêmes PV, catégorie et arène pour tous",
+      "ok": true
+    },
+    {
+      "name": "Attaque joueur v3 : même dé, chance et dégâts confirmés sur cinq sessions",
+      "ok": true
+    },
+    {
+      "name": "Deux attaques : dégâts conformes aux aperçus et séquence partagée",
+      "ok": true
+    },
+    {
+      "name": "Spéciale annoncée sur les cinq sessions, sans dégâts immédiats",
+      "ok": true
+    },
+    {
+      "name": "Sauvegarde complète conserve l’action et la préparation, victoire rend la carte",
+      "ok": true
+    }
+  ]
+}

@@ -32,25 +32,29 @@ function resolvePikaHeroAction(root,request,attack,dice) {
   if(kind==="hypnosis"&&pikaRechargeLeft(c)>0)throw Error("Je suis une fille recharge encore pendant "+pikaRechargeLeft(c)+" tour(s)")
   if(kind==="endikaki"&&!pikaAllyInDanger(root.characters,actor))throw Error("Endikaki nécessite un autre allié à moins de 20 % de ses PV")
   const max=special?20:12,roll=dice(max),crit=roll===max,fail=roll===1,level=Math.max(1,combatInt(raw.lvl,1)),bonus=getBalanceLevelBonus(level)
+  const calibrated=c.balanceVersion===3,adjusted=calibrated?calibratedHeroRoll(data,roll,max):{total:roll,bonus:0}
   recordHeroCritical(root,actor,crit,fail)
   if(kind==="hypnosis")c.pikaHypnosisReadyRound=round+3
   if(special){c.playerSpecials||={};c.playerSpecials[actor]=true}
   const targetPosition=pikaPosition(root,slot)
-  const result={targetPosition:targetPosition?{x:targetPosition.x,y:targetPosition.y}:null,actor,attack:attack.name,target:slot,targetName:heroDisplayName(c[slot].name),roll,dice:max,crit,fail,special,pikaKind:kind,mode:"damage",amount:0}
+  const result={targetPosition:targetPosition?{x:targetPosition.x,y:targetPosition.y}:null,actor,attack:attack.name,target:slot,targetName:heroDisplayName(c[slot].name),roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus,dice:max,crit,fail,special,pikaKind:kind,mode:"damage",amount:0}
   if(raw.cursedEffect==="critOnly"&&raw.cursedCombatId===c.id&&!crit){result.mode="curse-blocked";result.message="Malédiction : seul un critique produit un effet";nextCombatTurn(root,request);return result}
   if(kind==="hypnosis") {
-    const threshold=pikaHypnosisThreshold(c[slot]),success=!fail&&roll>=threshold,turns=crit?2:1
+    const threshold=pikaHypnosisThreshold(c[slot]),charmeBonus=calibrated?calibratedHypnosisBonus(data):0,testTotal=adjusted.total+charmeBonus,world=c[slot].balanceClass==="world"||WORLD_BOSS_NAMES.includes(c[slot].name),success=!fail&&(calibrated&&world?crit:testTotal>=threshold),turns=crit?2:1
+    result.controlBonus=charmeBonus;result.controlTotal=testTotal
     result.mode="control";result.threshold=threshold;result.hypnotized=success;result.hypnosisTurns=result.hypnotized?turns:0
     if(result.hypnotized)c[slot].pikaHypnosisTurns=Math.max(c[slot].pikaHypnosisTurns||0,turns)
     result.message=fail?"Échec critique : la séduction échoue.":!success?result.targetName+" résiste à la séduction.":result.hypnotized?result.targetName+" hypnotisé : "+turns+" tour(s) complet(s) neutralisé(s).":"L’effet est annulé par la décision du MJ."
     combatRecord(root,request,"PIKA",result.targetName,0,"hypnosis",result.message)
   } else {
     let damage=0
-    if(kind==="cancan"){result.kicks=pikaKickCount(roll);damage=result.kicks*Math.max(1,3+combatInt(data.force)+Math.floor(bonus/3))}
-    if(kind==="laugh"&&!fail){damage=roll+combatInt(data.charme)+bonus;const other=livingMobs(c).find(id=>id!==slot);if(crit&&other){result.bounceTarget=other;result.bounceAmount=combatDamage(root,request,"PIKA — Rire KRRKRR",other,Math.floor(damage*.5))}else if(crit)damage=Math.round(damage*1.5)}
-    if(kind==="endikaki"&&!fail)damage=Math.round((roll+combatInt(data.charme)+bonus)*1.8+8+(level-1)*2)*(crit?2:1)
+    if(kind==="cancan"){result.kicks=pikaKickCount(adjusted.total);damage=calibrated?calibratedPikaKickDamage(data,result.kicks):result.kicks*Math.max(1,3+combatInt(data.force)+Math.floor(bonus/3))}
+    if(kind==="laugh"&&!fail){damage=calibrated?calibratedAttackPower(attack,adjusted.total,data.charme,{charData:data}):roll+combatInt(data.charme)+bonus;const other=livingMobs(c).find(id=>id!==slot);if(crit&&other){result.bounceTarget=other;result.bounceAmount=combatDamage(root,request,"PIKA — Rire KRRKRR",other,calibrated?calibratedOutgoingDamage(root,actor,Math.floor(damage*.5)):Math.floor(damage*.5))}else if(crit)damage=Math.round(damage*1.5)}
+    if(kind==="endikaki"&&!fail&&calibrated)damage=calibratedSpecialDamage(actor,calibratedAttackPower(attack,adjusted.total,data.charme,{charData:data}),crit,fail)
+    if(kind==="endikaki"&&!fail&&!calibrated)damage=Math.round((roll+combatInt(data.charme)+bonus)*1.8+8+(level-1)*2)*(crit?2:1)
     if(!fail&&c[slot].bibiRage?.turns>0)damage+=c[slot].bibiRage.damage||2
-    if(kind==="endikaki")damage=Math.round(damage*SPECIAL_DAMAGE_MULTIPLIER)
+    if(kind==="endikaki"&&!calibrated)damage=Math.round(damage*SPECIAL_DAMAGE_MULTIPLIER)
+    if(calibrated)damage=calibratedOutgoingDamage(root,actor,damage)
     result.amount=combatDamage(root,request,"PIKA — "+attack.name,slot,Math.max(0,damage))
     result.message=kind==="cancan"?result.kicks+" coup(s) de pied — "+result.amount+" dégâts":kind==="endikaki"?"Endikaki explose — "+result.amount+" dégâts":"Ce rire est tellement bizarre que l’ennemi en reste sans voix — "+result.amount+" dégâts"
   }

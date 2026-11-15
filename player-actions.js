@@ -241,7 +241,7 @@ function renderPlayerAllyEntry(panel) {
   const desc = document.createElement("div")
   desc.className = "playerThuumEntryState"
   desc.classList.add("playerActionDescription")
-  desc.innerText = window.playerAllyAccessData?.scope==="exploration"?"Fait apparaître un pion sur cette carte, sans dégâts ni soins. Le MJ pourra le retirer.":granted.action.desc
+  desc.innerText = window.playerAllyAccessData?.scope==="exploration"?"Fait apparaître un pion sur cette carte, sans dégâts ni soins. Le MJ pourra le retirer.":(typeof allyActionDescription==="function"?allyActionDescription(granted.pnj,granted.action):granted.action.desc)
   text.appendChild(desc)
 
   const state = document.createElement("div")

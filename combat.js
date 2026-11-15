@@ -210,7 +210,8 @@ function renderCombatInitiativeOverlay(state) {
 
     const roll = document.createElement("div")
     roll.classList.add("combatInitiativeRoll")
-    roll.innerText = Number.isFinite(rollVal) ? "D12 : " + rollVal : "—"
+    const initiativeBonus=state.initiativeBonuses?.[entry.id]||0
+    roll.innerText = Number.isFinite(rollVal) ? "D12 : " + rollVal+(initiativeBonus?" + "+initiativeBonus+" = "+(rollVal+initiativeBonus):"") : "—"
     card.appendChild(roll)
 
     if (state.phase === "rolling") {

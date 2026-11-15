@@ -244,6 +244,14 @@ function startPersistenceSync(uid) {
   })
 }
 
+function sessionResetClients(clients, profiles, roles, assignments, owner) {
+  return Object.fromEntries(Object.entries(clients || {}).filter(([uid]) => {
+    if (uid === owner || roles?.[uid] === "gm") return true
+    const hero = profiles?.[uid]?.playerId
+    return PLAYABLE_HEROES.includes(hero) && (!assignments?.[hero]?.uid || assignments[hero].uid === uid)
+  }))
+}
+
 function awaitSessionClients(control, clients) {
   const expected = []
   Object.entries(clients || {}).forEach(([uid, tabs]) => Object.keys(tabs || {}).forEach(tab => expected.push([uid, tab])))
@@ -255,7 +263,12 @@ function awaitSessionClients(control, clients) {
       const acks = snap.val() || {}
       const failed = expected.map(([u, t]) => acks[u]?.[t]).find(a => a?.ok === false)
       if (failed) return finish(new Error(failed.error || "Un joueur n’a pas pu synchroniser sa fiche"))
-      if (expected.every(([u, t]) => acks[u]?.[t]?.ok === true)) finish()
+      // A reset discards the old game: one responding tab per participating account
+      // is sufficient. Saving/loading still flush every tab's pending edits.
+      const ready = control.phase === "resetting"
+        ? [...new Set(expected.map(([uid]) => uid))].every(uid => expected.some(([u, tab]) => u === uid && acks[u]?.[tab]?.ok === true))
+        : expected.every(([u, t]) => acks[u]?.[t]?.ok === true)
+      if (ready) finish()
     }
     const timer = setTimeout(() => finish(new Error("Un joueur ne répond pas. Réessayez après sa reconnexion ou sa déconnexion.")), 15000)
     ref.on("value", callback, finish)
@@ -273,7 +286,11 @@ async function withSessionOperation(phase, action) {
     const connected = (await db.ref(".info/connected").once("value")).val()
     if (!connected) throw new Error("Connexion nécessaire pour enregistrer ou restaurer la partie")
     await flushSessionEdits(["saving","migrating"].includes(phase))
-    const clients = (await db.ref("sessionClients").once("value")).val() || {}
+    let clients = (await db.ref("sessionClients").once("value")).val() || {}
+    if (phase === "resetting") {
+      const [profiles, roles, assignments] = await Promise.all(["profiles", "roles", "heroAssignments"].map(branch => db.ref(branch).once("value")))
+      clients = sessionResetClients(clients, profiles.val(), roles.val(), assignments.val(), window.__authUid)
+    }
     const control = { id, phase, revision: previous.revision || null, startedAt: Date.now(), owner: window.__authUid }
     const lock = await db.ref("sessionControl").transaction(current => {
       if (current?.phase && Date.now() - (current.startedAt || 0) < 120000) return undefined

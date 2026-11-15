@@ -1,5 +1,9 @@
 # Suite de la campagne
 
+## Nouvelle partie depuis le menu — 15 novembre 2026
+
+Version 20261115.1 : pour la réinitialisation seulement, synchronisation par compte participant plutôt que par ancien onglet. Les présences anonymes et anciens comptes dont le héros est désormais réservé à un autre compte ne bloquent plus le lancement. Refus maintenu pour un participant sans réponse ; attente par onglet maintenue pour sauvegarder/restaurer/migrer. Voir NOUVELLE-PARTIE-LOBBY-2026-11-15.md.
+
 ## Archives au démarrage — 14 novembre 2026
 
 Version 20261114.6 : contrôle authentifié des seuls noms pour les archives current/previous ; maintien de la transaction de nettoyage pour les anciens noms. Validation au chargement et sélection de la dernière copie valide à conserver lors des sauvegardes/imports. Profil à quatre écrans : contrôle d'archives de 32 octets et environ 90 % de caractères SDK reçus en moins à la reconnexion dans le grand profil séparé. Voir OPTIMISATION-ARCHIVES-2026-11-14.md. Prochaine piste : partager l'instantané de combat entre les modules qui le retraitent.

@@ -264,7 +264,7 @@ function addCombatLog(text) {
 
 }
 
-function addDiceLog(player, dice, result) {
+function addDiceLog(player, dice, result, details={}) {
   player = heroDisplayName(player)
   const log = document.getElementById("diceLog")
   const content = document.getElementById("diceLogContent") || log
@@ -272,9 +272,10 @@ function addDiceLog(player, dice, result) {
   const entry = document.createElement("div")
   entry.classList.add("logEntry")
   if (player === "MJ") entry.classList.add("logMJ")
-  let text = player + " → 🎲 d" + dice + " → " + result
-  if (result === dice) { text += " CRIT"; entry.classList.add("logCrit") }
-  if (result === 1)    { text += " FAIL";  entry.classList.add("logFail") }
+  let text = player + (details.diceKind==="chance"?" · Chance":"") + " → 🎲 d" + dice + " → " + (details.diceKind==="chance"?details.rawRoll+" + "+details.bonus+" = "+result:result)
+  const natural=details.rawRoll??result
+  if (natural === dice) { text += " CRIT"; entry.classList.add("logCrit") }
+  if (natural === 1)    { text += " FAIL";  entry.classList.add("logFail") }
   entry.innerText = text
   content.prepend(entry)
   addMJLog(text)

@@ -101,7 +101,7 @@ function presentSharedDice(id, data) {
   const dice=Number(data?.dice), result=Number(data?.result), raw=data?.rawRoll == null ? result : Number(data.rawRoll)
   if (!Number.isInteger(dice) || ![4,6,8,10,12,20,100].includes(dice) || !Number.isInteger(raw) || raw<1 || raw>dice || !Number.isInteger(result) || !data.player) return false
   if (!Number.isFinite(data.time) || data.time < (window.__pageLoadTime || 0)) return false
-  return enqueueSharedVisual("dice-"+id, () => _showDiceAnimationNow(data.player,dice,result,raw,{eventId:"free-"+id}),4500)
+  return enqueueSharedVisual("dice-"+id, () => _showDiceAnimationNow(data.player,dice,result,raw,{eventId:"free-"+id,...(data.diceKind==="chance"?{diceKind:"chance",bonus:Number(data.bonus)||0}:{})}),4500)
 }
 
 function presentCombatResolution(action) {

@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261115.4"</script>
+  <script>window.GAME_V = "20261115.5"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -137,13 +137,13 @@
 <!-- BARRE DÉS -->
 <div id="diceBar">
   <button id="diceBarToggle" type="button" onclick="toggleDiceBar()" aria-label="Replier les dés">▾</button>
-  <button onclick="rollDice(4)"   class="diceImgBtn"><img src="images/D4.png"   alt="D4"   class="diceImg"></button>
-  <button onclick="rollDice(6)"   class="diceImgBtn"><img src="images/D6.png"   alt="D6"   class="diceImg"></button>
-  <button onclick="rollDice(8)"   class="diceImgBtn"><img src="images/D8.png"   alt="D8"   class="diceImg"></button>
-  <button onclick="rollDice(10)"  class="diceImgBtn"><img src="images/D10.png"  alt="D10"  class="diceImg"></button>
-  <button onclick="rollDice(12)"  class="diceImgBtn"><img src="images/D12.png"  alt="D12"  class="diceImg"></button>
-  <button onclick="rollDice(20)"  class="diceImgBtn"><img src="images/D20.png"  alt="D20"  class="diceImg"></button>
-  <button onclick="rollDice(100)" class="diceImgBtn"><img src="images/D100.png" alt="D100" class="diceImg"></button>
+  <button onclick="chooseDiceRoll(4)"   class="diceImgBtn"><img src="images/D4.png"   alt="D4"   class="diceImg"></button>
+  <button onclick="chooseDiceRoll(6)"   class="diceImgBtn"><img src="images/D6.png"   alt="D6"   class="diceImg"></button>
+  <button onclick="chooseDiceRoll(8)"   class="diceImgBtn"><img src="images/D8.png"   alt="D8"   class="diceImg"></button>
+  <button onclick="chooseDiceRoll(10)"  class="diceImgBtn"><img src="images/D10.png"  alt="D10"  class="diceImg"></button>
+  <button onclick="chooseDiceRoll(12)"  class="diceImgBtn"><img src="images/D12.png"  alt="D12"  class="diceImg"></button>
+  <button onclick="chooseDiceRoll(20)"  class="diceImgBtn"><img src="images/D20.png"  alt="D20"  class="diceImg"></button>
+  <button onclick="chooseDiceRoll(100)" class="diceImgBtn"><img src="images/D100.png" alt="D100" class="diceImg"></button>
   <button id="mobD12" onclick="mobRoll(12)" style="display:none;" class="diceImgBtn mobDiceBtn">
     <img src="images/D12.png" alt="D12 Mob" class="diceImg"><span class="diceMobLabel">M</span>
   </button>
@@ -1023,6 +1023,7 @@
 <script>document.write('<script src="combat-reactions.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="entrance.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="reliability.js?v='+GAME_V+'"><\/script>')</script>
+<script>document.write('<script src="dice-choice.js?v='+GAME_V+'"><\/script>')</script>
 <script>document.write('<script src="gm-diagnostics.js?v='+GAME_V+'"><\/script>')</script>
 </body>
 </html>

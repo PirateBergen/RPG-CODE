@@ -177,7 +177,7 @@ document.addEventListener("DOMContentLoaded",()=>{
  for(const type of ["pointerdown","mousedown","click","change","keydown"])document.addEventListener(type,e=>{if(window.__actionOnline||document.body.dataset.entryStage!=="playing"||e.target.closest?.("#musicVolumeSlider,#effectsVolumeSlider,#heroManagementPanel"))return;e.preventDefault();e.stopImmediatePropagation();renderReliableNetwork()},true)
 })
 
-async function requestReliableDice(actor,max,stat){try{requireActionConnection();return await submitExplorationAction("dice",actor,{max,...(stat?{stat}:{})})}catch(e){showNotification(e.message)}}
+async function requestReliableDice(actor,max,stat,diceKind){try{requireActionConnection();return await submitExplorationAction("dice",actor,{max,...(stat?{stat}:{}),...(diceKind?{diceKind}:{})})}catch(e){showNotification(e.message)}}
 rollDice=function(max){if(!isGM&&!myToken)return showNotification("Choisissez votre héros");return requestReliableDice(isGM?"MJ":myToken.id,max)}
 gmRoll=function(max){if(isGM)return requestReliableDice("MJ",max)}
 mobRoll=function(max){if(isGM&&combatActive)return requestReliableDice("MOB",max)}

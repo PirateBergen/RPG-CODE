@@ -2864,7 +2864,7 @@ function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
   const isFailure = rollMeta.fail ?? (Number.isInteger(naturalRoll) && naturalRoll === 1)
   const { cube, label, resLabel } = _buildDice3D(resultBox)
 
-  label.textContent = safeName + " — d" + max
+  label.textContent = safeName + (rollMeta.diceKind==="chance"?" — Chance":"") + " — d" + max
   resLabel.textContent = ""
   resultBox.style.opacity = 1
 
@@ -2886,7 +2886,7 @@ function _showDiceAnimationNow(playerName, max, final, rawRoll, rollMeta = {}) {
 
     scope.later(() => {
       resLabel.textContent = rollMeta.bonus?naturalRoll+" + "+rollMeta.bonus+" Chance = "+final:String(final)
-      addDiceLog(playerName, max, final)
+      if(rollMeta.diceKind==="chance")addDiceLog(playerName,max,final,{diceKind:"chance",rawRoll:naturalRoll,bonus:rollMeta.bonus||0});else addDiceLog(playerName,max,final)
 
       if (playerName === "MJ") { resultBox.classList.add("mjRoll"); flashGold(); screenShake() }
 

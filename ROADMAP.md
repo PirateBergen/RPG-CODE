@@ -1,5 +1,9 @@
 # Suite de la campagne
 
+## Retours de première session — 15 novembre 2026
+
+Version 20261115.2 : bouton Action rendu accessible en haut à gauche, libellé intégré et zone tactile de 136 × 52 px ; panneau repositionné et testé avec les autres commandes visibles sur quatre tailles. Audit des statistiques dans BILAN-STATS-COMBAT-2026-11-15.md : absence de protection automatique par Défense, Charme non utilisé par le test d'hypnose et Chance sans influence générale sur les jets de combat. Rééquilibrage proposé mais non appliqué ; besoin du journal exporté pour analyser la session réellement jouée.
+
 ## Nouvelle partie depuis le menu — 15 novembre 2026
 
 Version 20261115.1 : pour la réinitialisation seulement, synchronisation par compte participant plutôt que par ancien onglet. Les présences anonymes et anciens comptes dont le héros est désormais réservé à un autre compte ne bloquent plus le lancement. Refus maintenu pour un participant sans réponse ; attente par onglet maintenue pour sauvegarder/restaurer/migrer. Voir NOUVELLE-PARTIE-LOBBY-2026-11-15.md.

@@ -1074,6 +1074,9 @@ function buildMobSubPanel(mobData, slot) {
       }
       bindCombatActionState(sBtn,slot,specialAtk,true,true)
       panel.appendChild(sBtn)
+      if(mobData.chargingSpecial&&typeof openCombatReaction==="function"){
+        const reactionButton=document.createElement("button");reactionButton.className="combatReactionLaunch";reactionButton.dataset.reactionSlot=slot;reactionButton.textContent=mobData.chargingSpecial.reaction?"Réactions / protections":"Faire réagir les joueurs";reactionButton.onclick=()=>openCombatReaction(slot);panel.appendChild(reactionButton)
+      }
     }
 
     const autoTarget=document.createElement("button"); autoTarget.innerText="Ciblage automatique"; autoTarget.onclick=()=>{panel._manualTarget=null;panel._currentTarget=null}; panel.appendChild(autoTarget)
@@ -2185,6 +2188,7 @@ function combatActionAvailability(actor, attack, special=false, enemy=false) {
   if(enemy&&c[actor]?.hp<=0)return blocked("Adversaire KO")
   if(enemy&&special&&c[actor]?.balanceClass==="world"){
     const charge=c[actor].chargingSpecial,round=state?.round||1
+    if(charge?.reaction?.status==="rolling")return blocked("Réactions : attendez la validation des protections par le MJ")
     if(charge&&round<charge.readyRound)return blocked("Préparation : encore "+(charge.readyRound-round)+" round(s)")
     return {disabled:false,label:charge?"Prête à déclencher":"Disponible — annoncer la spéciale"}
   }

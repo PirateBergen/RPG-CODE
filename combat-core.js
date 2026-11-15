@@ -357,9 +357,12 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (!attack.special && normal.length > 1 && mob.lastAttack === attack.name) throw new Error("Cette attaque recharge ; choisissez-en une autre ou passez le tour")
   if (attack.special && mob.specialUsed) throw new Error("Spéciale déjà utilisée")
   if (mob.yuSkipNextTurn?.active) { delete mob.yuSkipNextTurn; nextCombatTurn(root, request,true); return { actor: slot, mode: "skip", message: "L’ennemi est neutralisé pour cette action" } }
+  let reaction=null
   if(attack.special&&mob.balanceClass==="world"){
-    if(!mob.chargingSpecial){mob.chargingSpecial={name:attack.name,readyRound:(c.turnState.round||1)+1};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:heroDisplayName(mob.name).toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !"}}
+    if(!mob.chargingSpecial){mob.chargingSpecial={id:request.id,name:attack.name,readyRound:(c.turnState.round||1)+1};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:heroDisplayName(mob.name).toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !"}}
     if(c.turnState.round<mob.chargingSpecial.readyRound)throw new Error("La spéciale se prépare pour le prochain round ; choisissez une autre action")
+    reaction=mob.chargingSpecial.reaction
+    if(reaction?.status==="rolling")throw Error("Réactions en attente : le MJ doit valider les protections ou annuler l’événement")
     delete mob.chargingSpecial
   }
   let targets = chooseEnemyTarget(root, slot, attack, payload.target, dice)
@@ -372,8 +375,11 @@ function resolveEnemyCombatAction(root, request, dice) {
   let applied = 0
   targets.forEach(id => {
     const victim=combatFriendlyTarget(root,id),before = combatInt(victim.hp)
-    const protectedDamage=gmIncomingDamage(root,id,damage),taken=c.balanceVersion===3?calibratedIncomingDamage(id==="eloSummon"?victim:combatCharacter(root,id),protectedDamage):protectedDamage
+    const reduction=reaction?.status==="ready"?reaction.decisions?.[id]||0:0
+    const reactedDamage=Math.round(damage*(1-reduction/100)),protectedDamage=gmIncomingDamage(root,id,reactedDamage),taken=c.balanceVersion===3?calibratedIncomingDamage(id==="eloSummon"?victim:combatCharacter(root,id),protectedDamage):protectedDamage
+    if(reduction)combatRecord(root,request,"RÉACTION MJ",combatFriendlyName(id),0,"reaction",combatFriendlyName(id)+" : protection −"+reduction+" % contre « "+attack.name+" » ("+damage+" → "+reactedDamage+" avant armure et autres protections)")
     victim.hp = Math.max(0, before - Math.max(0,combatInt(taken))); applied += before - victim.hp
+    if(reduction===100){combatRecord(root,request,heroDisplayName(mob.name),combatFriendlyName(id),0,"mob",combatFriendlyName(id)+" évite complètement « "+attack.name+" » : aucun dégât ni effet secondaire");return}
     if(id==="eloSummon"){if(attack.effect==="stun")victim.stunnedAttacks=1;if(attack.effect==="debuff")victim.debuffRounds=2;combatRecord(root,request,heroDisplayName(mob.name),"John Pork",before-victim.hp,"mob","John Pork encaisse "+(before-victim.hp)+" dégâts");return}
     if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
     if (attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
@@ -444,7 +450,12 @@ function reduceCombatRequestNow(current, id, seed) {
     const dice = combatRandom(seed)
     let result
     if(root.combat.heroHaste&&["ally","thuum"].includes(request.kind))throw Error("Terminez les deux attaques de SKARO’H ou passez votre tour")
-    if(request.kind === "initiative"){
+    // Reaction dice use the already-authorized shared-die request channel. They
+    // never modify initiative rolls, turn sequence, or critical gauges.
+    if(request.kind==="initiative"&&request.payload?.reactionId){
+      result=resolveCombatReactionRoll(root,request,dice)
+    }
+    else if(request.kind === "initiative"){
       const ts=root.combat.turnState;if(ts?.participants?.some(p=>p.id===request.actor)&&Number.isInteger(ts.rolls?.[request.actor])){request.status="done";request.result={mode:"control",message:"Initiative déjà prise en compte"};return root}if(ts?.phase!=="rolling"||!ts.participants?.some(p=>p.id===request.actor)||ts.rolls?.[request.actor]!=null)throw Error("Initiative déjà enregistrée ou combat changé");ts.rolls||={};ts.rolls[request.actor]=dice(12);result={mode:"control",message:"Initiative enregistrée"}
     }
     else if(request.kind==="requestRetreat"){
@@ -505,6 +516,55 @@ function reduceCombatRequestNow(current, id, seed) {
     entries.slice(0,Math.max(0,entries.length-120)).forEach(([key])=>delete root.combat.visualEvents[key])
     return root
   } catch (error) { return fail(error) }
+}
+
+function combatChargeKey(mob){const charge=mob?.chargingSpecial;return charge?mob.name+":"+(charge.id||charge.name+":"+charge.readyRound):""}
+function resolveCombatReactionRoll(root,request,dice){
+ const c=root.combat,payload=request.payload||{},reaction=c[payload.slot]?.chargingSpecial?.reaction,actor=request.actor
+ if(c.phase!=="active"||c.turnState?.phase!=="active"||c[payload.slot]?.hp<=0||!reaction||reaction.id!==payload.reactionId||reaction.status!=="rolling")throw Error("Cette réaction est terminée ou a changé")
+ if(!reaction.participants.includes(actor)||root.characters?.[actor]?.hp<=0)throw Error("Ce personnage ne doit pas lancer ce dé")
+ reaction.rolls||={};if(reaction.rolls[actor]||Object.prototype.hasOwnProperty.call(reaction.decisions||{},actor))throw Error("Le jet ou la décision de réaction est déjà enregistré")
+ const roll=dice(reaction.dice),data=combatCharacter(root,actor),adjusted=c.balanceVersion===3?calibratedHeroRoll(data,roll,reaction.dice):{total:roll,bonus:0},success=roll!==1&&adjusted.total>=reaction.threshold
+ reaction.rolls[actor]={roll,total:adjusted.total,bonus:adjusted.bonus,success}
+ return {mode:"reaction-roll",skipTurnBanner:true,actor,roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus,dice:reaction.dice,crit:roll===reaction.dice,fail:roll===1,success,message:heroDisplayName(actor)+" — réaction : "+adjusted.total+" / seuil "+reaction.threshold+". "+(success?"Réussite proposée":"Échec proposé")+", décision finale du MJ."}
+}
+
+function applyCombatReactionAdjustment(current,uid,combatId,revision,change,changeId){
+ if(current?.roles?.[uid]!=="gm")throw Error("Action réservée au MJ")
+ if(current.sessionControl?.phase||(current.sessionControl?.revision||"initial")!==revision||current.combat?.id!==combatId||current.combat.phase!=="active"||current.combat.turnState?.phase!=="active")throw Error("Le combat ou la partie a changé")
+ if(current.combat.gmAdjustmentLog?.[changeId])return current
+ const root=combatClone(current),c=root.combat,mob=c[change.slot],charge=mob?.chargingSpecial
+ if(!COMBAT_MOBS.includes(change.slot)||!charge||mob.hp<=0)throw Error("Cette attaque n’est plus en préparation")
+ const integer=(n,min,max)=>{if(!Number.isInteger(n)||n<min||n>max)throw Error("Valeur attendue entre "+min+" et "+max);return n}
+ let reaction=charge.reaction,message
+ if(change.kind==="start"){
+  if(change.chargeKey!==combatChargeKey(mob))throw Error("L’attaque annoncée a changé")
+  if(reaction)throw Error("Cette attaque possède déjà un événement de réaction")
+  const participants=change.participants;if(!Array.isArray(participants)||!participants.length||participants.length>4||new Set(participants).size!==participants.length||participants.some(id=>!COMBAT_CHARACTERS.includes(id)||root.characters?.[id]?.hp<=0))throw Error("Choisissez au moins un personnage vivant")
+  if(![6,12,20].includes(change.dice))throw Error("Choisissez D6, D12 ou D20")
+  charge.reaction={id:changeId,status:"rolling",participants,dice:change.dice,threshold:integer(change.threshold,2,change.dice),successReduction:integer(change.successReduction,0,100),rolls:{},decisions:{}}
+  message="Réactions ouvertes contre « "+charge.name+" » : "+participants.map(heroDisplayName).join(", ")+" · D"+change.dice+" · seuil "+change.threshold
+ }else{
+  if(!reaction||reaction.id!==change.reactionId)throw Error("Cet événement a changé")
+  if(change.kind==="cancel"){delete charge.reaction;message="Réactions annulées contre « "+charge.name+" » ; aucune protection de réaction ne sera appliquée"}
+  else if(change.kind==="decision"){
+   if(reaction.status!=="rolling"||!reaction.participants.includes(change.target))throw Error("Décision indisponible")
+   reaction.decisions||={};reaction.decisions[change.target]=integer(change.amount,0,100)
+   message=heroDisplayName(change.target)+" : décision MJ, −"+change.amount+" % pour cette attaque uniquement"
+  }else if(change.kind==="reopen"){
+   if(reaction.status!=="ready")throw Error("Les décisions sont déjà ouvertes")
+   reaction.status="rolling";message="Décisions rouvertes contre « "+charge.name+" » ; nouvelle validation MJ requise"
+  }else if(change.kind==="finish"){
+   if(reaction.status!=="rolling")throw Error("Les protections sont déjà validées")
+   reaction.decisions||={}
+   for(const id of reaction.participants){if(!Object.prototype.hasOwnProperty.call(reaction.decisions,id)){if(root.characters?.[id]?.hp<=0)reaction.decisions[id]=0;else if(reaction.rolls?.[id])reaction.decisions[id]=reaction.rolls[id].success?reaction.successReduction:0;else throw Error("Il manque un jet ou une décision MJ pour "+heroDisplayName(id))}}
+   reaction.status="ready";message="Protections validées contre « "+charge.name+" » : "+reaction.participants.map(id=>heroDisplayName(id)+" −"+reaction.decisions[id]+" %").join(" · ")
+  }else throw Error("Commande de réaction inconnue")
+ }
+ c.gmAdjustmentLog||={};c.gmAdjustmentLog[changeId]={text:message,time:Date.now()};const entries=Object.keys(c.gmAdjustmentLog);entries.slice(0,Math.max(0,entries.length-80)).forEach(id=>delete c.gmAdjustmentLog[id])
+ combatRecord(root,{id:changeId,time:Date.now()},"MJ","Réactions",0,"reaction",message)
+ recordConfirmedCombatAction(root,{id:changeId,actor:"mj",time:Date.now()},{mode:"control",message})
+ return root
 }
 
 function getCombatHeroAttack(actor,name,special=false){if(special)return getPlayerSpecialAttack(actor);const list=actor==="bibi"?[attacks.greg.find(a=>a.name==="Le Bibi")]:attacks[actor]||[];return list.find(a=>a?.name===name)}

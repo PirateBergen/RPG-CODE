@@ -127,7 +127,7 @@ function populateAttackBlock(block, attack) {
   appendAttackDiceLine(block, attack.dice, attack.stat)
   const calibrated=window.__combatSnapshot?.balanceVersion===3
   appendAttackLine(block, "Effet", calibrated?calibratedAttackDescription(attack):attack.effect)
-  appendAttackLine(block, "Crit", calibrated&&(attack.pikaKind==="endikaki"||!attack.pikaKind&&getPlayerAttackTypeKey(attack)!=="summon")?"Maximum naturel : puissance ×1,6 ; effets propres conservés":attack.crit)
+  appendAttackLine(block, "Crit", calibrated&&(attack.pikaKind==="endikaki"||!attack.pikaKind&&getPlayerAttackTypeKey(attack)!=="summon")?"Maximum naturel : puissance ×"+combatCriticalMultiplier(window.__combatSnapshot)+" ; effets propres conservés":attack.crit)
   if (attack.condition) appendAttackLine(block, "Condition", attack.condition)
 }
 

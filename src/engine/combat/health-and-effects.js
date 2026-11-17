@@ -32,7 +32,11 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
       combatRecord(root,request,from,heroDisplayName(target.name),0,type,"Jörmungandr est invulnérable à cette attaque.");return 0
     }
     target.hp=0;target.defeatedByThor=true
-  }else target.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount)))))
+  }else {
+    let dealt=Math.max(0,combatInt(gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount))))
+    if(Number.isFinite(options.damageCap))dealt=Math.min(dealt,Math.max(0,combatInt(options.damageCap)))
+    target.hp = Math.max(0, before - dealt)
+  }
   combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV ("+before+" → "+target.hp+" / "+target.maxHP+")"+(target.hp<=0?" — KO":""))
   krakenAfterDamage(root,request,slot,before-target.hp)
   return before - target.hp

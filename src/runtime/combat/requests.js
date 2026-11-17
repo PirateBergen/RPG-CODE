@@ -152,7 +152,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       const tier = WORLD_BOSS_NAMES.includes(mainMob)?"boss":forceTier || (CLASSIC_BOSS_NAMES.includes(mainMob)?"boss":mobStats[mainMob].tier)
       root.game ||= {}; root.tokens ||= {}
       const returnTokens = combatClone(root.tokens)
-      root.combat = { id, phase: "active",balanceVersion:3, createdAt: now, mob: calculateCombatMob(mainMob, tier, level,1+extraMobs.slice(0,2).length), presentation: { positions: {} } }
+      root.combat = { id, phase: "active",balanceVersion:3, criticalRulesVersion:1, createdAt: now, mob: calculateCombatMob(mainMob, tier, level,1+extraMobs.slice(0,2).length), presentation: { positions: {} } }
       extraMobs.slice(0, 2).forEach((mob, index) => { root.combat["mob" + (index + 2)] = { ...calculateCombatMob(mob, null, level,1+extraMobs.slice(0,2).length), slot: "mob" + (index + 2) } })
       if(livingMobs(root.combat).some(slot=>root.combat[slot].name==="roi")&&balrogSwordIsEquipped(root))root.combat.visualEvents={[id+"-sword-glow"]:{id:id+"-sword-glow",combatId:id,time:now,result:{mode:"control",message:"L’épée se met à briller d’une lueur bleutée."}}}
       COMBAT_CHARACTERS.forEach((hero, index) => {

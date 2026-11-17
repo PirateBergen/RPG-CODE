@@ -31,7 +31,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   const range = getMobDamageRange(attack, mob.lvl || 1, mob.tier || "weak",mob)
   let damage = range.min + dice(range.max - range.min + 1) - 1
   if (mob.attackMalus) damage = Math.max(0, damage - (mob.attackMalus.amount || 0))
-  if (mob.malus?.source === "La Sorcière") damage = Math.round(damage * .75)
+  if (mob.malus?.source === "La Sorcière") damage = Math.round(damage * combatWitchDamageFactor(root,mob))
   damage=gmOutgoingDamage(root,slot,damage)
   if(mob.balrogSwordWeaken){damage=Math.round(damage*(1-mob.balrogSwordWeaken));delete mob.balrogSwordWeaken}
   let applied = 0

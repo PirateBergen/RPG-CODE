@@ -1,5 +1,7 @@
 # Critiques : constat et proposition
 
+Suite mise en œuvre dans la version 20261117.6 : voir `CRITIQUES-COMBATS-2026-11-17.md` pour les règles finales et leur vérification. Ce document conserve la proposition initiale.
+
 La version 20261117.5 complète les explications de combat, sans changer les dégâts, soins, probabilités ni durées. Ce document décrit une proposition d’équilibrage, pas des règles déjà actives.
 
 ## Règles actuelles des combats calibrés

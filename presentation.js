@@ -116,7 +116,7 @@ function presentCombatResolution(action) {
       const pnj=ALLY_PNJS.find(p=>p.id===result.pnjId),def=pnj?.actions.find(a=>a.id===result.actionId)
       if(pnj&&def) _allyInvocationCinematic(pnj,result.thorVictory?{...def,dialogue:result.message}:def,result.target,()=>{
         _showDiceAnimationNow(pnj.name,result.dice,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
-        sharedVisualLater(()=>_playAllyAnim(def.type,pnj.color,result.crit),2400)
+        sharedVisualLater(()=>{if(!result.interventionFailed)_playAllyAnim(def.type,pnj.color,result.crit);if(result.explanation)showNotification(pnj.name+" — "+result.explanation)},2400)
       })
     } else {
       if(Number.isFinite(result.roll)) _showDiceAnimationNow(result.actor?.startsWith("mob")?"MOB":result.actor||"MJ",result.dice||20,result.rollTotal??result.roll,result.roll,{crit:result.crit,fail:result.fail,bonus:result.luckBonus||0,eventId:action.id})

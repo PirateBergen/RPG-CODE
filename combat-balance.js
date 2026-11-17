@@ -12,6 +12,10 @@ const CALIBRATED_ENCOUNTER={
  world:{rounds:7.8,damage:[.19,.26],offset:6}
 }
 function calibratedCombat(combat){return combat?.balanceVersion===COMBAT_BALANCE_VERSION}
+// Opt-in on encounter creation: absent on existing saves and ongoing fights.
+function enhancedCombatCriticals(combat){return calibratedCombat(combat)&&combat.criticalRulesVersion===1}
+function combatCriticalMultiplier(combat){return calibratedCombat(combat)&&!enhancedCombatCriticals(combat)?1.6:2}
+function combatWitchDamageFactor(root,mob){return 1-(enhancedCombatCriticals(root.combat)&&mob.malus?.damageReduction===.35?.35:.25)}
 function calibratedLevel(value){return Math.max(1,Math.min(99,Math.round(Number(value)||1)))}
 function calibratedHealth(level){level=calibratedLevel(level);if(!calibratedHealthCache.has(level))calibratedHealthCache.set(level,['greg','ju','elo'].reduce((sum,id)=>sum+getPlayerStatsAtLevel(id,level).hp,0)/3);return calibratedHealthCache.get(level)}
 function calibratedStatRatio(value,level){const stat=Math.max(0,Number(value)||0);return stat/(stat+10+calibratedLevel(level))}
@@ -26,7 +30,7 @@ function calibratedAttackPower(attack,roll,statValue,context={}){
  const statFactor=.65+.75*calibratedStatRatio(statValue,level),rollFactor=.65+.7*Math.max(1,Math.min(max,roll))/max
  return Math.max(type==='heal'?2:1,Math.round(health*coefficient*statFactor*rollFactor))
 }
-function calibratedSpecialDamage(actor,power,crit,fail){return fail?0:Math.round(power*({greg:2.8,ju:3,elo:2.3,bibi:2.8}[actor]||2.5)*(crit?1.6:1))}
+function calibratedSpecialDamage(actor,power,crit,fail,multiplier=1.6){return fail?0:Math.round(power*({greg:2.8,ju:3,elo:2.3,bibi:2.8}[actor]||2.5)*(crit?multiplier:1))}
 function calibratedPikaKickDamage(data,kicks){return Math.round(kicks*calibratedHealth(data.lvl)*(.032+.035*calibratedStatRatio(data.force,data.lvl)))}
 function calibratedHypnosisBonus(data){return Math.min(2,Math.floor(4*calibratedStatRatio(data.charme,data.lvl)))}
 function calibratedPartyDamage(level){
@@ -48,7 +52,7 @@ function getCalibratedMobDamageRange(attack,mob){
  const factor=weight*levelFactor*krakenDamageFactor(attack,mob)*(mob.damageGroupFactor||1)*(attack.special?1.35:1)*(attack.effect==='all'?(category==='world'?.45:.60):1)*fury*(category==='world'?1+.12*(level-1)/(level+9):1)*(mob.name==='roi'?1.02:1)
  const min=Math.max(1,Math.round(health*profile.damage[0]*factor)),max=Math.max(min,Math.round(health*profile.damage[1]*factor));return {min,max}
 }
-function calibratedAllyDamage(pnj,action,roll,crit,fail,level){return Math.round(calibratedPartyDamage(level)*({baldur:1.8,melenchon:2.2,odin:2.8,thor:3,freya:2.5}[pnj.id]||2)*(.6+.8*roll/action.dice)*(crit?1.6:1)*(fail?.2:1))}
+function calibratedAllyDamage(pnj,action,roll,crit,fail,level,multiplier=1.6){return Math.round(calibratedPartyDamage(level)*({baldur:1.8,melenchon:2.2,odin:2.8,thor:3,freya:2.5}[pnj.id]||2)*(.6+.8*roll/action.dice)*(crit?multiplier:1)*(fail?.2:1))}
 function calibratedAllyHeal(pnj,roll,max,level){return Math.round(calibratedHealth(level)*(pnj.id==='gardienne'?.50:.70)*(.4+roll/max))}
 function calibratedThuumDamage(word,rank,level){const factor=1+.2*(Math.max(1,Math.min(3,Number(rank)||1))-1),health=calibratedHealth(level);return word==='SKARO\'H'?{main:0,splash:0}:{main:Math.round(health*(word==='SKRAA'?.12:.08)*factor),splash:word==='SKRAA'?Math.round(health*.045*factor):0}}
 function calibratedRuleSummary(data){const defense=Math.round(calibratedDefense(data)*100),luck=calibratedLuckBonus(data),initiative=calibratedInitiativeBonus(data);return 'Défense : −'+defense+' % de dégâts d’attaque · Chance : jusqu’à +'+luck+' au jet · Initiative : +'+initiative+'. Critiques sur le dé naturel.'}
@@ -66,6 +70,13 @@ function calibratedAttackDescription(attack){
 }
 function allyActionDescription(pnj,action,combat=window.__combatSnapshot){
  if(combat&&!calibratedCombat(combat))return action.desc
+ if(enhancedCombatCriticals(combat)){
+  const rolls=' Critique : '+(action.critMin||action.dice)+(action.critMin&&action.critMin<action.dice?'–'+action.dice:'')+' naturel. 1 naturel : intervention ratée ; utilisation et action consommées.'
+  if(action.type==='damage')return action.label+' : dégâts adaptés au niveau, critique ×2. Plafond par cible : 40 % des PV maximum, 50 % sur critique.'+(action.staggerOnCrit?' Critique : prochaine action de la cible interrompue si elle survit.':'')+(action.chainMin?' Chaîne sur '+action.chainMin+'+.':'')+(action.id==='thor_mjolnir'?' Exception : Thor vainc Jörmungandr sur le Forchur si le jet ne fait pas 1.':'')+rolls
+  if(action.type==='heal')return 'Soin adapté au niveau. Critique : soin ×1,5 sur cible vivante, résurrection complète sur cible KO. Une tentative sans critique sur une cible KO consomme l’intervention sans la relever.'+rolls
+  if(action.type==='buff')return 'Bonus temporaire de 15 à 30 % de la statistique principale, 3 rounds ou 4 sur critique ; aucun changement permanent de fiche.'+rolls
+  return (pnj.id==='witch'?'Sur 10+, dégâts ennemis réduits de 25 %, ou 35 % sur critique.':'Sur 10+, réduction fixe des dégâts adaptée au niveau, renforcée de 25 % sur critique avant arrondi.')+' Jusqu’à la fin du combat.'+rolls
+ }
  if(action.id==='thor_mjolnir')return 'Mjolnir : dégâts adaptés au niveau du groupe, chaîne sur 15+. Chaque cible perd au plus 40 % de ses PV maximum. Exception : Thor vainc Jörmungandr sur le Forchur.'
  if(action.type==='damage')return action.label+' : dégâts adaptés au niveau du groupe, au dé et au critique ; au plus 40 % des PV maximum de chaque cible. Une utilisation par combat, sur autorisation du MJ.'
  if(action.type==='heal')return 'Soin adapté au niveau du groupe. Sur critique naturel : résurrection complète. Une utilisation par combat, sur autorisation du MJ.'

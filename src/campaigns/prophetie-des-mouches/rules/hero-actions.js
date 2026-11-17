@@ -36,13 +36,13 @@ function resolveHeroCombatAction(root, request, dice) {
   }
   if (heal) {
     if (![...COMBAT_CHARACTERS,...(c.eloSummon?.active?["eloSummon"]:[])].includes(payload.target)) throw new Error("Choisissez un héros à soigner")
-    const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * (c.balanceVersion===3?1.6:2) : power)
-    const explanation=crit?"Critique : soin multiplié par "+(c.balanceVersion===3?1.6:2)+" avant la limite des PV maximum.":fail?"Échec critique : soin réduit.":""
+    const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * combatCriticalMultiplier(c) : power)
+    const explanation=crit?"Critique : soin multiplié par "+combatCriticalMultiplier(c)+" avant la limite des PV maximum.":fail?"Échec critique : soin réduit.":""
     nextCombatTurn(root, request)
     return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, explanation, mode: "heal", special, target: payload.target, targetName: combatFriendlyName(payload.target).toUpperCase() }
   }
-  let damage = fail ? 0 : power * (crit ? (c.balanceVersion===3?1.6:2) : 1), groupHeal = 0
-  if(special&&c.balanceVersion===3){damage=calibratedSpecialDamage(actor,power,crit,fail);if(actor==="elo")groupHeal=fail?Math.round(calibratedHealth(data.lvl)*.025):Math.round(calibratedHealth(data.lvl)*.08*(crit?1.6:1))}
+  let damage = fail ? 0 : power * (crit ? combatCriticalMultiplier(c) : 1), groupHeal = 0
+  if(special&&c.balanceVersion===3){damage=calibratedSpecialDamage(actor,power,crit,fail,combatCriticalMultiplier(c));if(actor==="elo")groupHeal=fail?Math.round(calibratedHealth(data.lvl)*.025):Math.round(calibratedHealth(data.lvl)*.08*(crit?combatCriticalMultiplier(c):1))}
   else if (special) {
     damage = Math.round(damage * (attack.damageBonus || 1.75))
     const modified = applyPlayerSpecialModifiers(actor, { charData: data, mobHpRatio: mob.hp / Math.max(1, mob.maxHP), mobSpecialUsed: !!mob.specialUsed, gregCriticalHp: root.characters.greg.hp <= getCharacterMaxHp("greg", root.characters.greg) * .2, anyAllyQuarterHp: COMBAT_CHARACTERS.some(id => root.characters[id].hp > 0 && root.characters[id].hp <= getCharacterMaxHp(id, root.characters[id]) * .25), crit, fail, damage, flatBonus: 0, multiplier: 1, basePower: power })
@@ -79,7 +79,7 @@ function resolveHeroCombatAction(root, request, dice) {
   if (special) { c.playerSpecials ||= {}; c.playerSpecials[actor] = true }
   const consequences=[]
   if(crit){
-    consequences.push("Critique : dégâts multipliés par "+(c.balanceVersion===3?1.6:2)+" avant les autres bonus, protections et la limite des PV restants.")
+    consequences.push("Critique : dégâts multipliés par "+combatCriticalMultiplier(c)+" avant les autres bonus, protections et la limite des PV restants.")
     if(attack.name==="Je vais te raconter une histoire")consequences.push("Poison appliqué : "+mob.playerPoison.damage+" PV à chaque fin de round pendant "+mob.playerPoison.turns+" rounds.")
     if(attack.name==="I know Frank (si arc)")consequences.push("Saignement appliqué : "+mob.playerBleed.damage+" PV à chaque fin de round pendant "+mob.playerBleed.turns+" rounds.")
     if(attack.name==="Le Bibi")consequences.push("Rage : +"+mob.bibiRage.damage+" dégâts aux attaques alliées sur cette cible pendant 3 rounds.")

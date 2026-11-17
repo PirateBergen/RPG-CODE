@@ -1,0 +1,366 @@
+{
+  "scope": "3000 deterministic fights through real reducers. Baseline stats, no gear; scripted strategy and optional single Melenchon intervention. Not a measurement of human play. Existing v3 enemy health/damage and Pika mechanics unchanged.",
+  "samplesPerCase": 100,
+  "rows": [
+    {
+      "level": 1,
+      "scenario": "Ordinaire",
+      "legacy": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 3,
+        "p90Rounds": 3,
+        "meanDeaths": 0,
+        "meanRemainingHP": 0.9621939393939394,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 3,
+        "p90Rounds": 3,
+        "meanDeaths": 0,
+        "meanRemainingHP": 0.9621939393939394,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 1,
+      "scenario": "Boss",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.99,
+        "medianRounds": 6,
+        "p90Rounds": 9,
+        "meanDeaths": 0.59,
+        "meanRemainingHP": 0.6389,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.99,
+        "medianRounds": 6,
+        "p90Rounds": 9,
+        "meanDeaths": 0.53,
+        "meanRemainingHP": 0.6564704545454545,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 1,
+      "scenario": "Kraken, réactions",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.29,
+        "medianRounds": 12,
+        "p90Rounds": 14,
+        "meanDeaths": 3.16,
+        "meanRemainingHP": 0.042392045454545446,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.32,
+        "medianRounds": 12,
+        "p90Rounds": 14,
+        "meanDeaths": 3.03,
+        "meanRemainingHP": 0.06020189393939393,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 1,
+      "scenario": "Kraken, stratégies MJ",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.82,
+        "medianRounds": 13,
+        "p90Rounds": 15,
+        "meanDeaths": 1.2,
+        "meanRemainingHP": 0.20294772727272725,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.91,
+        "medianRounds": 12,
+        "p90Rounds": 14,
+        "meanDeaths": 0.82,
+        "meanRemainingHP": 0.2568268939393939,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 1,
+      "scenario": "Kraken, réactions et un PNJ offensif",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.71,
+        "medianRounds": 10,
+        "p90Rounds": 12,
+        "meanDeaths": 1.6,
+        "meanRemainingHP": 0.1764924242424243,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.74,
+        "medianRounds": 10,
+        "p90Rounds": 12,
+        "meanDeaths": 1.43,
+        "meanRemainingHP": 0.2112136363636364,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 6,
+      "scenario": "Ordinaire",
+      "legacy": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 3,
+        "p90Rounds": 4,
+        "meanDeaths": 0,
+        "meanRemainingHP": 0.9587269805467872,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 3,
+        "p90Rounds": 3,
+        "meanDeaths": 0,
+        "meanRemainingHP": 0.960875665370514,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 6,
+      "scenario": "Boss",
+      "legacy": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 7,
+        "p90Rounds": 9,
+        "meanDeaths": 0.52,
+        "meanRemainingHP": 0.6825479503675467,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 6,
+        "p90Rounds": 8,
+        "meanDeaths": 0.47,
+        "meanRemainingHP": 0.6945247857343102,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 6,
+      "scenario": "Kraken, réactions",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.21,
+        "medianRounds": 13,
+        "p90Rounds": 15,
+        "meanDeaths": 3.37,
+        "meanRemainingHP": 0.03621995365161892,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.28,
+        "medianRounds": 13,
+        "p90Rounds": 14,
+        "meanDeaths": 3.16,
+        "meanRemainingHP": 0.05039790248999667,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 6,
+      "scenario": "Kraken, stratégies MJ",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.8,
+        "medianRounds": 13,
+        "p90Rounds": 15,
+        "meanDeaths": 1.15,
+        "meanRemainingHP": 0.21872147144277082,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.88,
+        "medianRounds": 12,
+        "p90Rounds": 14,
+        "meanDeaths": 0.82,
+        "meanRemainingHP": 0.2631312736884646,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 6,
+      "scenario": "Kraken, réactions et un PNJ offensif",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.69,
+        "medianRounds": 10,
+        "p90Rounds": 12,
+        "meanDeaths": 1.69,
+        "meanRemainingHP": 0.1636705219017036,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.72,
+        "medianRounds": 10,
+        "p90Rounds": 12,
+        "meanDeaths": 1.5,
+        "meanRemainingHP": 0.20703971333544502,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 20,
+      "scenario": "Ordinaire",
+      "legacy": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 3,
+        "p90Rounds": 3,
+        "meanDeaths": 0,
+        "meanRemainingHP": 0.9655945669168233,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 3,
+        "p90Rounds": 3,
+        "meanDeaths": 0,
+        "meanRemainingHP": 0.9678742260787995,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 20,
+      "scenario": "Boss",
+      "legacy": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 6,
+        "p90Rounds": 8,
+        "meanDeaths": 0.31,
+        "meanRemainingHP": 0.746854108036273,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 1,
+        "medianRounds": 6,
+        "p90Rounds": 8,
+        "meanDeaths": 0.29,
+        "meanRemainingHP": 0.7555657637585992,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 20,
+      "scenario": "Kraken, réactions",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.43,
+        "medianRounds": 13,
+        "p90Rounds": 15,
+        "meanDeaths": 2.72,
+        "meanRemainingHP": 0.07330369762351471,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.52,
+        "medianRounds": 13,
+        "p90Rounds": 15,
+        "meanDeaths": 2.48,
+        "meanRemainingHP": 0.0957833646028768,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 20,
+      "scenario": "Kraken, stratégies MJ",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.98,
+        "medianRounds": 13,
+        "p90Rounds": 15,
+        "meanDeaths": 0.47,
+        "meanRemainingHP": 0.29243178939962483,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.99,
+        "medianRounds": 13,
+        "p90Rounds": 15,
+        "meanDeaths": 0.27,
+        "meanRemainingHP": 0.3436250234521576,
+        "timeouts": 0,
+        "errors": []
+      }
+    },
+    {
+      "level": 20,
+      "scenario": "Kraken, réactions et un PNJ offensif",
+      "legacy": {
+        "samples": 100,
+        "winRate": 0.82,
+        "medianRounds": 11,
+        "p90Rounds": 13,
+        "meanDeaths": 1.12,
+        "meanRemainingHP": 0.22143832864290186,
+        "timeouts": 0,
+        "errors": []
+      },
+      "enhanced": {
+        "samples": 100,
+        "winRate": 0.84,
+        "medianRounds": 10,
+        "p90Rounds": 13,
+        "meanDeaths": 1.01,
+        "meanRemainingHP": 0.256310983427142,
+        "timeouts": 0,
+        "errors": []
+      }
+    }
+  ]
+}

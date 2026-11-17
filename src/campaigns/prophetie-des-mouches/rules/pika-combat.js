@@ -50,7 +50,7 @@ function resolvePikaHeroAction(root,request,attack,dice) {
     let damage=0
     if(kind==="cancan"){result.kicks=pikaKickCount(adjusted.total);damage=calibrated?calibratedPikaKickDamage(data,result.kicks):result.kicks*Math.max(1,3+combatInt(data.force)+Math.floor(bonus/3))}
     if(kind==="laugh"&&!fail){damage=calibrated?calibratedAttackPower(attack,adjusted.total,data.charme,{charData:data}):roll+combatInt(data.charme)+bonus;const other=livingMobs(c).find(id=>id!==slot);if(crit&&other){result.bounceTarget=other;result.bounceAmount=combatDamage(root,request,"PIKA — Rire KRRKRR",other,calibrated?calibratedOutgoingDamage(root,actor,Math.floor(damage*.5)):Math.floor(damage*.5))}else if(crit)damage=Math.round(damage*1.5)}
-    if(kind==="endikaki"&&!fail&&calibrated)damage=calibratedSpecialDamage(actor,calibratedAttackPower(attack,adjusted.total,data.charme,{charData:data}),crit,fail)
+    if(kind==="endikaki"&&!fail&&calibrated)damage=calibratedSpecialDamage(actor,calibratedAttackPower(attack,adjusted.total,data.charme,{charData:data}),crit,fail,combatCriticalMultiplier(c))
     if(kind==="endikaki"&&!fail&&!calibrated)damage=Math.round((roll+combatInt(data.charme)+bonus)*1.8+8+(level-1)*2)*(crit?2:1)
     if(!fail&&c[slot].bibiRage?.turns>0)damage+=c[slot].bibiRage.damage||2
     if(kind==="endikaki"&&!calibrated)damage=Math.round(damage*SPECIAL_DAMAGE_MULTIPLIER)
@@ -58,7 +58,7 @@ function resolvePikaHeroAction(root,request,attack,dice) {
     result.amount=combatDamage(root,request,"PIKA — "+attack.name,slot,Math.max(0,damage))
     result.message=kind==="cancan"?result.kicks+" coup(s) de pied — "+result.amount+" dégâts":kind==="endikaki"?"Endikaki explose — "+result.amount+" dégâts":"Ce rire est tellement bizarre que l’ennemi en reste sans voix — "+result.amount+" dégâts"
   }
-  if(crit)result.explanation=kind==="cancan"?"Critique : quatre coups de pied.":kind==="laugh"?(result.bounceTarget?"Critique : ricochet sur un second ennemi, "+result.bounceAmount+" PV perdus.":"Critique : dégâts multipliés par 1,5 faute de seconde cible."):kind==="hypnosis"?"Critique : hypnose pendant deux tours complets.":"Critique : dégâts multipliés par "+(calibrated?1.6:2)+" avant les autres bonus et protections."
+  if(crit)result.explanation=kind==="cancan"?"Critique : quatre coups de pied.":kind==="laugh"?(result.bounceTarget?"Critique : ricochet sur un second ennemi, "+result.bounceAmount+" PV perdus.":"Critique : dégâts multipliés par 1,5 faute de seconde cible."):kind==="hypnosis"?"Critique : hypnose pendant deux tours complets.":"Critique : dégâts multipliés par "+combatCriticalMultiplier(c)+" avant les autres bonus et protections."
   nextCombatTurn(root,request);return result
 }
 function presentPikaAttack(result) {

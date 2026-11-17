@@ -33,6 +33,7 @@ const PNJ_NAMES = {
   "mysterefemme1.png":     "Glinda",
   "heimdall.png":          "Heimdall",
   "hel.png":               "Hel",
+  "nhiddog.png":           "Nidhog",
   "witch.png":             "Witch",
   "ELO PION.png":          "ELO PION",
   "ju pion.png":           "Pika",

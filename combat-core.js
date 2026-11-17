@@ -121,11 +121,12 @@ function finalizedInitiative(state) {
 function recordConfirmedCombatAction(root,request,result){
   root.game ||= {}; root.game.sessionLog ||= {}
   const label=id=>heroDisplayName(root.combat?.[id]?.name||({greg:"Greg",ju:"Pika",elo:"Elo",bibi:"Bibi"})[id]||id||"MJ")
+  const source=result.pnjId?ALLY_PNJS.find(p=>p.id===result.pnjId)?.name||label(request.actor):label(result.actor||request.actor)
   const effects=Object.entries(root.combat?.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,h])=>h.detail?String(h.detail):!["dmg","mob","manual","heal"].includes(h.type)?String(h.detail||"Effet appliqué"):label(h.from)+" → "+label(h.to)+" : "+(h.type==="heal"?"+":h.type==="buff"||h.type==="malus"?"effet ":"−")+h.amount+(h.type==="buff"||h.type==="malus"?"":" PV"))
-  const text=[label(result.actor||request.actor),(result.mode==="arbitrated"?result.message:result.attack||result.message)||({pass:"Tour passé",skip:"Acteur KO : tour passé",manual:"Ajustement MJ",thuum:"Cri"})[result.mode]||"Action",result.roll!=null?"dé : "+result.roll+(result.luckBonus?" + "+result.luckBonus+" Chance = "+result.rollTotal:"")+(result.controlBonus?" + "+result.controlBonus+" Charme (contrôle)":"")+(result.crit?" (critique)":result.fail?" (échec critique)":""):"",...effects,...(!effects.length&&result.message&&result.attack&&result.mode!=="arbitrated"?[result.message]:[])].filter(Boolean).join(" · ")
+  const text=[source,(result.mode==="arbitrated"?result.message:result.attack||result.message)||({pass:"Tour passé",skip:"Acteur KO : tour passé",manual:"Ajustement MJ",thuum:"Cri"})[result.mode]||"Action",result.roll!=null?"D"+(result.dice||"?")+" · dé : "+result.roll+(result.luckBonus?" + "+result.luckBonus+" Chance = "+result.rollTotal:"")+(result.controlBonus?" + "+result.controlBonus+" Charme (contrôle)":"")+(result.crit?" (critique)":result.fail?" (échec critique)":""):"",...effects,...(!effects.length&&result.message&&result.attack&&result.mode!=="arbitrated"?[result.message]:[])].filter(Boolean).join(" · ")
   const fullText=[text,result.explanation,result.message&&result.message!==result.attack&&!text.includes(result.message)?result.message:""].filter(Boolean).join(" · ").slice(0,6000)
   root.game.sessionLog["action-"+request.id]={text:fullText,time:request.time,display:new Date(request.time).toTimeString().slice(0,5),status:"applied",combatId:root.combat.id,requestId:request.id}
-  if(request.kind==="hero"&&result.attack)combatRecord(root,request,label(result.actor),result.targetName||label(result.target),0,"summary",fullText)
+  if(["hero","ally","enemy"].includes(request.kind)&&(result.attack||result.message))combatRecord(root,request,source,result.targetName||(result.targets?.length>1?"Groupe":result.targets?.length?label(result.targets[0]):result.target?label(result.target):"Combat"),0,"summary",fullText)
   const entries=Object.entries(root.game.sessionLog).sort((a,b)=>(b[1].time||0)-(a[1].time||0));entries.slice(200).forEach(([key])=>delete root.game.sessionLog[key])
 }
 
@@ -395,6 +396,8 @@ function resolveEnemyCombatAction(root, request, dice) {
   damage=gmOutgoingDamage(root,slot,damage)
   if(mob.balrogSwordWeaken){damage=Math.round(damage*(1-mob.balrogSwordWeaken));delete mob.balrogSwordWeaken}
   let applied = 0
+  const consequences=[]
+  if(specialRoll)consequences.push("D20 de sélection de l’attaque : "+specialRoll+" (ce dé ne multiplie pas les dégâts).")
   targets.forEach(id => {
     const victim=combatFriendlyTarget(root,id),before = combatInt(victim.hp)
     const reduction=reaction?.status==="ready"?reaction.decisions?.[id]||0:0
@@ -402,20 +405,24 @@ function resolveEnemyCombatAction(root, request, dice) {
     if(reduction)combatRecord(root,request,"RÉACTION MJ",combatFriendlyName(id),0,"reaction",combatFriendlyName(id)+" : protection −"+reduction+" % contre « "+attack.name+" » ("+damage+" → "+reactedDamage+" avant armure et autres protections)")
     victim.hp = Math.max(0, before - Math.max(0,combatInt(taken))); applied += before - victim.hp
     if(reduction===100){combatRecord(root,request,heroDisplayName(mob.name),combatFriendlyName(id),0,"mob",combatFriendlyName(id)+" évite complètement « "+attack.name+" » : aucun dégât ni effet secondaire");return}
-    if(id==="eloSummon"){if(attack.effect==="stun")victim.stunnedAttacks=1;if(attack.effect==="debuff")victim.debuffRounds=2;combatRecord(root,request,heroDisplayName(mob.name),"John Pork",before-victim.hp,"mob","John Pork encaisse "+(before-victim.hp)+" dégâts");return}
+    if(id==="eloSummon"){if(attack.effect==="stun"){victim.stunnedAttacks=1;consequences.push("John Pork : prochain bonus d’attaque neutralisé.")}if(attack.effect==="debuff"){victim.debuffRounds=2;consequences.push("John Pork : bonus de dégâts −2 pendant 2 rounds.")}combatRecord(root,request,heroDisplayName(mob.name),"John Pork",before-victim.hp,"mob","John Pork encaisse "+(before-victim.hp)+" dégâts ("+before+" → "+victim.hp+" / "+victim.maxHP+" PV)"+(victim.hp<=0?" — KO":""));return}
     if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
     if (attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
     if (attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
     if(isKrakenEncounter(mob)&&attack.effect==="grab"&&taken>0&&!mob.krakenHold)mob.krakenHold={target:id,roundsLeft:2,startedRound:c.turnState.round||1,releaseNeeded:Math.max(1,Math.round(mob.maxHP*.10)),damageTaken:0}
-    combatRecord(root, request, heroDisplayName(mob.name).toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", heroDisplayName(mob.name) + " — " + attack.name + " → " + id.toUpperCase() + " : -" + (before - root.characters[id].hp) + " PV")
+    if(attack.effect==="curse"&&id!=="bibi")consequences.push(combatFriendlyName(id)+" : jauge de malédiction après attaque "+root.characters[id].curse+" / 8.")
+    if(attack.effect==="stun")consequences.push(combatFriendlyName(id)+" : une action neutralisée (tour partagé pour Greg et Bibi).")
+    if(attack.effect==="debuff")consequences.push(combatFriendlyName(id)+" : Force et Défense −2 pendant 2 rounds.")
+    if(mob.krakenHold?.target===id&&attack.effect==="grab"&&taken>0)consequences.push(combatFriendlyName(id)+" saisi : dégâts infligés −25 %, pression en fin de round pendant 2 rounds. Libération par assistance ou "+mob.krakenHold.releaseNeeded+" dégâts cumulés sur le Kraken.")
+    combatRecord(root, request, heroDisplayName(mob.name).toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", heroDisplayName(mob.name) + " — " + attack.name + " → " + combatFriendlyName(id) + " : -" + (before - root.characters[id].hp) + " PV ("+before+" → "+victim.hp+")"+(victim.hp<=0?" — KO":""))
   })
   if (attack.special){mob.specialUsed = true;if(isKrakenEncounter(mob)){mob.krakenSpecialStageUsed=attack.krakenStage;mob.specialUsed=krakenSpecialUsed(mob);mob.krakenNextSpecialRound=(c.turnState.round||1)+3}}
   if(isKrakenEncounter(mob)&&mob.krakenDisorientedActions>0)mob.krakenDisorientedActions--
-  if (attack.healSelfRatio) mob.hp = Math.min(mob.maxHP, mob.hp + Math.round(applied * attack.healSelfRatio))
+  if (attack.healSelfRatio) {const before=mob.hp;mob.hp = Math.min(mob.maxHP, mob.hp + Math.round(applied * attack.healSelfRatio));consequences.push(heroDisplayName(mob.name)+" récupère "+(mob.hp-before)+" PV ("+before+" → "+mob.hp+" / "+mob.maxHP+").")}
   mob.lastAttack = attack.name
   const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: targets.length===1?applied:damage, damageSummary:targets.map(id=>{const hit=Object.entries(c.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,hit])=>hit).filter(h=>h.type==="mob"&&(h.to===id.toUpperCase()||id==="eloSummon"&&h.to==="John Pork")).at(-1);return combatFriendlyName(id)+" −"+(hit?.amount||0)+" PV"}).join(" · "), target: targets.length > 1 ? "TOUS" : combatFriendlyName(targets[0]||"AUCUNE").toUpperCase(), mobName: heroDisplayName(mob.name).toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
   nextCombatTurn(root, request)
-  return { actor: slot, attack: attack.name, amount: applied, targets, mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}) }
+  return { actor: slot, attack: attack.name, amount: applied, targets, explanation:consequences.join(" "), mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}) }
 }
 
 function resolveAllyCombatAction(root, request, dice) {
@@ -427,6 +434,8 @@ function resolveAllyCombatAction(root, request, dice) {
   if (root.roles?.[request.uid] !== "gm" && (root.game.playerAllyAccess?.scope === "exploration" || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
   const roll = dice(action.dice), crit = roll >= (action.critMin || action.dice);let fail = roll === 1,thorVictory=false
   let amount = 0,thorLethalDamage=0,totalAllyDamage=0
+  const consequences=[]
+  const wasKO=combatFriendlyTarget(root,payload.target)?.hp<=0
   if (action.type === "damage") {
     amount = root.combat.balanceVersion===3?calibratedAllyDamage(pnj,action,roll,crit,fail,root.combat.mob.partyLevel):Math.round((action.dmgBase + roll * action.dmgBonus) * (crit && action.critMult ? action.critMult : 1) * (fail ? .2 : 1))
     const targets=action.chainMin&&roll>=action.chainMin?livingMobs(root.combat):[payload.target||livingMobs(root.combat)[0]]
@@ -435,26 +444,33 @@ function resolveAllyCombatAction(root, request, dice) {
       if(!livingMobs(root.combat).includes(slot))throw Error("Choisissez un ennemi vivant")
       const dealt=combatDamage(root,request,pnj.name,slot,root.combat.balanceVersion===3&&!isJormungandr(root.combat[slot])?Math.min(amount,Math.round(root.combat[slot].maxHP*.4)):amount,"dmg",{thorMjolnir})
       totalAllyDamage+=dealt
-      if(action.staggerOnCrit&&crit&&dealt>0&&root.combat[slot].hp>0)root.combat[slot].allyStagger=true
+      if(action.staggerOnCrit&&crit&&dealt>0&&root.combat[slot].hp>0){root.combat[slot].allyStagger=true;consequences.push(heroDisplayName(root.combat[slot].name)+" : prochaine action interrompue.")}
       if(thorMjolnir&&isJormungandr(root.combat[slot])&&dealt>0){thorLethalDamage=dealt;thorVictory=true;fail=false}
     })
     if(thorVictory)amount=thorLethalDamage
     else if(root.combat.balanceVersion===3)amount=totalAllyDamage
+    if(crit&&!thorVictory)consequences.push("Critique : dégâts multipliés par "+(root.combat.balanceVersion===3?1.6:action.critMult||1)+" avant protections et limites."+(root.combat.balanceVersion===3?" Intervention limitée à 40 % des PV maximum de chaque cible, sauf Thor contre Jörmungandr.":""))
+    if(targets.length>1)consequences.push("Attaque en chaîne : "+targets.length+" ennemis ciblés.")
   } else if (action.type === "heal") amount = combatHeal(root, request, pnj.name, payload.target, root.combat.balanceVersion===3?calibratedAllyHeal(pnj,roll,action.dice,root.combat.mob.partyLevel):roll * (action.healMult || 1), crit)
   else if (action.type === "buff") {
     const target = root.characters[payload.target]; if (!target || target.hp <= 0) throw new Error("Choisissez un héros vivant")
     const stat = playerMainStat[payload.target]; amount = root.combat.balanceVersion===3?Math.max(1,Math.round(combatInt(target[stat])*(.15+.15*roll/action.dice))):roll * (action.buffMult || 1); if(root.combat.balanceVersion===3){root.combat.heroBuffs||={};root.combat.heroBuffs[payload.target]={stat,amount,turns:3}}else target[stat] = Math.min(999, combatInt(target[stat]) + amount)
-    combatRecord(root, request, pnj.name, payload.target.toUpperCase(), amount, "buff", pnj.name + " renforce " + payload.target)
+    combatRecord(root, request, pnj.name, payload.target.toUpperCase(), amount, "buff", pnj.name + " renforce " + combatFriendlyName(payload.target)+" : +"+amount+" "+stat+(root.combat.balanceVersion===3?" pendant 3 rounds":""))
   } else if (action.type === "malus" && roll >= (action.threshold || 10)) {
     const slot = payload.target || livingMobs(root.combat)[0]; if (!livingMobs(root.combat).includes(slot)) throw new Error("Choisissez un ennemi vivant")
     if (pnj.id === "odin") root.combat[slot].attackMalus = { amount: root.combat.balanceVersion===3?Math.max(1,Math.round(calibratedHealth(root.combat.mob.partyLevel)*.04)):15 }
     root.combat[slot].malus = { label: action.label, source: pnj.name, roll }
-    combatRecord(root, request, pnj.name, root.combat[slot].name, 0, "malus", pnj.name + " — " + action.label)
+    combatRecord(root, request, pnj.name, root.combat[slot].name, 0, "malus", pnj.name + " — " + action.label+(pnj.id==="odin"?" : attaques ennemies −"+root.combat[slot].attackMalus.amount+" dégâts jusqu’à la fin du combat":pnj.id==="witch"?" : dégâts ennemis −25 % jusqu’à la fin du combat":""))
+  } else if(action.type==="malus"){
+    consequences.push("Seuil "+(action.threshold||10)+" non atteint : aucun affaiblissement appliqué.")
   }
+  if(action.type==="heal"&&crit)consequences.push(wasKO?"Critique : résurrection avec tous les PV maximum.":"Cible déjà vivante : soin normal, limité aux PV maximum ; aucun bonus de soin critique supplémentaire prévu actuellement.")
+  if(crit&&["buff","malus"].includes(action.type))consequences.push("Aucun bonus critique supplémentaire prévu pour ce soutien actuellement.")
+  const explanation=consequences.join(" ")
   root.combat.usedAllies ||= {}; root.combat.usedAllies[action.id] = true
   delete root.game.playerAllyAccess
   nextCombatTurn(root, request)
-  return { actor: request.actor, attack: action.label, pnjId: pnj.id, actionId: action.id, target: payload.target || "", roll, dice: action.dice, crit, fail, amount, mode: "ally",...(thorVictory?{thorVictory:true,message:"Mjölnir frappe : Jörmungandr est vaincu par Thor."}:{}) }
+  return { actor: request.actor, attack: action.label, pnjId: pnj.id, actionId: action.id, target: payload.target || "", roll, dice: action.dice, crit, fail, amount, explanation, mode: "ally",...(thorVictory?{thorVictory:true,message:"Mjölnir frappe : Jörmungandr est vaincu par Thor."}:{}) }
 }
 
 function reduceCombatRequestNow(current, id, seed) {

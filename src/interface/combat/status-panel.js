@@ -43,6 +43,8 @@ function _renderCombatStatusPanelNow() {
   }
 
   const entries = getCombatStatusEntries()
+  const opened=new Set([...panel.querySelectorAll('details[open]')].map(row=>row.dataset.actionText))
+  const previousScroll=panel.scrollTop
   panel.innerHTML = ""
   panel.style.display = "block"
 
@@ -76,6 +78,7 @@ function _renderCombatStatusPanelNow() {
     const row = document.createElement(detailed?"details":"div")
     row.className = "combatStatusItem combatStatusItem--" + (entry.kind || "buff")
     if(detailed){const toggle=document.createElement("summary");toggle.textContent=entry.title+" — détails de l’action";row.appendChild(toggle);row.addEventListener("keydown",event=>{if(event.key==="Escape"&&row.open){row.open=false;toggle.focus();event.stopPropagation()}})}
+    if(detailed){row.dataset.actionText=entry.text;row.open=opened.has(entry.text)}
     if ((entry.title || "").toLowerCase().includes("tour actif")) row.classList.add("combatStatusItem--turn")
     if ((entry.title || "").toLowerCase().includes("faiblesse")) row.classList.add("combatStatusItem--weakness")
 
@@ -109,5 +112,6 @@ function _renderCombatStatusPanelNow() {
     row.appendChild(body)
     list.appendChild(row)
   })
+  panel.scrollTop=previousScroll
 }
 

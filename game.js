@@ -1943,6 +1943,7 @@ function resetLocalCombatVisualState() {
 }
 
 function cleanupTransientGameUI(options = {}) {
+  window.__cancelHelWrath?.();document.getElementById("helWrathMenu")?.__close?.()
   window.__cancelAntrePassage?.()
   window.__cancelQuantumGift?.()
   if(typeof syncAntreAfterlifeView==="function")syncAntreAfterlifeView()
@@ -2377,7 +2378,7 @@ function stopFlySwarm() {
 
 function getMaxHP(playerId, level) {
   const s = getPlayerStatsAtLevel(playerId, level || 1)
-  return s ? s.hp : 100
+  return helAdjustedMaxHP(playerId,{},s ? s.hp : 100)
 }
 
 function getMaxCarryWeight() { return 100 }
@@ -2481,7 +2482,7 @@ function watchCharacter(snapshot) {
   const data = rawData && (playerID === "bibi" ? {...rawData,curse:0,corruption:0} : rawData)
   if (!data) return
   window.__publicCharacters ||= {}; window.__publicCharacters[playerID] = {hp:data.hp,lvl:data.lvl}
-  window.__combatConditionCharacters ||= {}; window.__combatConditionCharacters[playerID]={hp:data.hp,lvl:data.lvl,...(canAccessCharacter(playerID)?{maxHp:getCharacterMaxHp(playerID,data)}:{})}
+  window.__combatConditionCharacters ||= {}; window.__combatConditionCharacters[playerID]={hp:data.hp,lvl:data.lvl,...(canAccessCharacter(playerID)?{maxHp:getCharacterMaxHp(playerID,{...data,helMark:false})}:{})}
   if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
 
   updateTokenStats(playerID)

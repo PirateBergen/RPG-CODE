@@ -5,7 +5,7 @@ function watchCharacter(snapshot) {
   const data = rawData && (playerID === "bibi" ? {...rawData,curse:0,corruption:0} : rawData)
   if (!data) return
   window.__publicCharacters ||= {}; window.__publicCharacters[playerID] = {hp:data.hp,lvl:data.lvl}
-  window.__combatConditionCharacters ||= {}; window.__combatConditionCharacters[playerID]={hp:data.hp,lvl:data.lvl,...(canAccessCharacter(playerID)?{maxHp:getCharacterMaxHp(playerID,data)}:{})}
+  window.__combatConditionCharacters ||= {}; window.__combatConditionCharacters[playerID]={hp:data.hp,lvl:data.lvl,...(canAccessCharacter(playerID)?{maxHp:getCharacterMaxHp(playerID,{...data,helMark:false})}:{})}
   if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
 
   updateTokenStats(playerID)

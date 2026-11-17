@@ -129,10 +129,11 @@ async function requestAllyCombatAction(pnj, action, targetId, panel) {
   if (window.__playerAttackResolving) return
   window.__playerAttackResolving = true
   try {
-    let target = targetId
+    let target = targetId,secondaryTarget=null
+    if(pnj.id==="hel"){target=await chooseCombatTarget(COMBAT_CHARACTERS,"Hel — premier bénéficiaire du sursis",{allowFullHealth:true});if(!target)return;const others=COMBAT_CHARACTERS.filter(id=>id!==target&&window.__publicCharacters?.[id]?.hp>0);if(others.length){secondaryTarget=await chooseCombatTarget(others,"Hel — second bénéficiaire uniquement sur critique",{allowFullHealth:true});if(!secondaryTarget)return}}
     if (action.type === "damage" || action.type === "malus") target = await chooseEnemyCombatTarget()
     if (!target) return
-    await submitCombatAction("ally", actor, { pnjId: pnj.id, actionId: action.id, target })
+    await submitCombatAction("ally", actor, { pnjId: pnj.id, actionId: action.id, target,...(secondaryTarget?{secondaryTarget}:{}) })
     panel?.remove()
   } catch (error) { showNotification(error.message) }
   finally { window.__playerAttackResolving = false }

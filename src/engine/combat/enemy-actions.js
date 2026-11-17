@@ -42,7 +42,7 @@ function resolveEnemyCombatAction(root, request, dice) {
     const reduction=reaction?.status==="ready"?reaction.decisions?.[id]||0:0
     const reactedDamage=Math.round(damage*(1-reduction/100)),protectedDamage=gmIncomingDamage(root,id,reactedDamage),taken=c.balanceVersion===3?calibratedIncomingDamage(id==="eloSummon"?victim:combatCharacter(root,id),protectedDamage):protectedDamage
     if(reduction)combatRecord(root,request,"RÉACTION MJ",combatFriendlyName(id),0,"reaction",combatFriendlyName(id)+" : protection −"+reduction+" % contre « "+attack.name+" » ("+damage+" → "+reactedDamage+" avant armure et autres protections)")
-    victim.hp = Math.max(0, before - Math.max(0,combatInt(taken))); applied += before - victim.hp
+    victim.hp = helPreventKO(root,request,id,before,Math.max(0, before - Math.max(0,combatInt(taken)))); applied += before - victim.hp
     if(reduction===100){combatRecord(root,request,heroDisplayName(mob.name),combatFriendlyName(id),0,"mob",combatFriendlyName(id)+" évite complètement « "+attack.name+" » : aucun dégât ni effet secondaire");return}
     if(id==="eloSummon"){if(attack.effect==="stun"){victim.stunnedAttacks=1;consequences.push("John Pork : prochain bonus d’attaque neutralisé.")}if(attack.effect==="debuff"){victim.debuffRounds=2;consequences.push("John Pork : bonus de dégâts −2 pendant 2 rounds.")}combatRecord(root,request,heroDisplayName(mob.name),"John Pork",before-victim.hp,"mob","John Pork encaisse "+(before-victim.hp)+" dégâts ("+before+" → "+victim.hp+" / "+victim.maxHP+" PV)"+(victim.hp<=0?" — KO":""));return}
     if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)

@@ -8,7 +8,7 @@ function openAllyPNJPanel() {
     return
   }
   const panel = document.createElement("div"); panel.id = "allyPNJPanel"
-  panel.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(8,20,24,0.97);border:1px solid #1e5a66;box-shadow:0 0 0 1px #8a6520,0 0 40px rgba(0,0,0,0.9);border-radius:3px;padding:16px;z-index:99999999;min-width:380px;max-width:92vw;max-height:82vh;overflow-y:auto;font-family:Cinzel,serif;"
+  panel.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(8,20,24,0.97);border:1px solid #1e5a66;box-shadow:0 0 0 1px #8a6520,0 0 40px rgba(0,0,0,0.9);border-radius:3px;padding:16px;z-index:99999999;min-width:min(380px,92vw);max-width:92vw;box-sizing:border-box;max-height:82vh;overflow-y:auto;font-family:Cinzel,serif;"
 
   const title = document.createElement("div"); title.style.cssText = "font-size:11px;letter-spacing:3px;color:#1e8a9a;margin-bottom:12px;border-bottom:1px solid rgba(30,90,102,0.3);padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;"
   const titleText = document.createElement("span")
@@ -23,6 +23,7 @@ function openAllyPNJPanel() {
   title.appendChild(titleText)
   title.appendChild(titleClose)
   panel.appendChild(title)
+  const manage=document.createElement("button");manage.type="button";manage.textContent="Gérer les alliances / Rompre une alliance";manage.style.cssText="min-height:44px;width:100%;margin-bottom:10px";manage.onclick=()=>{panel.remove();openAllyDiscoveryPanel()};panel.appendChild(manage)
 
   db.ref("combat/usedAllies").once("value", snap => {
     const used = snap.val() || {}
@@ -42,7 +43,8 @@ function openAllyPNJPanel() {
       header.appendChild(img); header.appendChild(info); block.appendChild(header)
 
       pnj.actions.forEach(action => {
-        const isUsed = !!used[action.id]
+        const allianceBroken=!!window.__explorationState?.allyBreaks?.[pnj.id],lockedHel=pnj.id==="hel"&&!window.__explorationState?.allyDiscoveries?.hel
+        const isUsed = !!used[action.id]||allianceBroken||lockedHel
         const typeColors = { damage:"#ff7777", heal:"#77ff99", malus:"#ffaa44", buff:"#88aaff" }
         const typeLabels = { damage:"ATQ", heal:"SOIN", malus:"MALUS", buff:"BUFF" }
         const btn = document.createElement("div")
@@ -68,7 +70,7 @@ function openAllyPNJPanel() {
         center.appendChild(descEl)
         const badge = document.createElement("span")
         badge.style.cssText = `font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(30,90,102,0.2);color:${typeColors[action.type]};letter-spacing:1px;`
-        badge.innerText = isUsed ? "UTILISÉ" : typeLabels[action.type]
+        badge.innerText = allianceBroken?"ALLIANCE ROMPUE":lockedHel?"À DÉBLOQUER":isUsed ? "UTILISÉ" : typeLabels[action.type]
         btn.appendChild(iconEl)
         btn.appendChild(center)
         btn.appendChild(badge)
@@ -96,6 +98,7 @@ function openAllyPNJPanel() {
 
 function triggerAllyAction(pnj, action, panel) {
   if(!combatActive){if(isGM){openAllyGrantPicker(pnj,action);return}return requestExplorationSummon(pnj,action)}
+  if(pnj.id==="hel")return requestAllyCombatAction(pnj,action,null,panel)
   if (!isGM && myToken && (action.type === "heal" || action.type === "buff")) {
     _executeAllyAction(pnj, action, myToken.id, panel)
     return

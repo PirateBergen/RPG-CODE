@@ -1,21 +1,22 @@
 function getCharacterMaxHp(playerId, charData = {}) {
+  const adjusted=value=>helAdjustedMaxHP(playerId,charData,value)
   const direct =
     parseInt(charData.maxHp ?? charData.hpMax ?? charData.hpmax, 10)
-  if (Number.isFinite(direct) && direct > 0) return direct
+  if (Number.isFinite(direct) && direct > 0) return adjusted(direct)
 
   const lvl = Math.max(1, parseInt(charData.lvl, 10) || 1)
   if (typeof getPlayerStatsAtLevel === "function") {
     const statsAtLevel = getPlayerStatsAtLevel(playerId, lvl)
     if (statsAtLevel && Number.isFinite(parseInt(statsAtLevel.hp, 10))) {
-      return parseInt(statsAtLevel.hp, 10)
+      return adjusted(parseInt(statsAtLevel.hp, 10))
     }
   }
 
   if (playerBaseStats && playerBaseStats[playerId] && Number.isFinite(parseInt(playerBaseStats[playerId].hp, 10))) {
-    return parseInt(playerBaseStats[playerId].hp, 10)
+    return adjusted(parseInt(playerBaseStats[playerId].hp, 10))
   }
 
-  return Math.max(1, parseInt(charData.hp, 10) || 1)
+  return adjusted(Math.max(1, parseInt(charData.hp, 10) || 1))
 }
 
 function parseInventoryItems(text) {

@@ -27,7 +27,7 @@ function gmTickStatusRound(root,request){
   const target=gmTarget(root,id);if(!target)continue
   for(const key of ["poison","bleeding","burning","regeneration"]){const state=states[key];if(!state||target.hp<=0)continue;const before=target.hp,max=COMBAT_MOBS.includes(id)?target.maxHP:getCharacterMaxHp(id,target)
    if(key==="regeneration")target.hp=Math.min(max,target.hp+state.amount)
-   else if(!isJormungandr(COMBAT_MOBS.includes(id)?target:null))target.hp=Math.max(0,target.hp-state.amount)
+   else if(!isJormungandr(COMBAT_MOBS.includes(id)?target:null))target.hp=helPreventKO(root,request,id,before,Math.max(0,target.hp-state.amount))
    if(before!==target.hp)combatRecord(root,request,"MJ — "+GM_COMBAT_STATES[key].label,id,Math.abs(before-target.hp),key==="regeneration"?"heal":"dmg","Effet MJ : "+GM_COMBAT_STATES[key].label)
   }
   for(const [key,state]of Object.entries(states))if(key!=="paralysis"&&--state.turns<=0)delete states[key]

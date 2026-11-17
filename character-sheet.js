@@ -261,6 +261,7 @@ function queueCharacterAutoSave(delay = 220) {
 }
 
 function updateHPBar() {
+  if(typeof renderHelMarkOnSheet==="function")renderHelMarkOnSheet()
   const bar = document.getElementById("hpBar")
   if (!bar || !currentSheetPlayer) return
   const hp = Math.max(0, parseInt(document.getElementById("hp")?.value, 10) || 0)

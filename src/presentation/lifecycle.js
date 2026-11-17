@@ -43,7 +43,7 @@ function createPresentationScope(key,onCleanup=()=>{}){
 }
 
 function cancelMapPresentations(){
- for(const key of ["__cancelFlySwarm","__cancelFlyBlessing","__cancelPNJVoice","__cancelCharacterPowerSound","__cancelEndSession"])window[key]?.()
+ for(const key of ["__cancelHelWrath","__cancelFlySwarm","__cancelFlyBlessing","__cancelPNJVoice","__cancelCharacterPowerSound","__cancelEndSession"])window[key]?.()
 }
 
 function playCharacterPowerSound(info,{fadeIn=false}={}){

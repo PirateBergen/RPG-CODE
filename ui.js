@@ -167,23 +167,24 @@ function hasPlayerCombatTrigger(playerId, key) {
 }
 
 function getCharacterMaxHp(playerId, charData = {}) {
+  const adjusted=value=>helAdjustedMaxHP(playerId,charData,value)
   const direct =
     parseInt(charData.maxHp ?? charData.hpMax ?? charData.hpmax, 10)
-  if (Number.isFinite(direct) && direct > 0) return direct
+  if (Number.isFinite(direct) && direct > 0) return adjusted(direct)
 
   const lvl = Math.max(1, parseInt(charData.lvl, 10) || 1)
   if (typeof getPlayerStatsAtLevel === "function") {
     const statsAtLevel = getPlayerStatsAtLevel(playerId, lvl)
     if (statsAtLevel && Number.isFinite(parseInt(statsAtLevel.hp, 10))) {
-      return parseInt(statsAtLevel.hp, 10)
+      return adjusted(parseInt(statsAtLevel.hp, 10))
     }
   }
 
   if (playerBaseStats && playerBaseStats[playerId] && Number.isFinite(parseInt(playerBaseStats[playerId].hp, 10))) {
-    return parseInt(playerBaseStats[playerId].hp, 10)
+    return adjusted(parseInt(playerBaseStats[playerId].hp, 10))
   }
 
-  return Math.max(1, parseInt(charData.hp, 10) || 1)
+  return adjusted(Math.max(1, parseInt(charData.hp, 10) || 1))
 }
 
 function parseInventoryItems(text) {
@@ -211,18 +212,18 @@ function isPhysicalMobAttack(attack) {
   return /(coup|frappe|morsure|griffe|croc|charge|balayage|taloche|massue|lance|estoc|poing|fouet|pi[eé]tinement|entaille)/.test(name)
 }
 
-function chooseCombatTarget(playerIds,titleText){
+function chooseCombatTarget(playerIds,titleText,{allowFullHealth=false}={}){
  const combatId=window.__combatSnapshot?.id,owner=combatOwner(getCombatHUDPlayerId()),previousFocus=document.activeElement
  if(typeof combatTargetCancellation==="function")combatTargetCancellation()
  return new Promise(resolve=>{
   const picker=document.createElement("section");picker.id="combatTargetPicker";picker.className="combatTargetPickerPanel";picker.setAttribute("role","dialog");picker.setAttribute("aria-label",titleText||"Choisir une cible")
   picker.style.cssText="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:20px;z-index:2000000000;background:#101b22;border:1px solid #cda761;border-radius:10px;color:#ffe4ac;font:17px Georgia"
   const title=document.createElement("p");title.textContent=titleText||"Choisir une cible";picker.appendChild(title)
-  const hint=document.createElement("p");hint.className="combatTargetPickerHint";hint.textContent="Choisir un allié lance le soin. Annuler ne consomme aucune action.";picker.appendChild(hint)
+  const hint=document.createElement("p");hint.className="combatTargetPickerHint";hint.textContent=allowFullHealth?"Choisissez le bénéficiaire du sursis. Annuler ne consomme aucune action.":"Choisir un allié lance le soin. Annuler ne consomme aucune action.";picker.appendChild(hint)
   let done=false;const finish=value=>{if(done)return;done=true;picker.remove();combatTargetCancellation=null;combatTargetRefresh=null;if(previousFocus?.isConnected)previousFocus.focus?.();resolve(value)}
   const choices=[];for(const id of playerIds){const button=document.createElement("button");button.dataset.combatTarget=id;button.style.cssText="display:block;width:100%;padding:12px;margin:8px 0";button.onclick=()=>{if(!button.disabled)finish(id)};picker.appendChild(button);choices.push([id,button])}
   const cancel=document.createElement("button");cancel.textContent="Annuler";cancel.onclick=()=>finish(null);picker.appendChild(cancel);document.body.appendChild(picker)
-  combatTargetCancellation=()=>finish(null);combatTargetRefresh=()=>{if(!combatActive||window.__combatSnapshot?.id!==combatId||window.__combatSnapshot?.phase==="finished"||(owner&&window.__combatSnapshot?.turnState?.currentActorId!==owner)){finish(null);return}for(const [id,button]of choices){const data=id==="eloSummon"?window.__combatSnapshot?.eloSummon:window.__publicCharacters?.[id],hp=data?.hp,max=id==="eloSummon"?data?.maxHP:getCharacterMaxHp(id,data||{});button.disabled=hp!=null&&(hp<=0||hp>=max);button.textContent=(id==="eloSummon"?"John Pork":heroDisplayName(id))+(hp!=null?" — "+hp+" / "+max+" PV":"")+(hp<=0?" — KO":hp>=max?" — PV au maximum":"")}};combatTargetRefresh();choices.find(([,b])=>!b.disabled)?.[1].focus();refreshCombatHUDContext()
+  combatTargetCancellation=()=>finish(null);combatTargetRefresh=()=>{if(!combatActive||window.__combatSnapshot?.id!==combatId||window.__combatSnapshot?.phase==="finished"||(owner&&window.__combatSnapshot?.turnState?.currentActorId!==owner)){finish(null);return}for(const [id,button]of choices){const data=id==="eloSummon"?window.__combatSnapshot?.eloSummon:window.__publicCharacters?.[id],hp=data?.hp,max=id==="eloSummon"?data?.maxHP:getCharacterMaxHp(id,data||{});button.disabled=hp!=null&&(hp<=0||!allowFullHealth&&hp>=max);button.textContent=(id==="eloSummon"?"John Pork":heroDisplayName(id))+(hp!=null?" — "+hp+" / "+max+" PV":"")+(hp<=0?" — KO":!allowFullHealth&&hp>=max?" — PV au maximum":"")}};combatTargetRefresh();choices.find(([,b])=>!b.disabled)?.[1].focus();refreshCombatHUDContext()
  })
 }
 
@@ -748,6 +749,7 @@ function buildMobPassTurnBlock(actorId, label) {
 
 function getCombatStatusEntries(){
  const entries=[],c=window.__combatSnapshot||{},state=c.turnState||getCombatTurnState(),actor=state?.currentActorId
+ for(const id of COMBAT_CHARACTERS){if(window.__helMarks?.[id])entries.push({kind:"warn",title:heroDisplayName(id)+" — Marque des parjures",text:"PV maximum −15 %",meta:"Permanent — seul le MJ peut lever le courroux"});const ward=c.helReprieves?.[id];if(ward)entries.push({kind:"buff",title:heroDisplayName(id)+" — Sursis de Hel",text:"Le prochain coup fatal laisse à 1 PV, puis consomme le sursis",meta:"Jusqu’à la fin du round "+ward.expiresAfterRound})}
  if(state?.phase==="active"&&actor)entries.push({kind:"buff",title:"Tour actif",text:(actor==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(actor)?combatEnemyLabel(actor):heroDisplayName(actor))+" joue maintenant",meta:"Round "+(state.round||1)})
  if(c.heroHaste)entries.push({kind:"buff",title:"SKARO’H — "+heroDisplayName(c.heroHaste.actor),text:"Attaques basiques consécutives",meta:c.heroHaste.remaining+" attaque(s) restante(s)"})
  if(state?.phase==="rolling")entries.push({kind:"warn",title:"Initiative",text:"Les jets d’initiative sont en cours",meta:"Ordre des tours en préparation"})
@@ -1687,7 +1689,7 @@ function openAllyPNJPanel() {
     return
   }
   const panel = document.createElement("div"); panel.id = "allyPNJPanel"
-  panel.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(8,20,24,0.97);border:1px solid #1e5a66;box-shadow:0 0 0 1px #8a6520,0 0 40px rgba(0,0,0,0.9);border-radius:3px;padding:16px;z-index:99999999;min-width:380px;max-width:92vw;max-height:82vh;overflow-y:auto;font-family:Cinzel,serif;"
+  panel.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(8,20,24,0.97);border:1px solid #1e5a66;box-shadow:0 0 0 1px #8a6520,0 0 40px rgba(0,0,0,0.9);border-radius:3px;padding:16px;z-index:99999999;min-width:min(380px,92vw);max-width:92vw;box-sizing:border-box;max-height:82vh;overflow-y:auto;font-family:Cinzel,serif;"
 
   const title = document.createElement("div"); title.style.cssText = "font-size:11px;letter-spacing:3px;color:#1e8a9a;margin-bottom:12px;border-bottom:1px solid rgba(30,90,102,0.3);padding-bottom:8px;display:flex;justify-content:space-between;align-items:center;"
   const titleText = document.createElement("span")
@@ -1702,6 +1704,7 @@ function openAllyPNJPanel() {
   title.appendChild(titleText)
   title.appendChild(titleClose)
   panel.appendChild(title)
+  const manage=document.createElement("button");manage.type="button";manage.textContent="Gérer les alliances / Rompre une alliance";manage.style.cssText="min-height:44px;width:100%;margin-bottom:10px";manage.onclick=()=>{panel.remove();openAllyDiscoveryPanel()};panel.appendChild(manage)
 
   db.ref("combat/usedAllies").once("value", snap => {
     const used = snap.val() || {}
@@ -1721,7 +1724,8 @@ function openAllyPNJPanel() {
       header.appendChild(img); header.appendChild(info); block.appendChild(header)
 
       pnj.actions.forEach(action => {
-        const isUsed = !!used[action.id]
+        const allianceBroken=!!window.__explorationState?.allyBreaks?.[pnj.id],lockedHel=pnj.id==="hel"&&!window.__explorationState?.allyDiscoveries?.hel
+        const isUsed = !!used[action.id]||allianceBroken||lockedHel
         const typeColors = { damage:"#ff7777", heal:"#77ff99", malus:"#ffaa44", buff:"#88aaff" }
         const typeLabels = { damage:"ATQ", heal:"SOIN", malus:"MALUS", buff:"BUFF" }
         const btn = document.createElement("div")
@@ -1747,7 +1751,7 @@ function openAllyPNJPanel() {
         center.appendChild(descEl)
         const badge = document.createElement("span")
         badge.style.cssText = `font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(30,90,102,0.2);color:${typeColors[action.type]};letter-spacing:1px;`
-        badge.innerText = isUsed ? "UTILISÉ" : typeLabels[action.type]
+        badge.innerText = allianceBroken?"ALLIANCE ROMPUE":lockedHel?"À DÉBLOQUER":isUsed ? "UTILISÉ" : typeLabels[action.type]
         btn.appendChild(iconEl)
         btn.appendChild(center)
         btn.appendChild(badge)
@@ -1775,6 +1779,7 @@ function openAllyPNJPanel() {
 
 function triggerAllyAction(pnj, action, panel) {
   if(!combatActive){if(isGM){openAllyGrantPicker(pnj,action);return}return requestExplorationSummon(pnj,action)}
+  if(pnj.id==="hel")return requestAllyCombatAction(pnj,action,null,panel)
   if (!isGM && myToken && (action.type === "heal" || action.type === "buff")) {
     _executeAllyAction(pnj, action, myToken.id, panel)
     return
@@ -1959,7 +1964,7 @@ async function giveAllyActionToPlayer(pnj,action,playerId,expectedCombatId=windo
   if(!["greg","ju","elo"].includes(playerId))throw Error("Choisissez Greg, Pika ou Elo.")
   const combatId=expectedCombatId,uid=window.__authUid,revision=persistenceRevision||"initial"
   const result=await reliableRootTransaction(root=>{
-   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||!combatId||root.combat?.id!==combatId||root.combat.phase!=="active"||!combatHasWorldBoss(root)||root.combat.usedAllies?.[action.id]||!root.characters?.[playerId]||Number(root.characters[playerId].hp)<=0)return undefined
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||!combatId||root.combat?.id!==combatId||root.combat.phase!=="active"||!combatHasWorldBoss(root)||root.combat.usedAllies?.[action.id]||root.game?.allyBreaks?.[pnj.id]||!root.characters?.[playerId]||Number(root.characters[playerId].hp)<=0)return undefined
    root.game||={};root.game.playerAllyAccess={pnjName:pnj.name,actionId:action.id,playerId,combatId,time:Date.now()};return root
   })
   if(!result.committed)throw Error("Combat terminé, pouvoir déjà utilisé ou personnage KO.")

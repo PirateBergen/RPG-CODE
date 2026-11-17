@@ -2,6 +2,7 @@
 "use strict"
 
 const ALLY_DISCOVERY_MESSAGES={
+ hel:"Hel vous accorde un sursis. Votre pacte vous lie désormais à la souveraine des morts.",
  gardienne:"La Gardienne veille désormais sur vous. Dans vos combats les plus difficiles, son souffle pourra vous rendre espoir.",
  melenchon:"Le général Mélenchon engage ses troupes à vos côtés. Lors de vos combats les plus difficiles, l’Oregon III pourra vous apporter son appui aérien.",
  odin:"Le regard du Tout-Père se pose sur vous. Dans vos combats les plus difficiles, Odin pourra répondre à votre appel.",
@@ -43,11 +44,12 @@ function openAllyDiscoveryPanel(){
  for(const pnj of ALLY_PNJS){
   const row=document.createElement("section"),image=document.createElement("img"),label=document.createElement("strong"),actions=document.createElement("div"),unlock=document.createElement("button"),summon=document.createElement("button")
   row.className="allyManagementRow";row.dataset.ally=pnj.id;image.src="images/"+pnj.image;image.alt="";label.textContent=pnj.name;actions.className="allyManagementActions"
-  unlock.type=summon.type="button";unlock.dataset.action="unlock";summon.dataset.action="summon";unlock.textContent=window.__explorationState?.allyDiscoveries?.[pnj.id]?"Déjà débloqué":"Débloquer pour les combats";unlock.disabled=!!window.__explorationState?.allyDiscoveries?.[pnj.id];summon.textContent="Invoquer";summon.disabled=combatActive||gameState!=="GAME";summon.title="Placer le personnage sur cette carte, sans attaque ni cinématique"
+  unlock.type=summon.type="button";unlock.dataset.action="unlock";summon.dataset.action="summon";unlock.textContent=window.__explorationState?.allyDiscoveries?.[pnj.id]?"Déjà débloqué":window.__explorationState?.allyBreaks?.[pnj.id]?"Rétablir l’alliance":"Débloquer pour les combats";unlock.disabled=!!window.__explorationState?.allyDiscoveries?.[pnj.id];summon.textContent="Invoquer";summon.disabled=combatActive||gameState!=="GAME";summon.title="Placer le personnage sur cette carte, sans attaque ni cinématique"
   const done=()=>{panel.remove();window.GameWindows?.closed(panel);document.querySelectorAll(".gmSection").forEach(menu=>menu.style.display="none")}
   unlock.onclick=async()=>{unlock.disabled=true;if(await unlockAllyDiscovery(pnj.id))done();else unlock.disabled=false}
   summon.onclick=async()=>{summon.disabled=true;if(await placeAllyOnMap(pnj.id))done();else summon.disabled=combatActive||gameState!=="GAME"}
-  actions.append(unlock,summon);row.append(image,label,actions);box.appendChild(row)
+  const revoke=document.createElement("button");revoke.type="button";revoke.textContent="Rompre l’alliance";revoke.dataset.action="revoke";revoke.disabled=!window.__explorationState?.allyDiscoveries?.[pnj.id];revoke.onclick=async()=>{revoke.disabled=true;if(await submitHelPactCommand({kind:"revoke",allyId:pnj.id}))done();else revoke.disabled=false};
+  actions.append(unlock,summon,revoke);row.append(image,label,actions);box.appendChild(row)
  }
  const previous=document.activeElement,finish=()=>{panel.remove();previous?.focus?.()};close.textContent="Fermer";close.onclick=finish;box.appendChild(close);panel.appendChild(box)
  panel.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();finish()}if(event.key==="Tab"){const buttons=[...box.querySelectorAll("button:not(:disabled)")],first=buttons[0],last=buttons.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}})
@@ -60,7 +62,7 @@ async function unlockAllyDiscovery(id){
   const uid=window.__authUid,revision=persistenceRevision||"initial",time=Date.now()
   const result=await reliableRootTransaction(root=>{
    if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.allyDiscoveries?.[id])return undefined
-   root.game||={};root.game.allyDiscoveries||={};root.game.allyDiscoveries[id]={time};return root
+   root.game||={};root.game.allyDiscoveries||={};root.game.allyDiscoveries[id]={time};if(root.game.allyBreaks)delete root.game.allyBreaks[id];return root
   })
   if(!result.committed)throw Error("Allié déjà découvert ou partie modifiée.")
   return true
@@ -81,7 +83,7 @@ async function giveExplorationAllyAccess(pnj,action,actor){
   requireActionAccess({gmOnly:true});requireExplorationConnection()
   const known=ALLY_PNJS.find(p=>p.id===pnj?.id),power=known?.actions.find(a=>a.id===action?.id);if(!known||!power||!PLAYABLE_HEROES.includes(actor))throw Error("Allié, pouvoir ou héros inconnu")
   const uid=window.__authUid,revision=persistenceRevision||"initial",grantId=db.ref("game").push().key,time=Date.now()
-  const result=await reliableRootTransaction(root=>{if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.combatState?.active||root.combat?.phase==="active"||!root.characters?.[actor]||root.characters[actor].hp<=0)return undefined;root.game||={};root.game.playerAllyAccess={scope:"exploration",pnjName:known.name,actionId:power.id,playerId:actor,grantId,time};return root})
+  const result=await reliableRootTransaction(root=>{if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.combatState?.active||root.combat?.phase==="active"||!root.characters?.[actor]||root.characters[actor].hp<=0)return undefined;if(root.game?.allyBreaks?.[known.id])throw Error("Alliance rompue");root.game||={};root.game.playerAllyAccess={scope:"exploration",pnjName:known.name,actionId:power.id,playerId:actor,grantId,time};return root})
   if(!result.committed)throw Error("Un combat a commencé ou la partie a changé.")
   showNotification(known.name+" : invocation hors combat autorisée pour "+heroDisplayName(actor)+".");return true
  }catch(e){showNotification("Autorisation non donnée : "+e.message);return false}
@@ -94,7 +96,7 @@ async function placeAllyOnMap(id){
   const uid=window.__authUid,revision=persistenceRevision||"initial",map=currentMap,tokenId=db.ref("game/summonedAllies").push().key,time=Date.now(),el=document.getElementById("map"),x=Math.round((el?.offsetWidth||800)/2),y=Math.round((el?.offsetHeight||600)/2)
   const result=await reliableRootTransaction(root=>{
    if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!==map||root.game?.combatState?.active||root.combat?.phase==="active")return undefined
-   root.game.summonedAllies||={};if(!Object.values(root.game.summonedAllies).some(t=>t?.pnjId===id&&t.map===map))root.game.summonedAllies[tokenId]={pnjId:id,map,x,y,time};return root
+   if(root.game?.allyBreaks?.[id])throw Error("Alliance rompue");root.game.summonedAllies||={};if(!Object.values(root.game.summonedAllies).some(t=>t?.pnjId===id&&t.map===map))root.game.summonedAllies[tokenId]={pnjId:id,map,x,y,time};return root
   })
   if(!result.committed)throw Error("La carte ou la partie a changé.")
   showNotification(pnj.name+" est présent sur cette carte.");return true

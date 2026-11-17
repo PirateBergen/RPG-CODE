@@ -33,7 +33,8 @@
       "campaigns/prophetie-des-mouches/characters/identity-and-compatibility.js",
       "engine/items/inventory-weight.js",
       "campaigns/prophetie-des-mouches/rules/balrog-sword.js",
-      "engine/combat/damage-routing.js"
+      "engine/combat/damage-routing.js",
+      "campaigns/prophetie-des-mouches/rules/hel-pact.js"
     ],
     "game.js": [
       "platform/firebase/bootstrap.js",
@@ -295,7 +296,11 @@
       "interface/styles/21-player-actions.css",
       "interface/styles/22-reactions.css",
       "interface/styles/23-dice-choice.css",
-      "interface/styles/24-boss-dossier.css"
+      "interface/styles/24-boss-dossier.css",
+      "interface/styles/25-hel-pact.css"
+    ],
+    "hel-pact.js": [
+      "interface/allies/hel-pact.js"
     ]
   }
 }

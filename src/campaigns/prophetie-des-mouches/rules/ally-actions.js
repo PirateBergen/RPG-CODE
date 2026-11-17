@@ -3,6 +3,8 @@ function resolveAllyCombatAction(root, request, dice) {
   requireCombatTurn(root, request, request.actor)
   const payload = request.payload || {}, pnj = ALLY_PNJS.find(p => p.id === payload.pnjId), action = pnj?.actions.find(a => a.id === payload.actionId)
   if (!pnj || !action) throw new Error("Action alliée inconnue")
+  if(root.game?.allyBreaks?.[pnj.id])throw Error("Alliance rompue : ce soutien est indisponible")
+  if(pnj.id==="hel"&&!root.game?.allyDiscoveries?.hel)throw Error("Le MJ doit débloquer l’alliance avec Hel")
   if (root.combat.usedAllies?.[action.id]) throw new Error("Cette intervention a déjà été utilisée")
   if (root.roles?.[request.uid] !== "gm" && (root.game.playerAllyAccess?.scope === "exploration" || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
   const enhanced=enhancedCombatCriticals(root.combat)
@@ -15,6 +17,17 @@ function resolveAllyCombatAction(root, request, dice) {
   let amount = 0,thorLethalDamage=0,totalAllyDamage=0
   const consequences=[]
   const wasKO=combatFriendlyTarget(root,payload.target)?.hp<=0
+  if(pnj.id==="hel"){
+    const selected=[payload.target,...(payload.secondaryTarget?[payload.secondaryTarget]:[])]
+    if(new Set(selected).size!==selected.length||selected.some(p=>!COMBAT_CHARACTERS.includes(p)||!root.characters[p]||root.characters[p].hp<=0))throw Error("Choisissez des héros vivants distincts")
+    const success=roll>=8&&!fail,protectedTargets=success?(crit?selected:selected.slice(0,1)):[]
+    root.combat.helReprieves||={}
+    for(const target of protectedTargets){root.combat.helReprieves[target]={expiresAfterRound:(root.combat.turnState.round||1)+1};combatRecord(root,request,"HEL",heroDisplayName(target),0,"reprieve",heroDisplayName(target)+" : Sursis de Hel jusqu’à la fin du prochain round. Un coup fatal laisse à 1 PV, puis consomme le sursis.")}
+    root.combat.usedAllies||={};root.combat.usedAllies[action.id]=true;delete root.game.playerAllyAccess
+    const explanation=success?(crit?"Critique : sursis accordé aux héros choisis.":"Sursis accordé au premier héros choisi."):"Jet inférieur à 8 : aucun sursis. Intervention et action consommées."
+    nextCombatTurn(root,request)
+    return {actor:request.actor,attack:action.label,pnjId:pnj.id,actionId:action.id,target:payload.target,roll,dice:20,crit,fail,amount:0,mode:"ally",explanation,interventionFailed:!success,protectedTargets}
+  }
   const thorRetry=enhanced&&fail&&action.id==="thor_mjolnir"&&isJormungandr(root.combat[payload.target||livingMobs(root.combat)[0]])&&isForchurMap(root.game?.combatState?.returnMap||root.game?.map)
   if(enhanced&&fail){
     consequences.push(thorRetry?"Échec critique : Thor rate Jörmungandr, aucun dégât. L’action du héros est consommée. Le MJ peut réautoriser Thor au prochain round pour conserver une issue à ce combat.":"Échec critique : intervention ratée, aucun dégât, soin ou effet. L’intervention et l’action du héros sont consommées.")

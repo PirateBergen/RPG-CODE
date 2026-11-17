@@ -1,6 +1,6 @@
 function getMaxHP(playerId, level) {
   const s = getPlayerStatsAtLevel(playerId, level || 1)
-  return s ? s.hp : 100
+  return helAdjustedMaxHP(playerId,{},s ? s.hp : 100)
 }
 
 function getMaxCarryWeight() { return 100 }

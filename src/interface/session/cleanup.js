@@ -1,4 +1,5 @@
 function cleanupTransientGameUI(options = {}) {
+  window.__cancelHelWrath?.();document.getElementById("helWrathMenu")?.__close?.()
   window.__cancelAntrePassage?.()
   window.__cancelQuantumGift?.()
   if(typeof syncAntreAfterlifeView==="function")syncAntreAfterlifeView()

@@ -1,5 +1,6 @@
 function getCombatStatusEntries(){
  const entries=[],c=window.__combatSnapshot||{},state=c.turnState||getCombatTurnState(),actor=state?.currentActorId
+ for(const id of COMBAT_CHARACTERS){if(window.__helMarks?.[id])entries.push({kind:"warn",title:heroDisplayName(id)+" — Marque des parjures",text:"PV maximum −15 %",meta:"Permanent — seul le MJ peut lever le courroux"});const ward=c.helReprieves?.[id];if(ward)entries.push({kind:"buff",title:heroDisplayName(id)+" — Sursis de Hel",text:"Le prochain coup fatal laisse à 1 PV, puis consomme le sursis",meta:"Jusqu’à la fin du round "+ward.expiresAfterRound})}
  if(state?.phase==="active"&&actor)entries.push({kind:"buff",title:"Tour actif",text:(actor==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(actor)?combatEnemyLabel(actor):heroDisplayName(actor))+" joue maintenant",meta:"Round "+(state.round||1)})
  if(c.heroHaste)entries.push({kind:"buff",title:"SKARO’H — "+heroDisplayName(c.heroHaste.actor),text:"Attaques basiques consécutives",meta:c.heroHaste.remaining+" attaque(s) restante(s)"})
  if(state?.phase==="rolling")entries.push({kind:"warn",title:"Initiative",text:"Les jets d’initiative sont en cours",meta:"Ordre des tours en préparation"})

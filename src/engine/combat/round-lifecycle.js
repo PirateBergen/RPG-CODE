@@ -16,6 +16,7 @@ function tickCombatRound(root, request) {
   if (summon && (--summon.turnsLeft <= 0 || combatInt(summon.hp) <= 0)) delete root.combat.eloSummon
   tickKrakenHolds(root,request)
   gmTickStatusRound(root,request)
+  for(const [id,ward]of Object.entries(root.combat.helReprieves||{}))if(ward.expiresAfterRound<=(root.combat.turnState.round||1))delete root.combat.helReprieves[id]
 }
 
 function nextCombatTurn(root, request, skipRemaining = false) {

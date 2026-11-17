@@ -6676,3 +6676,17 @@ body.krakenEncounter #combatReactionBar{display:none}
 /* Reserve separate vertical areas for the two existing combat panels. */
 @media(max-width:600px){body.krakenEncounter #mobAttackPanel{top:150px!important;left:8px!important;right:8px!important;width:calc(100vw - 16px)!important;max-height:max(44px,calc((100dvh - 260px)*.4))!important;box-sizing:border-box}body.krakenEncounter #combatHUD{left:8px!important;right:8px!important;bottom:82px!important;width:calc(100vw - 16px)!important;max-height:max(44px,calc((100dvh - 260px)*.55))!important;box-sizing:border-box}}
 @media(min-width:601px) and (max-width:1000px){body.krakenEncounter #mobAttackPanel{right:8px!important;left:auto!important;top:100px!important;width:calc(50vw - 16px)!important;max-height:calc(100dvh - 190px)!important;box-sizing:border-box}body.krakenEncounter #combatHUD{left:8px!important;right:auto!important;bottom:82px!important;width:calc(50vw - 16px)!important;max-height:calc(100dvh - 190px)!important;box-sizing:border-box}}
+.helModal{position:fixed;inset:0;z-index:2000000100;background:#06040ce8;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
+.helMenuBox{width:min(560px,100%);max-height:90dvh;overflow:auto;padding:20px;box-sizing:border-box;background:#16101e;color:#eee0ff;border:1px solid #887198;border-radius:12px;font:16px Georgia}
+.helMenuBox button,.helWrathSpeech button{display:block;width:100%;min-height:44px;margin-top:10px;padding:10px;color:#f6eaff;background:#32213e;border:1px solid #9c79b5;border-radius:6px;cursor:pointer;white-space:normal}
+.helTarget{display:flex;align-items:center;gap:12px;min-height:44px}.helTarget input{width:20px;height:20px}
+.helWrathScene{position:fixed;inset:0;z-index:2000000200;background:radial-gradient(ellipse at 50% 40%,#25132c 0%,#030205 62%,#000 100%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:auto;padding:12px;box-sizing:border-box;color:#eee4f3}
+.helWrathScene:before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-radial-gradient(ellipse at 20% 80%,transparent 0 60px,#321a3d30 110px,transparent 220px);animation:helFog 9s ease-in-out infinite alternate}
+.helWrathPortrait{position:relative;max-height:49dvh;max-width:90%;object-fit:contain;filter:drop-shadow(0 0 28px #543063);animation:helReveal 1.2s ease-out}
+.helWrathSpeech{position:relative;width:min(720px,100%);max-height:46dvh;overflow:auto;background:#08050df2;border:1px solid #6e527d;border-radius:10px;padding:14px 20px;box-sizing:border-box;font:clamp(15px,2vw,20px)/1.4 Georgia;text-align:center}
+.helWrathSpeech h2{margin:0;color:#c9accf;letter-spacing:8px}.helWrathSpeech p{margin:10px 0}.helWrathSpeech p:last-of-type{font-size:14px;color:#d3b0dc}
+#helMarkSheetNote{color:#bd8bd1;font-size:13px}.allyManagementActions{flex-wrap:wrap;gap:6px}
+.helWrathShake{animation:helShake .65s ease-out}
+@keyframes helShake{10%,50%,90%{transform:translate(-5px,2px)}30%,70%{transform:translate(5px,-2px)}100%{transform:none}}
+@keyframes helReveal{from{opacity:0;filter:blur(10px)}to{opacity:1;filter:blur(0)}}@keyframes helFog{to{background-position:80px -30px;opacity:.35}}
+@media(prefers-reduced-motion:reduce){.helWrathScene:before,.helWrathPortrait,.helWrathShake{animation:none}}

@@ -81,6 +81,7 @@ function reduceExplorationRequest(current,id,seed) {
 
 function resolveExplorationSummon(root,request,id,time){
  const access=root.game?.playerAllyAccess,payload=request.payload||{},pnj=ALLY_PNJS.find(p=>p.id===payload.pnjId),action=pnj?.actions.find(a=>a.id===payload.actionId)
+ if(root.game?.allyBreaks?.[pnj?.id])throw Error("Alliance rompue");
  if(root.game?.combatState?.active||root.combat?.phase==="active")throw Error("Cette invocation est prévue hors combat")
  if(!pnj||!action||!access||access.scope!=="exploration"||access.playerId!==request.actor||access.actionId!==action.id||access.grantId!==payload.grantId)throw Error("Autorisation MJ absente ou déjà utilisée")
  if(!root.game?.map||payload.map!==root.game.map)throw Error("La carte a changé")

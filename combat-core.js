@@ -209,6 +209,7 @@ function tickCombatRound(root, request) {
   if (summon && (--summon.turnsLeft <= 0 || combatInt(summon.hp) <= 0)) delete root.combat.eloSummon
   tickKrakenHolds(root,request)
   gmTickStatusRound(root,request)
+  for(const [id,ward]of Object.entries(root.combat.helReprieves||{}))if(ward.expiresAfterRound<=(root.combat.turnState.round||1))delete root.combat.helReprieves[id]
 }
 
 function nextCombatTurn(root, request, skipRemaining = false) {
@@ -407,7 +408,7 @@ function resolveEnemyCombatAction(root, request, dice) {
     const reduction=reaction?.status==="ready"?reaction.decisions?.[id]||0:0
     const reactedDamage=Math.round(damage*(1-reduction/100)),protectedDamage=gmIncomingDamage(root,id,reactedDamage),taken=c.balanceVersion===3?calibratedIncomingDamage(id==="eloSummon"?victim:combatCharacter(root,id),protectedDamage):protectedDamage
     if(reduction)combatRecord(root,request,"RÉACTION MJ",combatFriendlyName(id),0,"reaction",combatFriendlyName(id)+" : protection −"+reduction+" % contre « "+attack.name+" » ("+damage+" → "+reactedDamage+" avant armure et autres protections)")
-    victim.hp = Math.max(0, before - Math.max(0,combatInt(taken))); applied += before - victim.hp
+    victim.hp = helPreventKO(root,request,id,before,Math.max(0, before - Math.max(0,combatInt(taken)))); applied += before - victim.hp
     if(reduction===100){combatRecord(root,request,heroDisplayName(mob.name),combatFriendlyName(id),0,"mob",combatFriendlyName(id)+" évite complètement « "+attack.name+" » : aucun dégât ni effet secondaire");return}
     if(id==="eloSummon"){if(attack.effect==="stun"){victim.stunnedAttacks=1;consequences.push("John Pork : prochain bonus d’attaque neutralisé.")}if(attack.effect==="debuff"){victim.debuffRounds=2;consequences.push("John Pork : bonus de dégâts −2 pendant 2 rounds.")}combatRecord(root,request,heroDisplayName(mob.name),"John Pork",before-victim.hp,"mob","John Pork encaisse "+(before-victim.hp)+" dégâts ("+before+" → "+victim.hp+" / "+victim.maxHP+" PV)"+(victim.hp<=0?" — KO":""));return}
     if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
@@ -434,6 +435,8 @@ function resolveAllyCombatAction(root, request, dice) {
   requireCombatTurn(root, request, request.actor)
   const payload = request.payload || {}, pnj = ALLY_PNJS.find(p => p.id === payload.pnjId), action = pnj?.actions.find(a => a.id === payload.actionId)
   if (!pnj || !action) throw new Error("Action alliée inconnue")
+  if(root.game?.allyBreaks?.[pnj.id])throw Error("Alliance rompue : ce soutien est indisponible")
+  if(pnj.id==="hel"&&!root.game?.allyDiscoveries?.hel)throw Error("Le MJ doit débloquer l’alliance avec Hel")
   if (root.combat.usedAllies?.[action.id]) throw new Error("Cette intervention a déjà été utilisée")
   if (root.roles?.[request.uid] !== "gm" && (root.game.playerAllyAccess?.scope === "exploration" || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
   const enhanced=enhancedCombatCriticals(root.combat)
@@ -446,6 +449,17 @@ function resolveAllyCombatAction(root, request, dice) {
   let amount = 0,thorLethalDamage=0,totalAllyDamage=0
   const consequences=[]
   const wasKO=combatFriendlyTarget(root,payload.target)?.hp<=0
+  if(pnj.id==="hel"){
+    const selected=[payload.target,...(payload.secondaryTarget?[payload.secondaryTarget]:[])]
+    if(new Set(selected).size!==selected.length||selected.some(p=>!COMBAT_CHARACTERS.includes(p)||!root.characters[p]||root.characters[p].hp<=0))throw Error("Choisissez des héros vivants distincts")
+    const success=roll>=8&&!fail,protectedTargets=success?(crit?selected:selected.slice(0,1)):[]
+    root.combat.helReprieves||={}
+    for(const target of protectedTargets){root.combat.helReprieves[target]={expiresAfterRound:(root.combat.turnState.round||1)+1};combatRecord(root,request,"HEL",heroDisplayName(target),0,"reprieve",heroDisplayName(target)+" : Sursis de Hel jusqu’à la fin du prochain round. Un coup fatal laisse à 1 PV, puis consomme le sursis.")}
+    root.combat.usedAllies||={};root.combat.usedAllies[action.id]=true;delete root.game.playerAllyAccess
+    const explanation=success?(crit?"Critique : sursis accordé aux héros choisis.":"Sursis accordé au premier héros choisi."):"Jet inférieur à 8 : aucun sursis. Intervention et action consommées."
+    nextCombatTurn(root,request)
+    return {actor:request.actor,attack:action.label,pnjId:pnj.id,actionId:action.id,target:payload.target,roll,dice:20,crit,fail,amount:0,mode:"ally",explanation,interventionFailed:!success,protectedTargets}
+  }
   const thorRetry=enhanced&&fail&&action.id==="thor_mjolnir"&&isJormungandr(root.combat[payload.target||livingMobs(root.combat)[0]])&&isForchurMap(root.game?.combatState?.returnMap||root.game?.map)
   if(enhanced&&fail){
     consequences.push(thorRetry?"Échec critique : Thor rate Jörmungandr, aucun dégât. L’action du héros est consommée. Le MJ peut réautoriser Thor au prochain round pour conserver une issue à ce combat.":"Échec critique : intervention ratée, aucun dégât, soin ou effet. L’intervention et l’action du héros sont consommées.")
@@ -667,7 +681,7 @@ function gmTickStatusRound(root,request){
   const target=gmTarget(root,id);if(!target)continue
   for(const key of ["poison","bleeding","burning","regeneration"]){const state=states[key];if(!state||target.hp<=0)continue;const before=target.hp,max=COMBAT_MOBS.includes(id)?target.maxHP:getCharacterMaxHp(id,target)
    if(key==="regeneration")target.hp=Math.min(max,target.hp+state.amount)
-   else if(!isJormungandr(COMBAT_MOBS.includes(id)?target:null))target.hp=Math.max(0,target.hp-state.amount)
+   else if(!isJormungandr(COMBAT_MOBS.includes(id)?target:null))target.hp=helPreventKO(root,request,id,before,Math.max(0,target.hp-state.amount))
    if(before!==target.hp)combatRecord(root,request,"MJ — "+GM_COMBAT_STATES[key].label,id,Math.abs(before-target.hp),key==="regeneration"?"heal":"dmg","Effet MJ : "+GM_COMBAT_STATES[key].label)
   }
   for(const [key,state]of Object.entries(states))if(key!=="paralysis"&&--state.turns<=0)delete states[key]
@@ -749,7 +763,7 @@ function krakenAfterDamage(root,request,slot,amount){
 function tickKrakenHolds(root,request){
  for(const slot of COMBAT_MOBS){const mob=root.combat[slot];if(!isKrakenEncounter(mob))continue;synchronizeKrakenStage(root,slot,request);const hold=mob.krakenHold;if(!hold||(root.combat.turnState.round||1)<=hold.startedRound)continue
   const victim=root.characters[hold.target];let base=Math.round(calibratedHealth(mob.partyLevel)*(krakenStage(mob)===3?.08:.06));if(mob.attackMalus)base=Math.max(0,base-(mob.attackMalus.amount||0));if(mob.malus?.source==="La Sorcière")base=Math.round(base*combatWitchDamageFactor(root,mob));if(mob.krakenDisorientedActions>0)base=Math.round(base*.8)
-  const damage=calibratedIncomingDamage(combatCharacter(root,hold.target),gmIncomingDamage(root,hold.target,gmOutgoingDamage(root,slot,base))),before=victim.hp;victim.hp=Math.max(0,before-damage)
+  const damage=calibratedIncomingDamage(combatCharacter(root,hold.target),gmIncomingDamage(root,hold.target,gmOutgoingDamage(root,slot,base))),before=victim.hp;victim.hp=helPreventKO(root,request,hold.target,before,Math.max(0,before-damage))
   combatRecord(root,request,"ÉTREINTE",hold.target,before-victim.hp,"mob","L’étreinte du Kraken inflige "+(before-victim.hp)+" dégâts à "+heroDisplayName(hold.target))
   if(--hold.roundsLeft<=0||victim.hp<=0)delete mob.krakenHold
  }

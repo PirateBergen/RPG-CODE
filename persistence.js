@@ -436,7 +436,7 @@ function progressCharacters(characters) {
     if (level === previous) return
     const before = getPlayerStatsAtLevel(id, previous), after = getPlayerStatsAtLevel(id, level)
     allStats.forEach(stat => { c[stat] = (Number(c[stat]) || 0) + after[stat] - before[stat] })
-    c.lvl = level; c.hp = after.hp; c.poids = after.poids
+    c.lvl = level; c.hp = helAdjustedMaxHP(id,c,after.hp); c.poids = after.poids
     const rewarded = Math.max(previous, Number(c.progressionRewardedLevel) || previous)
     c.freePoints = (Number(c.freePoints) || 0) + Math.max(0, level - rewarded) * 2
     c.progressionRewardedLevel = Math.max(rewarded, level)
@@ -445,7 +445,7 @@ function progressCharacters(characters) {
       if (level > bLevel) {
         const bBefore = getPlayerStatsAtLevel("bibi", bLevel), bAfter = getPlayerStatsAtLevel("bibi", level)
         allStats.forEach(stat => { b[stat] = (Number(b[stat]) || 0) + bAfter[stat] - bBefore[stat] })
-        b.lvl = level; b.hp = bAfter.hp; b.poids = bAfter.poids
+        b.lvl = level; b.hp = helAdjustedMaxHP("bibi",b,bAfter.hp); b.poids = bAfter.poids
       }
     }
   })

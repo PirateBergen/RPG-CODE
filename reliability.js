@@ -217,7 +217,7 @@ async function reliableRootTransaction(update,allowSessionBusy=false){
  finally{clearTimeout(timer);if(cancel)reliablePending.delete(cancel);controller.abort()}
 }
 
-function reliableCharacterPatch(id,data){if(!canAccessCharacter(id))return Promise.reject(Error("Fiche privée"));return reliablePut("characters/"+id,data,undefined,false,"PATCH",true)}
+function reliableCharacterPatch(id,data){if(window.__helMarks?.[id]&&Number.isFinite(data.hp))return reliableCharacterTransaction(id,current=>{if(!current)return;const next={...current,...data};next.hp=Math.max(0,Math.min(next.hp,getCharacterMaxHp(id,next)));return next});if(!canAccessCharacter(id))return Promise.reject(Error("Fiche privée"));return reliablePut("characters/"+id,data,undefined,false,"PATCH",true)}
 
 // Compare-and-swap sur une seule fiche : pas de file d’attente hors ligne.
 async function reliableCharacterTransaction(id,update){

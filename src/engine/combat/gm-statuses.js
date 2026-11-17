@@ -60,6 +60,7 @@ function applyGMCombatAdjustment(current,uid,combatId,revision,change,changeId){
   if(target.hp!==before)combatRecord(root,request,"MJ",label,Math.abs(target.hp-before),target.hp>before?"heal":"dmg",message)
  }else throw Error("Ajustement inconnu")
  delete c.pendingResolution;delete c.interventionArmed
+ for(const slot of COMBAT_MOBS)synchronizeKrakenStage(root,slot,request)
  if(!combatOutcome(root,request)){
   const owner=c.turnState.currentActorId,members=gmTurnMembers(owner).filter(member=>(gmTarget(root,member)?.hp||0)>0)
   if(!combatActorAlive(root,owner)||(members.length&&members.every(member=>gmParalyzed(root,member))))nextCombatTurn(root,request,true)

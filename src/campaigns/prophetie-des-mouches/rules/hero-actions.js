@@ -1,6 +1,7 @@
 function resolveHeroCombatAction(root, request, dice) {
   const actor = request.actor, payload = request.payload || {}, c = root.combat
   requireCombatTurn(root, request, actor)
+  if(payload.support==="krakenRelease")return resolveKrakenRelease(root,request,dice)
   const raw = root.characters[actor], data = combatCharacter(root, actor)
   const special = !!payload.special
   const attack = getCombatHeroAttack(actor,payload.attack,special)
@@ -54,7 +55,7 @@ function resolveHeroCombatAction(root, request, dice) {
   if (attack.name === "Spider Sense" && !fail) { c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
   if (attack.name === "Petite merde" && c.playerFlags?.[actor]?.spiderSense) damage *= 2
   if(attack.name==="Je suis jet laguée"&&c.balanceVersion!==3)damage=Math.round(damage*1.25)
-  if(c.balanceVersion===3)damage=calibratedOutgoingDamage(root,actor,damage)
+  if(c.balanceVersion===3)damage=calibratedOutgoingDamage(root,actor,damage,attack.name==="Le Bibi"?"bibi":actor)
   let amount = combatDamage(root, request, actor.toUpperCase() + " — " + attack.name, slot, Math.round(damage))
   if (!fail&&actor==="greg"&&attack.name!=="Le Bibi"&&getPlayerAttackTypeKey(attack)==="physical"&&mob.name==="roi"&&balrogSwordIsEquipped(root))mob.balrogSwordWeaken=Math.max(mob.balrogSwordWeaken||0,crit?.25:.15)
   if (!fail) {

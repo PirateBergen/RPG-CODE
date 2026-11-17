@@ -137,7 +137,7 @@ async function requestAllyCombatAction(pnj, action, targetId, panel) {
   finally { window.__playerAttackResolving = false }
 }
 
-function calculateCombatMob(mobName,tier,partyLevel,enemyCount=1,version=3){return version===3?calibratedCombatMob(mobName,tier,partyLevel,enemyCount):balancedCombatMob(mobName,tier,partyLevel,enemyCount)}
+function calculateCombatMob(mobName,tier,partyLevel,enemyCount=1,version=3){return version===3?initializeKrakenEncounter(calibratedCombatMob(mobName,tier,partyLevel,enemyCount)):balancedCombatMob(mobName,tier,partyLevel,enemyCount)}
 
 async function launchReliableCombat(mainMob, forceTier, extraMobs) {
   if (!isGM || window.__authRole !== "gm" || combatStarting || window.__sessionBusy) return

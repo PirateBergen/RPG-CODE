@@ -14,6 +14,7 @@ function tickCombatRound(root, request) {
   const summon = root.combat.eloSummon
   if(summon)for(const key of ["debuffRounds"])if(summon[key]>0)summon[key]--
   if (summon && (--summon.turnsLeft <= 0 || combatInt(summon.hp) <= 0)) delete root.combat.eloSummon
+  tickKrakenHolds(root,request)
   gmTickStatusRound(root,request)
 }
 

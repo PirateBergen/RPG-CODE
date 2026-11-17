@@ -25,6 +25,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
   const target = root.combat[slot]
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
+  amount=krakenIncomingDamage(root,request,from,slot,amount)
   if(isJormungandr(target)){
     const origin=root.game?.combatState?.returnMap||root.game?.map
     if(!options.thorMjolnir||!isForchurMap(origin)||Math.max(0,combatInt(before))<=0){
@@ -33,6 +34,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
     target.hp=0;target.defeatedByThor=true
   }else target.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount)))))
   combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
+  krakenAfterDamage(root,request,slot,before-target.hp)
   return before - target.hp
 }
 

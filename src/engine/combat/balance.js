@@ -43,8 +43,8 @@ function calibratedCombatMob(name,tier,partyLevel,enemyCount=1){
 function getCalibratedMobDamageRange(attack,mob){
  const category=mob.balanceClass||getMobBalanceClass(mob.name,mob.tier),profile=CALIBRATED_ENCOUNTER[category],level=calibratedLevel(mob.partyLevel),health=mob.partyHpReference||calibratedHealth(level)
  const normals=getMobAttacksForMob(mob.name,mob.tier).filter(a=>!a.special&&a.effect!=='all'),average=normals.reduce((n,a)=>n+(a.dmgMin+a.dmgMax)/2,0)/Math.max(1,normals.length)||10,weight=Math.max(.8,Math.min(1.2,((Number(attack.dmgMin)+Number(attack.dmgMax))/2||average)/average))
- const levelFactor=Math.max(.4,Math.min(2.5,Math.pow(((Number(mob.lvl)||level)+8)/(level+profile.offset+8),.8))),fury=category==='world'&&mob.hp<=mob.maxHP*.5?1.12:1
- const factor=weight*levelFactor*(mob.damageGroupFactor||1)*(attack.special?1.35:1)*(attack.effect==='all'?(category==='world'?.45:.60):1)*fury*(category==='world'?1+.12*(level-1)/(level+9):1)*(mob.name==='roi'?1.02:1)
+ const levelFactor=Math.max(.4,Math.min(2.5,Math.pow(((Number(mob.lvl)||level)+8)/(level+profile.offset+8),.8))),fury=!isKrakenEncounter(mob)&&category==='world'&&mob.hp<=mob.maxHP*.5?1.12:1
+ const factor=weight*levelFactor*krakenDamageFactor(attack,mob)*(mob.damageGroupFactor||1)*(attack.special?1.35:1)*(attack.effect==='all'?(category==='world'?.45:.60):1)*fury*(category==='world'?1+.12*(level-1)/(level+9):1)*(mob.name==='roi'?1.02:1)
  const min=Math.max(1,Math.round(health*profile.damage[0]*factor)),max=Math.max(min,Math.round(health*profile.damage[1]*factor));return {min,max}
 }
 function calibratedAllyDamage(pnj,action,roll,crit,fail,level){return Math.round(calibratedPartyDamage(level)*({baldur:1.8,melenchon:2.2,odin:2.8,thor:3,freya:2.5}[pnj.id]||2)*(.6+.8*roll/action.dice)*(crit?1.6:1)*(fail?.2:1))}
@@ -52,7 +52,7 @@ function calibratedAllyHeal(pnj,roll,max,level){return Math.round(calibratedHeal
 function calibratedThuumDamage(word,rank,level){const factor=1+.2*(Math.max(1,Math.min(3,Number(rank)||1))-1),health=calibratedHealth(level);return word==='SKARO\'H'?{main:0,splash:0}:{main:Math.round(health*(word==='SKRAA'?.12:.08)*factor),splash:word==='SKRAA'?Math.round(health*.045*factor):0}}
 function calibratedRuleSummary(data){const defense=Math.round(calibratedDefense(data)*100),luck=calibratedLuckBonus(data),initiative=calibratedInitiativeBonus(data);return 'Défense : −'+defense+' % de dégâts d’attaque · Chance : jusqu’à +'+luck+' au jet · Initiative : +'+initiative+'. Critiques sur le dé naturel.'}
 
-function calibratedOutgoingDamage(root,actor,amount){return Math.round(amount*(root.combat.heroPowerBuffs?.[actor]?.turns>0?1.25:1))}
+function calibratedOutgoingDamage(root,actor,amount,actualActor=actor){return Math.round(amount*(root.combat.heroPowerBuffs?.[actor]?.turns>0?1.25:1)*krakenHeroDamageFactor(root,actualActor))}
 function calibratedAttackDescription(attack){
  const effects={
   "Le Bibi":"Bibi attaque avec sa Chance. Sur critique, rage pendant trois rounds : bonus de dégâts adapté au niveau.",

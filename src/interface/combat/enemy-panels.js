@@ -11,7 +11,7 @@ function renderAllMobPanels() {
     let pointer=null,ox=0,oy=0
     container.style.cursor="grab"
     container.addEventListener("pointerdown",e=>{
-      if(e.button!==0||e.pointerType==="touch"||e.target.closest("button,input,select,textarea,[role=button]")||e.target.closest("[onclick]"))return
+      if(e.button!==0||e.pointerType==="touch"||e.target.closest("button,input,select,textarea,summary,[role=button]")||e.target.closest("[onclick]"))return
       pointer=e.pointerId;const rect=container.getBoundingClientRect();ox=e.clientX-rect.left;oy=e.clientY-rect.top
       container.setPointerCapture?.(pointer);container.style.cursor="grabbing";e.preventDefault()
     })
@@ -26,29 +26,31 @@ function renderAllMobPanels() {
   }
 
   document.body.appendChild(container)
-  active.forEach(slot => { db.ref("combat/"+slot).once("value", snap => { if(!container.isConnected||document.getElementById("mobAttackPanel")!==container)return;const md=snap.val(); if(md) container.appendChild(buildMobSubPanel(md,slot)) }) })
+  active.forEach(slot => { db.ref("combat/"+slot).once("value", snap => { if(!container.isConnected||document.getElementById("mobAttackPanel")!==container)return;const md=snap.val(); if(md){container.appendChild(buildMobSubPanel(md,slot));if(typeof installKrakenEnemyPanelControls==="function")installKrakenEnemyPanelControls(container)} }) })
 }
 
 function buildMobSubPanel(mobData, slot) {
+  const kraken=typeof isKrakenEncounter==="function"&&isKrakenEncounter(mobData)
   const panel = document.createElement("div"); panel.dataset.slot=slot; panel.style.cssText = "background:url('images/mobpanel.png') center/100% 100% no-repeat;padding:12px;filter:drop-shadow(0 12px 18px rgba(0,0,0,0.22));"
   const header = document.createElement("div"); header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"
   const titleWrap = document.createElement("div"); titleWrap.style.cssText = "display:flex;align-items:center;gap:8px;min-width:0;"
   const portrait = document.createElement("img"); portrait.src = "images/" + sanitizeAssetName((mobData.name || "gobelins") + ".png"); portrait.style.cssText = "width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));"; portrait.onerror = () => portrait.style.display = "none"; titleWrap.appendChild(portrait)
-  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=" · World boss · 2 actions"+(mobData.hp<=mobData.maxHP*.5?" · Furie +15 %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
+  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=" · World boss · 2 actions"+(!kraken&&mobData.hp<=mobData.maxHP*.5?" · Furie +"+(mobData.balanceVersion===3?12:15)+" %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
 
   if(isJormungandr(mobData)){const note=document.createElement("div");note.textContent="Invulnérable";note.style.cssText="color:#9bd8ff;font:12px Georgia";titleWrap.appendChild(note)}
   if (isGM) {
-    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = "—"
-    cBtn.onclick=()=>{ const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
+    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = kraken?"Replier les attaques":"—"; if(kraken)cBtn.className="krakenEnemyFold"
+    cBtn.onclick=()=>{ if(kraken&&typeof setKrakenEnemyPanelCollapsed==="function"){setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));return} const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
     const xBtn = document.createElement("button"); xBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(120,0,0,0.5);color:#ff8888;border:1px solid rgba(180,0,0,0.4);border-radius:3px;cursor:pointer;"; xBtn.innerText = "✕"; xBtn.onclick=()=>removeMobSlot(slot); if(!isJormungandr(mobData))header.appendChild(xBtn)
   }
+  if(kraken&&!isGM){const fold=document.createElement("button");fold.className="krakenEnemyFold";fold.textContent="Replier les attaques";fold.onclick=()=>setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));header.append(fold)}
   panel.appendChild(header)
 
   const pct = Math.max(0,Math.min(100,((mobData.hp||0)/(mobData.maxHP||1))*100))
   const hpWrap = document.createElement("div"); hpWrap.style.cssText = "width:100%;height:6px;background:rgba(80,0,0,0.5);border-radius:3px;margin-bottom:8px;"
   const hpFill = document.createElement("div"); hpFill.id = "subPanelHPFill_"+slot; hpFill.classList.add("combatMobHpFill"); hpFill.dataset.health=pct>50?"healthy":pct>25?"wounded":"critical"; hpFill.style.width=pct+"%"; hpWrap.appendChild(hpFill); panel.appendChild(hpWrap)
 
-  const tier = mobData.tier||"weak", atks = typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
+  const tier = mobData.tier||"weak", atks = kraken?krakenNormalAttacks(mobData):typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
   const getRange = (attack, lvl, mobTier) => {
     if (typeof getMobDamageRange === "function") return getMobDamageRange(attack, lvl, mobTier,mobData)
     const factor = 1 + Math.max(0, (lvl || 1) - 1) * 0.15
@@ -57,8 +59,8 @@ function buildMobSubPanel(mobData, slot) {
       max: Math.round((attack?.dmgMax || 0) * factor)
     }
   }
-  const specialAtk = typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
-  const specialUsed = !!mobData.specialUsed
+  const specialAtk = kraken?krakenSpecialAttack(mobData):typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
+  const specialUsed = kraken?krakenSpecialUsed(mobData):!!mobData.specialUsed
 
   if (isGM) {
     // Bouton aléatoire intelligent
@@ -111,7 +113,7 @@ function buildMobSubPanel(mobData, slot) {
       sTop.appendChild(createCombatIcon(specialAtk, mobData, "combatIcon"))
       const sName = document.createElement("span")
       sName.classList.add("combatMobSpecialName"); sName.classList.toggle("is-unavailable",specialUsed)
-      sName.innerText = specialAtk.name + (specialUsed ? " — UNIQUE DÉJÀ UTILISÉE" : "")
+      sName.innerText = specialAtk.name + (specialUsed ? " — SPÉCIALE DÉJÀ UTILISÉE" : "")
       const sDmg = document.createElement("span")
       sDmg.classList.add("combatMobSpecialDamage"); sDmg.classList.toggle("is-unavailable",specialUsed)
       sDmg.innerText = sMin + "-" + sMax
@@ -193,7 +195,7 @@ function buildMobSubPanel(mobData, slot) {
       sName.innerText = specialAtk.name
       const sState = document.createElement("span")
       sState.classList.add("combatMobReadonlySpecialState"); sState.classList.toggle("is-unavailable",specialUsed)
-      sState.innerText = specialUsed ? "UNIQUE" : (sMin + "-" + sMax)
+      sState.innerText = specialUsed ? (kraken?"UTILISÉE DANS CETTE PHASE":"UNIQUE") : (sMin + "-" + sMax)
       sLine.appendChild(sName)
       sLine.appendChild(sState)
       sRow.appendChild(sLine)
@@ -216,6 +218,7 @@ function buildMobSubPanel(mobData, slot) {
     panel.appendChild(passRow)
   }
 
+  if(typeof appendBossEncounterPanels==="function")appendBossEncounterPanels(panel,mobData,slot)
   return panel
 }
 

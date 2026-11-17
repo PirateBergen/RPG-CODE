@@ -162,6 +162,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
   const target = root.combat[slot]
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
+  amount=krakenIncomingDamage(root,request,from,slot,amount)
   if(isJormungandr(target)){
     const origin=root.game?.combatState?.returnMap||root.game?.map
     if(!options.thorMjolnir||!isForchurMap(origin)||Math.max(0,combatInt(before))<=0){
@@ -170,6 +171,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
     target.hp=0;target.defeatedByThor=true
   }else target.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount)))))
   combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
+  krakenAfterDamage(root,request,slot,before-target.hp)
   return before - target.hp
 }
 
@@ -198,6 +200,7 @@ function tickCombatRound(root, request) {
   const summon = root.combat.eloSummon
   if(summon)for(const key of ["debuffRounds"])if(summon[key]>0)summon[key]--
   if (summon && (--summon.turnsLeft <= 0 || combatInt(summon.hp) <= 0)) delete root.combat.eloSummon
+  tickKrakenHolds(root,request)
   gmTickStatusRound(root,request)
 }
 
@@ -261,6 +264,7 @@ function chooseEnemyTarget(root, slot, attack, forced, dice) {
 function resolveHeroCombatAction(root, request, dice) {
   const actor = request.actor, payload = request.payload || {}, c = root.combat
   requireCombatTurn(root, request, actor)
+  if(payload.support==="krakenRelease")return resolveKrakenRelease(root,request,dice)
   const raw = root.characters[actor], data = combatCharacter(root, actor)
   const special = !!payload.special
   const attack = getCombatHeroAttack(actor,payload.attack,special)
@@ -314,7 +318,7 @@ function resolveHeroCombatAction(root, request, dice) {
   if (attack.name === "Spider Sense" && !fail) { c.playerFlags ||= {}; c.playerFlags[actor] ||= {}; c.playerFlags[actor].spiderSense = true; mob.spiderSenseBuff = { active: true, damageMult: 1.1 }; const weakness = getMobWeakness(mob.name, mob.tier || "weak"); if (weakness) mob.revealedWeakness = { mobName: mob.name, title: weakness.title, text: weakness.text }; if (crit) mob.victoryLootBonus = { active: true } }
   if (attack.name === "Petite merde" && c.playerFlags?.[actor]?.spiderSense) damage *= 2
   if(attack.name==="Je suis jet laguée"&&c.balanceVersion!==3)damage=Math.round(damage*1.25)
-  if(c.balanceVersion===3)damage=calibratedOutgoingDamage(root,actor,damage)
+  if(c.balanceVersion===3)damage=calibratedOutgoingDamage(root,actor,damage,attack.name==="Le Bibi"?"bibi":actor)
   let amount = combatDamage(root, request, actor.toUpperCase() + " — " + attack.name, slot, Math.round(damage))
   if (!fail&&actor==="greg"&&attack.name!=="Le Bibi"&&getPlayerAttackTypeKey(attack)==="physical"&&mob.name==="roi"&&balrogSwordIsEquipped(root))mob.balrogSwordWeaken=Math.max(mob.balrogSwordWeaken||0,crit?.25:.15)
   if (!fail) {
@@ -343,15 +347,17 @@ function resolveEnemyCombatAction(root, request, dice) {
   const slot = request.actor, c = root.combat, mob = c[slot], payload = request.payload || {}
   requireCombatTurn(root, request, slot)
   if (!mob) throw new Error("Ennemi introuvable")
+  synchronizeKrakenStage(root,slot,request)
   if(mob.allyStagger){delete mob.allyStagger;nextCombatTurn(root,request);return {actor:slot,mode:"skip",message:"Le courroux du Jarl interrompt cette action"}}
-  const special = getMobSpecialAttack(mob.name, mob.tier || "weak")
-  const normal = getMobAttacksForMob(mob.name, mob.tier || "weak")
+  const special = isKrakenEncounter(mob)?krakenSpecialAttack(mob):getMobSpecialAttack(mob.name, mob.tier || "weak")
+  const normal = isKrakenEncounter(mob)?krakenNormalAttacks(mob):getMobAttacksForMob(mob.name, mob.tier || "weak")
   let specialRoll = null
   let attack = payload.random ? null : [...normal, ...(special ? [special] : [])].find(a => a.name === payload.attack)
   if (payload.random) {
-    specialRoll = dice(20)
+    specialRoll = isKrakenEncounter(mob)?null:dice(20)
     const charged=mob.chargingSpecial&&c.turnState.round>=mob.chargingSpecial.readyRound
-    const choices = (charged || (!mob.chargingSpecial&&specialRoll === 20)) && special && !mob.specialUsed ? [special] : normal.filter(a => normal.length === 1 || a.name !== mob.lastAttack)
+    const shouldPrepare=isKrakenEncounter(mob)?c.turnState.round>=(mob.krakenNextSpecialRound||3):specialRoll===20
+    const choices = (charged || (!mob.chargingSpecial&&shouldPrepare)) && special && !mob.specialUsed ? [special] : normal.filter(a => normal.length === 1 || a.name !== mob.lastAttack)
     attack = choices[dice(choices.length) - 1]
   }
   if (!attack) throw new Error("Attaque ennemie inconnue")
@@ -360,7 +366,7 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (mob.yuSkipNextTurn?.active) { delete mob.yuSkipNextTurn; nextCombatTurn(root, request,true); return { actor: slot, mode: "skip", message: "L’ennemi est neutralisé pour cette action" } }
   let reaction=null
   if(attack.special&&mob.balanceClass==="world"){
-    if(!mob.chargingSpecial){mob.chargingSpecial={id:request.id,name:attack.name,readyRound:(c.turnState.round||1)+1};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:heroDisplayName(mob.name).toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !"}}
+    if(!mob.chargingSpecial){mob.chargingSpecial={id:request.id,name:attack.name,readyRound:(c.turnState.round||1)+1,...(isKrakenEncounter(mob)?{krakenStage:attack.krakenStage}:{})};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:heroDisplayName(mob.name).toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !"}}
     if(c.turnState.round<mob.chargingSpecial.readyRound)throw new Error("La spéciale se prépare pour le prochain round ; choisissez une autre action")
     reaction=mob.chargingSpecial.reaction
     if(reaction?.status==="rolling")throw Error("Réactions en attente : le MJ doit valider les protections ou annuler l’événement")
@@ -385,9 +391,11 @@ function resolveEnemyCombatAction(root, request, dice) {
     if (id !== "bibi" && attack.effect === "curse") root.characters[id].curse = Math.min(8, combatInt(root.characters[id].curse) + 1)
     if (attack.effect === "stun") { c.heroStuns ||= {}; c.heroStuns[combatOwner(id)] = 1 }
     if (attack.effect === "debuff") { c.heroDebuffs ||= {}; c.heroDebuffs[id] = { amount: 2, turns: 2 } }
+    if(isKrakenEncounter(mob)&&attack.effect==="grab"&&taken>0&&!mob.krakenHold)mob.krakenHold={target:id,roundsLeft:2,startedRound:c.turnState.round||1,releaseNeeded:Math.max(1,Math.round(mob.maxHP*.10)),damageTaken:0}
     combatRecord(root, request, heroDisplayName(mob.name).toUpperCase(), id.toUpperCase(), before - root.characters[id].hp, "mob", heroDisplayName(mob.name) + " — " + attack.name + " → " + id.toUpperCase() + " : -" + (before - root.characters[id].hp) + " PV")
   })
-  if (attack.special) mob.specialUsed = true
+  if (attack.special){mob.specialUsed = true;if(isKrakenEncounter(mob)){mob.krakenSpecialStageUsed=attack.krakenStage;mob.specialUsed=krakenSpecialUsed(mob);mob.krakenNextSpecialRound=(c.turnState.round||1)+3}}
+  if(isKrakenEncounter(mob)&&mob.krakenDisorientedActions>0)mob.krakenDisorientedActions--
   if (attack.healSelfRatio) mob.hp = Math.min(mob.maxHP, mob.hp + Math.round(applied * attack.healSelfRatio))
   mob.lastAttack = attack.name
   const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: targets.length===1?applied:damage, damageSummary:targets.map(id=>{const hit=Object.entries(c.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,hit])=>hit).filter(h=>h.type==="mob"&&(h.to===id.toUpperCase()||id==="eloSummon"&&h.to==="John Pork")).at(-1);return combatFriendlyName(id)+" −"+(hit?.amount||0)+" PV"}).join(" · "), target: targets.length > 1 ? "TOUS" : combatFriendlyName(targets[0]||"AUCUNE").toUpperCase(), mobName: heroDisplayName(mob.name).toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
@@ -642,6 +650,7 @@ function applyGMCombatAdjustment(current,uid,combatId,revision,change,changeId){
   if(target.hp!==before)combatRecord(root,request,"MJ",label,Math.abs(target.hp-before),target.hp>before?"heal":"dmg",message)
  }else throw Error("Ajustement inconnu")
  delete c.pendingResolution;delete c.interventionArmed
+ for(const slot of COMBAT_MOBS)synchronizeKrakenStage(root,slot,request)
  if(!combatOutcome(root,request)){
   const owner=c.turnState.currentActorId,members=gmTurnMembers(owner).filter(member=>(gmTarget(root,member)?.hp||0)>0)
   if(!combatActorAlive(root,owner)||(members.length&&members.every(member=>gmParalyzed(root,member))))nextCombatTurn(root,request,true)
@@ -652,4 +661,84 @@ function applyGMCombatAdjustment(current,uid,combatId,revision,change,changeId){
  c.visualEvents||={};c.visualEvents[changeId]={id:changeId,combatId:c.id,time:request.time,result:{mode:"control",message},nextTurn:combatClone(c.turnState)}
  Object.keys(c.visualEvents).slice(0,-120).forEach(key=>delete c.visualEvents[key])
  return root
+}
+// This profile is attached only when a new Kraken encounter is created.
+function isKrakenEncounter(mob){return mob?.name==="kraken"&&mob.encounterProfile==="kraken-v1"}
+function initializeKrakenEncounter(mob){if(mob.name!=="kraken")return mob;const hp=Math.round(mob.maxHP*1.35/5)*5;return {...mob,hp,maxHP:hp,baseBalancedHP:hp,encounterProfile:"kraken-v1",krakenStage:1,krakenSpecialStageUsed:0,krakenNextSpecialRound:3}}
+function krakenStage(mob){return Math.max(mob?.krakenStage||1,mob?.hp<=mob?.maxHP*.25?3:mob?.hp<=mob?.maxHP*.60?2:1)}
+function krakenStageName(mob){return ["","La traque","L’étreinte des profondeurs","Le navire sous la menace"][krakenStage(mob)]}
+function krakenSpecialAttack(mob){
+ const stage=mob.chargingSpecial?.krakenStage||krakenStage(mob),base=getMobSpecialAttack("kraken","boss")
+ return {...base,oncePerCombat:false,oncePerPhase:true,name:stage===3?"Écrasement du navire":base.name,krakenStage:stage,flavor:stage===3?"Le Kraken soulève sa masse pour écraser le pont. Cherchez un abri ou interrompez sa préparation !":base.flavor}
+}
+function krakenNormalAttacks(mob){const list=getMobAttacksForMob("kraken","boss");if(krakenStage(mob)>=2&&!mob.krakenHold)list.push({name:"Saisie tentaculaire",icon:"🐙",dmgMin:10,dmgMax:15,effect:"grab",desc:"Saisit une cible : dégâts infligés −25 %. Un allié peut la libérer ou infliger assez de dégâts au Kraken."});return list}
+function krakenSpecialUsed(mob){return (mob.krakenSpecialStageUsed||0)>=krakenStage(mob)}
+function synchronizeKrakenStage(root,slot,request){
+ const mob=root.combat?.[slot];if(!isKrakenEncounter(mob))return
+ if(mob.hp<=0){delete mob.krakenHold;return}
+ const stage=krakenStage(mob)
+ if(stage>(mob.krakenStage||1)){mob.krakenStage=stage;mob.krakenNextSpecialRound=Math.max(mob.krakenNextSpecialRound||0,(root.combat.turnState?.round||1)+1);combatRecord(root,request,"KRAKEN","Phase",0,"phase","Kraken — phase "+stage+" : "+krakenStageName(mob)+". Aucun coup supplémentaire gratuit.")}
+ mob.specialUsed=krakenSpecialUsed(mob)
+ if(mob.krakenHold&&root.characters?.[mob.krakenHold.target]?.hp<=0)delete mob.krakenHold
+}
+function krakenDamageFactor(attack,mob){
+ if(!isKrakenEncounter(mob))return 1
+ const stage=attack.krakenStage||krakenStage(mob)
+ return [0,1.04,1.10,1.20][stage]*(attack.effect==="grab"?.70:1)*(attack.special&&stage===3?1.20:1)*(mob.krakenDisorientedActions>0?.8:1)
+}
+function krakenHeroDamageFactor(root,actor){return COMBAT_MOBS.some(slot=>isKrakenEncounter(root.combat[slot])&&root.combat[slot].hp>0&&root.combat[slot].krakenHold?.target===actor)?.75:1}
+function krakenIncomingDamage(root,request,from,slot,amount){
+ const mob=root.combat[slot];if(!isKrakenEncounter(mob)||request.kind!=="hero"||["POISON","SAIGNEMENT"].includes(from))return amount
+ if(mob.krakenOpeningHits>0||mob.krakenOpeningRequest===request.id){if(mob.krakenOpeningRequest!==request.id){mob.krakenOpeningHits--;mob.krakenOpeningRequest=request.id}return Math.round(amount*1.25)}return amount
+}
+function krakenAfterDamage(root,request,slot,amount){
+ const mob=root.combat[slot];if(!isKrakenEncounter(mob))return
+ if(mob.krakenHold){mob.krakenHold.damageTaken+=amount;if(mob.krakenHold.damageTaken>=mob.krakenHold.releaseNeeded){combatRecord(root,request,"KRAKEN",mob.krakenHold.target,0,"release","La tentacule lâche sa prise sous les dégâts infligés au Kraken.");delete mob.krakenHold}}
+ synchronizeKrakenStage(root,slot,request)
+}
+function tickKrakenHolds(root,request){
+ for(const slot of COMBAT_MOBS){const mob=root.combat[slot];if(!isKrakenEncounter(mob))continue;synchronizeKrakenStage(root,slot,request);const hold=mob.krakenHold;if(!hold||(root.combat.turnState.round||1)<=hold.startedRound)continue
+  const victim=root.characters[hold.target];let base=Math.round(calibratedHealth(mob.partyLevel)*(krakenStage(mob)===3?.08:.06));if(mob.attackMalus)base=Math.max(0,base-(mob.attackMalus.amount||0));if(mob.malus?.source==="La Sorcière")base=Math.round(base*.75);if(mob.krakenDisorientedActions>0)base=Math.round(base*.8)
+  const damage=calibratedIncomingDamage(combatCharacter(root,hold.target),gmIncomingDamage(root,hold.target,gmOutgoingDamage(root,slot,base))),before=victim.hp;victim.hp=Math.max(0,before-damage)
+  combatRecord(root,request,"ÉTREINTE",hold.target,before-victim.hp,"mob","L’étreinte du Kraken inflige "+(before-victim.hp)+" dégâts à "+heroDisplayName(hold.target))
+  if(--hold.roundsLeft<=0||victim.hp<=0)delete mob.krakenHold
+ }
+}
+function resolveKrakenRelease(root,request,dice){
+ requireCombatTurn(root,request,request.actor)
+ const mob=root.combat[request.payload?.target],hold=mob?.krakenHold
+ if(!isKrakenEncounter(mob)||!hold||mob.hp<=0||root.characters?.[hold.target]?.hp<=0)throw Error("Aucun personnage à libérer de cette tentacule")
+ if(root.combat.heroHaste)throw Error("Terminez les attaques de SKARO’H avant une assistance")
+ const roll=dice(12),data=combatCharacter(root,request.actor),adjusted=calibratedHeroRoll(data,roll,12),threshold=hold.target===request.actor?8:7,cursed=data.cursedEffect==="critOnly"&&data.cursedCombatId===root.combat.id,success=roll!==1&&adjusted.total>=threshold&&(!cursed||roll===12),target=hold.target
+ recordHeroCritical(root,request.actor,roll===12,roll===1);if(success)delete mob.krakenHold;nextCombatTurn(root,request)
+ return {actor:request.actor,mode:"control",roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus,dice:12,crit:roll===12,fail:roll===1,success,message:heroDisplayName(request.actor)+(success?" libère ":" ne parvient pas à libérer ")+heroDisplayName(target)+" de la tentacule. Cette tentative consomme son action."}
+}
+function bossWeaknessNotes(name){
+ if(name==="kraken")return [
+  {id:"cannon",title:"Boulets de canon",hint:"Une tentacule exposée peut être frappée pendant la préparation.",strategy:"Valider un tir ou un impact lourd sur la tentacule.",effect:"Interrompt la spéciale annoncée et libère la cible saisie. Une fois par phase."},
+  {id:"abyss",title:"Davy Jones et les pactes marins",hint:"Les références aux abysses maudites perturbent ses mouvements.",strategy:"Valider une diversion, un pacte ou une mise en scène convaincante.",effect:"Dégâts −20 % pendant ses deux prochaines attaques. Une fois par phase."},
+  {id:"deck",title:"Terre ferme",hint:"Une tentacule immobilisée contre le pont perd son avantage.",strategy:"Valider un ancrage, un piège ou une manœuvre exposant la tentacule.",effect:"Les trois prochaines actions d’attaque de héros (hors cris) infligent +25 %. Une fois par phase."}
+ ]
+ const base=mobWeaknesses[name];return (Array.isArray(base)?base:base?[base]:[]).map((entry,index)=>({id:String(index),title:entry.title,hint:entry.text,strategy:"À arbitrer selon les jets et la stratégie des joueurs.",effect:"Utiliser Intervenir pour appliquer l’effet décidé par le MJ.",requiresDefeatedMob:entry.requiresDefeatedMob||null}))
+}
+function applyBossTactic(current,uid,combatId,revision,change,changeId){
+ if(current?.roles?.[uid]!=="gm")throw Error("Action réservée au MJ")
+ if(current.sessionControl?.phase||(current.sessionControl?.revision||"initial")!==revision||current.combat?.id!==combatId||current.combat.phase!=="active")throw Error("Le combat ou la partie a changé")
+ if(current.combat.gmAdjustmentLog?.[changeId])return current
+ const root=combatClone(current),mob=root.combat[change.slot],note=mob&&bossWeaknessNotes(mob.name).find(note=>note.id===change.noteId),request={id:changeId,actor:"mj",uid,time:Date.now()}
+ if(!COMBAT_MOBS.includes(change.slot)||!mob||mob.hp<=0||!note)throw Error("Choisissez un boss vivant et une faiblesse existante")
+ if(note.requiresDefeatedMob&&!root.game?.defeatedMobs?.[note.requiresDefeatedMob])throw Error("Cette faiblesse exige la défaite de "+note.requiresDefeatedMob)
+ let message
+ if(change.kind==="reveal"){
+  mob.revealedBossNotes||={};mob.revealedBossNotes[note.id]={title:note.title,text:note.hint};message=heroDisplayName(mob.name)+" — indice révélé : "+note.title+". "+note.hint
+ }else if(change.kind==="apply"){
+  if(!isKrakenEncounter(mob))throw Error("Appliquez l’effet choisi avec Intervenir")
+  synchronizeKrakenStage(root,change.slot,request);if(change.stage!==krakenStage(mob))throw Error("La phase du Kraken a changé")
+  const key=note.id+"-"+krakenStage(mob);mob.krakenTacticsUsed||={};if(mob.krakenTacticsUsed[key])throw Error("Cette faiblesse a déjà été exploitée pendant cette phase")
+  if(note.id==="cannon"){if(!mob.chargingSpecial)throw Error("Le Kraken ne prépare pas de spéciale à interrompre");mob.krakenSpecialStageUsed=Math.max(mob.krakenSpecialStageUsed||0,mob.chargingSpecial.krakenStage||krakenStage(mob));delete mob.chargingSpecial;delete mob.krakenHold;mob.specialUsed=krakenSpecialUsed(mob)}
+  if(note.id==="abyss")mob.krakenDisorientedActions=2
+  if(note.id==="deck"){mob.krakenOpeningHits=3;delete mob.krakenOpeningRequest}
+  mob.krakenTacticsUsed[key]=true;message="Stratégie validée par le MJ — "+note.title+" : "+note.effect
+ }else throw Error("Commande inconnue")
+ root.combat.gmAdjustmentLog||={};root.combat.gmAdjustmentLog[changeId]={time:request.time,text:message};Object.keys(root.combat.gmAdjustmentLog).slice(0,-80).forEach(id=>delete root.combat.gmAdjustmentLog[id]);recordConfirmedCombatAction(root,request,{mode:"control",message});return root
 }

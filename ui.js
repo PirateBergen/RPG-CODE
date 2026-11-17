@@ -947,7 +947,7 @@ function renderAllMobPanels() {
     let pointer=null,ox=0,oy=0
     container.style.cursor="grab"
     container.addEventListener("pointerdown",e=>{
-      if(e.button!==0||e.pointerType==="touch"||e.target.closest("button,input,select,textarea,[role=button]")||e.target.closest("[onclick]"))return
+      if(e.button!==0||e.pointerType==="touch"||e.target.closest("button,input,select,textarea,summary,[role=button]")||e.target.closest("[onclick]"))return
       pointer=e.pointerId;const rect=container.getBoundingClientRect();ox=e.clientX-rect.left;oy=e.clientY-rect.top
       container.setPointerCapture?.(pointer);container.style.cursor="grabbing";e.preventDefault()
     })
@@ -962,29 +962,31 @@ function renderAllMobPanels() {
   }
 
   document.body.appendChild(container)
-  active.forEach(slot => { db.ref("combat/"+slot).once("value", snap => { if(!container.isConnected||document.getElementById("mobAttackPanel")!==container)return;const md=snap.val(); if(md) container.appendChild(buildMobSubPanel(md,slot)) }) })
+  active.forEach(slot => { db.ref("combat/"+slot).once("value", snap => { if(!container.isConnected||document.getElementById("mobAttackPanel")!==container)return;const md=snap.val(); if(md){container.appendChild(buildMobSubPanel(md,slot));if(typeof installKrakenEnemyPanelControls==="function")installKrakenEnemyPanelControls(container)} }) })
 }
 
 function buildMobSubPanel(mobData, slot) {
+  const kraken=typeof isKrakenEncounter==="function"&&isKrakenEncounter(mobData)
   const panel = document.createElement("div"); panel.dataset.slot=slot; panel.style.cssText = "background:url('images/mobpanel.png') center/100% 100% no-repeat;padding:12px;filter:drop-shadow(0 12px 18px rgba(0,0,0,0.22));"
   const header = document.createElement("div"); header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"
   const titleWrap = document.createElement("div"); titleWrap.style.cssText = "display:flex;align-items:center;gap:8px;min-width:0;"
   const portrait = document.createElement("img"); portrait.src = "images/" + sanitizeAssetName((mobData.name || "gobelins") + ".png"); portrait.style.cssText = "width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));"; portrait.onerror = () => portrait.style.display = "none"; titleWrap.appendChild(portrait)
-  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=" · World boss · 2 actions"+(mobData.hp<=mobData.maxHP*.5?" · Furie +15 %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
+  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=" · World boss · 2 actions"+(!kraken&&mobData.hp<=mobData.maxHP*.5?" · Furie +"+(mobData.balanceVersion===3?12:15)+" %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
 
   if(isJormungandr(mobData)){const note=document.createElement("div");note.textContent="Invulnérable";note.style.cssText="color:#9bd8ff;font:12px Georgia";titleWrap.appendChild(note)}
   if (isGM) {
-    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = "—"
-    cBtn.onclick=()=>{ const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
+    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = kraken?"Replier les attaques":"—"; if(kraken)cBtn.className="krakenEnemyFold"
+    cBtn.onclick=()=>{ if(kraken&&typeof setKrakenEnemyPanelCollapsed==="function"){setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));return} const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
     const xBtn = document.createElement("button"); xBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(120,0,0,0.5);color:#ff8888;border:1px solid rgba(180,0,0,0.4);border-radius:3px;cursor:pointer;"; xBtn.innerText = "✕"; xBtn.onclick=()=>removeMobSlot(slot); if(!isJormungandr(mobData))header.appendChild(xBtn)
   }
+  if(kraken&&!isGM){const fold=document.createElement("button");fold.className="krakenEnemyFold";fold.textContent="Replier les attaques";fold.onclick=()=>setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));header.append(fold)}
   panel.appendChild(header)
 
   const pct = Math.max(0,Math.min(100,((mobData.hp||0)/(mobData.maxHP||1))*100))
   const hpWrap = document.createElement("div"); hpWrap.style.cssText = "width:100%;height:6px;background:rgba(80,0,0,0.5);border-radius:3px;margin-bottom:8px;"
   const hpFill = document.createElement("div"); hpFill.id = "subPanelHPFill_"+slot; hpFill.classList.add("combatMobHpFill"); hpFill.dataset.health=pct>50?"healthy":pct>25?"wounded":"critical"; hpFill.style.width=pct+"%"; hpWrap.appendChild(hpFill); panel.appendChild(hpWrap)
 
-  const tier = mobData.tier||"weak", atks = typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
+  const tier = mobData.tier||"weak", atks = kraken?krakenNormalAttacks(mobData):typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
   const getRange = (attack, lvl, mobTier) => {
     if (typeof getMobDamageRange === "function") return getMobDamageRange(attack, lvl, mobTier,mobData)
     const factor = 1 + Math.max(0, (lvl || 1) - 1) * 0.15
@@ -993,8 +995,8 @@ function buildMobSubPanel(mobData, slot) {
       max: Math.round((attack?.dmgMax || 0) * factor)
     }
   }
-  const specialAtk = typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
-  const specialUsed = !!mobData.specialUsed
+  const specialAtk = kraken?krakenSpecialAttack(mobData):typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
+  const specialUsed = kraken?krakenSpecialUsed(mobData):!!mobData.specialUsed
 
   if (isGM) {
     // Bouton aléatoire intelligent
@@ -1047,7 +1049,7 @@ function buildMobSubPanel(mobData, slot) {
       sTop.appendChild(createCombatIcon(specialAtk, mobData, "combatIcon"))
       const sName = document.createElement("span")
       sName.classList.add("combatMobSpecialName"); sName.classList.toggle("is-unavailable",specialUsed)
-      sName.innerText = specialAtk.name + (specialUsed ? " — UNIQUE DÉJÀ UTILISÉE" : "")
+      sName.innerText = specialAtk.name + (specialUsed ? " — SPÉCIALE DÉJÀ UTILISÉE" : "")
       const sDmg = document.createElement("span")
       sDmg.classList.add("combatMobSpecialDamage"); sDmg.classList.toggle("is-unavailable",specialUsed)
       sDmg.innerText = sMin + "-" + sMax
@@ -1129,7 +1131,7 @@ function buildMobSubPanel(mobData, slot) {
       sName.innerText = specialAtk.name
       const sState = document.createElement("span")
       sState.classList.add("combatMobReadonlySpecialState"); sState.classList.toggle("is-unavailable",specialUsed)
-      sState.innerText = specialUsed ? "UNIQUE" : (sMin + "-" + sMax)
+      sState.innerText = specialUsed ? (kraken?"UTILISÉE DANS CETTE PHASE":"UNIQUE") : (sMin + "-" + sMax)
       sLine.appendChild(sName)
       sLine.appendChild(sState)
       sRow.appendChild(sLine)
@@ -1152,6 +1154,7 @@ function buildMobSubPanel(mobData, slot) {
     panel.appendChild(passRow)
   }
 
+  if(typeof appendBossEncounterPanels==="function")appendBossEncounterPanels(panel,mobData,slot)
   return panel
 }
 
@@ -2188,6 +2191,7 @@ function combatActionAvailability(actor, attack, special=false, enemy=false) {
   if(!enemy&&players[actor]?.hp<=0&&!bibiInstead)return blocked("Personnage KO")
   if(enemy&&c[actor]?.hp<=0)return blocked("Adversaire KO")
   if(enemy&&special&&c[actor]?.balanceClass==="world"){
+    if(typeof isKrakenEncounter==="function"&&isKrakenEncounter(c[actor])&&krakenSpecialUsed(c[actor]))return blocked("Spéciale de cette phase déjà utilisée ou interrompue")
     const charge=c[actor].chargingSpecial,round=state?.round||1
     if(charge?.reaction?.status==="rolling")return blocked("Réactions : attendez la validation des protections par le MJ")
     if(charge&&round<charge.readyRound)return blocked("Préparation : encore "+(charge.readyRound-round)+" round(s)")
@@ -2271,8 +2275,86 @@ function refreshCombatHUDContext(){
  if(!hud||!info||!player)return
  let rules=document.getElementById("combatHUDRules")
  if(c?.balanceVersion===3){if(!rules){rules=document.createElement("p");rules.id="combatHUDRules";info.appendChild(rules)}const raw=window.__publicCharacters?.[player]||{};rules.textContent=calibratedRuleSummary(getEffectiveCharacterData(player,raw));rules.hidden=false}else if(rules)rules.hidden=true
+ if(typeof refreshKrakenAssistance==="function")refreshKrakenAssistance(document.getElementById("combatHUDAttacks"),player)
  let summary=document.getElementById("combatHUDTurnSummary");if(!summary){summary=document.createElement("p");summary.id="combatHUDTurnSummary";summary.setAttribute("role","status");info.insertBefore(summary,document.getElementById("combatHUDAttacks"))}
  const current=state?.currentActorId,label=current==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(current)?combatEnemyLabel(current):heroDisplayName(current||"—")
  const pill=document.querySelector("#combatHUDMeta .combatHUDMetaPill--turn");if(pill)pill.textContent="Round "+(state?.round||1)+" · "+(state?.phase==="rolling"?"Initiative":label)
  summary.textContent=window.__actionOnline===false?"Connexion perdue — actions suspendues.":!combatActive||c?.phase==="finished"?"Combat terminé — retour à la carte.":state?.phase==="rolling"?"Les jets d’initiative déterminent l’ordre des tours.":c?.pendingResolution?"Décision du MJ en attente.":window.__sharedVisualBusy||Date.now()<(window.__combatIntroUntil||0)?"Animation en cours — patientez.":window.__playerAttackResolving?(document.getElementById("combatEnemyTargetPicker")||document.getElementById("combatTargetPicker")?"Choisissez la cible dans la fenêtre.":"Action en cours — attendez la confirmation."):current===combatOwner(player)?(combatOwner(player)==="greg"?"À vous : une seule action pour Greg ou Bibi.":"À vous de jouer : choisissez une action."):"Au tour de "+label+". Vos actions sont en attente."
 }
+let bossDossierContext=null,bossTacticSerial=0
+let krakenEnemyPanelPreference={combatId:null,collapsed:false}
+const krakenAssistancePending=new Set()
+function setKrakenEnemyPanelCollapsed(collapsed){
+ const panel=document.getElementById("mobAttackPanel");if(!panel)return
+ krakenEnemyPanelPreference={combatId:window.__combatSnapshot?.id,collapsed};panel.classList.toggle("krakenEnemyCollapsed",collapsed)
+ panel.querySelectorAll(".krakenEnemyFold").forEach(button=>{button.textContent=collapsed?"Ouvrir les attaques":"Replier les attaques";button.setAttribute("aria-expanded",String(!collapsed))})
+ if(collapsed)window.GameWindows?.closed(panel,{restoreFocus:false});else window.GameWindows?.register(panel,()=>setKrakenEnemyPanelCollapsed(true),{focusOnOpen:false})
+}
+function installKrakenEnemyPanelControls(panel){
+ const c=window.__combatSnapshot;if(!c||!COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])))return
+ if(krakenEnemyPanelPreference.combatId!==c.id)krakenEnemyPanelPreference={combatId:c.id,collapsed:false}
+ setKrakenEnemyPanelCollapsed(krakenEnemyPanelPreference.collapsed)
+}
+function closeBossDossier(){const el=document.getElementById("bossDossierModal");el?.remove();if(el)window.GameWindows?.closed(el);bossDossierContext=null}
+function appendBossEncounterPanels(panel,mob,slot){
+ if(mob.balanceClass!=="world")return
+ const box=document.createElement("section");box.className="bossEncounterSummary"
+ if(isKrakenEncounter(mob)){const line=document.createElement("p");line.textContent="Phase "+krakenStage(mob)+" / 3 — "+krakenStageName(mob)+(mob.krakenHold?" · "+heroDisplayName(mob.krakenHold.target)+" saisi":"");box.append(line)}
+ const publicButton=document.createElement("button");publicButton.textContent="Phase, menace et indices révélés";publicButton.onclick=()=>openBossDossier(slot,false);box.append(publicButton)
+ if(mob.chargingSpecial?.reaction){const reaction=document.createElement("button");reaction.textContent="Ouvrir les jets de réaction";reaction.onclick=()=>openCombatReaction(slot);box.append(reaction)}
+ if(window.__authRole==="gm"){const notes=document.createElement("button");notes.textContent="Notes MJ — faiblesses et stratégies";notes.onclick=()=>openBossDossier(slot,true);box.append(notes)}
+ panel.append(box)
+}
+async function sendBossTactic(slot,noteId,kind,stage){
+ const context=bossDossierContext;if(!context||context.busy)return
+ context.busy=true;context.error.textContent="";context.box.setAttribute("aria-busy","true");context.box.querySelectorAll("button").forEach(b=>b.disabled=true)
+ try{requireActionAccess({gmOnly:true});requireExplorationConnection();const combatId=context.combatId,revision=persistenceRevision||"initial",id="boss-tactic-"+Date.now()+"-"+(++bossTacticSerial)+"-"+Math.random().toString(36).slice(2),result=await reliableRootTransaction(root=>applyBossTactic(root,window.__authUid,combatId,revision,{slot,noteId,kind,stage},id));if(!result.committed)throw Error("Décision non confirmée")}
+ catch(error){context.error.textContent=error.message}finally{if(bossDossierContext===context){context.busy=false;context.signature=null;context.box.removeAttribute("aria-busy");refreshBossDossier()}}
+}
+function openBossDossier(slot,privateNotes=false){
+ const c=window.__combatSnapshot,mob=c?.[slot];if(!combatActive||c?.phase!=="active"||!mob||mob.hp<=0)return
+ if(privateNotes&&window.__authRole!=="gm")return
+ closeBossDossier();const overlay=document.createElement("div"),box=document.createElement("section"),title=document.createElement("h2"),content=document.createElement("div"),error=document.createElement("p"),close=document.createElement("button")
+ overlay.id="bossDossierModal";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-label",privateNotes?"Notes MJ du world boss":"Informations du world boss");box.className="bossDossierBox";title.textContent=(privateNotes?"Notes MJ — ":"")+heroDisplayName(mob.name);error.setAttribute("role","alert");close.textContent="Fermer — Échap";close.onclick=closeBossDossier;const header=document.createElement("header"),topClose=document.createElement("button");topClose.className="bossDossierClose";topClose.textContent="Fermer";topClose.onclick=closeBossDossier;header.append(title,topClose);box.append(header,content,error,close);overlay.append(box);document.body.append(overlay)
+ bossDossierContext={slot,combatId:c.id,name:mob.name,privateNotes,box,content,error,busy:false,signature:null}
+ overlay.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();closeBossDossier()}if(event.key==="Tab"){const items=[...box.querySelectorAll("button:not(:disabled)")],first=items[0],last=items.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}})
+ window.GameWindows?.register(overlay,closeBossDossier);refreshBossDossier();topClose.focus({preventScroll:true})
+}
+function refreshBossDossier(){
+ const ctx=bossDossierContext;if(!ctx)return
+ const c=window.__combatSnapshot,mob=c?.[ctx.slot],gm=window.__authRole==="gm"
+ if(!combatActive||c?.id!==ctx.combatId||c.phase!=="active"||!mob||mob.name!==ctx.name||mob.hp<=0||ctx.privateNotes&&!gm){closeBossDossier();return}if(ctx.busy)return
+ const signature=JSON.stringify([mob,c.turnState,window.__sharedVisualBusy,window.__authRole]);if(signature===ctx.signature)return;ctx.signature=signature
+ const scroll=ctx.box.scrollTop;ctx.content.replaceChildren()
+ const line=text=>{const p=document.createElement("p");p.textContent=text;ctx.content.append(p)}
+ if(isKrakenEncounter(mob)){
+  line("Phase "+krakenStage(mob)+" / 3 — "+krakenStageName(mob)+". Seuils : 60 % puis 25 % des PV. Deux actions par tour.")
+  line(mob.chargingSpecial?"⚠ "+mob.chargingSpecial.name+" — prête au round "+mob.chargingSpecial.readyRound+(mob.chargingSpecial.reaction?.status==="rolling"?" ; réactions en attente du MJ":""):(krakenSpecialUsed(mob)?"Spéciale de cette phase déjà utilisée ou interrompue.":"La prochaine préparation automatique est possible à partir du round "+mob.krakenNextSpecialRound+"."))
+  if(mob.krakenHold)line(heroDisplayName(mob.krakenHold.target)+" est saisi : dégâts infligés −25 %. Libération possible avec une action d’assistance ou encore "+Math.max(0,mob.krakenHold.releaseNeeded-mob.krakenHold.damageTaken)+" dégâts sur le Kraken. L’étreinte dure au plus deux fins de round après la saisie.")
+  if(mob.krakenDisorientedActions>0)line("Kraken désorienté : dégâts −20 % pendant "+mob.krakenDisorientedActions+" attaque(s).")
+  if(mob.krakenOpeningHits>0)line("Tentacule exposée : les "+mob.krakenOpeningHits+" prochaines actions offensives de héros infligent +25 %.")
+ }else line("Deux actions par tour. La spéciale annoncée permet au MJ d’ouvrir un événement de réaction.")
+ if(ctx.privateNotes){
+  line("Ces notes sont réservées à votre vue MJ. Révéler un indice n’applique pas son effet. Validez la stratégie ou le jet avant d’appliquer une conséquence.")
+  for(const note of bossWeaknessNotes(mob.name)){
+   const card=document.createElement("section");card.className="bossWeaknessCard";const heading=document.createElement("h3");heading.textContent=note.title;card.append(heading)
+   for(const text of ["Indice : "+note.hint,"Stratégie : "+note.strategy,"Effet : "+note.effect,...(note.requiresDefeatedMob?["Condition : "+heroDisplayName(note.requiresDefeatedMob)+" doit avoir été vaincu."]:[])]){const p=document.createElement("p");p.textContent=text;card.append(p)}
+   const reveal=document.createElement("button");reveal.textContent=mob.revealedBossNotes?.[note.id]?"Indice déjà révélé":"Révéler cet indice aux joueurs";reveal.disabled=!!mob.revealedBossNotes?.[note.id];reveal.onclick=()=>sendBossTactic(ctx.slot,note.id,"reveal",krakenStage(mob));card.append(reveal)
+   if(isKrakenEncounter(mob)){const apply=document.createElement("button"),used=mob.krakenTacticsUsed?.[note.id+"-"+krakenStage(mob)];apply.textContent=used?"Déjà exploitée dans cette phase":"Valider la stratégie et appliquer l’effet";apply.disabled=!!used||note.id==="cannon"&&!mob.chargingSpecial;apply.onclick=()=>sendBossTactic(ctx.slot,note.id,"apply",krakenStage(mob));card.append(apply)}
+   ctx.content.append(card)
+  }
+ }else{
+  const notes=Object.values(mob.revealedBossNotes||{});line(notes.length?"Indices révélés par le MJ :":"Aucun indice n’a encore été révélé par le MJ.");for(const note of notes)line(note.title+" — "+note.text)
+ }
+ ctx.box.lastElementChild.disabled=false;ctx.box.querySelector(".bossDossierClose").disabled=false;ctx.box.scrollTop=scroll
+}
+function refreshKrakenAssistance(box,actor){
+ const old=box?.querySelector(".krakenAssistance");old?.remove();if(!box)return
+ const c=window.__combatSnapshot;if(!c||c.phase!=="active")return
+ for(const slot of COMBAT_MOBS){const mob=c[slot];if(!isKrakenEncounter(mob)||mob.hp<=0||!mob.krakenHold)continue
+  const section=document.createElement("section"),button=document.createElement("button"),hint=document.createElement("p"),key=c.id+":"+actor;section.className="krakenAssistance";button.textContent=mob.krakenHold.target===actor?"Se dégager de la tentacule":"Libérer "+heroDisplayName(mob.krakenHold.target);button.disabled=c.turnState?.currentActorId!==combatOwner(actor)||window.__publicCharacters?.[actor]?.hp<=0||!!c.heroHaste||!!window.__sharedVisualBusy||krakenAssistancePending.has(key);hint.textContent="Consomme votre action · D12 + Chance · seuil "+(mob.krakenHold.target===actor?8:7)
+  button.onclick=async()=>{if(button.disabled||krakenAssistancePending.has(key))return;button.disabled=true;krakenAssistancePending.add(key);try{await submitCombatAction("hero",actor,{support:"krakenRelease",target:slot})}catch(error){showNotification(error.message)}finally{krakenAssistancePending.delete(key);refreshCombatActionStates()}};section.append(button,hint);box.prepend(section)
+ }
+}
+function refreshBossEncounterLayout(){const c=window.__combatSnapshot;document.body.classList.toggle("krakenEncounter",!!(combatActive&&c?.phase==="active"&&COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])&&c[slot].hp>0)));refreshBossDossier()}
+document.addEventListener("DOMContentLoaded",()=>{db.ref("combat").on("value",refreshBossEncounterLayout);setInterval(refreshBossEncounterLayout,1000)})

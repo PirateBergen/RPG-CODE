@@ -105,7 +105,8 @@
       "interface/menus/collapsible-panels.js",
       "campaigns/prophetie-des-mouches/presentation/fly-blessing.js",
       "interface/menus/preferences.js",
-      "interface/combat/action-availability.js"
+      "interface/combat/action-availability.js",
+      "interface/combat/boss-dossier.js"
     ],
     "combat-core.js": [
       "campaigns/prophetie-des-mouches/rules/combat-outcomes.js",
@@ -122,7 +123,8 @@
       "engine/combat/reactions.js",
       "campaigns/prophetie-des-mouches/rules/hero-attack-lookup.js",
       "engine/combat/legacy-request-compatibility.js",
-      "engine/combat/gm-statuses.js"
+      "engine/combat/gm-statuses.js",
+      "campaigns/prophetie-des-mouches/rules/kraken-encounter.js"
     ],
     "combat.js": [
       "campaigns/prophetie-des-mouches/presentation/arena-selection.js",
@@ -292,7 +294,8 @@
       "campaigns/prophetie-des-mouches/theme/20-fly-blessing.css",
       "interface/styles/21-player-actions.css",
       "interface/styles/22-reactions.css",
-      "interface/styles/23-dice-choice.css"
+      "interface/styles/23-dice-choice.css",
+      "interface/styles/24-boss-dossier.css"
     ]
   }
 }

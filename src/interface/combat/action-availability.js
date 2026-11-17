@@ -20,6 +20,7 @@ function combatActionAvailability(actor, attack, special=false, enemy=false) {
   if(!enemy&&players[actor]?.hp<=0&&!bibiInstead)return blocked("Personnage KO")
   if(enemy&&c[actor]?.hp<=0)return blocked("Adversaire KO")
   if(enemy&&special&&c[actor]?.balanceClass==="world"){
+    if(typeof isKrakenEncounter==="function"&&isKrakenEncounter(c[actor])&&krakenSpecialUsed(c[actor]))return blocked("Spéciale de cette phase déjà utilisée ou interrompue")
     const charge=c[actor].chargingSpecial,round=state?.round||1
     if(charge?.reaction?.status==="rolling")return blocked("Réactions : attendez la validation des protections par le MJ")
     if(charge&&round<charge.readyRound)return blocked("Préparation : encore "+(charge.readyRound-round)+" round(s)")
@@ -103,6 +104,7 @@ function refreshCombatHUDContext(){
  if(!hud||!info||!player)return
  let rules=document.getElementById("combatHUDRules")
  if(c?.balanceVersion===3){if(!rules){rules=document.createElement("p");rules.id="combatHUDRules";info.appendChild(rules)}const raw=window.__publicCharacters?.[player]||{};rules.textContent=calibratedRuleSummary(getEffectiveCharacterData(player,raw));rules.hidden=false}else if(rules)rules.hidden=true
+ if(typeof refreshKrakenAssistance==="function")refreshKrakenAssistance(document.getElementById("combatHUDAttacks"),player)
  let summary=document.getElementById("combatHUDTurnSummary");if(!summary){summary=document.createElement("p");summary.id="combatHUDTurnSummary";summary.setAttribute("role","status");info.insertBefore(summary,document.getElementById("combatHUDAttacks"))}
  const current=state?.currentActorId,label=current==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(current)?combatEnemyLabel(current):heroDisplayName(current||"—")
  const pill=document.querySelector("#combatHUDMeta .combatHUDMetaPill--turn");if(pill)pill.textContent="Round "+(state?.round||1)+" · "+(state?.phase==="rolling"?"Initiative":label)

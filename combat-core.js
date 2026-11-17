@@ -671,7 +671,7 @@ function krakenSpecialAttack(mob){
  const stage=mob.chargingSpecial?.krakenStage||krakenStage(mob),base=getMobSpecialAttack("kraken","boss")
  return {...base,oncePerCombat:false,oncePerPhase:true,name:stage===3?"Écrasement du navire":base.name,krakenStage:stage,flavor:stage===3?"Le Kraken soulève sa masse pour écraser le pont. Cherchez un abri ou interrompez sa préparation !":base.flavor}
 }
-function krakenNormalAttacks(mob){const list=getMobAttacksForMob("kraken","boss");if(krakenStage(mob)>=2&&!mob.krakenHold)list.push({name:"Saisie tentaculaire",icon:"🐙",dmgMin:10,dmgMax:15,effect:"grab",desc:"Saisit une cible : dégâts infligés −25 %. Un allié peut la libérer ou infliger assez de dégâts au Kraken."});return list}
+function krakenNormalAttacks(mob){const list=getMobAttacksForMob("kraken","boss");if(krakenStage(mob)>=2&&!mob.krakenHold)list.push({name:"Saisie tentaculaire",icon:"🐙",dmgMin:10,dmgMax:15,effect:"grab",flavor:"Une tentacule saisit une cible. Un allié peut la libérer ou frapper le Kraken.",desc:"Saisit une cible : dégâts infligés −25 %. Un allié peut la libérer ou infliger assez de dégâts au Kraken."});return list}
 function krakenSpecialUsed(mob){return (mob.krakenSpecialStageUsed||0)>=krakenStage(mob)}
 function synchronizeKrakenStage(root,slot,request){
  const mob=root.combat?.[slot];if(!isKrakenEncounter(mob))return

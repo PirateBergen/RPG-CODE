@@ -1,0 +1,419 @@
+/* BARRE DÉS — TALES STYLE   */
+/* ========================= */
+
+#diceBar {
+  position: fixed; bottom: 20px; right: 20px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  padding: 18px 26px; border-radius: 4px;
+  display: flex; gap: 6px; align-items: center;
+  font-family: var(--font-body);
+  z-index: 9999999;
+  isolation: isolate;
+}
+
+#diceBar::before {
+  content: "";
+  position: absolute;
+  inset: -14px -24px;
+  background: url("images/boutonnoirlarge.png") center/100% 100% no-repeat;
+  pointer-events: none;
+  z-index: -1;
+  filter: drop-shadow(0 0 18px rgba(0,0,0,0.5));
+}
+
+#diceBar button {
+  background: none; border: none; padding: 2px;
+  cursor: pointer; transition: all 0.15s; line-height: 0;
+}
+
+#diceBar button:hover {
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 8px rgba(30,200,220,0.7)) brightness(1.2);
+}
+
+#diceBar button:active { transform: scale(0.9); }
+
+.diceImgBtn { position: relative; display: flex; flex-direction: column; align-items: center; }
+
+.diceImg {
+  width: 46px; height: 46px; object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+  transition: all 0.15s;
+}
+
+.diceMJLabel {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  font-family: var(--font-body); font-size: 9px;
+  color: var(--gold); font-weight: bold;
+  text-shadow: 0 0 4px black; pointer-events: none;
+}
+
+.diceMobLabel {
+  position: absolute; top: -4px; right: -4px;
+  font-size: 12px; pointer-events: none;
+}
+
+.mobDiceBtn .diceImg {
+  filter: drop-shadow(0 0 6px red) drop-shadow(0 2px 4px rgba(0,0,0,0.7));
+}
+
+/* ========================= */
+/* LOG DÉS                   */
+/* ========================= */
+
+#diceLog {
+  position: fixed; right: 20px; bottom: 90px;
+  width: 220px; max-height: 260px; overflow-y: auto;
+  background:
+    linear-gradient(180deg, rgba(18,14,10,0.97), rgba(8,8,8,0.98));
+  border: 1px solid rgba(181,145,82,0.68);
+  box-shadow: 0 0 0 1px rgba(72,46,16,0.95), 0 0 24px rgba(0,0,0,0.86);
+  color: #f0e1bc;
+  font-family: var(--font-body);
+  padding: 12px 12px 10px; border-radius: 10px;
+  z-index: 1000000001;
+}
+
+.dice-log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-family: Cinzel, serif;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: #f2d7a6;
+}
+
+#diceLogContent {
+  display: block;
+}
+
+.logEntry { padding: 5px 0; border-bottom: 1px solid rgba(181,145,82,0.16); }
+.logMJ { color: var(--gold); }
+.logCrit { color: var(--gold); text-shadow: 0 0 8px gold; }
+.logFail { color: #ff5050; text-shadow: 0 0 8px red; }
+.logCombat { color: #c8e8ff; font-size: 11px; letter-spacing: 0.2px; }
+
+/* ========================= */
+/* RÉSULTAT DÉ               */
+/* ========================= */
+
+/* ── Dé 3D ── */
+#diceResult {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 24px;
+  background: transparent;
+  border: none; box-shadow: none; padding: 28px 34px;
+  opacity: 0; transition: opacity 0.4s;
+  z-index: 1000000002; pointer-events: none;
+  width: auto; height: auto;
+}
+
+#diceResult .dice-player-label {
+  font-family: var(--font-body); font-size: 18px;
+  color: rgba(215,238,245,0.96); letter-spacing: 3.5px;
+  text-transform: uppercase; white-space: nowrap;
+  text-shadow: 0 0 18px rgba(30,180,200,0.28), 0 2px 10px rgba(0,0,0,0.72);
+}
+
+#diceResult .dice-3d-wrap {
+  perspective: 500px;
+  width: 118px; height: 118px;
+}
+
+#diceResult .dice-3d {
+  width: 118px; height: 118px;
+  position: relative; transform-style: preserve-3d;
+}
+
+#diceResult .dice-face {
+  position: absolute; width: 118px; height: 118px;
+  border-radius: 17px;
+  border: 2px solid rgba(30,180,200,0.62);
+  box-shadow: inset 0 0 24px rgba(30,120,160,0.28), 0 0 26px rgba(0,0,0,0.32);
+  background: linear-gradient(145deg, rgba(8,22,32,0.97), rgba(5,14,22,0.99));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-body); font-size: 42px; font-weight: bold;
+  color: rgba(30,200,220,0.9);
+  text-shadow: 0 0 14px rgba(30,180,200,0.72);
+  backface-visibility: hidden;
+}
+
+#diceResult .df1 { transform: rotateY(0deg)   translateZ(59px); }
+#diceResult .df2 { transform: rotateY(180deg) translateZ(59px); }
+#diceResult .df3 { transform: rotateY(90deg)  translateZ(59px); }
+#diceResult .df4 { transform: rotateY(-90deg) translateZ(59px); }
+#diceResult .df5 { transform: rotateX(90deg)  translateZ(59px); }
+#diceResult .df6 { transform: rotateX(-90deg) translateZ(59px); }
+
+#diceResult .dice-result-label {
+  font-family: var(--font-body); font-size: 52px; font-weight: bold;
+  color: rgba(30,200,220,0.9); letter-spacing: 4px;
+  text-shadow: 0 0 18px rgba(30,180,200,0.5), 0 2px 12px rgba(0,0,0,0.75);
+  min-height: 64px; white-space: nowrap;
+}
+
+#diceResult.crit .dice-face {
+  border-color: rgba(212,168,53,0.9);
+  color: #f5d060;
+  text-shadow: 0 0 20px gold, 0 0 40px rgba(255,180,0,0.5);
+  box-shadow: inset 0 0 28px rgba(212,168,53,0.3);
+}
+#diceResult.crit .dice-result-label {
+  color: #f5d060; text-shadow: 0 0 20px gold;
+}
+
+#diceResult.fail .dice-face {
+  border-color: rgba(180,40,40,0.9);
+  color: #ff5555;
+  text-shadow: 0 0 20px red, 0 0 40px rgba(200,0,0,0.5);
+  box-shadow: inset 0 0 28px rgba(180,0,0,0.3);
+}
+#diceResult.fail .dice-result-label {
+  color: #ff5555; text-shadow: 0 0 20px red;
+}
+
+#diceResult.mjRoll .dice-face {
+  border-color: rgba(212,168,53,0.7);
+  color: rgba(212,168,53,0.9);
+  text-shadow: 0 0 8px rgba(212,168,53,0.5);
+}
+
+@keyframes diceIdle {
+  0%   { transform: rotateX(20deg) rotateY(0deg); }
+  100% { transform: rotateX(20deg) rotateY(360deg); }
+}
+@keyframes diceRolling {
+  0%   { transform: rotateX(0deg)   rotateY(0deg)   rotateZ(0deg); }
+  100% { transform: rotateX(137deg) rotateY(247deg) rotateZ(83deg); }
+}
+
+/* ========================= */
+/* ONGLETS PNJ               */
+/* ========================= */
+
+#highPnjTab > button:not(.mapCategoryButton),
+#pnjCombatTab > button:not(.mapCategoryButton) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 4px 8px 0;
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.7px;
+  color: #f0dfae;
+  background: linear-gradient(180deg, rgba(20,74,102,0.92), rgba(10,40,58,0.97));
+  border: 1px solid rgba(52,196,240,0.58);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(136,232,255,0.14),
+    0 0 0 1px rgba(16,84,116,0.32);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+#highPnjTab > button:not(.mapCategoryButton):hover,
+#pnjCombatTab > button:not(.mapCategoryButton):hover {
+  transform: translateY(-1px);
+  color: #fff4c8;
+  background: linear-gradient(180deg, rgba(28,102,136,0.96), rgba(12,54,78,0.99));
+  border-color: rgba(118,232,255,0.74);
+  box-shadow:
+    inset 0 1px 0 rgba(176,244,255,0.18),
+    0 0 14px rgba(74,196,236,0.18);
+}
+
+/* ========================= */
+/* MENU MAPS — TALES STYLE   */
+/* ========================= */
+
+.mapWorldButton {
+  width: 100%;
+  background: linear-gradient(rgba(15,55,68,0.9), rgba(8,35,45,0.95));
+  color: var(--cream);
+  font-family: var(--font-body);
+  padding: 10px; margin-bottom: 10px;
+  border: 1px solid var(--teal-border);
+  border-radius: 2px; font-size: 15px;
+  cursor: pointer; transition: 0.2s;
+  box-shadow: 0 0 10px rgba(30,140,160,0.2);
+}
+
+.mapWorldButton:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 20px rgba(30,180,200,0.4);
+  border-color: rgba(30,200,220,0.8);
+}
+
+.arrow { display: inline-block; width: 20px; transition: transform 0.2s; }
+.arrow.open { transform: rotate(90deg); }
+
+/* ========================= */
+/* JOURNAL MJ                */
+/* ========================= */
+
+#mjLog {
+  position: fixed; left: 20px; bottom: 20px;
+  width: 240px; max-height: 260px; overflow-y: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--teal-border);
+  box-shadow: 0 0 0 1px var(--gold-dim), 0 0 20px rgba(0,0,0,0.8);
+  color: var(--cream);
+  font-family: var(--font-body);
+  padding: 10px; border-radius: 3px;
+  z-index: 99999; display: none;
+}
+
+.mjTitle { font-size: 16px; margin-bottom: 8px; text-align: center; color: var(--teal-border); letter-spacing: 2px; }
+.mjEntry { font-size: 13px; margin-bottom: 5px; border-bottom: 1px solid rgba(30,90,102,0.2); padding-bottom: 4px; }
+
+/* ========================= */
+/* BANDEROLE LIEU            */
+/* ========================= */
+
+#locationBanner {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  display: none; justify-content: center; align-items: center;
+  pointer-events: none; z-index: 999999;
+  opacity: 0; transition: opacity 1s;
+}
+
+#locationBanner.visible { display: flex; }
+#locationParticles { position: absolute; width: 100%; height: 100%; overflow: hidden; }
+
+.particle {
+  position: absolute; width: 6px; height: 6px;
+  background: var(--teal-border); border-radius: 50%;
+  box-shadow: 0 0 6px var(--teal-border), 0 0 12px rgba(30,180,200,0.5);
+  animation: particleFloat 3s linear forwards;
+}
+
+@keyframes particleFloat {
+  0%   { transform: translateY(40px) scale(0.5); opacity: 0; }
+  20%  { opacity: 1; }
+  100% { transform: translateY(-200px) scale(1.2); opacity: 0; }
+}
+
+#locationPaper {
+  background-image: url("images/cadre.png");
+  background-repeat: no-repeat; background-position: center; background-size: 100% 100%;
+  position: relative; width: 540px; min-width: 540px;
+  height: 360px; min-height: 360px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  font-family: var(--font-body); color: var(--cream); text-align: center;
+  filter: drop-shadow(0 10px 30px rgba(0,0,0,0.9));
+  transform: translateY(-300px) scaleY(0.2); transform-origin: top;
+  transition: transform 0.7s ease;
+}
+
+#locationPaper.open {
+  transform: translateY(0) scaleY(1);
+  animation: paperBounce 0.6s ease;
+}
+
+@keyframes paperBounce {
+  0%   { transform: translateY(-300px) scaleY(0.2) }
+  70%  { transform: translateY(10px) scaleY(1.05) }
+  100% { transform: translateY(0) scaleY(1) }
+}
+
+#locationText {
+  font-size: 28px; letter-spacing: 3px; font-weight: bold;
+  color: var(--cream);
+  text-shadow: 0 0 8px rgba(30,180,200,0.5), 0 0 16px rgba(30,140,160,0.4), 1px 1px 3px rgba(0,0,0,0.9);
+}
+
+/* ========================= */
+/* IMAGES STORY / PNJ        */
+/* ========================= */
+
+#storyImage {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: none; justify-content: center; align-items: center;
+  pointer-events: none; z-index: 9999999;
+  transition: opacity 0.5s ease, left 0.3s ease, right 0.3s ease;
+}
+
+#storyImage img {
+  max-height: 80vh;
+  animation: pnjAppear 0.6s ease-out, pnjIdle 3s ease-in-out infinite;
+  filter: drop-shadow(0 20px 40px black);
+}
+
+#storyImage2, #storyImage3 {
+  position: fixed; top: 0; right: 0; width: 50%; height: 100%;
+  display: none; justify-content: center; align-items: center;
+  pointer-events: none; z-index: 1000;
+  background: linear-gradient(to left, rgba(0,0,0,0.4), transparent);
+  transition: opacity 0.5s ease, left 0.4s ease, right 0.4s ease, transform 0.4s ease;
+}
+
+#storyImageContent2, #storyImageContent3 {
+  max-height: 85vh; max-width: 100%; object-fit: contain;
+}
+
+@keyframes pnjAppear {
+  0%   { transform: translateY(80px) scale(0.8); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes pnjIdle {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+/* ========================= */
+/* SAUVEGARDE MJ             */
+/* ========================= */
+
+#gmSaveBar { display: none !important; position: fixed; top: 16px; left: 160px; z-index: 99999999; }
+
+#gmSaveBtn {
+  font-family: var(--font-body); font-size: 13px; padding: 8px 16px;
+  background: linear-gradient(180deg, rgba(10,40,50,0.95), rgba(5,20,28,0.98));
+  color: rgba(30,200,220,0.9);
+  border: 1px solid var(--teal-border);
+  box-shadow: 0 0 0 1px var(--gold-dim), 0 0 10px rgba(30,140,160,0.2);
+  border-radius: 3px; cursor: pointer; transition: 0.2s;
+  letter-spacing: 1px;
+}
+
+#gmSaveBtn:hover {
+  background: linear-gradient(180deg, rgba(15,60,75,0.98), rgba(8,30,40,1));
+  box-shadow: 0 0 0 1px var(--gold-dim), 0 0 20px rgba(30,180,200,0.4);
+  transform: translateY(-1px); color: #e8f8ff;
+}
+
+/* ========================= */
+/* TITRE DU JEU              */
+/* ========================= */
+
+#gameTitle {
+  position: relative; top: 42px; text-align: center; margin-bottom: 8px;
+  font-family: var(--font-title); font-size: 42px;
+  letter-spacing: 4px; color: var(--cream);
+  pointer-events: none; opacity: 0; transition: opacity 2s ease;
+}
+
+#gameTitle.visible {
+  opacity: 1;
+  animation: titleHaloBreath 3s ease-in-out infinite;
+}
+
+@keyframes titleHaloBreath {
+  0%,100% { text-shadow: 0 0 8px #ffd700, 0 0 16px #d4a800, 0 0 30px gold, 1px 1px 3px rgba(0,0,0,0.9); color: var(--cream); }
+  50%      { text-shadow: 0 0 6px #ffd700, 0 0 20px #aa7700, 0 0 40px rgba(200,120,0,0.8), 1px 1px 3px rgba(0,0,0,0.9); color: #e8d4a0; }
+}
+
+/* ========================= */

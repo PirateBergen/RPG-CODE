@@ -1,0 +1,298 @@
+{
+  "format": 1,
+  "campaign": "prophetie-des-mouches",
+  "bundles": {
+    "config.js": [
+      "engine/game-states.js",
+      "campaigns/prophetie-des-mouches/characters/base-stats.js",
+      "engine/characters/progression.js",
+      "campaigns/prophetie-des-mouches/enemies/stats.js",
+      "campaigns/prophetie-des-mouches/characters/attacks.js",
+      "campaigns/prophetie-des-mouches/enemies/attacks.js",
+      "campaigns/prophetie-des-mouches/presentation/enemy-animation-styles.js",
+      "campaigns/prophetie-des-mouches/enemies/special-attacks.js",
+      "engine/combat/enemy-attack-catalog.js",
+      "campaigns/prophetie-des-mouches/enemies/weaknesses.js",
+      "campaigns/prophetie-des-mouches/presentation/enemy-cinematics.js",
+      "presentation/enemy-style-lookup.js",
+      "campaigns/prophetie-des-mouches/enemies/categories.js",
+      "engine/combat/legacy-balance.js",
+      "campaigns/prophetie-des-mouches/world/locations-and-music.js",
+      "campaigns/prophetie-des-mouches/items/shop-catalog.js",
+      "engine/items/equipment-progression.js",
+      "campaigns/prophetie-des-mouches/world/wanted-catalog.js",
+      "campaigns/prophetie-des-mouches/events/curse-choices.js",
+      "campaigns/prophetie-des-mouches/events/rune-content.js",
+      "campaigns/prophetie-des-mouches/presentation/hero-audio.js",
+      "campaigns/prophetie-des-mouches/events/odin-visions.js",
+      "campaigns/prophetie-des-mouches/events/rune-dialogues.js",
+      "campaigns/prophetie-des-mouches/events/cemetery-settings.js",
+      "engine/combat/slots.js",
+      "campaigns/prophetie-des-mouches/events/introduction.js",
+      "campaigns/prophetie-des-mouches/allies/catalog.js",
+      "campaigns/prophetie-des-mouches/characters/identity-and-compatibility.js",
+      "engine/items/inventory-weight.js",
+      "campaigns/prophetie-des-mouches/rules/balrog-sword.js",
+      "engine/combat/damage-routing.js"
+    ],
+    "game.js": [
+      "platform/firebase/bootstrap.js",
+      "interface/auth/gm.js",
+      "interface/auth/players.js",
+      "campaigns/prophetie-des-mouches/world/local-state.js",
+      "runtime/characters/local-identity.js",
+      "interface/combat/local-defeat.js",
+      "campaigns/prophetie-des-mouches/characters/thuums.js",
+      "campaigns/prophetie-des-mouches/events/madness-and-fog.js",
+      "runtime/session/start-listeners.js",
+      "runtime/session/bootstrap.open.jsfrag",
+      "runtime/session/subscriptions.js",
+      "campaigns/prophetie-des-mouches/presentation/enemy-specials.js",
+      "presentation/combat/enemy-impact.js",
+      "campaigns/prophetie-des-mouches/presentation/cemetery-and-summons.js",
+      "interface/combat/token-badges.js",
+      "interface/session/cleanup.js",
+      "interface/combat/token-status.js",
+      "runtime/world/subscriptions.js",
+      "runtime/session/bootstrap.close.jsfrag",
+      "campaigns/prophetie-des-mouches/events/fly-swarm-controls.js",
+      "runtime/characters/token-synchronization.js",
+      "runtime/characters/sheet-synchronization.js",
+      "presentation/audio/map-music.js",
+      "runtime/characters/resurrection.js",
+      "runtime/characters/xp-grants.js",
+      "interface/dice/free-controls.js",
+      "presentation/dice/animation.js",
+      "interface/dice/stat-rolls.js",
+      "runtime/session/view-state.js",
+      "runtime/characters/reset-controls.js",
+      "interface/session/journal.js",
+      "campaigns/prophetie-des-mouches/presentation/end-session.js",
+      "interface/session/start-flow.js",
+      "campaigns/prophetie-des-mouches/presentation/introduction.js",
+      "interface/gm/player-preview.js",
+      "interface/gm/menus-and-selection.js"
+    ],
+    "ui.js": [
+      "interface/combat/character-stats.js",
+      "campaigns/prophetie-des-mouches/presentation/attack-icons.js",
+      "interface/combat/attack-descriptions.js",
+      "engine/combat/attack-types.js",
+      "interface/combat/special-availability.js",
+      "engine/characters/health-and-inventory.js",
+      "interface/combat/friendly-target-picker.js",
+      "engine/combat/player-power.js",
+      "interface/combat/player-preview-controls.js",
+      "campaigns/prophetie-des-mouches/presentation/hero-specials.js",
+      "campaigns/prophetie-des-mouches/rules/hero-specials.js",
+      "interface/combat/action-blocks.js",
+      "interface/combat/status-panel.js",
+      "interface/combat/player-hud.js",
+      "interface/combat/enemy-panels.js",
+      "interface/story/npc-and-images.js",
+      "campaigns/prophetie-des-mouches/world/npc-names.js",
+      "interface/story/npc-images-and-scroll.js",
+      "interface/characters/curse-controls.js",
+      "campaigns/prophetie-des-mouches/presentation/curse-wheel.js",
+      "interface/characters/power-button.js",
+      "interface/world/elements.js",
+      "interface/session/save-menu.js",
+      "campaigns/prophetie-des-mouches/presentation/cemetery-event.js",
+      "interface/allies/invocation-panel.js",
+      "presentation/allies/invocation.js",
+      "interface/gm/log-controls.js",
+      "interface/allies/permissions.js",
+      "interface/menus/collapsible-panels.js",
+      "campaigns/prophetie-des-mouches/presentation/fly-blessing.js",
+      "interface/menus/preferences.js",
+      "interface/combat/action-availability.js"
+    ],
+    "combat-core.js": [
+      "campaigns/prophetie-des-mouches/rules/combat-outcomes.js",
+      "campaigns/prophetie-des-mouches/characters/combat-roster.js",
+      "engine/combat/turns-and-dice.js",
+      "engine/combat/journal.js",
+      "engine/combat/health-and-effects.js",
+      "engine/combat/round-lifecycle.js",
+      "engine/combat/targeting.js",
+      "campaigns/prophetie-des-mouches/rules/hero-actions.js",
+      "engine/combat/enemy-actions.js",
+      "campaigns/prophetie-des-mouches/rules/ally-actions.js",
+      "engine/combat/request-reducer.js",
+      "engine/combat/reactions.js",
+      "campaigns/prophetie-des-mouches/rules/hero-attack-lookup.js",
+      "engine/combat/legacy-request-compatibility.js",
+      "engine/combat/gm-statuses.js"
+    ],
+    "combat.js": [
+      "campaigns/prophetie-des-mouches/presentation/arena-selection.js",
+      "campaigns/prophetie-des-mouches/characters/initiative-labels.js",
+      "runtime/combat/initiative.js",
+      "interface/combat/initiative-panel.js",
+      "interface/combat/encounter-selection.js",
+      "presentation/combat/start-controls.js",
+      "campaigns/prophetie-des-mouches/presentation/king-introduction.js",
+      "presentation/combat/entrance.js",
+      "interface/combat/enemy-tokens.js",
+      "campaigns/prophetie-des-mouches/presentation/john-pork-token.js",
+      "presentation/combat/outcome.js",
+      "runtime/combat/exit.js",
+      "presentation/combat/boss-fire.js",
+      "campaigns/prophetie-des-mouches/presentation/opening-cinematic.js",
+      "interface/combat/enemy-picker.js",
+      "campaigns/prophetie-des-mouches/enemies/quick-selection.js",
+      "interface/combat/enemy-dropdown.js",
+      "runtime/combat/remote-start.js",
+      "presentation/combat/turn-banner.js"
+    ],
+    "utils.js": [
+      "interface/menus/window-lifecycle.js",
+      "engine/items/inventory-modifiers.js",
+      "engine/helpers/values-and-assets.js",
+      "interface/notifications.js",
+      "interface/logs.js",
+      "presentation/characters/xp-message.js",
+      "presentation/text.js",
+      "presentation/combat/impacts.js",
+      "presentation/colors.js",
+      "interface/world/camera.js",
+      "presentation/audio/mixing.js",
+      "campaigns/prophetie-des-mouches/presentation/audio-gains.js",
+      "presentation/audio/playback.js",
+      "presentation/characters/blood.js",
+      "campaigns/prophetie-des-mouches/presentation/bibi-speech.js",
+      "interface/menus/dragging.js",
+      "presentation/menus/sparks-and-locations.js"
+    ],
+    "access.js": [
+      "platform/access.js"
+    ],
+    "ally-discovery.js": [
+      "interface/allies/discovery.js"
+    ],
+    "antre-event.js": [
+      "campaigns/prophetie-des-mouches/events/antre.js"
+    ],
+    "balrog-sword.js": [
+      "campaigns/prophetie-des-mouches/events/balrog-sword.js"
+    ],
+    "campaign-storage.js": [
+      "platform/storage/campaign-storage.js"
+    ],
+    "celestial-events.js": [
+      "campaigns/prophetie-des-mouches/events/celestial-events.js"
+    ],
+    "character-effects-core.js": [
+      "engine/characters/effect-requests.js"
+    ],
+    "character-effects.js": [
+      "runtime/characters/effects.js"
+    ],
+    "character-sheet.js": [
+      "interface/characters/sheet.js"
+    ],
+    "combat-balance.js": [
+      "engine/combat/balance.js"
+    ],
+    "combat-exit.js": [
+      "runtime/combat/exit-presentation.js"
+    ],
+    "combat-reactions.js": [
+      "interface/combat/reactions.js"
+    ],
+    "combat-runtime.js": [
+      "runtime/combat/requests.js"
+    ],
+    "dice-choice.js": [
+      "interface/dice/type-picker.js"
+    ],
+    "entrance.js": [
+      "interface/session/entrance.js"
+    ],
+    "exploration-core.js": [
+      "engine/exploration/request-reducer.js"
+    ],
+    "exploration.js": [
+      "runtime/exploration/synchronization.js"
+    ],
+    "gm-arbitration.js": [
+      "interface/gm/intervention.js"
+    ],
+    "gm-diagnostics.js": [
+      "interface/gm/diagnostics.js"
+    ],
+    "local-test-mode.js": [
+      "platform/testing/local-mode.js"
+    ],
+    "map-controls.js": [
+      "interface/world/map-controls.js"
+    ],
+    "oregon-voyage.js": [
+      "campaigns/prophetie-des-mouches/events/oregon-voyage.js"
+    ],
+    "persistence.js": [
+      "platform/storage/persistence.js"
+    ],
+    "pika-combat.js": [
+      "campaigns/prophetie-des-mouches/rules/pika-combat.js"
+    ],
+    "player-actions.js": [
+      "interface/players/action-menu.js"
+    ],
+    "presentation.js": [
+      "presentation/lifecycle.js"
+    ],
+    "reading.js": [
+      "campaigns/prophetie-des-mouches/events/books-and-documents.js"
+    ],
+    "reliability.js": [
+      "platform/network/reliability.js"
+    ],
+    "rune-challenge.js": [
+      "campaigns/prophetie-des-mouches/events/rune-challenge.js"
+    ],
+    "session-view.js": [
+      "interface/session/view-transitions.js"
+    ],
+    "shops.js": [
+      "interface/items/shops.js"
+    ],
+    "shortcuts.js": [
+      "interface/menus/shortcuts.js"
+    ],
+    "state.js": [
+      "runtime/state.js"
+    ],
+    "sw.js": [
+      "platform/service-worker.js"
+    ],
+    "wanted.js": [
+      "campaigns/prophetie-des-mouches/events/wanted.js"
+    ],
+    "style.css": [
+      "campaigns/prophetie-des-mouches/theme/01-shell.css",
+      "presentation/styles/02-transitions-dialogue.css",
+      "interface/styles/03-world-tokens.css",
+      "interface/styles/04-audio-and-notifications.css",
+      "interface/styles/05-dice-and-story-menus.css",
+      "interface/styles/06-legacy-combat.css",
+      "interface/styles/07-token-states.css",
+      "presentation/styles/08-effects.css",
+      "campaigns/prophetie-des-mouches/theme/09-story-effects.css",
+      "campaigns/prophetie-des-mouches/theme/10-madness.css",
+      "interface/styles/11-legacy-overrides.css",
+      "campaigns/prophetie-des-mouches/theme/12-enemy-cinematics.css",
+      "interface/styles/13-role-entry.css",
+      "interface/styles/14-menus.css",
+      "interface/styles/15-responsive-windows.css",
+      "campaigns/prophetie-des-mouches/theme/16-night-and-artwork.css",
+      "interface/styles/17-character-sheet.css",
+      "campaigns/prophetie-des-mouches/theme/18-afterlife.css",
+      "interface/styles/19-combat.css",
+      "campaigns/prophetie-des-mouches/theme/20-fly-blessing.css",
+      "interface/styles/21-player-actions.css",
+      "interface/styles/22-reactions.css",
+      "interface/styles/23-dice-choice.css"
+    ]
+  }
+}

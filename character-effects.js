@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 let characterEffectsRefs=[],characterEffectsTimer=null,characterEffectsQueue=Promise.resolve()
 let characterEffectsCache={characters:null,curse:{wheel:null},sessionControl:null,ready:new Set()}

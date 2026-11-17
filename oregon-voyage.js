@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // A voyage lives inside its aurora event, so saves and expiry stay atomic.

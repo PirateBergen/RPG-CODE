@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // Affiches wanted : édition MJ et affichage. Synchronisation dans exploration.js.

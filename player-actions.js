@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // Menu Action : documents, alliés, cris et runes ; accès et présentation des cris.

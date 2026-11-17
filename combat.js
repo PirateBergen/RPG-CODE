@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 window.__combatOutcomeShowing = false

@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // Livres de carte et documents partagés du MJ. Notes personnelles : character-sheet.js.

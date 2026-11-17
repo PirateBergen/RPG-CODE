@@ -1,0 +1,794 @@
+/* ============================================================ */
+/* PROPHÉTIE DES MOUCHES — UI STYLE "TALES OF SYMPHONIA"       */
+/* Palette : teal sombre, bordeaux, or, ivoire                 */
+/* ============================================================ */
+
+:root {
+  --teal-dark:    #0a1a1e;
+  --teal-mid:     #0f2a30;
+  --teal-border:  #1e5a66;
+  --teal-glow:    rgba(30,180,200,0.25);
+  --gold:         #d4a835;
+  --gold-light:   #f5e090;
+  --gold-dim:     #8a6520;
+  --cream:        #f0e8c8;
+  --cream-dim:    #c8b890;
+  --red-dark:     #5a0a0a;
+  --red-mid:      #8b1a1a;
+  --red-border:   #cc3333;
+  --panel-bg:     rgba(8,20,24,0.96);
+  --border-outer: #8a6520;
+  --border-inner: #1e5a66;
+  --font-title:   'Cinzel Decorative', 'Cinzel', serif;
+  --font-body:    'Cinzel', serif;
+  --font-text:    'IM Fell English', serif;
+}
+
+html, body {
+  margin: 0; padding: 0;
+  width: 100%; height: 100%;
+  overflow: hidden;
+}
+
+/* ========================= */
+/* PANNEAU DE BASE — TALES   */
+/* Bordure double teal+or    */
+/* ========================= */
+
+.talesPanel {
+  background: var(--panel-bg);
+  border: 1px solid var(--teal-border);
+  box-shadow:
+    0 0 0 1px var(--gold-dim),
+    inset 0 0 0 1px rgba(30,90,102,0.4),
+    0 0 30px rgba(0,0,0,0.9),
+    inset 0 0 40px rgba(0,0,0,0.5);
+  border-radius: 3px;
+  position: relative;
+}
+
+/* Coins ornementés via pseudo-éléments */
+.talesPanel::before {
+  content: "";
+  position: absolute; inset: 3px;
+  border: 1px solid rgba(212,168,53,0.25);
+  pointer-events: none; z-index: 0;
+  border-radius: 2px;
+}
+
+/* ========================= */
+/* ÉCRAN DÉPART              */
+/* ========================= */
+
+#startScreen {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: black;
+  color: white;
+  display: flex; justify-content: center; align-items: center;
+  font-size: 40px; cursor: pointer; z-index: 10;
+}
+
+/* ========================= */
+/* INTRO                     */
+/* ========================= */
+
+#intro {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background-image: url("ouverture.jpg");
+  background-size: cover; background-position: center;
+  display: none; justify-content: center; align-items: center;
+  flex-direction: column; color: white; font-size: 32px;
+  text-shadow: 2px 2px 8px black;
+  overflow-y: auto; padding: 28px 0 18px; box-sizing: border-box;
+}
+
+/* ========================= */
+/* COMBAT WORLD BOSS SAFETY  */
+/* ========================= */
+
+/* ========================= */
+/* PRÉVISUALISATION JOUEUR   */
+/* ========================= */
+
+#playerPreviewBtn {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1000000020;
+  display: none;
+}
+
+#playerPreviewToggle {
+  width: 38px;
+  height: 38px;
+  background: rgba(10, 20, 30, 0.85);
+  border: 1px solid rgba(80, 140, 180, 0.5);
+  border-radius: 8px;
+  color: #7dd4f8;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, border-color 0.2s;
+}
+#playerPreviewToggle:hover {
+  background: rgba(20, 50, 80, 0.9);
+  border-color: rgba(120, 200, 255, 0.8);
+}
+
+#playerPreviewPanel {
+  display: none;
+  position: absolute;
+  top: 46px;
+  left: 0;
+  background: rgba(8, 18, 28, 0.97);
+  border: 1px solid rgba(80, 140, 180, 0.5);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 120px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.8);
+}
+#playerPreviewPanel.open { display: block; }
+
+.preview-panel-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: #7dd4f8;
+  letter-spacing: 2px;
+  text-align: center;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid rgba(80, 140, 180, 0.3);
+  margin-bottom: 6px;
+}
+
+#playerPreviewPanel button {
+  display: block;
+  width: 100%;
+  padding: 7px 12px;
+  margin-bottom: 4px;
+  background: rgba(20, 40, 60, 0.6);
+  border: 1px solid rgba(80, 140, 180, 0.3);
+  border-radius: 4px;
+  color: #c8e8f8;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+#playerPreviewPanel button:hover {
+  background: rgba(30, 70, 110, 0.8);
+  border-color: rgba(120, 200, 255, 0.6);
+}
+#playerPreviewPanel button:last-child { margin-bottom: 0; }
+
+#playerPreviewBanner {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000000020;
+  background: rgba(8, 18, 28, 0.95);
+  border: 1px solid rgba(80, 140, 180, 0.6);
+  border-radius: 8px;
+  padding: 8px 16px;
+  align-items: center;
+  gap: 14px;
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  color: #7dd4f8;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+}
+#playerPreviewBanner strong { color: #fff; }
+#playerPreviewBanner button {
+  padding: 4px 12px;
+  background: rgba(120, 20, 20, 0.6);
+  border: 1px solid rgba(200, 60, 60, 0.5);
+  border-radius: 4px;
+  color: #ffaaaa;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#playerPreviewBanner button:hover { background: rgba(180, 30, 30, 0.8); }
+
+#diceBar {
+  z-index: 1000000001 !important;
+}
+
+#combatArena,
+#combatFilter,
+#bossFireOverlay {
+  z-index: 9999998 !important;
+}
+
+/* Présentation des boutons de démarrage. */
+#introBox {
+  position: relative !important;
+  width: auto !important;
+  max-width: 90vw;
+  aspect-ratio: auto;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  background: none !important;
+  border: none !important;
+  box-shadow: none;
+  border-radius: 0 !important;
+  overflow: visible;
+}
+
+#introBox > #startButton,
+#introBox .menuButton {
+  width: min(760px, 80vw) !important;
+  max-width: min(760px, 80vw);
+  align-self: center;
+  margin: 0 auto;
+}
+
+#introBox > div,
+.intro-actions {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 0;
+}
+
+#introBox > #startButton {
+  margin-top: 0;
+}
+
+/* gmBar merged above */
+
+/* ========================= */
+/* FINAL UI SOURCE OF TRUTH  */
+/* ========================= */
+
+/* gmBar merged above */
+
+#diceBar {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none;
+  padding: 18px 18px !important;
+}
+
+#diceBarToggle {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  border: 1px solid rgba(180,140,60,0.65) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(180deg, rgba(52,35,8,0.96), rgba(26,18,5,0.98)) !important;
+  color: #f4d37b !important;
+  font-family: Cinzel, serif;
+  font-size: 15px !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(0,0,0,0.45);
+}
+
+#diceBar.collapsed {
+  padding: 10px 10px !important;
+  gap: 0 !important;
+}
+
+#diceBar.collapsed::before {
+  inset: -6px -6px !important;
+}
+
+#diceBar.collapsed .diceImgBtn {
+  display: none !important;
+}
+
+#diceBar::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -10px -12px !important;
+  background: url("images/boutonnoirlarge.png") center/100% 100% no-repeat !important;
+  opacity: 1 !important;
+  display: block !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* #introBox override removed - handled by main rule */
+
+#startButton,
+.menuButton,
+#introBox > #startButton,
+#introBox .menuButton {
+  width: calc(100% - 140px) !important;
+  max-width: calc(100% - 140px);
+  min-width: 0 !important;
+  display: block !important;
+  align-self: center;
+  margin-left: auto;
+  margin-right: auto;
+  left: auto !important;
+  right: auto !important;
+  transform: none;
+}
+
+#startButton {
+  height: 128px !important;
+  margin-top: 26px;
+}
+
+.menuButton {
+  height: 120px !important;
+  margin-top: 6px;
+}
+
+#startButton .btn-inner,
+.menuButton .btn-inner {
+  background-position: center center;
+  background-size: 100% 100%;
+  color: #f9e5a5 !important;
+  text-shadow:
+    0 0 2px rgba(255,245,210,0.55),
+    0 2px 5px rgba(0,0,0,0.96),
+    0 0 16px rgba(27,86,141,0.55);
+}
+
+#startButton .btn-inner {
+  font-size: 21px !important;
+  letter-spacing: 2px;
+}
+
+.menuButton .btn-inner {
+  font-size: 17px !important;
+  letter-spacing: 1px;
+}
+
+.intro-actions {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-divider {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(200,160,80,0.2);
+}
+
+.panel-divider-tight {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(200,160,80,0.2);
+}
+
+.elem-title {
+  font-family: Cinzel, serif;
+  font-size: 10px;
+  color: #8a6830;
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+.elem-title-gold {
+  font-family: Cinzel, serif;
+  font-size: 10px;
+  color: #d6b77a;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+
+.elem-subtitle-gold {
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  color: rgba(232, 214, 170, 0.88);
+  text-align: center;
+  margin: -2px 0 10px;
+  letter-spacing: 1px;
+  font-style: italic;
+}
+
+.elem-full-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: Cinzel, serif;
+  font-size: 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.elem-full-btn-left {
+  width: 100%;
+  text-align: left;
+}
+
+.elem-doc-btn {
+  width: 100%;
+  text-align: left;
+  background: rgba(60,40,10,0.4);
+  color: #f0d890;
+  border: 1px solid rgba(160,120,40,0.4);
+  padding: 7px 10px;
+  border-radius: 3px;
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.elem-clear-btn {
+  width: 100%;
+  background: rgba(180,40,40,0.4);
+  color: #ffaaaa;
+  border: 1px solid rgba(200,60,60,0.5);
+  padding: 6px;
+  border-radius: 4px;
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.elem-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.elem-shop-armurerie {
+  background: rgba(100,60,20,0.5);
+  color: #ffddaa;
+  border: 1px solid rgba(160,100,40,0.5);
+  margin-bottom: 4px;
+}
+
+.elem-shop-marche {
+  background: rgba(40,100,40,0.5);
+  color: #aaffaa;
+  border: 1px solid rgba(60,160,60,0.5);
+}
+
+.elem-effect-aurora {
+  background: rgba(0,180,120,0.15);
+  color: #a0ffcc;
+  border: 1px solid rgba(0,200,150,0.4);
+}
+
+.elem-effect-cemetery {
+  background: rgba(80,0,120,0.3);
+  color: #cc88ff;
+  border: 1px solid rgba(120,0,180,0.5);
+}
+
+.elem-effect-flyswarm {
+  background: rgba(40,30,0,0.5);
+  color: #c8a830;
+  border: 1px solid rgba(160,120,0,0.5);
+}
+
+.elem-effect-flyswarm-stop {
+  background: rgba(60,20,20,0.4);
+  color: #ff8888;
+  border: 1px solid rgba(180,60,60,0.4);
+}
+
+@keyframes flyBuzz1 {
+  0%   { transform: translate(0,0) rotate(0deg) }
+  15%  { transform: translate(-28px,18px) rotate(40deg) }
+  30%  { transform: translate(22px,-22px) rotate(-35deg) }
+  50%  { transform: translate(-18px,32px) rotate(85deg) }
+  70%  { transform: translate(30px,-8px) rotate(-55deg) }
+  85%  { transform: translate(-12px,-20px) rotate(120deg) }
+  100% { transform: translate(0,0) rotate(0deg) }
+}
+@keyframes flyBuzz2 {
+  0%   { transform: translate(0,0) rotate(0deg) }
+  20%  { transform: translate(24px,-18px) rotate(-50deg) }
+  45%  { transform: translate(-32px,12px) rotate(110deg) }
+  65%  { transform: translate(16px,28px) rotate(-25deg) }
+  80%  { transform: translate(-22px,-14px) rotate(70deg) }
+  100% { transform: translate(0,0) rotate(0deg) }
+}
+@keyframes flyBuzz3 {
+  0%   { transform: translate(0,0) rotate(0deg) }
+  25%  { transform: translate(-18px,-28px) rotate(55deg) }
+  50%  { transform: translate(28px,16px) rotate(-95deg) }
+  75%  { transform: translate(-24px,22px) rotate(140deg) }
+  100% { transform: translate(0,0) rotate(0deg) }
+}
+@keyframes flySwarmPulse {
+  0%,100% { opacity: 0.75 }
+  50%     { opacity: 1 }
+}
+@keyframes windSwirlCW {
+  from { transform: rotate(0deg) }
+  to   { transform: rotate(360deg) }
+}
+@keyframes windSwirlCCW {
+  from { transform: rotate(0deg) }
+  to   { transform: rotate(-360deg) }
+}
+@keyframes flySwarmCenterPulse {
+  0%,100% { opacity: 0.55; transform: translate(-50%,-50%) scale(0.85) }
+  50%     { opacity: 1;    transform: translate(-50%,-50%) scale(1.25) }
+}
+
+.thuum-grant-btn {
+  width: 100%;
+  background: rgba(80,50,10,0.45);
+  color: #f5d69a;
+  border: 1px solid rgba(180,130,60,0.45);
+  padding: 7px;
+  border-radius: 4px;
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.thuum-grant-btn.last,
+.thuum-use-btn.last {
+  margin-bottom: 0;
+}
+
+.thuum-use-btn {
+  width: 100%;
+  background: rgba(40,70,20,0.45);
+  color: #d9f0a8;
+  border: 1px solid rgba(120,180,60,0.45);
+  padding: 7px;
+  border-radius: 4px;
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.spacer-8 {
+  height: 8px;
+}
+
+.rune-title {
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  color: #8a6830;
+  text-align: center;
+  margin-bottom: 8px;
+  letter-spacing: 2px;
+}
+
+.rune-launch-btn {
+  width: 100%;
+  background: rgba(200,160,50,0.2);
+  color: #c8a050;
+  border: 1px solid rgba(200,160,50,0.5);
+  padding: 8px;
+  border-radius: 4px;
+  font-family: Cinzel, serif;
+  font-size: 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.rune-continue-btn {
+  display: none;
+  width: 100%;
+  background: rgba(50,150,50,0.2);
+  color: #aaffaa;
+  border: 1px solid rgba(50,150,50,0.5);
+  padding: 8px;
+  border-radius: 4px;
+  font-family: Cinzel, serif;
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 4px;
+}
+
+.rune-subtitle {
+  font-family: Cinzel, serif;
+  font-size: 10px;
+  color: #8a6830;
+  text-align: center;
+  margin: 4px 0;
+  letter-spacing: 2px;
+}
+
+.rune-panel {
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.rune-letter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+.madness-panel {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(200,160,80,0.18);
+}
+
+.madness-value {
+  text-align: center;
+  font-family: Cinzel, serif;
+  font-size: 13px;
+  color: #d8c28a;
+  margin-bottom: 8px;
+}
+
+.madness-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.madness-btn {
+  padding: 7px;
+  border-radius: 4px;
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.madness-btn-up {
+  background: rgba(80,50,10,0.42);
+  color: #f2d49a;
+  border: 1px solid rgba(180,130,60,0.45);
+}
+
+.madness-btn-down {
+  background: rgba(40,70,20,0.42);
+  color: #d9f0a8;
+  border: 1px solid rgba(120,180,60,0.45);
+}
+
+.madness-btn-reset {
+  background: rgba(90,20,20,0.42);
+  color: #ffb0b0;
+  border: 1px solid rgba(180,60,60,0.45);
+}
+
+.wanted-title {
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  color: #aa8844;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.wanted-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.wanted-create-btn {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px;
+  font-family: Cinzel, serif;
+  font-size: 11px;
+  background: rgba(80,50,10,0.5);
+  color: #ffddaa;
+  border: 1px solid rgba(150,100,30,0.5);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#elemWanted {
+  background: none;
+}
+
+.map-simple-btn {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--cream-dim);
+  border: none;
+  border-bottom: 1px solid rgba(30,90,102,0.2);
+  padding: 7px 8px;
+  font-family: Cinzel, serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mj-log-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.mj-log-toggle {
+  cursor: pointer;
+  font-size: 14px;
+  color: #5a9aaa;
+  padding: 0 4px;
+}
+
+#introBox h1 {
+  font-family: var(--font-body);
+  font-size: 30px; color: #000;
+  margin-bottom: 16px; letter-spacing: 3px;
+}
+
+#introBox p {
+  font-family: var(--font-text);
+  font-size: 17px; line-height: 1.7; color: #111;
+  margin-bottom: 24px;
+}
+
+#startButton {
+  position: relative; margin: 26px auto 0; padding: 0;
+  display: block;
+  width: 980px; max-width: none; height: 122px;
+  font-size: 24px; font-family: var(--font-body);
+  letter-spacing: 3px; text-transform: uppercase;
+  cursor: pointer; border: none; background: none; overflow: visible;
+}
+
+#startButton .btn-inner {
+  position: relative; display: flex;
+  align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+  background: url("bouton.png") center/100% 100% no-repeat;
+  color: #ffe8a0;
+  text-shadow: 0 0 10px rgba(0,0,0,0.95), 0 2px 4px rgba(0,0,0,0.85);
+  transition: all 0.22s ease;
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.7));
+}
+
+#startButton:hover .btn-inner {
+  filter: drop-shadow(0 8px 26px rgba(255,200,80,0.58)) brightness(1.18);
+  transform: translateY(-3px) scale(1.015); color: #fff8c0;
+}
+
+#startButton:active .btn-inner { transform: translateY(1px) scale(0.995); filter: brightness(0.9); }
+
+.menuButton {
+  position: relative; display: block;
+  margin: 10px auto; padding: 0;
+  width: 980px; max-width: none; height: 118px;
+  font-size: 20px; font-family: var(--font-body);
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; border: none; background: none; overflow: visible;
+}
+
+.menuButton .btn-inner {
+  position: relative; display: flex;
+  align-items: center; justify-content: center;
+  width: 100%; height: 100%;
+  background: url("bouton.png") center/100% 100% no-repeat;
+  color: #ffe8a0;
+  text-shadow: 0 0 10px rgba(0,0,0,0.95), 0 2px 4px rgba(0,0,0,0.85);
+  transition: all 0.22s ease;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,0.66));
+}
+
+.menuButton:hover .btn-inner {
+  filter: drop-shadow(0 8px 24px rgba(255,200,80,0.5)) brightness(1.16);
+  transform: translateY(-3px) scale(1.012); color: #fff8c0;
+}
+
+/* ========================= */

@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // Fiches : character-sheet.js. Boutiques : shops.js. Wanted et runes : wanted.js / rune-challenge.js.

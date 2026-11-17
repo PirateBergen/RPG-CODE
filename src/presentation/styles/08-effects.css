@@ -1,0 +1,95 @@
+/* EFFETS VISUELS            */
+/* ========================= */
+
+.portalEffect {
+  position: absolute; width: 120px; height: 120px;
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(30,180,200,0.8) 0%, rgba(10,100,140,0.4) 40%, transparent 70%);
+  box-shadow: 0 0 20px rgba(30,200,220,0.7), 0 0 40px rgba(20,150,180,0.4);
+  animation: portalOpen 1.5s ease-out; z-index: 20;
+}
+
+@keyframes portalOpen {
+  0%   { transform: scale(0.2); opacity: 1; }
+  60%  { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.mobPortal {
+  position: absolute; width: 180px; height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(80,0,0,0.9) 0%, rgba(50,0,0,0.6) 40%, transparent 70%);
+  box-shadow: 0 0 20px red, 0 0 40px darkred;
+  animation: portalOpen 0.7s ease-out; z-index: 1;
+}
+
+.levelUpEffect {
+  position: absolute; width: 140px; height: 140px;
+  left: 50%; top: 50%; transform: translate(-50%,-50%);
+  border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(30,200,220,0.9) 0%, rgba(30,180,200,0.4) 40%, transparent 70%);
+  box-shadow: 0 0 20px rgba(30,200,220,0.8), 0 0 40px rgba(20,150,180,0.5);
+  animation: levelUpAnim 2s ease-out; z-index: 50;
+}
+
+@keyframes levelUpAnim {
+  0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 1; }
+  60%  { transform: translate(-50%,-50%) scale(1.5); opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(2); opacity: 0; }
+}
+
+.levelUpContainer { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); pointer-events: none; z-index: 40; }
+.levelBeam {
+  position: absolute; left: 50%; top: -120px; transform: translateX(-50%);
+  width: 30px; height: 240px;
+  background: linear-gradient(to top, rgba(30,200,220,0.8), rgba(80,240,255,0.9), transparent);
+  filter: blur(6px); animation: beamFade 2s ease-out;
+}
+
+.levelParticle {
+  position: absolute; width: 6px; height: 6px;
+  border-radius: 50%; background: rgba(30,200,220,0.9);
+  box-shadow: 0 0 6px rgba(30,200,220,0.8);
+  animation: particleRise 1.8s linear forwards;
+}
+
+@keyframes beamFade   { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes particleRise {
+  0%   { transform: translateY(40px) scale(0.5); opacity: 1; }
+  100% { transform: translateY(-120px) scale(1.2); opacity: 0; }
+}
+
+@keyframes explodePower {
+  0%   { transform: translate(-50%,-50%) scale(0.2); opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(2); opacity: 0; }
+}
+
+/* ========================= */
+/* SANG                      */
+/* ========================= */
+
+.bloodDrop {
+  position: absolute; top: 55%; border-radius: 0 0 50% 50%;
+  background: linear-gradient(180deg, #8b0000, #cc0000, #ff1a1a);
+  pointer-events: none; z-index: 30;
+  animation: bloodDrip linear forwards;
+}
+
+@keyframes bloodDrip {
+  0%   { height: 0; opacity: 1; border-radius: 50%; }
+  30%  { height: 8px; opacity: 1; border-radius: 50% 50% 40% 40%; }
+  70%  { height: 16px; opacity: 1; border-radius: 40% 40% 50% 50%; }
+  85%  { height: 18px; opacity: 1; transform: translateY(0); }
+  100% { height: 18px; opacity: 0; transform: translateY(30px); }
+}
+
+.bloodTrail {
+  position: absolute; width: 3px; border-radius: 2px;
+  background: linear-gradient(180deg, rgba(139,0,0,0.8), rgba(180,0,0,0.4), transparent);
+  pointer-events: none; z-index: 29;
+  animation: trailFade 2s ease-out forwards;
+}
+
+@keyframes trailFade { 0% { opacity: 0.8; } 100% { opacity: 0; } }
+
+/* ========================= */

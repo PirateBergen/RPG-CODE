@@ -1,0 +1,12 @@
+/* Shared reaction event for an announced attack. */
+.combatReactionModal{position:fixed;inset:0;z-index:2147483000;background:rgba(4,8,15,.88);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;color:#f7e7c7}
+.combatReactionBox{width:min(660px,100%);max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(145deg,#192331,#0c111b);border:1px solid #bd9861;border-radius:14px;padding:22px;box-sizing:border-box;box-shadow:0 16px 70px #000;font:16px/1.5 Georgia,serif}
+.combatReactionBox h2{font-size:22px;color:#ffe0a0;margin:0 0 14px}.combatReactionBox h3{font-size:18px;margin:0 0 8px}.combatReactionBox p{margin:10px 0}.combatReactionBox [role=alert]{color:#ffaaa0}
+.combatReactionBox button,.combatReactionLaunch,#combatReactionBar button{min-height:44px;padding:10px 14px;border:1px solid #bd9861;border-radius:7px;background:#29394c;color:#ffe9bd;font:inherit;cursor:pointer;white-space:normal}
+.combatReactionBox button{margin:5px 7px 5px 0}.combatReactionBox button:disabled{opacity:.5;cursor:wait}.combatReactionBox button:focus-visible,.combatReactionBox input:focus-visible,.combatReactionBox select:focus-visible{outline:3px solid #82d5ff;outline-offset:2px}
+.combatReactionBox label{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}.combatReactionBox input[type=number],.combatReactionBox select{width:90px;flex-shrink:0;padding:8px;font:inherit;background:#111b29;border:1px solid #7894ad;border-radius:5px;color:#fff;box-sizing:border-box}.combatReactionBox input[type=checkbox]{width:22px;height:22px}.combatReactionBox fieldset{border:1px solid #536a7f;border-radius:6px}.combatReactionBox fieldset label{justify-content:flex-start}
+.combatReactionRow{margin:14px 0;padding:14px;border:1px solid #536a7f;border-radius:8px;background:#ffffff06}.combatReactionLaunch{display:block;width:100%;margin-top:8px}
+#combatReactionBar{position:fixed;top:80px;right:12px;z-index:10005;display:flex;flex-direction:column;gap:6px;max-width:min(340px,calc(100vw - 24px));font:14px Georgia,serif}
+@media(max-width:600px){.combatReactionModal{padding:8px}.combatReactionBox{padding:14px;max-height:94dvh}.combatReactionBox h2{font-size:19px}#combatReactionBar{top:155px;max-width:210px}.combatReactionBox label{font-size:14px}}
+body.combatReactionOpen #diceResult{z-index:2147483001}
+

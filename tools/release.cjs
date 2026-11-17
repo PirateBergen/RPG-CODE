@@ -5,6 +5,7 @@ function release(root,out,commit){
  if(out===root||root.startsWith(out+path.sep))throw Error('Destination de publication invalide');
  if(fs.existsSync(out)&&fs.readdirSync(out).length)throw Error('Destination non vide : choisissez un nouveau dossier de publication');
  if(!/^[a-f0-9]{40}$/.test(commit))throw Error('Commit de publication absent ou invalide');
+ if(fs.existsSync(path.join(root,'src/source-map.json')))require('./build-source.cjs').build(root,{check:true});
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),version=html.match(/window\.GAME_V\s*=\s*"([\w.-]+)"/)?.[1];
  if(!version||!fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('rpg-code-'+version+'"'))throw Error('Versions page/cache différentes');
  const entries=[];

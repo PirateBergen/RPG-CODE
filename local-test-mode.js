@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 window.__isolatedTestMode = new URLSearchParams(location.search).get("test") === "1"
 if (window.__isolatedTestMode) document.body.dataset.testMode = "true"

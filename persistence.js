@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // Une session contient toutes les branches de jeu, jamais les comptes ni les sauvegardes.

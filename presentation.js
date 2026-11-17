@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // Chaque écran déroule les mêmes événements ; aucune animation ne modifie la partie.

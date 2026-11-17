@@ -1,0 +1,1137 @@
+/* ─── DA LOUP ─── */
+
+.mobSpecialMoonWash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(160, 210, 255, 0.14), transparent 40%),
+    linear-gradient(180deg, rgba(10, 20, 44, 0.14), rgba(4, 8, 20, 0.32));
+  opacity: 0;
+  animation: mobSpecialMoonFade 6s ease-in-out forwards;
+}
+
+.mobSpecialMoonDisc {
+  display: none;
+}
+
+@keyframes mobSpecialMoonFade {
+  0%   { opacity: 0 }
+  18%  { opacity: 1 }
+  80%  { opacity: 0.85 }
+  100% { opacity: 0 }
+}
+
+/* Image de fond — même traitement que witch */
+.mobSpecialImage--loup {
+  width: min(88vw, 1100px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.26;
+  filter: drop-shadow(0 0 34px rgba(100, 170, 240, 0.28)) drop-shadow(0 0 42px rgba(140, 200, 255, 0.18));
+  animation: mobSpecialWitchFloatLarge 3.8s ease-in-out infinite alternate;
+}
+
+/* Cadre + texte — même layout que witch */
+.mobSpecialQuoteWrap--loup {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #ddeeff;
+  text-shadow: 0 0 16px rgba(100, 170, 240, 0.38), 0 0 6px rgba(180, 220, 255, 0.22), 0 0 4px rgba(0, 0, 0, 0.92);
+}
+
+.mobSpecialOverlay--loup .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(100, 170, 240, 0.14), transparent 22%),
+    radial-gradient(circle at 70% 64%, rgba(80, 140, 210, 0.10), transparent 20%),
+    linear-gradient(160deg, rgba(60, 110, 180, 0.07), rgba(10, 18, 38, 0.14));
+}
+
+.mobSpecialRing--loup {
+  animation: mobSpecialPulseLoup 1.4s ease-in-out infinite alternate !important;
+}
+
+@keyframes mobSpecialPulseLoup {
+  from { box-shadow: 0 0 40px rgba(140, 190, 240, 0.35), inset 0 0 30px rgba(255,255,255,0.04); }
+  to   { box-shadow: 0 0 80px rgba(160, 210, 255, 0.55), inset 0 0 50px rgba(200,230,255,0.06); }
+}
+
+.mobSpecialFenrirWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(180, 220, 255, 0.16), transparent 20%),
+    radial-gradient(circle at 50% 38%, rgba(110, 160, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(12, 18, 44, 0.2), rgba(4, 6, 20, 0.36));
+  opacity: 1;
+  pointer-events: none;
+}
+
+.mobSpecialImage--fenrir {
+  width: min(92vw, 1160px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.3;
+  filter: drop-shadow(0 0 38px rgba(120, 180, 255, 0.28)) drop-shadow(0 0 52px rgba(180, 220, 255, 0.16));
+  animation: mobSpecialWitchFloatLarge 3.8s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--fenrir {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #e8f0ff;
+  text-shadow: 0 0 16px rgba(130, 190, 255, 0.34), 0 0 6px rgba(190, 220, 255, 0.2), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.mobSpecialTideWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 14%, rgba(170, 235, 255, 0.16), transparent 18%),
+    radial-gradient(circle at 50% 70%, rgba(20, 140, 170, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(8, 48, 70, 0.18), rgba(0, 12, 20, 0.4));
+  opacity: 1;
+  pointer-events: none;
+}
+
+.mobSpecialKrakenWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(210, 248, 255, 0.22), transparent 20%),
+    radial-gradient(circle at 24% 68%, rgba(28, 122, 180, 0.24), transparent 24%),
+    radial-gradient(circle at 80% 58%, rgba(70, 220, 255, 0.18), transparent 22%),
+    linear-gradient(180deg, rgba(4, 30, 56, 0.26), rgba(0, 10, 20, 0.62));
+  opacity: 1;
+  mix-blend-mode: screen;
+  animation: mobSpecialKrakenWashPulse 1.45s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.mobSpecialWave {
+  position: absolute;
+  left: 50%;
+  bottom: -6%;
+  width: min(140vw, 1800px);
+  height: min(52vh, 420px);
+  transform: translateX(-50%) scaleY(0.68);
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(150, 245, 255, 0.42) 0%, rgba(80, 210, 220, 0.28) 24%, rgba(10, 96, 120, 0.26) 48%, rgba(0,0,0,0) 74%),
+    linear-gradient(180deg, rgba(150, 245, 255, 0.0) 0%, rgba(70, 200, 220, 0.24) 46%, rgba(0, 54, 70, 0.4) 100%);
+  filter: drop-shadow(0 0 26px rgba(120, 235, 255, 0.34));
+  border-radius: 48% 48% 0 0 / 70% 70% 0 0;
+  opacity: 0;
+  animation: mobSpecialWaveRise 1.2s ease-out 1 forwards;
+  pointer-events: none;
+}
+
+.mobSpecialKrakenWave {
+  position: absolute;
+  left: 50%;
+  bottom: -10%;
+  width: min(160vw, 2050px);
+  height: min(66vh, 560px);
+  transform: translateX(-50%) scaleY(0.48);
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(210, 250, 255, 0.5) 0%, rgba(118, 225, 250, 0.4) 18%, rgba(26, 120, 165, 0.36) 42%, rgba(0,0,0,0) 74%),
+    linear-gradient(180deg, rgba(200, 248, 255, 0) 0%, rgba(88, 208, 236, 0.26) 40%, rgba(0, 42, 70, 0.55) 100%);
+  filter: drop-shadow(0 0 32px rgba(140, 238, 255, 0.42));
+  border-radius: 48% 48% 0 0 / 72% 72% 0 0;
+  opacity: 0;
+  z-index: 1;
+  animation: mobSpecialKrakenWaveRise 1.1s ease-out 1 forwards;
+  pointer-events: none;
+}
+
+.mobSpecialScreenCrack {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(62deg, transparent 46%, rgba(255,255,255,0.88) 47%, rgba(255,255,255,0.08) 48%, transparent 49%),
+    linear-gradient(122deg, transparent 54%, rgba(255,255,255,0.7) 55%, rgba(255,255,255,0.06) 56%, transparent 57%),
+    linear-gradient(18deg, transparent 63%, rgba(255,255,255,0.58) 64%, rgba(255,255,255,0.04) 65%, transparent 66%);
+  opacity: 0;
+  mix-blend-mode: screen;
+  z-index: 3;
+  pointer-events: none;
+  animation: mobSpecialScreenCrackFlash 0.9s ease-out 1 forwards;
+}
+
+.mobSpecialImage--jormungand {
+  width: min(96vw, 1240px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.28;
+  filter: drop-shadow(0 0 36px rgba(110, 230, 220, 0.28)) drop-shadow(0 0 54px rgba(40, 170, 190, 0.18));
+  animation: mobSpecialWitchFloatLarge 3.6s ease-in-out infinite alternate;
+}
+
+.mobSpecialVideo--kraken {
+  opacity: 0.5;
+  filter: saturate(1.08) contrast(1.08) brightness(0.92) drop-shadow(0 0 34px rgba(110, 228, 255, 0.24));
+}
+
+.mobSpecialQuoteWrap--kraken {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #eaf9ff;
+  text-shadow: 0 0 16px rgba(110, 228, 255, 0.36), 0 0 6px rgba(175, 240, 255, 0.18), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.mobSpecialQuoteWrap--jormungand {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #e5fbff;
+  text-shadow: 0 0 16px rgba(120, 230, 220, 0.34), 0 0 6px rgba(170, 245, 255, 0.18), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.mobSpecialBloodWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 120, 120, 0.26), transparent 28%),
+    radial-gradient(circle at 20% 20%, rgba(185, 0, 0, 0.34), transparent 24%),
+    radial-gradient(circle at 80% 26%, rgba(220, 20, 20, 0.3), transparent 24%),
+    linear-gradient(180deg, rgba(120, 0, 0, 0.34), rgba(18, 0, 0, 0.72));
+  opacity: 1;
+  mix-blend-mode: screen;
+  animation: mobSpecialBloodWashPulse 1.55s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.mobSpecialBloodSplash {
+  position: absolute;
+  inset: 2% 1% 4%;
+  width: 98%;
+  height: 94%;
+  object-fit: cover;
+  opacity: 0.48;
+  mix-blend-mode: screen;
+  filter: saturate(1.28) contrast(1.08) drop-shadow(0 0 30px rgba(255, 70, 70, 0.42));
+  animation: mobSpecialBloodSplashPulse 0.95s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.mobSpecialImage--nhiddog {
+  width: min(94vw, 1180px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.28;
+  filter: drop-shadow(0 0 34px rgba(255, 90, 90, 0.24)) drop-shadow(0 0 52px rgba(120, 10, 10, 0.28));
+  animation: mobSpecialWitchFloatLarge 3.6s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--nhiddog {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #ffe8e2;
+  text-shadow: 0 0 16px rgba(255, 110, 110, 0.34), 0 0 6px rgba(190, 40, 40, 0.22), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.mobSpecialOverlay--witch .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 22% 35%, rgba(255,80,190,0.24), transparent 18%),
+    radial-gradient(circle at 78% 28%, rgba(120,255,170,0.24), transparent 18%),
+    linear-gradient(120deg, rgba(255,60,170,0.1), rgba(130,255,170,0.08));
+}
+
+.mobSpecialOverlay--witch .mobSpecialRing {
+  border-style: dashed;
+}
+
+.mobSpecialImage--witch {
+  width: min(88vw, 1100px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.22;
+  filter: drop-shadow(0 0 34px rgba(255, 110, 200, 0.3)) drop-shadow(0 0 42px rgba(120, 255, 170, 0.24));
+  animation: mobSpecialWitchFloatLarge 3.4s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--witch {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #f2ecff;
+  text-shadow: 0 0 16px rgba(255, 90, 190, 0.32), 0 0 6px rgba(120, 255, 170, 0.22), 0 0 4px rgba(0, 0, 0, 0.92);
+}
+
+.mobSpecialOverlay--draugr .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(220,245,255,0.18), transparent 18%),
+    linear-gradient(180deg, rgba(170,220,255,0.12), rgba(20,40,48,0.08));
+}
+
+.mobSpecialOverlay--draugr .mobSpecialStage {
+  animation: mobSpecialDraugrJolt 0.18s steps(2) 8;
+}
+
+.mobSpecialImage--draugr {
+  width: min(88vw, 1100px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.2;
+  filter: drop-shadow(0 0 30px rgba(190, 240, 255, 0.28)) drop-shadow(0 0 42px rgba(180, 220, 255, 0.18));
+  animation: mobSpecialDraugrFloatLarge 3.2s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--draugr {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-92px);
+  color: #eef8ff;
+  text-shadow: 0 0 16px rgba(190, 240, 255, 0.28), 0 0 6px rgba(110, 180, 255, 0.18), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+/* ── DA VALKYRIE ── */
+.mobSpecialImage--valkyrie {
+  width: min(88vw, 1100px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.28;
+  filter: drop-shadow(0 0 40px rgba(255,220,100,0.35)) drop-shadow(0 0 60px rgba(255,200,80,0.20));
+  animation: mobSpecialWitchFloatLarge 4.5s ease-in-out infinite alternate;
+}
+
+.mobSpecialOverlay--valkyrie .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255,240,180,0.18), transparent 30%),
+    radial-gradient(circle at 50% 85%, rgba(200,150,40,0.12), transparent 28%),
+    linear-gradient(180deg, rgba(40,28,6,0.20), rgba(4,3,0,0.10));
+}
+
+.mobSpecialRing--valkyrie {
+  animation: mobSpecialPulseValkyrie 1.0s ease-in-out infinite alternate !important;
+}
+
+@keyframes mobSpecialPulseValkyrie {
+  from { box-shadow: 0 0 40px rgba(255,210,100,0.45), inset 0 0 30px rgba(255,240,180,0.05); }
+  to   { box-shadow: 0 0 90px rgba(255,230,130,0.70), inset 0 0 55px rgba(255,250,200,0.09); }
+}
+
+.mobSpecialQuoteWrap--valkyrie {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #fff8dc;
+  text-shadow: 0 0 16px rgba(255,220,100,0.45), 0 0 6px rgba(255,180,60,0.28), 0 0 4px rgba(0,0,0,0.95);
+}
+
+/* Lance en diagonale */
+.mobSpecialValkyireSpear {
+  position: absolute;
+  width: 5px;
+  height: 0;
+  top: -10%;
+  left: 50%;
+  background: linear-gradient(180deg, rgba(255,255,220,0.0), rgba(255,240,160,0.95) 40%, rgba(255,200,80,0.80) 80%, rgba(255,160,40,0.0));
+  border-radius: 3px;
+  box-shadow: 0 0 12px rgba(255,220,100,0.8), 0 0 30px rgba(255,200,60,0.4);
+  transform-origin: top center;
+  transform: rotate(18deg) translateX(-50%);
+  animation: mobSpecialSpearFall 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+  z-index: 12;
+  pointer-events: none;
+}
+
+@keyframes mobSpecialSpearFall {
+  0%   { height: 0;     top: -10%; opacity: 0; }
+  15%  { opacity: 1; }
+  60%  { height: 140vh; top: -10%; opacity: 1; }
+  100% { height: 140vh; top: -10%; opacity: 0; }
+}
+
+/* Flash divin à l'impact */
+.mobSpecialValkyrieDivineFlash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 55% 50%, rgba(255,255,220,0.55), rgba(255,240,160,0.20) 30%, transparent 62%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: mobSpecialDivineHit 0.7s ease-out forwards;
+}
+
+@keyframes mobSpecialDivineHit {
+  0%   { opacity: 0; }
+  15%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Plumes qui tombent */
+.mobSpecialFeather {
+  position: absolute;
+  top: -20px;
+  color: rgba(255, 248, 220, 0.88);
+  text-shadow: 0 0 8px rgba(255,220,100,0.6);
+  z-index: 10;
+  pointer-events: none;
+  animation: mobSpecialFeatherFall linear forwards;
+}
+
+@keyframes mobSpecialFeatherFall {
+  0%   { top: -20px; opacity: 0;   transform: rotate(0deg)   translateX(0);    }
+  10%  { opacity: 1; }
+  50%  { transform: rotate(25deg)  translateX(14px); }
+  80%  { opacity: 0.6; }
+  100% { top: 108%;  opacity: 0;   transform: rotate(-10deg) translateX(-8px);  }
+}
+
+/* ── DA LIQUORICE ── */
+.mobSpecialImage--liquorice {
+  width: min(72vw, 820px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.22;
+  filter: drop-shadow(0 0 32px rgba(220,220,255,0.30)) drop-shadow(0 0 50px rgba(180,180,240,0.18));
+  animation: mobSpecialWitchFloatLarge 5.0s ease-in-out infinite alternate;
+}
+
+.mobSpecialOverlay--liquorice .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 50% 70%, rgba(200, 200, 255, 0.10), transparent 28%),
+    radial-gradient(circle at 30% 40%, rgba(160, 160, 220, 0.07), transparent 20%),
+    linear-gradient(180deg, rgba(16, 12, 28, 0.22), rgba(2, 1, 6, 0.12));
+}
+
+.mobSpecialRing--liquorice {
+  animation: mobSpecialPulseLiquorice 2.2s ease-in-out infinite alternate !important;
+}
+
+@keyframes mobSpecialPulseLiquorice {
+  from { box-shadow: 0 0 30px rgba(210, 210, 255, 0.32), inset 0 0 22px rgba(255,255,255,0.04); }
+  to   { box-shadow: 0 0 72px rgba(230, 230, 255, 0.52), inset 0 0 44px rgba(255,255,255,0.07); }
+}
+
+.mobSpecialQuoteWrap--liquorice {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #f0f0ff;
+  text-shadow: 0 0 16px rgba(210, 210, 255, 0.40), 0 0 6px rgba(180, 180, 240, 0.24), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+/* Grains de sel qui tombent */
+.mobSpecialSaltGrain {
+  position: absolute;
+  top: -8px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0 3px rgba(220, 220, 255, 0.6);
+  z-index: 10;
+  pointer-events: none;
+  animation: mobSpecialSaltFall linear infinite;
+}
+
+@keyframes mobSpecialSaltFall {
+  0%   { top: -8px;   opacity: 0;   transform: translateX(0) rotate(0deg);   }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.7; }
+  100% { top: 105%;  opacity: 0;   transform: translateX(12px) rotate(180deg); }
+}
+
+/* ── DA GARDE ── */
+.mobSpecialImage--garde {
+  width: min(88vw, 1100px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.30;
+  filter: drop-shadow(0 0 28px rgba(160,170,190,0.28)) drop-shadow(0 0 44px rgba(120,130,160,0.18));
+  animation: mobSpecialWitchFloatLarge 4.0s ease-in-out infinite alternate;
+}
+
+.mobSpecialOverlay--garde .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 50% 80%, rgba(140, 150, 170, 0.12), transparent 28%),
+    radial-gradient(circle at 25% 45%, rgba(100, 110, 130, 0.08), transparent 22%),
+    linear-gradient(180deg, rgba(20, 22, 30, 0.22), rgba(4, 5, 8, 0.12));
+}
+
+.mobSpecialRing--garde {
+  animation: mobSpecialPulseGarde 1.6s ease-in-out infinite alternate !important;
+}
+
+@keyframes mobSpecialPulseGarde {
+  from { box-shadow: 0 0 32px rgba(150, 160, 185, 0.38), inset 0 0 24px rgba(200,210,230,0.04); }
+  to   { box-shadow: 0 0 68px rgba(170, 185, 210, 0.55), inset 0 0 42px rgba(210,220,240,0.06); }
+}
+
+.mobSpecialQuoteWrap--garde {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #dce4f0;
+  text-shadow: 0 0 16px rgba(160, 175, 210, 0.35), 0 0 6px rgba(120, 135, 170, 0.22), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+/* ── DA BANDIT ── */
+.mobSpecialBanditImg {
+  position: absolute;
+  width: min(38vw, 300px);
+  height: auto;
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 4px;
+  box-shadow: 0 4px 28px rgba(0,0,0,0.72);
+  animation: mobSpecialBanditAppear 0.28s ease-out forwards;
+}
+
+@keyframes mobSpecialBanditAppear {
+  from { opacity: 0; scale: 0.86; }
+  to   { opacity: 0.36; scale: 1; }
+}
+
+.mobSpecialOverlay--bandit .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 50% 80%, rgba(120, 70, 10, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(8, 5, 1, 0.30), rgba(0, 0, 0, 0.18));
+}
+
+.mobSpecialRing--bandit {
+  animation: mobSpecialPulseBandit 0.7s ease-in-out infinite alternate !important;
+}
+
+@keyframes mobSpecialPulseBandit {
+  from { box-shadow: 0 0 28px rgba(180, 130, 50, 0.40), inset 0 0 20px rgba(255,200,100,0.04); }
+  to   { box-shadow: 0 0 65px rgba(210, 160, 60, 0.62), inset 0 0 40px rgba(255,210,120,0.07); }
+}
+
+.mobSpecialQuoteWrap--bandit {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #ffe0a0;
+  text-shadow: 0 0 16px rgba(200, 140, 40, 0.38), 0 0 6px rgba(160, 100, 20, 0.24), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+/* ── DA GOBELINS ── */
+.mobSpecialOverlay--gobelins .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 50% 90%, rgba(100, 160, 20, 0.18), transparent 30%),
+    radial-gradient(circle at 20% 50%, rgba(60, 100, 10, 0.10), transparent 22%),
+    linear-gradient(180deg, rgba(10, 20, 4, 0.20), rgba(2, 6, 0, 0.10));
+}
+
+.mobSpecialRing--gobelins {
+  animation: mobSpecialPulseGobelin 1.0s ease-in-out infinite alternate !important;
+  border-style: dashed !important;
+}
+
+@keyframes mobSpecialPulseGobelin {
+  from { box-shadow: 0 0 30px rgba(140, 200, 50, 0.38), inset 0 0 24px rgba(200,255,80,0.04); }
+  to   { box-shadow: 0 0 70px rgba(170, 230, 60, 0.60), inset 0 0 44px rgba(220,255,100,0.07); }
+}
+
+.mobSpecialQuoteWrap--gobelins {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #d8f0a0;
+  text-shadow: 0 0 16px rgba(140, 200, 40, 0.38), 0 0 6px rgba(100, 160, 20, 0.24), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+/* Bombes qui tombent */
+.mobSpecialBomb {
+  position: absolute;
+  top: -110px;
+  width: 62px;
+  height: auto;
+  transform: translateX(-50%) rotate(-15deg);
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0;
+  animation: mobSpecialBombFall 0.52s cubic-bezier(0.36, 0, 0.66, -0.06) forwards;
+}
+
+@keyframes mobSpecialBombFall {
+  0%   { top: -110px; opacity: 1; transform: translateX(-50%) rotate(-15deg); }
+  80%  { opacity: 1; }
+  100% { top: 68%; opacity: 0; transform: translateX(-50%) rotate(20deg) scale(0.7); }
+}
+
+/* Flash d'explosion */
+.mobSpecialExplosion {
+  position: absolute;
+  bottom: 28%;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,230,100,0.95) 0%, rgba(255,130,20,0.7) 30%, rgba(255,60,0,0.3) 60%, transparent 80%);
+  z-index: 11;
+  pointer-events: none;
+  opacity: 0;
+  animation: mobSpecialBoomFlash 0.55s ease-out forwards;
+}
+
+@keyframes mobSpecialBoomFlash {
+  0%   { width: 0;     height: 0;     opacity: 0;   }
+  20%  { width: 130px; height: 130px; opacity: 1;   margin-left: -65px; margin-bottom: -65px; }
+  60%  { width: 180px; height: 180px; opacity: 0.6; margin-left: -90px; margin-bottom: -90px; }
+  100% { width: 200px; height: 200px; opacity: 0;   margin-left: -100px; margin-bottom: -100px; }
+}
+
+/* Fumée noire */
+.mobSpecialSmoke {
+  position: absolute;
+  bottom: 28%;
+  width: 100px;
+  height: 100px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(8,8,8,0.96) 0%, rgba(18,18,18,0.80) 35%, rgba(28,28,28,0.50) 60%, transparent 82%);
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0;
+  animation: mobSpecialSmokeRise 2.0s ease-out forwards;
+}
+
+.mobSpecialSmoke--wide {
+  width: 160px;
+  height: 160px;
+  bottom: 24%;
+  background: radial-gradient(circle, rgba(12,12,12,0.82) 0%, rgba(20,20,20,0.55) 40%, rgba(30,30,30,0.28) 65%, transparent 85%);
+  animation: mobSpecialSmokeRiseWide 2.4s ease-out forwards;
+}
+
+@keyframes mobSpecialSmokeRise {
+  0%   { opacity: 0;    transform: translateX(-50%) scale(0.3)  translateY(0);     }
+  15%  { opacity: 0.92; transform: translateX(-50%) scale(1)    translateY(0);     }
+  50%  { opacity: 0.70; transform: translateX(-50%) scale(1.8)  translateY(-50px); }
+  80%  { opacity: 0.35; transform: translateX(-50%) scale(2.6)  translateY(-100px);}
+  100% { opacity: 0;    transform: translateX(-50%) scale(3.2)  translateY(-150px);}
+}
+
+@keyframes mobSpecialSmokeRiseWide {
+  0%   { opacity: 0;    transform: translateX(-50%) scale(0.4)  translateY(0);     }
+  20%  { opacity: 0.65; transform: translateX(-50%) scale(1)    translateY(-10px); }
+  55%  { opacity: 0.45; transform: translateX(-50%) scale(1.7)  translateY(-70px); }
+  100% { opacity: 0;    transform: translateX(-50%) scale(2.8)  translateY(-180px);}
+}
+
+.mobSpecialImage--ogre {
+  width: min(100vw, 1200px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.38;
+  filter: drop-shadow(0 0 28px rgba(140, 90, 30, 0.35)) drop-shadow(0 0 50px rgba(80, 50, 10, 0.22));
+  animation: mobSpecialOgreShake 4.2s ease-in-out infinite alternate;
+}
+
+@keyframes mobSpecialOgreShake {
+  0%   { transform: translate(50%, -50%) scale(1);    }
+  40%  { transform: translate(50%, -51.2%) scale(1.012); }
+  70%  { transform: translate(49.6%, -50%) scale(1.008); }
+  100% { transform: translate(50%, -50%) scale(1.015); }
+}
+
+.mobSpecialOverlay--ogre .mobSpecialBox::before {
+  background:
+    radial-gradient(circle at 50% 85%, rgba(180, 110, 30, 0.14), transparent 30%),
+    radial-gradient(circle at 22% 60%, rgba(120, 80, 20, 0.08), transparent 24%),
+    radial-gradient(circle at 78% 55%, rgba(90, 60, 10, 0.07), transparent 20%),
+    linear-gradient(180deg, rgba(60, 35, 8, 0.10), rgba(10, 6, 2, 0.06));
+}
+
+.mobSpecialOverlay--ogre .mobSpecialRing {
+  animation: mobSpecialPulseOgre 1.2s ease-in-out infinite alternate !important;
+}
+
+@keyframes mobSpecialPulseOgre {
+  from { box-shadow: 0 0 35px rgba(160, 100, 30, 0.4),  inset 0 0 28px rgba(255,200,100,0.04); }
+  to   { box-shadow: 0 0 75px rgba(200, 130, 40, 0.62), inset 0 0 48px rgba(255,210,120,0.07); }
+}
+
+.mobSpecialImage--dragon {
+  width: min(88vw, 1100px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.24;
+  filter: drop-shadow(0 0 28px rgba(255, 170, 80, 0.28)) drop-shadow(0 0 44px rgba(255, 120, 40, 0.24));
+  animation: mobSpecialDragonFloatLarge 3.2s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--dragon {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-94px);
+  color: #fff0dc;
+  text-shadow: 0 0 16px rgba(255, 170, 90, 0.32), 0 0 6px rgba(255, 120, 40, 0.2), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.mobSpecialQuoteWrap--ogre {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #ffe8c0;
+  text-shadow: 0 0 16px rgba(200, 130, 40, 0.38), 0 0 6px rgba(160, 100, 20, 0.24), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.mobSpecialOverlay--pretre .mobSpecialBox::before {
+  background:
+    linear-gradient(180deg, rgba(255,230,170,0.18), rgba(120,40,20,0.14)),
+    radial-gradient(circle at 50% 10%, rgba(255,245,200,0.25), transparent 18%);
+}
+
+.mobSpecialDivineWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 16%, rgba(255,255,255,0.92), rgba(255,251,232,0.72) 16%, rgba(255,244,205,0.34) 28%, rgba(255,235,185,0.12) 40%, transparent 58%),
+    radial-gradient(circle at 50% 38%, rgba(255,255,255,0.34), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,247,220,0.1) 24%, rgba(80,50,28,0.08) 100%);
+  opacity: 1;
+  animation: mobSpecialDivineGlow 2.1s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.mobSpecialImage--pretre {
+  width: min(72vw, 760px);
+  max-width: none;
+  height: auto;
+  display: block;
+  margin: -8px auto 18px auto;
+  opacity: 0.94;
+  filter: drop-shadow(0 0 18px rgba(255,241,189,0.28));
+  animation: mobSpecialPreacherFloat 5.4s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--pretre {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-90px);
+  color: #fff3df;
+  text-shadow: 0 0 18px rgba(255,229,150,0.24), 0 0 6px rgba(140,110,60,0.18), 0 0 4px rgba(0,0,0,0.95);
+}
+
+.mobSpecialOverlay--melenchon .mobSpecialBox::before {
+  background:
+    linear-gradient(90deg, rgba(160,20,20,0.2), rgba(20,20,20,0.16), rgba(240,120,30,0.14)),
+    radial-gradient(circle at 50% 80%, rgba(255,200,120,0.18), transparent 20%);
+}
+
+.mobSpecialChnawWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1), transparent 30%),
+    linear-gradient(180deg, rgba(26,30,36,0.1), rgba(4,6,8,0.24));
+  opacity: 1;
+  pointer-events: none;
+}
+
+.mobSpecialClone--chnaw {
+  position: absolute;
+  width: clamp(80px, 14vw, 170px);
+  height: auto;
+  object-fit: contain;
+  transform: translate(-50%, -50%) rotate(var(--chnaw-rot, 0deg)) scale(0.72);
+  opacity: 0;
+  filter: drop-shadow(0 0 18px rgba(255,255,255,0.26));
+  animation-name: mobSpecialChnawCloneBurst;
+  animation-timing-function: ease-out;
+  animation-iteration-count: 1;
+  pointer-events: none;
+}
+
+.mobSpecialCameraFlash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.32) 20%, rgba(255,255,255,0.08) 36%, rgba(255,255,255,0) 58%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  pointer-events: none;
+  animation: mobSpecialCameraFlashBurst 0.95s steps(1) 2;
+  animation-delay: 0.15s;
+}
+
+.mobSpecialQuoteWrap--chnaw {
+  width: min(440px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-95px);
+  color: #fff2df;
+  text-shadow: 0 0 16px rgba(255,255,255,0.2), 0 0 6px rgba(180,180,180,0.18), 0 0 4px rgba(0,0,0,0.95);
+}
+
+.mobSpecialDiscoWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 24%, rgba(255, 80, 180, 0.22), transparent 18%),
+    radial-gradient(circle at 82% 22%, rgba(60, 200, 255, 0.22), transparent 20%),
+    radial-gradient(circle at 28% 78%, rgba(255, 220, 80, 0.18), transparent 18%),
+    radial-gradient(circle at 72% 74%, rgba(140, 90, 255, 0.2), transparent 20%),
+    linear-gradient(135deg, rgba(30, 20, 50, 0.16), rgba(10, 18, 34, 0.22));
+  opacity: 1;
+  mix-blend-mode: screen;
+  animation: mobSpecialDiscoPulse 1.25s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.mobSpecialVideo--fantome {
+  opacity: 0.46;
+  filter: saturate(1.1) brightness(0.82) hue-rotate(8deg);
+}
+
+.mobSpecialQuoteWrap--fantome {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-94px);
+  color: #fff3e4;
+  text-shadow: 0 0 16px rgba(255, 120, 220, 0.22), 0 0 6px rgba(110, 180, 255, 0.18), 0 0 4px rgba(0,0,0,0.95);
+}
+
+.mobSpecialOverlay--melenchon .mobSpecialStage {
+  animation: mobSpecialSpeechShake 0.28s steps(2) infinite;
+}
+
+.mobSpecialImage--melenchon {
+  width: min(92vw, 1180px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.24;
+  filter: drop-shadow(0 0 30px rgba(255, 120, 120, 0.2)) drop-shadow(0 0 48px rgba(255, 190, 90, 0.18));
+  animation: mobSpecialMelenchonFloatLarge 3.1s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--melenchon {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #fff0dc;
+  text-shadow: 0 0 16px rgba(255, 140, 110, 0.26), 0 0 6px rgba(255, 200, 120, 0.18), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+.mobSpecialCrowd {
+  position: absolute;
+  inset: auto 8% 9% 8%;
+  height: 15vh;
+  pointer-events: none;
+  opacity: 0.28;
+  background:
+    radial-gradient(circle at 5% 72%, rgba(255,210,140,0.28) 0 4px, transparent 5px),
+    radial-gradient(circle at 14% 66%, rgba(255,210,140,0.24) 0 4px, transparent 5px),
+    radial-gradient(circle at 22% 74%, rgba(255,210,140,0.26) 0 4px, transparent 5px),
+    radial-gradient(circle at 32% 62%, rgba(255,210,140,0.22) 0 4px, transparent 5px),
+    radial-gradient(circle at 44% 72%, rgba(255,210,140,0.24) 0 4px, transparent 5px),
+    radial-gradient(circle at 56% 64%, rgba(255,210,140,0.24) 0 4px, transparent 5px),
+    radial-gradient(circle at 68% 72%, rgba(255,210,140,0.24) 0 4px, transparent 5px),
+    radial-gradient(circle at 80% 66%, rgba(255,210,140,0.22) 0 4px, transparent 5px),
+    radial-gradient(circle at 92% 74%, rgba(255,210,140,0.28) 0 4px, transparent 5px);
+  filter: drop-shadow(0 0 10px rgba(255,160,120,0.2));
+  animation: mobSpecialCrowdPulse 0.85s ease-in-out infinite alternate;
+}
+
+.mobSpecialOverlay--balraug .mobSpecialBox::before {
+  background:
+    linear-gradient(180deg, rgba(255,120,30,0.24), rgba(80,0,0,0.18)),
+    radial-gradient(circle at 50% 50%, rgba(255,220,140,0.15), transparent 24%);
+}
+
+.mobSpecialOverlay--balraug .mobSpecialRing {
+  animation-duration: 0.55s;
+}
+
+.mobSpecialImage--balraug {
+  width: min(88vw, 1100px);
+  max-width: none;
+  height: auto;
+  right: 50%;
+  top: 50%;
+  transform: translate(50%, -50%);
+  opacity: 0.24;
+  filter: drop-shadow(0 0 34px rgba(255, 120, 40, 0.34)) drop-shadow(0 0 52px rgba(180, 30, 10, 0.28));
+  animation: mobSpecialBalraugFloatLarge 3.2s ease-in-out infinite alternate;
+}
+
+.mobSpecialQuoteWrap--balraug {
+  width: min(430px, 56vw);
+  min-height: 92px;
+  padding: 8px 32px 0;
+  transform: translateY(-96px);
+  color: #fff0df;
+  text-shadow: 0 0 18px rgba(255, 150, 80, 0.34), 0 0 8px rgba(180, 40, 10, 0.24), 0 0 4px rgba(0, 0, 0, 0.95);
+}
+
+@keyframes mobSpecialGlyphFloat {
+  0% { transform: translateY(0px) scale(0.92); opacity: 0.18; }
+  100% { transform: translateY(-24px) scale(1.08); opacity: 0.34; }
+}
+
+@keyframes mobSpecialBlueFade {
+  0% { opacity: 0; }
+  18% { opacity: 0.9; }
+  72% { opacity: 0.65; }
+  100% { opacity: 0; }
+}
+
+@keyframes mobSpecialWickedFade {
+  0% { opacity: 0; }
+  18% { opacity: 0.92; }
+  72% { opacity: 0.68; }
+  100% { opacity: 0; }
+}
+
+@keyframes mobSpecialOgreFade {
+  0% { opacity: 0; transform: scale(1); }
+  18% { opacity: 0.88; transform: scale(1.02); }
+  72% { opacity: 0.64; transform: scale(1.04); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
+@keyframes mobSpecialTricolorFade {
+  0% { opacity: 0; }
+  12% { opacity: 0.96; }
+  70% { opacity: 0.78; }
+  100% { opacity: 0; }
+}
+
+@keyframes mobSpecialSparklePulse {
+  0% { opacity: 0.12; transform: scale(0.985); }
+  100% { opacity: 0.28; transform: scale(1.015); }
+}
+
+@keyframes mobSpecialWitchFloat {
+  0% { transform: translateY(0px) rotate(-2deg) scale(0.98); }
+  100% { transform: translateY(-14px) rotate(2deg) scale(1.02); }
+}
+
+@keyframes mobSpecialWitchFloatLarge {
+  0% { transform: translate(50%, -50%) scale(0.985); }
+  100% { transform: translate(50%, calc(-50% - 12px)) scale(1.02); }
+}
+
+@keyframes mobSpecialDraugrFloatLarge {
+  0% { transform: translate(50%, -50%) scale(0.985); }
+  100% { transform: translate(50%, calc(-50% - 10px)) scale(1.015); }
+}
+
+@keyframes mobSpecialDragonFloatLarge {
+  0% { transform: translate(50%, -50%) scale(0.985); }
+  100% { transform: translate(50%, calc(-50% - 10px)) scale(1.018); }
+}
+
+@keyframes mobSpecialMelenchonFloatLarge {
+  0% { transform: translate(50%, -50%) scale(0.988); }
+  100% { transform: translate(50%, calc(-50% - 10px)) scale(1.016); }
+}
+
+@keyframes mobSpecialBalraugFloatLarge {
+  0% { transform: translate(50%, -50%) scale(0.985); }
+  100% { transform: translate(50%, calc(-50% - 12px)) scale(1.02); }
+}
+
+@keyframes mobSpecialRuneDrift {
+  0% { transform: translateY(0px) rotate(-8deg); }
+  100% { transform: translateY(-12px) rotate(8deg); }
+}
+
+@keyframes mobSpecialBannerShake {
+  0% { transform: translateX(-50%) rotate(-2deg); }
+  100% { transform: translateX(calc(-50% + 2px)) rotate(2deg); }
+}
+
+@keyframes mobSpecialFissureBurn {
+  0% { opacity: 0.62; filter: brightness(0.95); }
+  100% { opacity: 0.92; filter: brightness(1.2); }
+}
+
+@keyframes mobSpecialMoonDrift {
+  0% { transform: translateY(0px) scale(0.96); }
+  100% { transform: translateY(14px) scale(1.03); }
+}
+
+@keyframes mobSpecialDraugrJolt {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-8px, 2px); }
+  50% { transform: translate(8px, -2px); }
+  75% { transform: translate(-5px, -1px); }
+  100% { transform: translate(5px, 2px); }
+}
+
+@keyframes mobSpecialSpeechShake {
+  0% { transform: translateX(0px); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(2px); }
+}
+
+@keyframes mobSpecialDivineGlow {
+  0% { opacity: 0.9; filter: saturate(0.98) brightness(1.04); }
+  100% { opacity: 1; filter: saturate(1.04) brightness(1.18); }
+}
+
+@keyframes mobSpecialPreacherFloat {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-8px) scale(1.018); }
+}
+
+@keyframes mobSpecialCrowdPulse {
+  0% { opacity: 0.18; transform: translateY(0); }
+  100% { opacity: 0.34; transform: translateY(-4px); }
+}
+
+@keyframes mobSpecialWaveRise {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.5) translateY(80px);
+  }
+  22% {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(0.92) translateY(0);
+  }
+  100% {
+    opacity: 0.92;
+    transform: translateX(-50%) scaleY(1.02) translateY(-8px);
+  }
+}
+
+@keyframes mobSpecialKrakenWaveRise {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.4) translateY(120px);
+  }
+  18% {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1.08) translateY(-10px);
+  }
+  100% {
+    opacity: 0.96;
+    transform: translateX(-50%) scaleY(0.94) translateY(-26px);
+  }
+}
+
+@keyframes mobSpecialKrakenWashPulse {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.024); }
+}
+
+@keyframes mobSpecialScreenCrackFlash {
+  0% { opacity: 0; transform: scale(1.06); }
+  18% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.34; transform: scale(0.995); }
+}
+
+@keyframes mobSpecialBloodSplashPulse {
+  0% { opacity: 0.34; transform: scale(1); }
+  100% { opacity: 0.62; transform: scale(1.035); }
+}
+
+@keyframes mobSpecialBloodWashPulse {
+  0%, 100% { opacity: 0.92; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@keyframes mobSpecialWhipCrack {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-16deg) scaleX(0.12);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-12deg) scaleX(1);
+  }
+  42% {
+    opacity: 0.96;
+    transform: translate(-50%, -50%) rotate(-8deg) scaleX(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-4deg) scaleX(1.08);
+  }
+}
+
+@keyframes mobSpecialChnawCloneBurst {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--chnaw-rot, 0deg)) scale(0.55); }
+  18% { opacity: 0.98; transform: translate(-50%, -50%) rotate(var(--chnaw-rot, 0deg)) scale(1); }
+  74% { opacity: 0.82; transform: translate(-50%, -50%) rotate(var(--chnaw-rot, 0deg)) scale(1.08); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--chnaw-rot, 0deg)) scale(1.18); }
+}
+
+@keyframes mobSpecialCameraFlashBurst {
+  0%, 8%, 100% { opacity: 0; }
+  10% { opacity: 1; }
+  18% { opacity: 0; }
+  50% { opacity: 0; }
+  58% { opacity: 0.95; }
+  66% { opacity: 0; }
+}
+
+@keyframes mobSpecialDiscoPulse {
+  0% { opacity: 0.72; filter: saturate(1) brightness(1); }
+  100% { opacity: 1; filter: saturate(1.12) brightness(1.08); }
+}
+
+@keyframes playerSpecialImageFloat {
+  0% { transform: scale(1) translate3d(0, 0, 0); }
+  100% { transform: scale(1.035) translate3d(0, -8px, 0); }
+}
+
+/* ── Volume slider : remonte en combat pour ne pas couvrir le HUD ── */
+body.in-combat #audioSliders {
+  top: 12px !important;
+  right: auto !important;
+  left: 18px;
+}
+

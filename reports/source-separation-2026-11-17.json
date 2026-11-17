@@ -1,0 +1,316 @@
+{
+  "baselineCommit": "56c872704692c07749c6379bb627b489f31ca13b",
+  "scope": "Executable JS and CSS preserved exactly after generated comment and line-ending normalization. Service worker changes only its cache version; index.html changes only GAME_V. No database or campaign read/write.",
+  "sourceFiles": 208,
+  "publicFiles": 42,
+  "unchangedRuntimeFiles": 41,
+  "metadataOnlyFiles": [
+    "sw.js",
+    "index.html"
+  ],
+  "results": [
+    {
+      "file": "config.js",
+      "before": "80e2ad36e342feea0aada7a07c0092e391caa8e63c789a3a6b20066e6051c68a",
+      "after": "80e2ad36e342feea0aada7a07c0092e391caa8e63c789a3a6b20066e6051c68a",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "game.js",
+      "before": "65c6e771ce0c57981aba4cab771d9cddd0544b832af19a4d32e5433d84ec13ff",
+      "after": "65c6e771ce0c57981aba4cab771d9cddd0544b832af19a4d32e5433d84ec13ff",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "ui.js",
+      "before": "045f988bd7a503c3299e6f3da5290231d669c859ed9a2dc2f9d07634bbaea3f7",
+      "after": "045f988bd7a503c3299e6f3da5290231d669c859ed9a2dc2f9d07634bbaea3f7",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "combat-core.js",
+      "before": "d2ce03cf84366ad829c64ce6a4be27d883dd05df0dcd60eb3280b39eb39ddc28",
+      "after": "d2ce03cf84366ad829c64ce6a4be27d883dd05df0dcd60eb3280b39eb39ddc28",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "combat.js",
+      "before": "d9edf7ed6421168bed47672fbd799efb4e56c32355be160533c739541f81f380",
+      "after": "d9edf7ed6421168bed47672fbd799efb4e56c32355be160533c739541f81f380",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "utils.js",
+      "before": "86549689739bfd8720af16f4ad5ae0c191c99050b228001b8a0c9136a279b440",
+      "after": "86549689739bfd8720af16f4ad5ae0c191c99050b228001b8a0c9136a279b440",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "access.js",
+      "before": "d8074b63249c5e02e45fbb17d3b3721d0da6a5379e4643eddaf15d996bde5786",
+      "after": "d8074b63249c5e02e45fbb17d3b3721d0da6a5379e4643eddaf15d996bde5786",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "ally-discovery.js",
+      "before": "9edd372f561edfa49f8e32e10c67eaca720718a33e912ffed8f323700ecea9a5",
+      "after": "9edd372f561edfa49f8e32e10c67eaca720718a33e912ffed8f323700ecea9a5",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "antre-event.js",
+      "before": "d08b5eb47126349bb4d264068fb4f27ae30b9d7f03ff8304ec7e7bfd3448defe",
+      "after": "d08b5eb47126349bb4d264068fb4f27ae30b9d7f03ff8304ec7e7bfd3448defe",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "balrog-sword.js",
+      "before": "ab20187e0649ef855f1ac63a6bd35a5873f8cbd1d31aed9e5069c0368ae23541",
+      "after": "ab20187e0649ef855f1ac63a6bd35a5873f8cbd1d31aed9e5069c0368ae23541",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "campaign-storage.js",
+      "before": "679eef1bb79bc7efb21bd7679d6c8982456377655d955d1d5f13aedac4eeb44e",
+      "after": "679eef1bb79bc7efb21bd7679d6c8982456377655d955d1d5f13aedac4eeb44e",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "celestial-events.js",
+      "before": "8c37101f723d90970678e6518b3efe5db046cbe6c7a28d7f707b509c4960ff9b",
+      "after": "8c37101f723d90970678e6518b3efe5db046cbe6c7a28d7f707b509c4960ff9b",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "character-effects-core.js",
+      "before": "aab64c89459566325aa110a1e4090ced6a1b09d1aa0c9e4aee84229017264cdb",
+      "after": "aab64c89459566325aa110a1e4090ced6a1b09d1aa0c9e4aee84229017264cdb",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "character-effects.js",
+      "before": "caea9928b978232212c67f3ec031f28f7973139f8221cb369b4a554a020efb56",
+      "after": "caea9928b978232212c67f3ec031f28f7973139f8221cb369b4a554a020efb56",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "character-sheet.js",
+      "before": "62cbba9b89433cd30e42965383af60ee3af0c322eea4302f6bb8a79966eb9b94",
+      "after": "62cbba9b89433cd30e42965383af60ee3af0c322eea4302f6bb8a79966eb9b94",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "combat-balance.js",
+      "before": "8d2fcb6dc2bed3298a8b1d75a8c4837f696d1397d8ca28c4982c40e8fb33914e",
+      "after": "8d2fcb6dc2bed3298a8b1d75a8c4837f696d1397d8ca28c4982c40e8fb33914e",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "combat-exit.js",
+      "before": "64e6b12c27a44d135a541ef0f02130cd6c9164236cc3c1fd09dddf8644375b7e",
+      "after": "64e6b12c27a44d135a541ef0f02130cd6c9164236cc3c1fd09dddf8644375b7e",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "combat-reactions.js",
+      "before": "a1a79ef4a8022950012f7c7ee1c41afb5d608e7b89f4d1ff4defb10b7ce36b6d",
+      "after": "a1a79ef4a8022950012f7c7ee1c41afb5d608e7b89f4d1ff4defb10b7ce36b6d",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "combat-runtime.js",
+      "before": "b500673c60d5bff36ca49f23d9ebdcca10e485cb468f0fd45ae3a92336b35865",
+      "after": "b500673c60d5bff36ca49f23d9ebdcca10e485cb468f0fd45ae3a92336b35865",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "dice-choice.js",
+      "before": "b0e09744fe58b369facc87a0ab48d508aca38f655faceb9b11bfe64ca4e4953d",
+      "after": "b0e09744fe58b369facc87a0ab48d508aca38f655faceb9b11bfe64ca4e4953d",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "entrance.js",
+      "before": "3c7f82742f2d1941e9a16f3e8f74b2a193dc4365ba606fc7e56843f38683a7bf",
+      "after": "3c7f82742f2d1941e9a16f3e8f74b2a193dc4365ba606fc7e56843f38683a7bf",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "exploration-core.js",
+      "before": "4aa1d79d53f916f20ade5b5836cdf19be1e7df76773bfd70f4245588251aa9d0",
+      "after": "4aa1d79d53f916f20ade5b5836cdf19be1e7df76773bfd70f4245588251aa9d0",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "exploration.js",
+      "before": "bdcb33eec3cc4585d25690bf3dd8d37bea21914c3bcb73d88e1269f1a452c0aa",
+      "after": "bdcb33eec3cc4585d25690bf3dd8d37bea21914c3bcb73d88e1269f1a452c0aa",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "gm-arbitration.js",
+      "before": "84a91f2f3d5d3c0605323d3305667e7f47060e28b677b91a75938fe8bd76bfda",
+      "after": "84a91f2f3d5d3c0605323d3305667e7f47060e28b677b91a75938fe8bd76bfda",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "gm-diagnostics.js",
+      "before": "6394d64c9faa6c16f0bc1187849fc9613aa6dff784ceabfbbcb5819d49b1bf5e",
+      "after": "6394d64c9faa6c16f0bc1187849fc9613aa6dff784ceabfbbcb5819d49b1bf5e",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "local-test-mode.js",
+      "before": "7d59f1350a5d76c750638c2c334dd50a78ebb40d5dc70b5535f3ad8209c87508",
+      "after": "7d59f1350a5d76c750638c2c334dd50a78ebb40d5dc70b5535f3ad8209c87508",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "map-controls.js",
+      "before": "503a342d35351a4f801b243e54cf8700373b1bdf1a225147d5eafd77761c3bb5",
+      "after": "503a342d35351a4f801b243e54cf8700373b1bdf1a225147d5eafd77761c3bb5",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "oregon-voyage.js",
+      "before": "97df8f3ef94e5955ca19027beb98ff4e943cb8e6a6d5c4dda1546d9a0429cff2",
+      "after": "97df8f3ef94e5955ca19027beb98ff4e943cb8e6a6d5c4dda1546d9a0429cff2",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "persistence.js",
+      "before": "320fe72656202930016520f18a11d776c592e1f9afbfb7343de130647e2549fe",
+      "after": "320fe72656202930016520f18a11d776c592e1f9afbfb7343de130647e2549fe",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "pika-combat.js",
+      "before": "31a7305e346a8f897cb2e53659c30cb6f54f37f94d6bb4630e6f2377c568cbad",
+      "after": "31a7305e346a8f897cb2e53659c30cb6f54f37f94d6bb4630e6f2377c568cbad",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "player-actions.js",
+      "before": "dc0dfd6c37a2da9a878de000cd12133e2490c75af2ae85d110e283da18bf62ad",
+      "after": "dc0dfd6c37a2da9a878de000cd12133e2490c75af2ae85d110e283da18bf62ad",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "presentation.js",
+      "before": "8785c3c04c0b45919a12e6c32163c7d31202b08d620f5caabc9c39a32ddf1681",
+      "after": "8785c3c04c0b45919a12e6c32163c7d31202b08d620f5caabc9c39a32ddf1681",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "reading.js",
+      "before": "359c3b218ab076fc161df580e41dda542bbe14be4a2a0de103421c9aa6bafc83",
+      "after": "359c3b218ab076fc161df580e41dda542bbe14be4a2a0de103421c9aa6bafc83",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "reliability.js",
+      "before": "7dc814e0e98c54e8471295086f910055756787dfaadff0c0c73cb933a847c4f5",
+      "after": "7dc814e0e98c54e8471295086f910055756787dfaadff0c0c73cb933a847c4f5",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "rune-challenge.js",
+      "before": "6a25be99cf2c93efd84e069d5dd16d3c892caa3f1e5ebfc4e65ae5d53201bc79",
+      "after": "6a25be99cf2c93efd84e069d5dd16d3c892caa3f1e5ebfc4e65ae5d53201bc79",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "session-view.js",
+      "before": "efb752963123c0e347b38baa8209453fea0fd29f71e7b680cd0f1e13e708f377",
+      "after": "efb752963123c0e347b38baa8209453fea0fd29f71e7b680cd0f1e13e708f377",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "shops.js",
+      "before": "1a7c4fd93789c8f024b2daca10fbf0e8db837d9330c5c2144d891c14095ade2f",
+      "after": "1a7c4fd93789c8f024b2daca10fbf0e8db837d9330c5c2144d891c14095ade2f",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "shortcuts.js",
+      "before": "9b827a38892864568b09e1b5ab1e032a4da0727991c29fc815a72d3a47a6d989",
+      "after": "9b827a38892864568b09e1b5ab1e032a4da0727991c29fc815a72d3a47a6d989",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "state.js",
+      "before": "83b5c487004185c769aa012b773902b5ef62cf03621784848f6ae56137db4ebd",
+      "after": "83b5c487004185c769aa012b773902b5ef62cf03621784848f6ae56137db4ebd",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "sw.js",
+      "before": "6fb398ca2cda0b883011ad756d0410b6c35a8a4cd339d7f58e5db6f60d0496c7",
+      "after": "1b2f91049ae92fa3d789887dbedc1194e04f20325f202341d4fcd533c41f84ff",
+      "identical": false,
+      "cacheVersionOnly": true
+    },
+    {
+      "file": "wanted.js",
+      "before": "92c6571c4fbf34166a96d6d8ca9c0af12d501058f6b0ca2946e38f90d20fd77a",
+      "after": "92c6571c4fbf34166a96d6d8ca9c0af12d501058f6b0ca2946e38f90d20fd77a",
+      "identical": true,
+      "cacheVersionOnly": false
+    },
+    {
+      "file": "style.css",
+      "before": "40aeb8fb97e6312cdb161dd029c3e33c594184a113fb2979539d8caad2a3c601",
+      "after": "40aeb8fb97e6312cdb161dd029c3e33c594184a113fb2979539d8caad2a3c601",
+      "identical": true,
+      "cacheVersionOnly": false
+    }
+  ],
+  "validation": {
+    "unitSuites": 45,
+    "architectureChecks": 7,
+    "multiplayerCases": 21,
+    "multiplayerSessions": 5,
+    "browserSuites": 3,
+    "browserViewportsPerSuite": 4,
+    "productionDatabaseAccess": false
+  }
+}

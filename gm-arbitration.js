@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 let gmAdjustmentSerial=0
 function gmArbitrationClose(){const el=document.getElementById("gmArbitrationModal");el?.remove();if(el)window.GameWindows?.closed(el)}

@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 let gmDiagnosticsSubscriptions=[],gmDiagnosticsTimer=null,gmDiagnosticsEpoch=0,gmDiagnosticsData={},gmDiagnosticsIssue=null
 function gmDiagnosticsAllowed(){return window.__authRole==="gm"&&document.body.dataset.entryStage==="playing"}

@@ -1,0 +1,187 @@
+/* FICHE ET INVENTAIRE — bases, formulaire et adaptations mobiles.
+   Les coordonnées propres aux personnages restent gérées par le jeu. */
+#characterSheet {
+  overflow-y: auto;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: url("images/paper1.png") 0% 0% / cover;
+  padding: 40px;
+  display: none;
+  font-family: var(--font-text);
+  color: black;
+  box-shadow: black 0px 0px 40px;
+  z-index: 1000000004;
+  box-sizing: border-box;
+  max-width: calc(-16px + 100vw);
+  max-height: calc(100dvh - 16px);
+  overscroll-behavior: contain;
+}
+
+#sheetContainer {
+  position: relative;
+}
+
+#sheetImage {
+  width: 90vw;
+  max-width: 900px;
+}
+
+.sheetField {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.2);
+  border-width: medium;
+  border-style: none;
+  border-color: currentcolor;
+  border-image: none;
+  padding-left: 8px;
+  font-size: 20px;
+  font-family: var(--font-body);
+  text-align: center;
+  color: black;
+  z-index: 10;
+}
+
+.curseGem {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background: url("mouche.png") center center / contain no-repeat;
+  margin-right: 2px;
+  cursor: pointer;
+  transition: 0.2s;
+  touch-action: manipulation;
+  filter: grayscale(100%) brightness(0.25);
+  border-width: medium;
+  border-style: none;
+  border-color: currentcolor;
+  border-image: none;
+  border-radius: 0px;
+}
+
+.curseGem.active {
+  filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.1) contrast(1.5);
+  box-shadow: red 0px 0px 8px, darkred 0px 0px 18px;
+  animation: 1s ease-in-out 0s infinite alternate none running curseFlyPulse;
+}
+
+.corruptionPoint {
+  display: inline-block;
+  width: 22px;
+  height: 12px;
+  background: rgba(15, 40, 50, 0.8);
+  margin-right: 2px;
+  border-radius: 2px;
+  cursor: pointer;
+  border: 1px solid rgba(30, 90, 102, 0.5);
+  touch-action: manipulation;
+}
+
+.corruptionPoint.active {
+  background: linear-gradient(rgb(255, 224, 102), rgb(202, 163, 0));
+  border: 1px solid rgb(184, 150, 0);
+  box-shadow: gold 0px 0px 6px, gold 0px 0px 14px;
+  animation: 1.2s ease 0s infinite alternate none running powerPulse;
+}
+
+.compactSheetLabel,.compactSheetClose {
+  display: none !important;
+}
+
+#characterSheet,#inventoryTools * {
+  text-shadow: none;
+}
+
+#inventoryItemStats .inventoryStatChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1 1 100%;
+  min-width: 0px;
+  margin: 0px;
+  padding: 0px;
+  border: 0px;
+}
+
+#inventoryItemStats .inventoryStatChoices legend {
+  margin-bottom: 5px;
+  padding: 0px;
+}
+
+#inventoryItemStats .inventoryStatChoices button {
+  min-height: 36px;
+  padding: 6px 11px;
+  border: 1px solid rgb(139, 106, 58);
+  border-radius: 5px;
+  background: rgb(248, 231, 199);
+  color: rgb(56, 39, 18);
+  font: inherit;
+  cursor: pointer;
+}
+
+#inventoryItemStats .inventoryStatChoices button[aria-pressed="true"] {
+  background: rgb(82, 59, 27);
+  color: rgb(255, 240, 206);
+  border-color: rgb(56, 35, 14);
+  box-shadow: rgb(205, 169, 91) 0px 0px 0px 1px inset;
+  font-weight: bold;
+}
+
+#inventoryItemStats .inventoryStatChoices button:focus-visible {
+  outline: rgb(40, 119, 135) solid 3px;
+  outline-offset: 2px;
+}
+
+@keyframes curseFlyPulse {
+  0%   { filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.0) contrast(1.5); }
+  100% { filter: sepia(100%) saturate(5000%) hue-rotate(280deg) brightness(1.4) contrast(1.8); }
+}
+
+@keyframes powerPulse {
+  0%   { box-shadow: 0 0 6px gold, 0 0 12px goldenrod; transform: scale(1); }
+  100% { box-shadow: 0 0 10px gold, 0 0 22px gold; transform: scale(1.15); }
+}
+
+/* Formulaire : styles fixes, communs au HTML et aux lignes créées par le jeu. */
+#sheetTitle { text-align:center; font-family:'Cinzel'; margin-bottom:10px; }
+#inventoryTools { padding:12px; border:1px solid #795c34; background:#f5dfb4; color:#302115; max-width:850px; margin-bottom:14px; }
+#inventoryTools .inventoryHelp { margin:6px 0; font-size:15px; }
+#inventoryTools .inventoryItemForm { display:flex; gap:8px; flex-wrap:wrap; align-items:end; }
+#inventoryTools #inventoryItemName { max-width:200px; }
+#inventoryItemQuantity { width:70px; }
+#inventoryItemWeight { width:90px; }
+#inventoryItemStats { flex-basis:100%; display:grid; gap:6px; }
+#inventoryWeightStatus { margin-top:10px; font-size:15px; }
+#inventoryItemStats .inventoryStatRow { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+#inventoryItemStats .inventoryStatValue { width:80px; }
+
+@media(max-width:1000px) {
+  #characterSheet {width:min(620px,calc(100vw - 16px));padding:16px;color:#302115}
+  #sheetTitle {font-size:20px;margin:8px 0 10px;clear:both}
+  .compactSheetClose {display:block!important;position:sticky;top:0;margin-left:auto;z-index:20;padding:9px 14px;background:#30251b;color:#fff1d8;border:1px solid #a58a5b;border-radius:5px}
+  #sheetContainer {display:grid;grid-template-columns:minmax(105px,1fr) minmax(0,2fr);gap:10px;align-items:center}
+  #sheetImage {grid-column:1/-1;display:block;width:100%;max-height:230px;object-fit:contain;margin-bottom:8px}
+  #sheetContainer>.compactSheetLabel {display:block!important;font:16px Georgia,serif;text-shadow:none}
+  #sheetContainer>.compactSheetLabel.playerOnly[style*="none"] {display:none!important}
+  #sheetContainer>.sheetField {position:static!important;inset:auto!important;width:100%!important;height:auto!important;min-width:0;min-height:40px;font:18px Georgia,serif!important;box-sizing:border-box;background:#fff8e9;border:1px solid #8e724a;padding:8px;color:#302115;text-shadow:none}
+  #sheetContainer>textarea.sheetField {grid-column:1/-1;min-height:180px;text-align:left;resize:vertical;line-height:1.5}
+  #sheetContainer>label[for="notes"],#sheetContainer>label[for="inventaire"] {grid-column:1/-1;margin-top:8px}
+  #weightContainer,#curseBar,#corruptionBar,#hpBarContainer {position:static!important;inset:auto!important;grid-column:1/-1;width:auto!important;max-width:100%;box-sizing:border-box}
+  #weightContainer {padding:10px;background:#f5dfb4;border:1px solid #8e724a}
+  #weightContainer::before {content:"Charge : ";font:16px Georgia,serif}
+  #weightContainer .sheetField {width:55px!important;padding:0;font-size:18px}
+  #weightBarContainer {max-width:100%}
+  #curseBar,#corruptionBar {display:flex;flex-wrap:wrap;align-items:center;gap:5px;min-height:36px}
+  #curseBar::before {content:"Malédiction : ";font:16px Georgia,serif}
+  #corruptionBar::before {content:"Don : ";font:16px Georgia,serif}
+  #curseBar[style*="none"],#corruptionBar[style*="none"] {display:none!important}
+  #goldZone {margin-top:18px;flex-wrap:wrap}
+  #inventoryTools {box-sizing:border-box}
+  #inventoryTools input {box-sizing:border-box;max-width:100%}
+}
+
+@media(max-height:600px) {
+  #characterSheet {padding:12px}
+}
+

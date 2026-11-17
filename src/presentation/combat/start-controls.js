@@ -1,0 +1,7 @@
+function combatSequence(mob, forceTier) {
+  window.__combatIntroUntil = Date.now()+((mob === "roi" && (forceTier||mobStats[mob]?.tier)==="boss")?24500:6500)
+  const tierMob = forceTier || (mobStats[mob] ? mobStats[mob].tier : "weak")
+  if (mob === "roi" && tierMob === "boss") playRoiIntro(mob, tierMob)
+  else _startCombatSequence(mob, tierMob)
+}
+

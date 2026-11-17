@@ -4,7 +4,9 @@ Chaque envoi sur `main` prépare puis publie une version identifiée par le comm
 
 Les fichiers de jeu et médias sont copiés dans `_site`. Les comptes, règles Firebase, outils, tests et dossiers cachés ne font pas partie de ce paquet. `release.json` décrit les empreintes et tailles des fichiers publics, sans donnée de campagne.
 
-Avant publication : incrémenter ensemble `GAME_V` dans `index.html` et le cache de `sw.js`, lancer les tests adaptés au changement, puis envoyer le commit. Le contrôle refuse les versions page/cache différentes et les scripts essentiels manquants.
+Les sources se trouvent dans `src/`, classées par responsabilité ; les scripts publics et `style.css` à la racine sont générés. Modifier les sources puis lancer `node tools/build-source.cjs`. La commande `node tools/build-source.cjs --check` refuse des assemblages désynchronisés ; le workflow et la préparation de publication effectuent ce contrôle. Le dossier `src/` n’est pas publié.
+
+Avant publication : incrémenter ensemble `GAME_V` dans `index.html` et le cache dans `src/platform/service-worker.js`, réassembler avec `node tools/build-source.cjs`, lancer les tests adaptés au changement, puis envoyer le commit. Le contrôle refuse les versions page/cache différentes et les scripts essentiels manquants.
 
 Vérification locale sans publication :
 

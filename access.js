@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 
 // Seuls ces champs sont partagés avec le groupe. Ne jamais ajouter notes,

@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 window.__balrogSword=null
 let balrogSwordSignature="",balrogSwordCollapsed=false,balrogSwordId=null

@@ -1,3 +1,4 @@
+/* Generated from src/source-map.json by tools/build-source.cjs. Edit the source files, then rebuild. */
 "use strict"
 function ownsCharacterRequest(root,request){return COMBAT_HEROES.includes(request.actor)&&(root.roles?.[request.uid]!=="gm"&&root.profiles?.[request.uid]?.playerId===request.actor)}
 function reduceCharacterRequest(current,id,seed){

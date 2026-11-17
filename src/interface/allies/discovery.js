@@ -31,7 +31,7 @@ function playNextAllyDiscovery(){
  if(!gameStarted||window.__sessionBusy||!["GAME","COMBAT"].includes(gameState)){clearAllyDiscoveryAnimation();return}
  const pnj=allyDiscoveryQueue.shift(),overlay=document.createElement("div"),card=document.createElement("div"),image=document.createElement("img"),name=document.createElement("h2"),message=document.createElement("p"),note=document.createElement("small")
  overlay.id="allyDiscoveryAnnouncement";overlay.dataset.ally=pnj.id;overlay.setAttribute("role","status");overlay.setAttribute("aria-live","polite");card.className="allyDiscoveryCard";card.style.setProperty("--ally-color",pnj.color)
- image.src="images/"+pnj.image;image.alt=pnj.name;name.textContent=pnj.name;message.textContent=ALLY_DISCOVERY_MESSAGES[pnj.id];note.textContent="Allié découvert — sur autorisation du MJ : pion hors combat, pouvoir contre les world boss."
+ image.src="images/"+pnj.image;image.alt=pnj.name;name.textContent=pnj.name;message.textContent=ALLY_DISCOVERY_MESSAGES[pnj.id];note.textContent="Allié découvert — sur autorisation du MJ : pion libre, pouvoir contre les world boss."
  card.append(image,name,message,note);overlay.appendChild(card);document.body.appendChild(overlay)
  allyDiscoveryTimer=setTimeout(()=>{overlay.remove();allyDiscoveryTimer=null;playNextAllyDiscovery()},7000)
 }
@@ -44,10 +44,10 @@ function openAllyDiscoveryPanel(){
  for(const pnj of ALLY_PNJS){
   const row=document.createElement("section"),image=document.createElement("img"),label=document.createElement("strong"),actions=document.createElement("div"),unlock=document.createElement("button"),summon=document.createElement("button")
   row.className="allyManagementRow";row.dataset.ally=pnj.id;image.src="images/"+pnj.image;image.alt="";label.textContent=pnj.name;actions.className="allyManagementActions"
-  unlock.type=summon.type="button";unlock.dataset.action="unlock";summon.dataset.action="summon";unlock.textContent=window.__explorationState?.allyDiscoveries?.[pnj.id]?"Déjà débloqué":window.__explorationState?.allyBreaks?.[pnj.id]?"Rétablir l’alliance":"Débloquer pour les combats";unlock.disabled=!!window.__explorationState?.allyDiscoveries?.[pnj.id];summon.textContent="Invoquer";summon.disabled=combatActive||gameState!=="GAME";summon.title="Placer le personnage sur cette carte, sans attaque ni cinématique"
+  unlock.type=summon.type="button";unlock.dataset.action="unlock";summon.dataset.action="summon";unlock.textContent=window.__explorationState?.allyDiscoveries?.[pnj.id]?"Déjà débloqué":window.__explorationState?.allyBreaks?.[pnj.id]?"Rétablir l’alliance":"Débloquer pour les combats";unlock.disabled=!!window.__explorationState?.allyDiscoveries?.[pnj.id];summon.textContent=combatActive?"Invoquer librement":"Invoquer";summon.disabled=!["GAME","COMBAT"].includes(gameState);summon.title="Placer le personnage sur cette carte, sans attaque ni cinématique"
   const done=()=>{panel.remove();window.GameWindows?.closed(panel);document.querySelectorAll(".gmSection").forEach(menu=>menu.style.display="none")}
   unlock.onclick=async()=>{unlock.disabled=true;if(await unlockAllyDiscovery(pnj.id))done();else unlock.disabled=false}
-  summon.onclick=async()=>{summon.disabled=true;if(await placeAllyOnMap(pnj.id))done();else summon.disabled=combatActive||gameState!=="GAME"}
+  summon.onclick=async()=>{summon.disabled=true;if(await placeAllyOnMap(pnj.id))done();else summon.disabled=!["GAME","COMBAT"].includes(gameState)}
   const revoke=document.createElement("button");revoke.type="button";revoke.textContent="Rompre l’alliance";revoke.dataset.action="revoke";revoke.disabled=!window.__explorationState?.allyDiscoveries?.[pnj.id];revoke.onclick=async()=>{revoke.disabled=true;if(await submitHelPactCommand({kind:"revoke",allyId:pnj.id}))done();else revoke.disabled=false};
   actions.append(unlock,summon,revoke);row.append(image,label,actions);box.appendChild(row)
  }
@@ -71,7 +71,7 @@ async function unlockAllyDiscovery(id){
 function renderDiscoveredAllies(panel){
  for(const pnj of [...discoveredAllies(),...(helNidhoggAvailability(currentCombatAllyContext()).visible?[HEL_NIDHOGG_DUO]:[])]){
   const card=document.createElement("section"),image=document.createElement("img"),title=document.createElement("h3"),state=document.createElement("p"),list=document.createElement("ul")
-  card.className="discoveredAlly";image.src="images/"+pnj.image;image.alt="";title.textContent=pnj.name;state.textContent="Sur autorisation du MJ : pion hors combat, pouvoir contre les world boss."
+  card.className="discoveredAlly";image.src="images/"+pnj.image;image.alt="";title.textContent=pnj.name;state.textContent="Sur autorisation du MJ : pion libre, pouvoir contre les world boss."
   for(const action of pnj.actions){const item=document.createElement("li");item.textContent=action.label+" : "+(typeof allyActionDescription==="function"?allyActionDescription(pnj,action):action.desc);list.appendChild(item)}
   card.append(image,title,state,list);panel.appendChild(card)
  }
@@ -91,39 +91,37 @@ async function giveExplorationAllyAccess(pnj,action,actor){
 async function placeAllyOnMap(id){
  try{
   requireActionAccess({gmOnly:true});requireExplorationConnection()
-  if(!gameStarted||gameState!=="GAME"||combatActive)throw Error("Placez cet allié hors combat.")
+  if(!gameStarted||!["GAME","COMBAT"].includes(gameState))throw Error("Aucune carte active")
   const pnj=ALLY_PNJS.find(p=>p.id===id);if(!pnj)throw Error("Allié inconnu")
-  const uid=window.__authUid,revision=persistenceRevision||"initial",map=currentMap,tokenId=db.ref("game/summonedAllies").push().key,time=Date.now(),el=document.getElementById("map"),x=Math.round((el?.offsetWidth||800)/2),y=Math.round((el?.offsetHeight||600)/2)
-  const result=await reliableRootTransaction(root=>{
-   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!==map||root.game?.combatState?.active||root.combat?.phase==="active")return undefined
-   if(root.game?.allyBreaks?.[id])throw Error("Alliance rompue");root.game.summonedAllies||={};if(!Object.values(root.game.summonedAllies).some(t=>t?.pnjId===id&&t.map===map))root.game.summonedAllies[tokenId]={pnjId:id,map,x,y,time};return root
-  })
-  if(!result.committed)throw Error("La carte ou la partie a changé.")
-  showNotification(pnj.name+" est présent sur cette carte.");return true
+  const uid=window.__authUid,revision=persistenceRevision||"initial",combatId=combatActive?window.__combatSnapshot?.id:null
+  if(combatActive&&!combatId)throw Error("Attendez la synchronisation du combat")
+  const el=document.getElementById("map"),command={kind:"place",pnjId:id,tokenId:db.ref("game/summonedAllies").push().key,time:Date.now(),map:currentMap,combatId:combatId||null,x:Math.round((el?.offsetWidth||800)/2),y:Math.round((el?.offsetHeight||600)/2)}
+  const result=await reliableRootTransaction(root=>applyFreeAllyTokenChange(root,uid,revision,command));if(!result.committed)throw Error("La carte ou la partie a changé")
+  showNotification(pnj.name+" est présent : pion uniquement, aucun pouvoir lancé.");return true
  }catch(error){showNotification("Invocation non placée : "+error.message);return false}
 }
 async function requestExplorationSummon(pnj,action){
  if(window.__sharedVisualBusy||window.__sessionBusy)return showNotification("Attendez la fin de l’animation en cours.")
  const actor=getLocalPlayerId(),access=window.playerAllyAccessData
- if(!actor||!hasPlayerAllyAccess()||access.scope!=="exploration"||access.actionId!==action.id)return showNotification("Demandez l’autorisation du MJ pour invoquer cet allié.")
- return requestExplorationAction("summon",actor,{pnjId:pnj.id,actionId:action.id,grantId:access.grantId,map:currentMap})
+ if(!actor||!hasPlayerAllyAccess()||!["exploration","combat-free"].includes(access.scope)||access.actionId!==action.id)return showNotification("Demandez l’autorisation du MJ pour invoquer cet allié.")
+ return requestExplorationAction("summon",actor,{pnjId:pnj.id,actionId:action.id,grantId:access.grantId,map:currentMap,...(access.scope==="combat-free"?{combatId:access.combatId}:{})})
 }
 function presentExplorationSummon(result){
+ if(result.free)return
  const pnj=ALLY_PNJS.find(p=>p.id===result.pnjId),action=pnj?.actions.find(a=>a.id===result.actionId)
  if(!pnj||!action||!gameStarted||gameState!=="GAME"||combatActive||currentMap!==result.map)return
  _allyInvocationCinematic(pnj,action,null,()=>_playAllyAnim(action.type,pnj.color,false))
 }
 async function updateSummonedAlly(id,change){
- requireActionAccess({gmOnly:true});requireExplorationConnection();const uid=window.__authUid,revision=persistenceRevision||"initial",map=currentMap
- const result=await reliableRootTransaction(root=>{
-  const token=root?.game?.summonedAllies?.[id];if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.map!==map||token?.map!==map||root.game?.combatState?.active||root.combat?.phase==="active")return undefined
-  if(change.remove)delete root.game.summonedAllies[id];else{if(!Number.isFinite(change.x)||!Number.isFinite(change.y))throw Error("Position invalide");const el=document.getElementById("map");token.x=Math.round(Math.max(0,Math.min(el.offsetWidth,change.x)));token.y=Math.round(Math.max(0,Math.min(el.offsetHeight,change.y)))}return root
- });if(!result.committed)throw Error("L’invocation ou la carte a changé.");return true
+ requireActionAccess({gmOnly:true});requireExplorationConnection()
+ const uid=window.__authUid,revision=persistenceRevision||"initial",el=document.getElementById("map"),command={kind:change.remove?"remove":"move",tokenId:id,map:currentMap,combatId:combatActive?window.__combatSnapshot?.id:null}
+ if(!change.remove){if(!Number.isFinite(change.x)||!Number.isFinite(change.y))throw Error("Position invalide");command.x=Math.round(Math.max(0,Math.min(el.offsetWidth,change.x)));command.y=Math.round(Math.max(0,Math.min(el.offsetHeight,change.y)))}
+ const result=await reliableRootTransaction(root=>applyFreeAllyTokenChange(root,uid,revision,command));if(!result.committed)throw Error("L’invocation ou la carte a changé");return true
 }
 function syncSummonedAllies(){
- const visible=gameStarted&&gameState==="GAME"&&!combatActive&&!window.__sessionBusy,gm=isGM&&window.__authRole==="gm",map=document.getElementById("map"),button=document.getElementById("allyBtn")
- if(button)button.style.display=gm&&gameStarted&&gameState==="COMBAT"&&combatActive&&combatHasWorldBoss({combat:window.__combatSnapshot})?"flex":"none"
- const entries=visible?Object.entries(window.__summonedAllies||{}).filter(([,t])=>t?.map===currentMap&&ALLY_PNJS.some(p=>p.id===t.pnjId)):[],wanted=new Set(entries.map(([id])=>id))
+ const inCombat=gameState==="COMBAT"&&combatActive&&window.__combatSnapshot?.phase==="active",visible=gameStarted&&((gameState==="GAME"&&!combatActive)||inCombat)&&!window.__sessionBusy,gm=isGM&&window.__authRole==="gm",map=document.getElementById("map"),button=document.getElementById("allyBtn")
+ if(button)button.style.display=gm&&gameStarted&&inCombat?"flex":"none"
+ const entries=visible?Object.entries(window.__summonedAllies||{}).filter(([,t])=>(inCombat?t?.combatId===window.__combatSnapshot.id:!t?.combatId&&t?.map===currentMap)&&ALLY_PNJS.some(p=>p.id===t.pnjId)):[],wanted=new Set(entries.map(([id])=>id))
  document.querySelectorAll(".summonedAllyToken").forEach(el=>{if(!wanted.has(el.dataset.summonId))el.remove()})
  if(!map)return
  for(const [id,data]of entries){const pnj=ALLY_PNJS.find(p=>p.id===data.pnjId);let token=[...map.querySelectorAll(".summonedAllyToken")].find(el=>el.dataset.summonId===id)

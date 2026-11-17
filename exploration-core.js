@@ -82,12 +82,46 @@ function reduceExplorationRequest(current,id,seed) {
 function resolveExplorationSummon(root,request,id,time){
  const access=root.game?.playerAllyAccess,payload=request.payload||{},pnj=ALLY_PNJS.find(p=>p.id===payload.pnjId),action=pnj?.actions.find(a=>a.id===payload.actionId)
  if(root.game?.allyBreaks?.[pnj?.id])throw Error("Alliance rompue");
+ if(access?.scope==="combat-free"){
+  const combatId=freeAllyCombatId(root)
+  if(!combatId||combatId!==access.combatId||combatId!==payload.combatId)throw Error("Ce combat est terminé ou a changé")
+  if(!pnj||!action||access.playerId!==request.actor||access.actionId!==action.id||access.grantId!==payload.grantId)throw Error("Autorisation MJ absente ou déjà utilisée")
+  if(!root.characters?.[request.actor]||root.characters[request.actor].hp<=0)throw Error("Ce héros est KO")
+  root.game.summonedAllies||={};const existing=Object.entries(root.game.summonedAllies).find(([,t])=>t?.pnjId===pnj.id&&t.combatId===combatId),tokenId=existing?.[0]||id,position=root.tokens?.[request.actor]||{x:360,y:360}
+  if(!existing)root.game.summonedAllies[tokenId]={pnjId:pnj.id,combatId,map:root.game.map,actor:request.actor,x:Math.max(40,Number(position.x)||360)+90,y:Math.max(40,Number(position.y)||360),time}
+  delete root.game.playerAllyAccess
+  return {mode:"summon",free:true,combatId,pnjId:pnj.id,actionId:action.id,actor:request.actor,map:root.game.map,tokenId,message:pnj.name+" est invoqué librement : pion uniquement."}
+ }
  if(root.game?.combatState?.active||root.combat?.phase==="active")throw Error("Cette invocation est prévue hors combat")
  if(!pnj||!action||!access||access.scope!=="exploration"||access.playerId!==request.actor||access.actionId!==action.id||access.grantId!==payload.grantId)throw Error("Autorisation MJ absente ou déjà utilisée")
  if(!root.game?.map||payload.map!==root.game.map)throw Error("La carte a changé")
  if(!root.characters?.[request.actor]||root.characters[request.actor].hp<=0)throw Error("Ce héros est KO")
- root.game.summonedAllies||={};const existing=Object.entries(root.game.summonedAllies).find(([,t])=>t?.pnjId===pnj.id&&t.map===root.game.map),tokenId=existing?.[0]||id,position=root.tokens?.[request.actor]||{x:360,y:360}
+ root.game.summonedAllies||={};const existing=Object.entries(root.game.summonedAllies).find(([,t])=>t?.pnjId===pnj.id&&!t.combatId&&t.map===root.game.map),tokenId=existing?.[0]||id,position=root.tokens?.[request.actor]||{x:360,y:360}
  if(!existing)root.game.summonedAllies[tokenId]={pnjId:pnj.id,map:root.game.map,actor:request.actor,x:Math.max(40,Number(position.x)||360)+90,y:Math.max(40,Number(position.y)||360),time}
  delete root.game.playerAllyAccess
  return {mode:"summon",pnjId:pnj.id,actionId:action.id,actor:request.actor,map:root.game.map,tokenId,message:pnj.name+" rejoint la scène."}
+}
+
+function freeAllyCombatId(root){
+ if(root.combat?.phase==="active"&&root.combat.id&&root.game?.combatState?.active)return root.combat.id
+ if(root.combat||root.game?.combatState?.active)throw Error("Attendez la fin de la transition de combat")
+ return null
+}
+function applyFreeAllyTokenChange(current,uid,revision,command){
+ if(current?.roles?.[uid]!=="gm")throw Error("Action réservée au MJ")
+ if(current.sessionControl?.phase||(current.sessionControl?.revision||"initial")!==revision)throw Error("La partie a changé")
+ const combatId=freeAllyCombatId(current);if(combatId!==(command.combatId||null)||!current.game?.map||!combatId&&current.game.map!==command.map)throw Error("La carte ou le combat a changé")
+ const root=combatClone(current);root.game.summonedAllies||={}
+ if(command.kind==="place"){
+  const pnj=ALLY_PNJS.find(p=>p.id===command.pnjId);if(!pnj)throw Error("Allié inconnu")
+  if(root.game.allyBreaks?.[pnj.id])throw Error("Alliance rompue")
+  const existing=Object.values(root.game.summonedAllies).some(t=>t?.pnjId===pnj.id&&(combatId?t.combatId===combatId:!t.combatId&&t.map===root.game.map))
+  if(!existing){const position=explorationPosition(command);root.game.summonedAllies[command.tokenId]={pnjId:pnj.id,map:root.game.map,x:position.x,y:position.y,time:command.time,...(combatId?{combatId}:{})}}
+ }else{
+  const token=root.game.summonedAllies[command.tokenId];if(!token||(combatId?token.combatId!==combatId:token.combatId||token.map!==root.game.map))throw Error("Cette invocation n’est plus présente")
+  if(command.kind==="remove")delete root.game.summonedAllies[command.tokenId]
+  else if(command.kind==="move"){const position=explorationPosition(command);Object.assign(token,{x:position.x,y:position.y})}
+  else throw Error("Commande inconnue")
+ }
+ return root
 }

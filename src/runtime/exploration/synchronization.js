@@ -248,7 +248,7 @@ function syncSharedExplorationState(game){
 function presentExplorationEvent(event){
   if(!event?.id||!event.result||event.time<(window.__pageLoadTime||0))return
   const result=event.result
-  if(result.mode==="summon")enqueueSharedVisual("explore-"+event.id,()=>presentExplorationSummon(result),14000)
+  if(result.mode==="summon"&&!result.free)enqueueSharedVisual("explore-"+event.id,()=>presentExplorationSummon(result),14000)
   if(result.mode==="book")enqueueSharedVisual("explore-"+event.id,()=>presentMapLoreBookEvent(result.book,result.actor),1000)
   if(result.mode==="hint")enqueueSharedVisual("explore-"+event.id,()=>{playSound("parcheminSound",.7);flashGold();showNotification("Fragment runique découvert !")},1800)
   if(result.mode==="spell")enqueueSharedVisual("explore-"+event.id,()=>{

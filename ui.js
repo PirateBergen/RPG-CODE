@@ -1684,7 +1684,7 @@ function showSpellFreed() {
 function openAllyPNJPanel() {
   if(!combatActive)return openAllyDiscoveryPanel()
   if (!isGM) return
-  if(!combatHasWorldBoss({combat:window.__combatSnapshot})){showNotification("Les invocations sont réservées aux combats de world boss.");return}
+  const worldBoss=combatHasWorldBoss({combat:window.__combatSnapshot})
   const existing = document.getElementById("allyPNJPanel")
   if (existing) {
     existing.remove()
@@ -1725,6 +1725,13 @@ function openAllyPNJPanel() {
       info.appendChild(infoName)
       info.appendChild(infoRole)
       header.appendChild(img); header.appendChild(info); block.appendChild(header)
+      if(pnj.id!==HEL_NIDHOGG_DUO.id){
+        const freeActions=document.createElement("div");freeActions.className="allyFreeActions"
+        const summon=document.createElement("button"),grant=document.createElement("button");summon.type=grant.type="button";summon.textContent="Invoquer librement";grant.textContent="Donner l’invocation libre";summon.dataset.freeSummon=pnj.id;grant.dataset.freeGrant=pnj.id
+        summon.disabled=grant.disabled=!!window.__explorationState?.allyBreaks?.[pnj.id]
+        summon.onclick=async()=>{summon.disabled=true;if(await placeAllyOnMap(pnj.id))panel.remove();else summon.disabled=false};grant.onclick=()=>openAllyGrantPicker(pnj,pnj.actions[0],{free:true});freeActions.append(summon,grant);block.appendChild(freeActions)
+      }
+      if(!worldBoss){panel.appendChild(block);return}
 
       pnj.actions.forEach(action => {
         const allianceBroken=!!window.__explorationState?.allyBreaks?.[pnj.id],lockedHel=["hel","nidhogg"].includes(pnj.id)&&!window.__explorationState?.allyDiscoveries?.[pnj.id],duoState=pnj.id===HEL_NIDHOGG_DUO.id?helNidhoggAvailability(currentCombatAllyContext()):null
@@ -1782,6 +1789,7 @@ function openAllyPNJPanel() {
 }
 
 function triggerAllyAction(pnj, action, panel) {
+  if(!isGM&&window.playerAllyAccessData?.scope==="combat-free")return requestExplorationSummon(pnj,action)
   if(!combatActive){if(isGM){openAllyGrantPicker(pnj,action);return}return requestExplorationSummon(pnj,action)}
   if(pnj.id==="hel")return requestAllyCombatAction(pnj,action,null,panel)
   if (!isGM && myToken && (action.type === "heal" || action.type === "buff")) {
@@ -1950,16 +1958,31 @@ function grantAllyActionToPlayers(pnj, action, playerId) {
  if(!playerId){openAllyGrantPicker(pnj,action);return Promise.resolve(false)}
  return giveAllyActionToPlayer(pnj,action,playerId)
 }
-function openAllyGrantPicker(pnj,action){
+function openAllyGrantPicker(pnj,action,{free=false}={}){
  document.getElementById("allyGrantPicker")?.remove()
  const combatId=window.__combatSnapshot?.id
  const previous=document.activeElement,overlay=document.createElement("div"),box=document.createElement("div"),title=document.createElement("h3"),desc=document.createElement("p")
  overlay.id="allyGrantPicker";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-labelledby","allyGrantTitle");box.className="allyGrantBox";title.id="allyGrantTitle";title.textContent="À qui donner « "+action.label+" » ?";desc.textContent=combatActive?"Autorisation pour ce combat, utilisable une fois par le personnage choisi. Elle remplace l’autorisation précédente.":"Autorisation hors combat : cinématique et pion uniquement. Le joueur choisira quand invoquer cet allié.";box.append(title,desc);overlay.appendChild(box)
  const close=()=>{overlay.remove();previous?.focus?.()}
- for(const id of ["greg","ju","elo"]){const button=document.createElement("button");button.type="button";button.textContent=heroDisplayName(id);button.dataset.hero=id;button.onclick=async()=>{for(const b of box.querySelectorAll("button"))b.disabled=true;try{if(await giveAllyActionToPlayer(pnj,action,id,combatId)){close();document.getElementById("allyPNJPanel")?.remove()}else close()}finally{for(const b of box.querySelectorAll("button"))b.disabled=false}};box.appendChild(button)}
+ if(free){title.textContent="Qui peut invoquer "+pnj.name+" librement ?";desc.textContent="Place seulement son pion dans ce combat, sans dé, pouvoir ou coût en action. Remplace l’autorisation précédente."}
+ for(const id of ["greg","ju","elo"]){const button=document.createElement("button");button.type="button";button.textContent=heroDisplayName(id);button.dataset.hero=id;button.onclick=async()=>{for(const b of box.querySelectorAll("button"))b.disabled=true;try{if(await (free?giveFreeCombatAllyAccess(pnj,id,combatId):giveAllyActionToPlayer(pnj,action,id,combatId))){close();document.getElementById("allyPNJPanel")?.remove()}else close()}finally{for(const b of box.querySelectorAll("button"))b.disabled=false}};box.appendChild(button)}
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Annuler";cancel.onclick=close;box.appendChild(cancel)
  overlay.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();close()}if(event.key==="Tab"){const buttons=[...box.querySelectorAll("button:not(:disabled)")],first=buttons[0],last=buttons.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus()}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus()}}})
  document.body.appendChild(overlay);box.querySelector("button").focus()
+}
+async function giveFreeCombatAllyAccess(pnj,playerId,expectedCombatId=window.__combatSnapshot?.id){
+ try{
+  requireActionAccess({gmOnly:true});requireExplorationConnection()
+  const known=ALLY_PNJS.find(p=>p.id===pnj?.id);if(!known||!known.actions[0]||!PLAYABLE_HEROES.includes(playerId))throw Error("Allié ou joueur inconnu")
+  const uid=window.__authUid,revision=persistenceRevision||"initial",grantId=db.ref("game").push().key,time=Date.now()
+  const result=await reliableRootTransaction(root=>{
+   if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||!expectedCombatId||freeAllyCombatId(root)!==expectedCombatId||!root.characters?.[playerId]||root.characters[playerId].hp<=0)return undefined
+   if(root.game?.allyBreaks?.[known.id])throw Error("Alliance rompue")
+   root.game.playerAllyAccess={scope:"combat-free",pnjName:known.name,actionId:known.actions[0].id,playerId,combatId:expectedCombatId,grantId,time};return root
+  })
+  if(!result.committed)throw Error("Le combat ou le personnage a changé")
+  showNotification("Invocation libre de "+known.name+" autorisée pour "+heroDisplayName(playerId)+" : pion uniquement.");return true
+ }catch(error){showNotification("Autorisation non donnée : "+error.message);return false}
 }
 async function giveAllyActionToPlayer(pnj,action,playerId,expectedCombatId=window.__combatSnapshot?.id){
  if(!expectedCombatId){if(pnj.id==="hel_nidhogg_duo"){showNotification("Cette invocation est réservée au combat contre le Roi");return false}return giveExplorationAllyAccess(pnj,action,playerId)}

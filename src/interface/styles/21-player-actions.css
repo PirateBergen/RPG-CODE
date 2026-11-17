@@ -13,3 +13,5 @@
 
 #combatHUDRules{font:12px/1.5 Georgia,serif;color:#e6d7ab;margin:6px 0;padding:6px;border:1px solid #987b4c66;border-radius:5px}#combatHUDRules[hidden]{display:none}
 
+.allyFreeActions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.allyFreeActions button{min-height:44px;padding:8px 10px;white-space:normal;flex:1 1 140px;border:1px solid #6b8991;background:#18313a;color:#f4e3c4;border-radius:4px;cursor:pointer;font:12px Cinzel,serif}

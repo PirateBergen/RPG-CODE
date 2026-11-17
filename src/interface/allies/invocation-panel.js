@@ -1,7 +1,7 @@
 function openAllyPNJPanel() {
   if(!combatActive)return openAllyDiscoveryPanel()
   if (!isGM) return
-  if(!combatHasWorldBoss({combat:window.__combatSnapshot})){showNotification("Les invocations sont réservées aux combats de world boss.");return}
+  const worldBoss=combatHasWorldBoss({combat:window.__combatSnapshot})
   const existing = document.getElementById("allyPNJPanel")
   if (existing) {
     existing.remove()
@@ -42,6 +42,13 @@ function openAllyPNJPanel() {
       info.appendChild(infoName)
       info.appendChild(infoRole)
       header.appendChild(img); header.appendChild(info); block.appendChild(header)
+      if(pnj.id!==HEL_NIDHOGG_DUO.id){
+        const freeActions=document.createElement("div");freeActions.className="allyFreeActions"
+        const summon=document.createElement("button"),grant=document.createElement("button");summon.type=grant.type="button";summon.textContent="Invoquer librement";grant.textContent="Donner l’invocation libre";summon.dataset.freeSummon=pnj.id;grant.dataset.freeGrant=pnj.id
+        summon.disabled=grant.disabled=!!window.__explorationState?.allyBreaks?.[pnj.id]
+        summon.onclick=async()=>{summon.disabled=true;if(await placeAllyOnMap(pnj.id))panel.remove();else summon.disabled=false};grant.onclick=()=>openAllyGrantPicker(pnj,pnj.actions[0],{free:true});freeActions.append(summon,grant);block.appendChild(freeActions)
+      }
+      if(!worldBoss){panel.appendChild(block);return}
 
       pnj.actions.forEach(action => {
         const allianceBroken=!!window.__explorationState?.allyBreaks?.[pnj.id],lockedHel=["hel","nidhogg"].includes(pnj.id)&&!window.__explorationState?.allyDiscoveries?.[pnj.id],duoState=pnj.id===HEL_NIDHOGG_DUO.id?helNidhoggAvailability(currentCombatAllyContext()):null
@@ -99,6 +106,7 @@ function openAllyPNJPanel() {
 }
 
 function triggerAllyAction(pnj, action, panel) {
+  if(!isGM&&window.playerAllyAccessData?.scope==="combat-free")return requestExplorationSummon(pnj,action)
   if(!combatActive){if(isGM){openAllyGrantPicker(pnj,action);return}return requestExplorationSummon(pnj,action)}
   if(pnj.id==="hel")return requestAllyCombatAction(pnj,action,null,panel)
   if (!isGM && myToken && (action.type === "heal" || action.type === "buff")) {

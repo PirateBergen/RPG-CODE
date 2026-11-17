@@ -277,6 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
   db.ref("combat").on("value", snapshot => {
     if (window.__sessionBusy) return
     const data = snapshot.val(); window.__combatSnapshot = data || null
+    if(typeof syncSummonedAllies==="function")syncSummonedAllies()
     if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(data)
     if (!data) return
     window.__combatTurnState = data.turnState || null

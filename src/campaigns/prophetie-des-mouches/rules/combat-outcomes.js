@@ -49,6 +49,8 @@ function sealCombatOutcome(root,type,request={}){
   if(root.game.combatOutcome.antrePassage)root.game.antreAfterlife={used:true,phase:"pending",combatId:root.combat.id,time:Date.now()}
   const now=new Date();root.game.sessionLog ||= {}
   root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe prend la fuite":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
+  for(const [key,token]of Object.entries(root.game.summonedAllies||{}))if(token.combatId===root.combat.id)delete root.game.summonedAllies[key]
+  if(root.game.playerAllyAccess?.scope==="combat-free"&&root.game.playerAllyAccess.combatId===root.combat.id)delete root.game.playerAllyAccess
   delete root.combat.pendingRetreat
   root.combat.phase="finished";root.combat.turnState ||= {};root.combat.turnState.phase="finished"
   if(type==="victory"&&COMBAT_MOBS.some(slot=>root.combat[slot]?.name==="balraug")&&!root.game.balrogSword)root.game.balrogSword={status:"pending",combatId:root.combat.id,map:root.game.combatOutcome.returnMap}

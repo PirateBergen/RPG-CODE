@@ -6,7 +6,7 @@ function resolveAllyCombatAction(root, request, dice) {
   if(root.game?.allyBreaks?.[pnj.id])throw Error("Alliance rompue : ce soutien est indisponible")
   if(pnj.id==="hel"&&!root.game?.allyDiscoveries?.hel)throw Error("Le MJ doit débloquer l’alliance avec Hel")
   if (root.combat.usedAllies?.[action.id]) throw new Error("Cette intervention a déjà été utilisée")
-  if (root.roles?.[request.uid] !== "gm" && (root.game.playerAllyAccess?.scope === "exploration" || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
+  if (root.roles?.[request.uid] !== "gm" && (["exploration","combat-free"].includes(root.game.playerAllyAccess?.scope) || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
   if(pnj.id==="nidhogg"||pnj.id===HEL_NIDHOGG_DUO.id)return resolveHelNidhoggCombatAction(root,request,pnj,action,dice)
   const enhanced=enhancedCombatCriticals(root.combat)
   if(enhanced&&(root.combat.allyRetryRounds?.[action.id]||0)>(root.combat.turnState?.round||1))throw Error("Thor reprend ses forces : nouvelle tentative au prochain round")

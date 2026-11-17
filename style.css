@@ -6647,6 +6647,8 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
 
 #combatHUDRules{font:12px/1.5 Georgia,serif;color:#e6d7ab;margin:6px 0;padding:6px;border:1px solid #987b4c66;border-radius:5px}#combatHUDRules[hidden]{display:none}
 
+.allyFreeActions{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 12px}
+.allyFreeActions button{min-height:44px;padding:8px 10px;white-space:normal;flex:1 1 140px;border:1px solid #6b8991;background:#18313a;color:#f4e3c4;border-radius:4px;cursor:pointer;font:12px Cinzel,serif}
 /* Shared reaction event for an announced attack. */
 .combatReactionModal{position:fixed;inset:0;z-index:2147483000;background:rgba(4,8,15,.88);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;color:#f7e7c7}
 .combatReactionBox{width:min(660px,100%);max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(145deg,#192331,#0c111b);border:1px solid #bd9861;border-radius:14px;padding:22px;box-sizing:border-box;box-shadow:0 16px 70px #000;font:16px/1.5 Georgia,serif}

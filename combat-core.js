@@ -50,6 +50,8 @@ function sealCombatOutcome(root,type,request={}){
   if(root.game.combatOutcome.antrePassage)root.game.antreAfterlife={used:true,phase:"pending",combatId:root.combat.id,time:Date.now()}
   const now=new Date();root.game.sessionLog ||= {}
   root.game.sessionLog["combat-"+root.combat.id]={text:type==="victory"?"🏆 Victoire !":type==="retreat"?"⛵ Le groupe prend la fuite":"💀 Défaite",time:Date.now(),display:now.getHours().toString().padStart(2,"0")+":"+now.getMinutes().toString().padStart(2,"0")}
+  for(const [key,token]of Object.entries(root.game.summonedAllies||{}))if(token.combatId===root.combat.id)delete root.game.summonedAllies[key]
+  if(root.game.playerAllyAccess?.scope==="combat-free"&&root.game.playerAllyAccess.combatId===root.combat.id)delete root.game.playerAllyAccess
   delete root.combat.pendingRetreat
   root.combat.phase="finished";root.combat.turnState ||= {};root.combat.turnState.phase="finished"
   if(type==="victory"&&COMBAT_MOBS.some(slot=>root.combat[slot]?.name==="balraug")&&!root.game.balrogSword)root.game.balrogSword={status:"pending",combatId:root.combat.id,map:root.game.combatOutcome.returnMap}
@@ -443,7 +445,7 @@ function resolveAllyCombatAction(root, request, dice) {
   if(root.game?.allyBreaks?.[pnj.id])throw Error("Alliance rompue : ce soutien est indisponible")
   if(pnj.id==="hel"&&!root.game?.allyDiscoveries?.hel)throw Error("Le MJ doit débloquer l’alliance avec Hel")
   if (root.combat.usedAllies?.[action.id]) throw new Error("Cette intervention a déjà été utilisée")
-  if (root.roles?.[request.uid] !== "gm" && (root.game.playerAllyAccess?.scope === "exploration" || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
+  if (root.roles?.[request.uid] !== "gm" && (["exploration","combat-free"].includes(root.game.playerAllyAccess?.scope) || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
   if(pnj.id==="nidhogg"||pnj.id===HEL_NIDHOGG_DUO.id)return resolveHelNidhoggCombatAction(root,request,pnj,action,dice)
   const enhanced=enhancedCombatCriticals(root.combat)
   if(enhanced&&(root.combat.allyRetryRounds?.[action.id]||0)>(root.combat.turnState?.round||1))throw Error("Thor reprend ses forces : nouvelle tentative au prochain round")

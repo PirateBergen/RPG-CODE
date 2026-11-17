@@ -56,6 +56,7 @@ function hasThuumUseAccess(word) {
 }
 
 function hasPlayerAllyAccess() {
+ if(window.playerAllyAccessData?.scope==="combat-free"){const a=window.playerAllyAccessData;return !!(myToken&&a.playerId===myToken.id&&a.grantId&&combatActive&&gameStarted&&gameState==="COMBAT"&&window.__combatSnapshot?.phase==="active"&&a.combatId===window.__combatSnapshot.id)}
  const access=window.playerAllyAccessData;if(access?.actionId==="hel_nidhogg_judgment"&&!helNidhoggAvailability(currentCombatAllyContext()).allowed)return false;if(!access||!myToken||access.playerId&&access.playerId!==myToken.id)return false
  if(access.scope==="exploration")return gameStarted&&gameState==="GAME"&&!combatActive&&!!access.grantId
  return combatActive&&combatHasWorldBoss({combat:window.__combatSnapshot})&&(!access.combatId||access.combatId===window.__combatSnapshot?.id)
@@ -231,7 +232,7 @@ function renderPlayerAllyEntry(panel) {
 
   const name = document.createElement("div")
   name.className = "playerThuumEntryName"
-  name.innerText = granted.action.label
+  name.innerText = window.playerAllyAccessData?.scope==="combat-free"?"Invoquer "+granted.pnj.name+" librement":granted.action.label
   text.appendChild(name)
 
   const words = document.createElement("div")
@@ -242,7 +243,7 @@ function renderPlayerAllyEntry(panel) {
   const desc = document.createElement("div")
   desc.className = "playerThuumEntryState"
   desc.classList.add("playerActionDescription")
-  desc.innerText = window.playerAllyAccessData?.scope==="exploration"?"Fait apparaître un pion sur cette carte, sans dégâts ni soins. Le MJ pourra le retirer.":(typeof allyActionDescription==="function"?allyActionDescription(granted.pnj,granted.action):granted.action.desc)
+  desc.innerText = ["exploration","combat-free"].includes(window.playerAllyAccessData?.scope)?"Fait apparaître un pion sur cette carte, sans dégâts ni soins. Le MJ pourra le retirer.":(typeof allyActionDescription==="function"?allyActionDescription(granted.pnj,granted.action):granted.action.desc)
   text.appendChild(desc)
 
   const state = document.createElement("div")

@@ -121,9 +121,11 @@ function finalizedInitiative(state) {
 function recordConfirmedCombatAction(root,request,result){
   root.game ||= {}; root.game.sessionLog ||= {}
   const label=id=>heroDisplayName(root.combat?.[id]?.name||({greg:"Greg",ju:"Pika",elo:"Elo",bibi:"Bibi"})[id]||id||"MJ")
-  const effects=Object.entries(root.combat?.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,h])=>!["dmg","mob","manual","heal"].includes(h.type)?String(h.detail||"Effet appliqué"):label(h.from)+" → "+label(h.to)+" : "+(h.type==="heal"?"+":h.type==="buff"||h.type==="malus"?"effet ":"−")+h.amount+(h.type==="buff"||h.type==="malus"?"":" PV"))
+  const effects=Object.entries(root.combat?.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,h])=>h.detail?String(h.detail):!["dmg","mob","manual","heal"].includes(h.type)?String(h.detail||"Effet appliqué"):label(h.from)+" → "+label(h.to)+" : "+(h.type==="heal"?"+":h.type==="buff"||h.type==="malus"?"effet ":"−")+h.amount+(h.type==="buff"||h.type==="malus"?"":" PV"))
   const text=[label(result.actor||request.actor),(result.mode==="arbitrated"?result.message:result.attack||result.message)||({pass:"Tour passé",skip:"Acteur KO : tour passé",manual:"Ajustement MJ",thuum:"Cri"})[result.mode]||"Action",result.roll!=null?"dé : "+result.roll+(result.luckBonus?" + "+result.luckBonus+" Chance = "+result.rollTotal:"")+(result.controlBonus?" + "+result.controlBonus+" Charme (contrôle)":"")+(result.crit?" (critique)":result.fail?" (échec critique)":""):"",...effects,...(!effects.length&&result.message&&result.attack&&result.mode!=="arbitrated"?[result.message]:[])].filter(Boolean).join(" · ")
-  root.game.sessionLog["action-"+request.id]={text:text.slice(0,1500),time:request.time,display:new Date(request.time).toTimeString().slice(0,5),status:"applied",combatId:root.combat.id,requestId:request.id}
+  const fullText=[text,result.explanation,result.message&&result.message!==result.attack&&!text.includes(result.message)?result.message:""].filter(Boolean).join(" · ").slice(0,6000)
+  root.game.sessionLog["action-"+request.id]={text:fullText,time:request.time,display:new Date(request.time).toTimeString().slice(0,5),status:"applied",combatId:root.combat.id,requestId:request.id}
+  if(request.kind==="hero"&&result.attack)combatRecord(root,request,label(result.actor),result.targetName||label(result.target),0,"summary",fullText)
   const entries=Object.entries(root.game.sessionLog).sort((a,b)=>(b[1].time||0)-(a[1].time||0));entries.slice(200).forEach(([key])=>delete root.game.sessionLog[key])
 }
 
@@ -154,7 +156,7 @@ function combatHeal(root, request, from, id, amount, resurrect = false) {
   const before = combatInt(c.hp), max = Math.max(before,combatFriendlyMaxHP(root,id))
   const adjusted=Math.max(0,combatInt(resurrect&&before<=0?max:amount))
   c.hp = Math.min(max,before+adjusted)
-  combatRecord(root, request, from, id, c.hp - before, "heal", from + " → " + combatFriendlyName(id).toUpperCase() + " : +" + (c.hp - before) + " PV")
+  combatRecord(root, request, from, id, c.hp - before, "heal", from + " → " + combatFriendlyName(id).toUpperCase() + " : +" + (c.hp - before) + " PV ("+before+" → "+c.hp+" / "+max+")")
   return c.hp - before
 }
 
@@ -170,7 +172,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
     }
     target.hp=0;target.defeatedByThor=true
   }else target.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount)))))
-  combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
+  combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV ("+before+" → "+target.hp+" / "+target.maxHP+")"+(target.hp<=0?" — KO":""))
   krakenAfterDamage(root,request,slot,before-target.hp)
   return before - target.hp
 }
@@ -300,8 +302,9 @@ function resolveHeroCombatAction(root, request, dice) {
   if (heal) {
     if (![...COMBAT_CHARACTERS,...(c.eloSummon?.active?["eloSummon"]:[])].includes(payload.target)) throw new Error("Choisissez un héros à soigner")
     const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * (c.balanceVersion===3?1.6:2) : power)
+    const explanation=crit?"Critique : soin multiplié par "+(c.balanceVersion===3?1.6:2)+" avant la limite des PV maximum.":fail?"Échec critique : soin réduit.":""
     nextCombatTurn(root, request)
-    return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, mode: "heal", special, target: payload.target, targetName: combatFriendlyName(payload.target).toUpperCase() }
+    return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, explanation, mode: "heal", special, target: payload.target, targetName: combatFriendlyName(payload.target).toUpperCase() }
   }
   let damage = fail ? 0 : power * (crit ? (c.balanceVersion===3?1.6:2) : 1), groupHeal = 0
   if(special&&c.balanceVersion===3){damage=calibratedSpecialDamage(actor,power,crit,fail);if(actor==="elo")groupHeal=fail?Math.round(calibratedHealth(data.lvl)*.025):Math.round(calibratedHealth(data.lvl)*.08*(crit?1.6:1))}
@@ -339,8 +342,20 @@ function resolveHeroCombatAction(root, request, dice) {
   let groupHealAmount=0
   if (groupHeal > 0) [...COMBAT_CHARACTERS,...(c.eloSummon?.active?["eloSummon"]:[])].filter(id=>combatFriendlyTarget(root,id)?.hp>0).forEach(id=>{groupHealAmount+=combatHeal(root,request,"ELO",id,groupHeal)})
   if (special) { c.playerSpecials ||= {}; c.playerSpecials[actor] = true }
+  const consequences=[]
+  if(crit){
+    consequences.push("Critique : dégâts multipliés par "+(c.balanceVersion===3?1.6:2)+" avant les autres bonus, protections et la limite des PV restants.")
+    if(attack.name==="Je vais te raconter une histoire")consequences.push("Poison appliqué : "+mob.playerPoison.damage+" PV à chaque fin de round pendant "+mob.playerPoison.turns+" rounds.")
+    if(attack.name==="I know Frank (si arc)")consequences.push("Saignement appliqué : "+mob.playerBleed.damage+" PV à chaque fin de round pendant "+mob.playerBleed.turns+" rounds.")
+    if(attack.name==="Le Bibi")consequences.push("Rage : +"+mob.bibiRage.damage+" dégâts aux attaques alliées sur cette cible pendant 3 rounds.")
+    if(attack.name==="Petite merde")consequences.push("Attaques ennemies : −1 dégât pendant 2 rounds.")
+    if(attack.name==="Spider Sense")consequences.push("Butin de victoire amélioré.")
+  }
+  if(fail)consequences.push("Échec critique : aucun dégât de cette attaque.")
+  if(attack.name==="Je suis jet laguée"&&!fail)consequences.push("John Pork invoqué : "+c.eloSummon.hp+" PV, protège contre les attaques à cible unique pendant 3 rounds."+(crit?" Frénésie critique : ses bonus D4 sont doublés et touchent tous les ennemis lors des prochaines attaques d’Elo.":""))
+  const explanation=consequences.join(" ")
   nextCombatTurn(root, request)
-  return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, groupHealAmount, mode: "damage", special, target: slot, targetName: heroDisplayName(mob.name).toUpperCase(),...(attack.name==="Je suis jet laguée"&&!fail?{message:"John Pork arrive : "+amount+" dégâts. Il protège le groupe pendant 3 rounds."}:{}) }
+  return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, groupHealAmount, explanation, mode: "damage", special, target: slot, targetName: heroDisplayName(mob.name).toUpperCase(),...(attack.name==="Je suis jet laguée"&&!fail?{message:"John Pork arrive : "+amount+" dégâts. Il protège le groupe pendant 3 rounds."}:{}) }
 }
 
 function resolveEnemyCombatAction(root, request, dice) {

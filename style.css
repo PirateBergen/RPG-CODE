@@ -5943,6 +5943,10 @@ body:not([data-entry-stage="playing"]) #testSpecialsBtn,body:not([data-entry-rol
   gap: 4px;
 }
 
+.combatStatusItem--summary { display:block; overflow-wrap:anywhere; }
+.combatStatusItem--summary summary { cursor:pointer; min-height:44px; display:list-item; font-size:12px; }
+.combatStatusItem--summary .combatStatusText { font-size:13px; line-height:1.45; white-space:pre-line; }
+
 .combatStatusEmpty {
   font-family: Cinzel, serif;
   font-size: 11px;

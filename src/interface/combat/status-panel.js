@@ -22,7 +22,7 @@ function getCombatStatusEntries(){
  for(const [id,n]of Object.entries(c.heroStuns||{}))if(n>0)entries.push({kind:"warn",title:heroDisplayName(id)+" étourdi",text:"Action neutralisée",meta:n+" action(s) à sauter"})
  for(const [id,states]of Object.entries(c.gmStates||{}))for(const [key,value]of Object.entries(states)){const def=GM_COMBAT_STATES[key];if(def)entries.push({kind:"warn",title:(COMBAT_MOBS.includes(id)?combatEnemyLabel(id):heroDisplayName(id))+" — "+def.label,text:def.description,meta:value.turns+" "+def.unit+" restant(s)"+(value.amount?" · "+value.amount+(value.mode==="percent"?" %":" points"):"")})}
  const summon=c.eloSummon;if(summon?.active)entries.push({kind:"ally",title:"John Pork",text:"Tank : encaisse les attaques à cible unique. Bonus D4 aux attaques d’Elo"+(summon.frenzy?", doublé et en zone":""),meta:(summon.turnsLeft||0)+" round(s) · "+(summon.hp||0)+" / "+(summon.maxHP||0)+" PV"})
- const hits=window.__combatDamageLog||[];if(hits.length)entries.push({kind:"section",title:"Derniers coups"})
+ const hits=window.__combatDamageLog||[];if(hits.length)entries.push({kind:"section",title:"Historique — jets, dégâts et conséquences"})
  for(const hit of hits)entries.push({kind:hit.type,title:hit.from+" → "+hit.to,text:hit.type==="heal"?"+"+hit.amount+" PV":["dmg","mob"].includes(hit.type)?"−"+hit.amount+" PV":String(hit.detail||"Effet appliqué"),meta:"Round "+hit.round})
  return entries
 }
@@ -72,8 +72,10 @@ function _renderCombatStatusPanelNow() {
       return
     }
 
-    const row = document.createElement("div")
+    const detailed=entry.kind==="summary"
+    const row = document.createElement(detailed?"details":"div")
     row.className = "combatStatusItem combatStatusItem--" + (entry.kind || "buff")
+    if(detailed){const toggle=document.createElement("summary");toggle.textContent=entry.title+" — détails de l’action";row.appendChild(toggle);row.addEventListener("keydown",event=>{if(event.key==="Escape"&&row.open){row.open=false;toggle.focus();event.stopPropagation()}})}
     if ((entry.title || "").toLowerCase().includes("tour actif")) row.classList.add("combatStatusItem--turn")
     if ((entry.title || "").toLowerCase().includes("faiblesse")) row.classList.add("combatStatusItem--weakness")
 
@@ -82,7 +84,7 @@ function _renderCombatStatusPanelNow() {
     icon.src = "images/" + sanitizeAssetName(entry.icon || "impact_ring.png")
     icon.alt = ""
     icon.onerror = () => { icon.style.display = "none" }
-    row.appendChild(icon)
+    if(!detailed)row.appendChild(icon)
 
     const body = document.createElement("div")
     body.className = "combatStatusBody"

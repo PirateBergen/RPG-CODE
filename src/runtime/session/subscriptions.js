@@ -44,7 +44,7 @@ db.ref("combat/hits").on("value", snap => {
     if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
     return
   }
-  const hits = Object.values(data).sort((a, b) => (b.time || 0) - (a.time || 0)).slice(0, 6)
+  const hits = Object.values(data).reverse().sort((a, b) => (b.time || 0) - (a.time || 0)).slice(0, 30)
   window.__combatDamageLog = hits
   if (typeof renderCombatStatusPanel === "function") renderCombatStatusPanel()
 })

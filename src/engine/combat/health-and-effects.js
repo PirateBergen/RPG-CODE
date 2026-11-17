@@ -17,7 +17,7 @@ function combatHeal(root, request, from, id, amount, resurrect = false) {
   const before = combatInt(c.hp), max = Math.max(before,combatFriendlyMaxHP(root,id))
   const adjusted=Math.max(0,combatInt(resurrect&&before<=0?max:amount))
   c.hp = Math.min(max,before+adjusted)
-  combatRecord(root, request, from, id, c.hp - before, "heal", from + " → " + combatFriendlyName(id).toUpperCase() + " : +" + (c.hp - before) + " PV")
+  combatRecord(root, request, from, id, c.hp - before, "heal", from + " → " + combatFriendlyName(id).toUpperCase() + " : +" + (c.hp - before) + " PV ("+before+" → "+c.hp+" / "+max+")")
   return c.hp - before
 }
 
@@ -33,7 +33,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
     }
     target.hp=0;target.defeatedByThor=true
   }else target.hp = Math.max(0, before - Math.max(0,combatInt(gmIncomingDamage(root,slot,["POISON","SAIGNEMENT"].includes(from)?amount:gmOutgoingDamage(root,request.kind==="hero"&&request.payload?.attack==="Le Bibi"?"bibi":request.actor,amount)))))
-  combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV")
+  combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV ("+before+" → "+target.hp+" / "+target.maxHP+")"+(target.hp<=0?" — KO":""))
   krakenAfterDamage(root,request,slot,before-target.hp)
   return before - target.hp
 }

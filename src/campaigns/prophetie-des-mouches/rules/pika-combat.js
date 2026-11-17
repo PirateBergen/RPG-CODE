@@ -58,6 +58,7 @@ function resolvePikaHeroAction(root,request,attack,dice) {
     result.amount=combatDamage(root,request,"PIKA — "+attack.name,slot,Math.max(0,damage))
     result.message=kind==="cancan"?result.kicks+" coup(s) de pied — "+result.amount+" dégâts":kind==="endikaki"?"Endikaki explose — "+result.amount+" dégâts":"Ce rire est tellement bizarre que l’ennemi en reste sans voix — "+result.amount+" dégâts"
   }
+  if(crit)result.explanation=kind==="cancan"?"Critique : quatre coups de pied.":kind==="laugh"?(result.bounceTarget?"Critique : ricochet sur un second ennemi, "+result.bounceAmount+" PV perdus.":"Critique : dégâts multipliés par 1,5 faute de seconde cible."):kind==="hypnosis"?"Critique : hypnose pendant deux tours complets.":"Critique : dégâts multipliés par "+(calibrated?1.6:2)+" avant les autres bonus et protections."
   nextCombatTurn(root,request);return result
 }
 function presentPikaAttack(result) {

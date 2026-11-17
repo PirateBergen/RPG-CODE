@@ -37,8 +37,9 @@ function resolveHeroCombatAction(root, request, dice) {
   if (heal) {
     if (![...COMBAT_CHARACTERS,...(c.eloSummon?.active?["eloSummon"]:[])].includes(payload.target)) throw new Error("Choisissez un héros à soigner")
     const amount = combatHeal(root, request, actor.toUpperCase(), payload.target, fail ? Math.max(4, Math.round(power * 0.45)) : crit ? power * (c.balanceVersion===3?1.6:2) : power)
+    const explanation=crit?"Critique : soin multiplié par "+(c.balanceVersion===3?1.6:2)+" avant la limite des PV maximum.":fail?"Échec critique : soin réduit.":""
     nextCombatTurn(root, request)
-    return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, mode: "heal", special, target: payload.target, targetName: combatFriendlyName(payload.target).toUpperCase() }
+    return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, explanation, mode: "heal", special, target: payload.target, targetName: combatFriendlyName(payload.target).toUpperCase() }
   }
   let damage = fail ? 0 : power * (crit ? (c.balanceVersion===3?1.6:2) : 1), groupHeal = 0
   if(special&&c.balanceVersion===3){damage=calibratedSpecialDamage(actor,power,crit,fail);if(actor==="elo")groupHeal=fail?Math.round(calibratedHealth(data.lvl)*.025):Math.round(calibratedHealth(data.lvl)*.08*(crit?1.6:1))}
@@ -76,7 +77,19 @@ function resolveHeroCombatAction(root, request, dice) {
   let groupHealAmount=0
   if (groupHeal > 0) [...COMBAT_CHARACTERS,...(c.eloSummon?.active?["eloSummon"]:[])].filter(id=>combatFriendlyTarget(root,id)?.hp>0).forEach(id=>{groupHealAmount+=combatHeal(root,request,"ELO",id,groupHeal)})
   if (special) { c.playerSpecials ||= {}; c.playerSpecials[actor] = true }
+  const consequences=[]
+  if(crit){
+    consequences.push("Critique : dégâts multipliés par "+(c.balanceVersion===3?1.6:2)+" avant les autres bonus, protections et la limite des PV restants.")
+    if(attack.name==="Je vais te raconter une histoire")consequences.push("Poison appliqué : "+mob.playerPoison.damage+" PV à chaque fin de round pendant "+mob.playerPoison.turns+" rounds.")
+    if(attack.name==="I know Frank (si arc)")consequences.push("Saignement appliqué : "+mob.playerBleed.damage+" PV à chaque fin de round pendant "+mob.playerBleed.turns+" rounds.")
+    if(attack.name==="Le Bibi")consequences.push("Rage : +"+mob.bibiRage.damage+" dégâts aux attaques alliées sur cette cible pendant 3 rounds.")
+    if(attack.name==="Petite merde")consequences.push("Attaques ennemies : −1 dégât pendant 2 rounds.")
+    if(attack.name==="Spider Sense")consequences.push("Butin de victoire amélioré.")
+  }
+  if(fail)consequences.push("Échec critique : aucun dégât de cette attaque.")
+  if(attack.name==="Je suis jet laguée"&&!fail)consequences.push("John Pork invoqué : "+c.eloSummon.hp+" PV, protège contre les attaques à cible unique pendant 3 rounds."+(crit?" Frénésie critique : ses bonus D4 sont doublés et touchent tous les ennemis lors des prochaines attaques d’Elo.":""))
+  const explanation=consequences.join(" ")
   nextCombatTurn(root, request)
-  return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, groupHealAmount, mode: "damage", special, target: slot, targetName: heroDisplayName(mob.name).toUpperCase(),...(attack.name==="Je suis jet laguée"&&!fail?{message:"John Pork arrive : "+amount+" dégâts. Il protège le groupe pendant 3 rounds."}:{}) }
+  return { actor, attack: attack.name, roll,rollTotal:adjusted.total,luckBonus:adjusted.bonus, dice: max, crit, fail, amount, groupHealAmount, explanation, mode: "damage", special, target: slot, targetName: heroDisplayName(mob.name).toUpperCase(),...(attack.name==="Je suis jet laguée"&&!fail?{message:"John Pork arrive : "+amount+" dégâts. Il protège le groupe pendant 3 rounds."}:{}) }
 }
 

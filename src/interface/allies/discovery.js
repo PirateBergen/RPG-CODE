@@ -1,6 +1,7 @@
 "use strict"
 
 const ALLY_DISCOVERY_MESSAGES={
+ nidhogg:"Nidhogg vous accorde le pouvoir de sa morsure. Même les racines des rois peuvent céder.",
  hel:"Hel vous accorde un sursis. Votre pacte vous lie désormais à la souveraine des morts.",
  gardienne:"La Gardienne veille désormais sur vous. Dans vos combats les plus difficiles, son souffle pourra vous rendre espoir.",
  melenchon:"Le général Mélenchon engage ses troupes à vos côtés. Lors de vos combats les plus difficiles, l’Oregon III pourra vous apporter son appui aérien.",
@@ -19,7 +20,7 @@ function syncAllyDiscoveries(){
  const showing=document.getElementById("allyDiscoveryAnnouncement")
  if(showing&&!data[showing.dataset.ally]){clearTimeout(allyDiscoveryTimer);allyDiscoveryTimer=null;showing.remove()}
  if(previous&&gameStarted&&!window.__sessionBusy&&["GAME","COMBAT"].includes(gameState)){
-  for(const pnj of ALLY_PNJS)if(data[pnj.id]&&!previous[pnj.id]&&Math.abs(Date.now()-Number(data[pnj.id].time))<30000)allyDiscoveryQueue.push(pnj)
+  for(const pnj of ALLY_PNJS)if(data[pnj.id]&&!data[pnj.id].duoAnnouncement&&!previous[pnj.id]&&Math.abs(Date.now()-Number(data[pnj.id].time))<30000)allyDiscoveryQueue.push(pnj)
   playNextAllyDiscovery()
  }
  if(typeof updateThuumButton==="function")updateThuumButton()
@@ -61,14 +62,14 @@ async function unlockAllyDiscovery(id){
   const uid=window.__authUid,revision=persistenceRevision||"initial",time=Date.now()
   const result=await reliableRootTransaction(root=>{
    if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||root.game?.allyDiscoveries?.[id])return undefined
-   root.game||={};root.game.allyDiscoveries||={};root.game.allyDiscoveries[id]={time};if(root.game.allyBreaks)delete root.game.allyBreaks[id];return root
+   root.game||={};root.game.allyDiscoveries||={};root.game.allyDiscoveries[id]={time};if(root.game.allyBreaks)delete root.game.allyBreaks[id];revealHelNidhoggAlliance(root,time);return root
   })
   if(!result.committed)throw Error("Allié déjà découvert ou partie modifiée.")
   return true
  }catch(error){showNotification(error.message);return false}
 }
 function renderDiscoveredAllies(panel){
- for(const pnj of discoveredAllies()){
+ for(const pnj of [...discoveredAllies(),...(helNidhoggAvailability(currentCombatAllyContext()).visible?[HEL_NIDHOGG_DUO]:[])]){
   const card=document.createElement("section"),image=document.createElement("img"),title=document.createElement("h3"),state=document.createElement("p"),list=document.createElement("ul")
   card.className="discoveredAlly";image.src="images/"+pnj.image;image.alt="";title.textContent=pnj.name;state.textContent="Sur autorisation du MJ : pion hors combat, pouvoir contre les world boss."
   for(const action of pnj.actions){const item=document.createElement("li");item.textContent=action.label+" : "+(typeof allyActionDescription==="function"?allyActionDescription(pnj,action):action.desc);list.appendChild(item)}

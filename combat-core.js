@@ -121,7 +121,7 @@ function finalizedInitiative(state) {
 function recordConfirmedCombatAction(root,request,result){
   root.game ||= {}; root.game.sessionLog ||= {}
   const label=id=>heroDisplayName(root.combat?.[id]?.name||({greg:"Greg",ju:"Pika",elo:"Elo",bibi:"Bibi"})[id]||id||"MJ")
-  const source=result.pnjId?ALLY_PNJS.find(p=>p.id===result.pnjId)?.name||label(request.actor):label(result.actor||request.actor)
+  const source=result.pnjId?combatAllyDefinition(result.pnjId)?.name||label(request.actor):label(result.actor||request.actor)
   const effects=Object.entries(root.combat?.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,h])=>h.detail?String(h.detail):!["dmg","mob","manual","heal"].includes(h.type)?String(h.detail||"Effet appliqué"):label(h.from)+" → "+label(h.to)+" : "+(h.type==="heal"?"+":h.type==="buff"||h.type==="malus"?"effet ":"−")+h.amount+(h.type==="buff"||h.type==="malus"?"":" PV"))
   const text=[source,(result.mode==="arbitrated"?result.message:result.attack||result.message)||({pass:"Tour passé",skip:"Acteur KO : tour passé",manual:"Ajustement MJ",thuum:"Cri"})[result.mode]||"Action",result.roll!=null?"D"+(result.dice||"?")+" · dé : "+result.roll+(result.luckBonus?" + "+result.luckBonus+" Chance = "+result.rollTotal:"")+(result.controlBonus?" + "+result.controlBonus+" Charme (contrôle)":"")+(result.crit?" (critique)":result.fail?" (échec critique)":""):"",...effects,...(!effects.length&&result.message&&result.attack&&result.mode!=="arbitrated"?[result.message]:[])].filter(Boolean).join(" · ")
   const fullText=[text,result.explanation,result.message&&result.message!==result.attack&&!text.includes(result.message)?result.message:""].filter(Boolean).join(" · ").slice(0,6000)
@@ -166,6 +166,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
   amount=krakenIncomingDamage(root,request,from,slot,amount)
+  if(!options.ignoreNidhoggWound)amount=nidhoggIncomingDamage(root,slot,amount)
   if(isJormungandr(target)){
     const origin=root.game?.combatState?.returnMap||root.game?.map
     if(!options.thorMjolnir||!isForchurMap(origin)||Math.max(0,combatInt(before))<=0){
@@ -198,6 +199,7 @@ function tickCombatRound(root, request) {
       const effect = mob[key]
       if (effect?.turns > 0) combatDamage(root, request, key === "playerPoison" ? "POISON" : "SAIGNEMENT", slot, effect.damage || 1)
     })
+    if(mob.nidhoggWound?.expiresAfterRound<=(root.combat.turnState?.round||1))delete mob.nidhoggWound
     ;["playerPoison", "playerBleed", "bibiRage", "yuAggro", "attackMalus"].forEach(key => {
       if (mob[key]?.turns > 0 && --mob[key].turns <= 0) delete mob[key]
     })
@@ -400,8 +402,11 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (mob.malus?.source === "La Sorcière") damage = Math.round(damage * combatWitchDamageFactor(root,mob))
   damage=gmOutgoingDamage(root,slot,damage)
   if(mob.balrogSwordWeaken){damage=Math.round(damage*(1-mob.balrogSwordWeaken));delete mob.balrogSwordWeaken}
+  const duoWeakened=!!mob.helDuoWeakened
+  if(duoWeakened){damage=Math.round(damage*.5);delete mob.helDuoWeakened}
   let applied = 0
   const consequences=[]
+  if(duoWeakened)consequences.push("Jugement de Hel et Nidhogg : dégâts de cette attaque réduits de 50 %. L’effet est consommé.")
   if(specialRoll)consequences.push("D20 de sélection de l’attaque : "+specialRoll+" (ce dé ne multiplie pas les dégâts).")
   targets.forEach(id => {
     const victim=combatFriendlyTarget(root,id),before = combatInt(victim.hp)
@@ -433,12 +438,13 @@ function resolveEnemyCombatAction(root, request, dice) {
 function resolveAllyCombatAction(root, request, dice) {
   if(!combatHasWorldBoss(root))throw Error("Les invocations sont réservées aux combats de world boss")
   requireCombatTurn(root, request, request.actor)
-  const payload = request.payload || {}, pnj = ALLY_PNJS.find(p => p.id === payload.pnjId), action = pnj?.actions.find(a => a.id === payload.actionId)
+  const payload = request.payload || {}, pnj = combatAllyDefinition(payload.pnjId), action = pnj?.actions.find(a => a.id === payload.actionId)
   if (!pnj || !action) throw new Error("Action alliée inconnue")
   if(root.game?.allyBreaks?.[pnj.id])throw Error("Alliance rompue : ce soutien est indisponible")
   if(pnj.id==="hel"&&!root.game?.allyDiscoveries?.hel)throw Error("Le MJ doit débloquer l’alliance avec Hel")
   if (root.combat.usedAllies?.[action.id]) throw new Error("Cette intervention a déjà été utilisée")
   if (root.roles?.[request.uid] !== "gm" && (root.game.playerAllyAccess?.scope === "exploration" || root.game.playerAllyAccess?.actionId !== action.id || (root.game.playerAllyAccess.playerId&&root.game.playerAllyAccess.playerId!==request.actor) || (root.game.playerAllyAccess.combatId&&root.game.playerAllyAccess.combatId!==root.combat.id))) throw new Error("Le MJ doit autoriser cette intervention")
+  if(pnj.id==="nidhogg"||pnj.id===HEL_NIDHOGG_DUO.id)return resolveHelNidhoggCombatAction(root,request,pnj,action,dice)
   const enhanced=enhancedCombatCriticals(root.combat)
   if(enhanced&&(root.combat.allyRetryRounds?.[action.id]||0)>(root.combat.turnState?.round||1))throw Error("Thor reprend ses forces : nouvelle tentative au prochain round")
   if(enhanced){
@@ -805,4 +811,23 @@ function applyBossTactic(current,uid,combatId,revision,change,changeId){
   mob.krakenTacticsUsed[key]=true;message="Stratégie validée par le MJ — "+note.title+" : "+note.effect
  }else throw Error("Commande inconnue")
  root.combat.gmAdjustmentLog||={};root.combat.gmAdjustmentLog[changeId]={time:request.time,text:message};Object.keys(root.combat.gmAdjustmentLog).slice(0,-80).forEach(id=>delete root.combat.gmAdjustmentLog[id]);recordConfirmedCombatAction(root,request,{mode:"control",message});return root
+}
+function resolveHelNidhoggCombatAction(root,request,pnj,action,dice){
+ const c=root.combat,payload=request.payload||{},duo=pnj.id===HEL_NIDHOGG_DUO.id
+ const slot=payload.target||(duo?helNidhoggAvailability(root).kingSlots[0]:livingMobs(c)[0])
+ if(duo){const state=helNidhoggAvailability(root,slot);if(!state.allowed)throw Error(state.reason)}
+ else if(!root.game?.allyDiscoveries?.nidhogg||root.game?.allyBreaks?.nidhogg)throw Error("Le MJ doit débloquer l’alliance avec Nidhogg")
+ if(!livingMobs(c).includes(slot))throw Error("Choisissez un ennemi vivant")
+ const roll=dice(20),crit=roll===20,fail=roll===1,mob=c[slot],limit=Math.floor(mob.maxHP*(duo?(crit?.30:.25):(crit?.50:.40)))
+ let amount=0,explanation=""
+ if(!fail){
+  const power=duo?limit:c.balanceVersion===3?calibratedAllyDamage(pnj,action,roll,crit,false,mob.partyLevel||c.mob.partyLevel,2):Math.round((action.dmgBase+roll*action.dmgBonus)*(crit?2:1))
+  amount=combatDamage(root,request,pnj.name,slot,Math.min(power,limit),"dmg",{damageCap:limit,ignoreNidhoggWound:duo})
+  if(duo){if(mob.hp>0)mob.helDuoWeakened=true;explanation=(crit?"Critique : base de 30 %":"Base de 25 %")+" des PV maximum du Roi, sans multiplication supplémentaire, protections conservées. Sa prochaine attaque inflige 50 % de dégâts en moins, spéciale comprise."}
+  else if(amount>0&&mob.hp>0){mob.nidhoggWound={percent:crit?25:15,expiresAfterRound:(c.turnState.round||1)+1};explanation="Morsure des racines : dégâts reçus +"+(crit?25:15)+" % jusqu’à la fin du prochain round ; non cumulable avec elle-même."+(crit?" Critique : dégâts ×2 avant protections et plafond de 50 % des PV maximum.":"")}
+ }else explanation="Échec critique : aucun dégât ni effet. "+(duo?"Les interventions de Hel et Nidhogg":"L’intervention de Nidhogg")+" et l’action du héros sont consommées."
+ c.usedAllies||={};for(const id of duo?["hel_reprieve","nidhogg_bite","hel_nidhogg_judgment"]:[action.id])c.usedAllies[id]=true
+ delete root.game.playerAllyAccess
+ nextCombatTurn(root,request)
+ return {actor:request.actor,pnjId:pnj.id,actionId:action.id,attack:action.label,target:slot,targetName:heroDisplayName(mob.name),roll,dice:20,crit,fail,amount,mode:"ally",duo,interventionFailed:fail,explanation}
 }

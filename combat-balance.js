@@ -69,7 +69,7 @@ function calibratedAttackDescription(attack){
  return effects[attack.name]||attack.effect
 }
 function allyActionDescription(pnj,action,combat=window.__combatSnapshot){
- if(pnj.id==='hel')return action.desc
+ if(['hel','nidhogg',HEL_NIDHOGG_DUO.id].includes(pnj.id))return action.desc
  if(combat&&!calibratedCombat(combat))return action.desc
  if(enhancedCombatCriticals(combat)){
   const rolls=' Critique : '+(action.critMin||action.dice)+(action.critMin&&action.critMin<action.dice?'–'+action.dice:'')+' naturel.'+(action.id==='thor_mjolnir'?' 1 naturel : intervention ratée ; action consommée, utilisation aussi consommée hors Jörmungandr.':' 1 naturel : intervention ratée ; utilisation et action consommées.')

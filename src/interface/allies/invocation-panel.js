@@ -27,10 +27,11 @@ function openAllyPNJPanel() {
 
   db.ref("combat/usedAllies").once("value", snap => {
     const used = snap.val() || {}
-    ALLY_PNJS.forEach(pnj => {
-      const block = document.createElement("div"); block.style.cssText = "margin-bottom:14px;border-bottom:1px solid rgba(30,90,102,0.15);padding-bottom:12px;"
+    combatAllyOptions().forEach(pnj => {
+      const block = document.createElement("div");block.dataset.ally=pnj.id; block.style.cssText = "margin-bottom:14px;border-bottom:1px solid rgba(30,90,102,0.15);padding-bottom:12px;"
       const header = document.createElement("div"); header.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:8px;"
       const img = document.createElement("img"); img.src = "images/"+pnj.image; img.style.cssText = `width:40px;height:40px;border-radius:50%;border:2px solid ${pnj.color};object-fit:contain;box-shadow:0 0 10px ${pnj.color}44;`; img.onerror=()=>img.style.opacity="0.3"
+      if(pnj.id===HEL_NIDHOGG_DUO.id){const dragon=document.createElement("img");dragon.src="images/nhiddog.png";dragon.alt="Nidhogg";dragon.style.cssText=img.style.cssText;header.appendChild(dragon)}
       const info = document.createElement("div")
       const infoName = document.createElement("div")
       infoName.style.cssText = `font-size:14px;color:${pnj.color};letter-spacing:2px;text-shadow:0 0 8px ${pnj.color}88;`
@@ -43,8 +44,8 @@ function openAllyPNJPanel() {
       header.appendChild(img); header.appendChild(info); block.appendChild(header)
 
       pnj.actions.forEach(action => {
-        const allianceBroken=!!window.__explorationState?.allyBreaks?.[pnj.id],lockedHel=pnj.id==="hel"&&!window.__explorationState?.allyDiscoveries?.hel
-        const isUsed = !!used[action.id]||allianceBroken||lockedHel
+        const allianceBroken=!!window.__explorationState?.allyBreaks?.[pnj.id],lockedHel=["hel","nidhogg"].includes(pnj.id)&&!window.__explorationState?.allyDiscoveries?.[pnj.id],duoState=pnj.id===HEL_NIDHOGG_DUO.id?helNidhoggAvailability(currentCombatAllyContext()):null
+        const isUsed = !!used[action.id]||allianceBroken||lockedHel||!!duoState&&!duoState.allowed
         const typeColors = { damage:"#ff7777", heal:"#77ff99", malus:"#ffaa44", buff:"#88aaff" }
         const typeLabels = { damage:"ATQ", heal:"SOIN", malus:"MALUS", buff:"BUFF" }
         const btn = document.createElement("div")
@@ -66,11 +67,12 @@ function openAllyPNJPanel() {
         const descEl = document.createElement("div")
         descEl.style.cssText = "font-size:10px;color:#5a7a8a;margin-top:2px;"
         descEl.innerText = typeof allyActionDescription==="function"?allyActionDescription(pnj,action):action.desc
+        if(duoState&&!duoState.allowed)descEl.innerText+=" — "+duoState.reason
         center.appendChild(labelEl)
         center.appendChild(descEl)
         const badge = document.createElement("span")
         badge.style.cssText = `font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(30,90,102,0.2);color:${typeColors[action.type]};letter-spacing:1px;`
-        badge.innerText = allianceBroken?"ALLIANCE ROMPUE":lockedHel?"À DÉBLOQUER":isUsed ? "UTILISÉ" : typeLabels[action.type]
+        badge.innerText = allianceBroken?"ALLIANCE ROMPUE":lockedHel?"À DÉBLOQUER":isUsed ? "INDISPONIBLE" : pnj.id===HEL_NIDHOGG_DUO.id?"DUO · ROI":typeLabels[action.type]
         btn.appendChild(iconEl)
         btn.appendChild(center)
         btn.appendChild(badge)

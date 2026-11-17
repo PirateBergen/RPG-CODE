@@ -34,8 +34,11 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (mob.malus?.source === "La Sorcière") damage = Math.round(damage * combatWitchDamageFactor(root,mob))
   damage=gmOutgoingDamage(root,slot,damage)
   if(mob.balrogSwordWeaken){damage=Math.round(damage*(1-mob.balrogSwordWeaken));delete mob.balrogSwordWeaken}
+  const duoWeakened=!!mob.helDuoWeakened
+  if(duoWeakened){damage=Math.round(damage*.5);delete mob.helDuoWeakened}
   let applied = 0
   const consequences=[]
+  if(duoWeakened)consequences.push("Jugement de Hel et Nidhogg : dégâts de cette attaque réduits de 50 %. L’effet est consommé.")
   if(specialRoll)consequences.push("D20 de sélection de l’attaque : "+specialRoll+" (ce dé ne multiplie pas les dégâts).")
   targets.forEach(id => {
     const victim=combatFriendlyTarget(root,id),before = combatInt(victim.hp)

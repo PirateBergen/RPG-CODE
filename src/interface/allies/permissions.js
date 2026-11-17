@@ -15,13 +15,14 @@ function openAllyGrantPicker(pnj,action){
  document.body.appendChild(overlay);box.querySelector("button").focus()
 }
 async function giveAllyActionToPlayer(pnj,action,playerId,expectedCombatId=window.__combatSnapshot?.id){
- if(!expectedCombatId)return giveExplorationAllyAccess(pnj,action,playerId)
+ if(!expectedCombatId){if(pnj.id==="hel_nidhogg_duo"){showNotification("Cette invocation est réservée au combat contre le Roi");return false}return giveExplorationAllyAccess(pnj,action,playerId)}
  try{
   requireActionAccess({gmOnly:true});requireExplorationConnection()
   if(!["greg","ju","elo"].includes(playerId))throw Error("Choisissez Greg, Pika ou Elo.")
   const combatId=expectedCombatId,uid=window.__authUid,revision=persistenceRevision||"initial"
   const result=await reliableRootTransaction(root=>{
    if(root?.roles?.[uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision||!combatId||root.combat?.id!==combatId||root.combat.phase!=="active"||!combatHasWorldBoss(root)||root.combat.usedAllies?.[action.id]||root.game?.allyBreaks?.[pnj.id]||!root.characters?.[playerId]||Number(root.characters[playerId].hp)<=0)return undefined
+   if(pnj.id==="hel_nidhogg_duo"&&!helNidhoggAvailability(root).allowed)return undefined
    root.game||={};root.game.playerAllyAccess={pnjName:pnj.name,actionId:action.id,playerId,combatId,time:Date.now()};return root
   })
   if(!result.committed)throw Error("Combat terminé, pouvoir déjà utilisé ou personnage KO.")

@@ -12,7 +12,7 @@ function applyHelPactCommand(current,uid,revision,command,id,time=Date.now()){
  if(command.kind==="revoke"){
   const ally=ALLY_PNJS.find(p=>p.id===command.allyId);if(!ally)throw Error("Allié inconnu")
   g.allyBreaks||={};g.allyBreaks[ally.id]={time};if(g.allyDiscoveries)delete g.allyDiscoveries[ally.id]
-  if(ally.actions.some(a=>a.id===g.playerAllyAccess?.actionId))delete g.playerAllyAccess
+  if(ally.actions.some(a=>a.id===g.playerAllyAccess?.actionId)||["hel","nidhogg"].includes(ally.id)&&g.playerAllyAccess?.actionId==="hel_nidhogg_judgment")delete g.playerAllyAccess
   for(const [key,token]of Object.entries(g.summonedAllies||{}))if(token.pnjId===ally.id)delete g.summonedAllies[key]
   text="Alliance rompue : "+ally.name+". Ses autorisations restantes sont annulées."
  }else if(["mark","lift"].includes(command.kind)){
@@ -26,6 +26,7 @@ function applyHelPactCommand(current,uid,revision,command,id,time=Date.now()){
   text=(command.kind==="mark"?"Courroux de Hel — Marque des parjures : PV maximum −15 %. ":"Courroux de Hel levé, sans soin gratuit. ")+targets.map(heroDisplayName).join(", ")
   if(command.kind==="mark")g.helWrathEvent={id,time,targets}
  }else throw Error("Commande inconnue")
+ if(command.kind==="lift")revealHelNidhoggAlliance(root,time)
  g.helCommands||={};g.helCommands[id]={time};Object.keys(g.helCommands).slice(0,-80).forEach(k=>delete g.helCommands[k])
  g.sessionLog||={};g.sessionLog[id]={text,time,display:new Date(time).toTimeString().slice(0,5),status:"applied"}
  return root

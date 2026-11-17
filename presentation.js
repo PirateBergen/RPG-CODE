@@ -44,7 +44,7 @@ function createPresentationScope(key,onCleanup=()=>{}){
 }
 
 function cancelMapPresentations(){
- for(const key of ["__cancelHelWrath","__cancelFlySwarm","__cancelFlyBlessing","__cancelPNJVoice","__cancelCharacterPowerSound","__cancelEndSession"])window[key]?.()
+ for(const key of ["__cancelHelNidhoggDuo","__cancelHelWrath","__cancelFlySwarm","__cancelFlyBlessing","__cancelPNJVoice","__cancelCharacterPowerSound","__cancelEndSession"])window[key]?.()
 }
 
 function playCharacterPowerSound(info,{fadeIn=false}={}){
@@ -109,11 +109,13 @@ function presentCombatResolution(action) {
   if (!action?.id || !action.result || action.time < (window.__pageLoadTime || 0)) return
   const result=action.result
   const isAlly=result.mode==="ally"
-  const duration=isAlly?14000:Number.isFinite(result.roll)?(result.special?9000:6000):result.mode==="enemy"?(result.special?7000:3400):2000
+  const duration=result.duo?18000:isAlly?14000:Number.isFinite(result.roll)?(result.special?9000:6000):result.mode==="enemy"?(result.special?7000:3400):2000
   if(action.nextTurn?.phase==="active"&&!result.skipTurnBanner)sharedVisualSeen.add("turn-"+action.combatId+"-"+(action.nextTurn.sequence||0))
   enqueueSharedVisual("combat-"+action.id,()=>{
-    if(isAlly){
-      const pnj=ALLY_PNJS.find(p=>p.id===result.pnjId),def=pnj?.actions.find(a=>a.id===result.actionId)
+    if(result.duo){
+      _showDiceAnimationNow("Hel et Nidhogg",20,result.roll,result.roll,{crit:result.crit,fail:result.fail,eventId:action.id});sharedVisualLater(()=>presentHelNidhoggDuo(result),2400)
+    }else if(isAlly){
+      const pnj=combatAllyDefinition(result.pnjId),def=pnj?.actions.find(a=>a.id===result.actionId)
       if(pnj&&def) _allyInvocationCinematic(pnj,result.thorVictory?{...def,dialogue:result.message}:def,result.target,()=>{
         _showDiceAnimationNow(pnj.name,result.dice,result.roll,undefined,{crit:result.crit,fail:result.fail,eventId:action.id})
         sharedVisualLater(()=>{if(!result.interventionFailed)_playAllyAnim(def.type,pnj.color,result.crit);if(result.explanation)showNotification(pnj.name+" — "+result.explanation)},2400)

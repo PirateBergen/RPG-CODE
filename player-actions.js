@@ -56,7 +56,7 @@ function hasThuumUseAccess(word) {
 }
 
 function hasPlayerAllyAccess() {
- const access=window.playerAllyAccessData;if(!access||!myToken||access.playerId&&access.playerId!==myToken.id)return false
+ const access=window.playerAllyAccessData;if(access?.actionId==="hel_nidhogg_judgment"&&!helNidhoggAvailability(currentCombatAllyContext()).allowed)return false;if(!access||!myToken||access.playerId&&access.playerId!==myToken.id)return false
  if(access.scope==="exploration")return gameStarted&&gameState==="GAME"&&!combatActive&&!!access.grantId
  return combatActive&&combatHasWorldBoss({combat:window.__combatSnapshot})&&(!access.combatId||access.combatId===window.__combatSnapshot?.id)
 }
@@ -199,7 +199,7 @@ function renderPlayerAllyEntry(panel) {
 
   let granted = null
   if (typeof ALLY_PNJS !== "undefined") {
-    ALLY_PNJS.forEach(pnj => {
+    combatAllyOptions().forEach(pnj => {
       pnj.actions.forEach(action => {
         if (action.id === access.actionId) granted = { pnj, action }
       })

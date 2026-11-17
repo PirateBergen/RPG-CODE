@@ -35,17 +35,20 @@ function openHelWrathMenu(){
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Fermer — Échap";cancel.onclick=close;box.appendChild(cancel);overlay.appendChild(box);dispose=helModal(overlay,close)
 }
 function presentHelWrath(event){
+ const alliance=event.kind==="duo-alliance"
  const overlay=document.createElement("div"),portrait=document.createElement("img"),box=document.createElement("section"),title=document.createElement("h2"),text=document.createElement("p"),effect=document.createElement("p"),close=document.createElement("button")
- overlay.id="helWrathScene";overlay.className="helWrathScene";overlay.setAttribute("aria-label","Hel — Marque des parjures")
+ overlay.id=alliance?"helAllianceScene":"helWrathScene";overlay.className="helWrathScene";overlay.setAttribute("aria-label",alliance?"Hel et Nidhogg — soutien commun":"Hel — Marque des parjures")
  let finishScene=()=>{}
  const scope=createPresentationScope("__cancelHelWrath",()=>{document.body.classList.remove("helWrathShake");finishScene()})
  scope.node(overlay);portrait.src="images/hel.png";portrait.alt="Hel";portrait.className="helWrathPortrait";title.textContent="HEL";text.textContent="Comment osez-vous ? Vous avez engagé votre parole devant les morts… puis cru pouvoir la reprendre. Gardez votre souffle, parjures. Désormais, une part de votre vie demeure ici, auprès de moi."
+ if(alliance)text.textContent="Vous avez gagné ma confiance… et celle de Nidhogg. Vous êtes dignes de recevoir notre aide face à votre défi final. Devant le Roi, appelez-nous ensemble."
  effect.textContent="Marque des parjures — PV maximum −15 % · "+event.targets.map(heroDisplayName).join(", ");close.type="button";close.textContent="Fermer — Échap";close.onclick=scope.cancel;box.className="helWrathSpeech";box.append(title,text,effect,close);overlay.append(portrait,box);finishScene=helModal(overlay,scope.cancel)
+ if(alliance)effect.textContent="Duo Hel et Nidhogg débloqué — uniquement contre le Roi, sur autorisation du MJ."
  const pow=document.getElementById("powSound");if(pow)scope.audio(pow);playSound("powSound",.84,true)
  const rumble=scope.audio(new Audio("audio/tremblement.mp3"));setManagedAudioBaseVolume(rumble,.7);rumble.play().catch(()=>{})
  const dialogue=text.textContent
  if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){let letters=0;text.textContent="";text.style.minHeight="6em";const typing=scope.every(()=>{letters+=3;text.textContent=dialogue.slice(0,letters);if(letters>=dialogue.length)clearInterval(typing)},25)}
- if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){document.body.classList.add("helWrathShake");scope.later(()=>document.body.classList.remove("helWrathShake"),650)}
+ if(!alliance&&!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){document.body.classList.add("helWrathShake");scope.later(()=>document.body.classList.remove("helWrathShake"),650)}
  scope.later(scope.cancel,10500)
 }
 function renderHelMarkOnSheet(){
@@ -55,6 +58,8 @@ function renderHelMarkOnSheet(){
 }
 document.addEventListener("DOMContentLoaded",()=>{
  let eventReady=false
+ let allianceReady=false;const allianceSeen=new Set()
+ db.ref("game/helNidhoggAnnouncement").on("value",snap=>{const event=snap.val();if(!allianceReady){allianceReady=true;if(event?.id)allianceSeen.add(event.id);return}if(!event?.id||allianceSeen.has(event.id))return;allianceSeen.add(event.id);if(window.__sessionBusy||!gameStarted||Date.now()-event.time>20000)return;enqueueSharedVisual("hel-alliance-"+event.id,()=>{if(typeof clearAllyDiscoveryAnimation==="function")clearAllyDiscoveryAnimation();presentHelWrath({...event,kind:"duo-alliance",targets:[]})},11000)})
  db.ref("game/helMarks").on("value",snap=>{window.__helMarks=snap.val()||{};if(typeof updateHPBar==="function")updateHPBar();if(typeof renderCombatStatusPanel==="function")renderCombatStatusPanel();for(const id of ["greg","ju","elo","bibi"])if(typeof updateTokenStats==="function"&&typeof gameStarted!=="undefined"&&gameStarted)updateTokenStats(id)})
  db.ref("game/helWrathEvent").on("value",snap=>{const event=snap.val();if(!eventReady){eventReady=true;if(event?.id)helSeenEvents.add(event.id);return}if(!event?.id||helSeenEvents.has(event.id))return;helSeenEvents.add(event.id);if(window.__sessionBusy||event.time<helViewStartedAt||Date.now()-event.time>20000||!gameStarted)return;enqueueSharedVisual("hel-"+event.id,()=>presentHelWrath(event),11000)})
 })

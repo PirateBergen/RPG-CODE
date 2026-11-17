@@ -34,7 +34,8 @@
       "engine/items/inventory-weight.js",
       "campaigns/prophetie-des-mouches/rules/balrog-sword.js",
       "engine/combat/damage-routing.js",
-      "campaigns/prophetie-des-mouches/rules/hel-pact.js"
+      "campaigns/prophetie-des-mouches/rules/hel-pact.js",
+      "campaigns/prophetie-des-mouches/rules/hel-nidhogg.js"
     ],
     "game.js": [
       "platform/firebase/bootstrap.js",
@@ -125,7 +126,8 @@
       "campaigns/prophetie-des-mouches/rules/hero-attack-lookup.js",
       "engine/combat/legacy-request-compatibility.js",
       "engine/combat/gm-statuses.js",
-      "campaigns/prophetie-des-mouches/rules/kraken-encounter.js"
+      "campaigns/prophetie-des-mouches/rules/kraken-encounter.js",
+      "campaigns/prophetie-des-mouches/rules/hel-nidhogg-combat.js"
     ],
     "combat.js": [
       "campaigns/prophetie-des-mouches/presentation/arena-selection.js",
@@ -297,10 +299,14 @@
       "interface/styles/22-reactions.css",
       "interface/styles/23-dice-choice.css",
       "interface/styles/24-boss-dossier.css",
-      "interface/styles/25-hel-pact.css"
+      "interface/styles/25-hel-pact.css",
+      "interface/styles/26-hel-nidhogg.css"
     ],
     "hel-pact.js": [
       "interface/allies/hel-pact.js"
+    ],
+    "hel-nidhogg.js": [
+      "presentation/allies/hel-nidhogg-duo.js"
     ]
   }
 }

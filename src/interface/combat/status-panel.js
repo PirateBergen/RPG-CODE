@@ -7,6 +7,8 @@ function getCombatStatusEntries(){
  for(const slot of COMBAT_MOBS){
   const mob=c[slot];if(!mob||mob.hp<=0)continue
   const effects=[],add=(title,text,meta,kind="warn")=>effects.push({kind,title,text,meta})
+  if(mob.nidhoggWound)add("Morsure des racines","Dégâts reçus +"+mob.nidhoggWound.percent+" %","Jusqu’à la fin du round "+mob.nidhoggWound.expiresAfterRound)
+  if(mob.helDuoWeakened)add("Jugement de la Couronne creuse","La prochaine attaque inflige 50 % de dégâts en moins","Spéciale comprise")
   for(const [key,title,fallback]of [["playerPoison","Poison",1],["playerBleed","Saignement",1]]){const e=mob[key];if(e?.turns>0)add(title,"−"+(e.damage||fallback)+" PV à chaque fin de round",e.turns+" round(s) restant(s)")}
   if(mob.attackMalus?.turns>0)add("Attaque réduite","−"+(mob.attackMalus.amount||1)+" dégâts sur ses attaques",mob.attackMalus.turns+" round(s) restant(s)")
   if(mob.bibiRage?.turns>0)add("Le Bibi","Les attaques alliées contre cet ennemi gagnent +"+(mob.bibiRage.damage||2)+" dégâts",mob.bibiRage.turns+" round(s) restant(s)","buff")

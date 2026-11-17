@@ -5,6 +5,7 @@ function tickCombatRound(root, request) {
       const effect = mob[key]
       if (effect?.turns > 0) combatDamage(root, request, key === "playerPoison" ? "POISON" : "SAIGNEMENT", slot, effect.damage || 1)
     })
+    if(mob.nidhoggWound?.expiresAfterRound<=(root.combat.turnState?.round||1))delete mob.nidhoggWound
     ;["playerPoison", "playerBleed", "bibiRage", "yuAggro", "attackMalus"].forEach(key => {
       if (mob[key]?.turns > 0 && --mob[key].turns <= 0) delete mob[key]
     })

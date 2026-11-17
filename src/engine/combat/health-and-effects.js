@@ -26,6 +26,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
   amount=krakenIncomingDamage(root,request,from,slot,amount)
+  if(!options.ignoreNidhoggWound)amount=nidhoggIncomingDamage(root,slot,amount)
   if(isJormungandr(target)){
     const origin=root.game?.combatState?.returnMap||root.game?.map
     if(!options.thorMjolnir||!isForchurMap(origin)||Math.max(0,combatInt(before))<=0){

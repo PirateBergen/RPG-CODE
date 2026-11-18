@@ -7,7 +7,11 @@ try{
   for(const [value,percent] of [[0,0],[max/2,50],[max,100],[max+100,100],[-10,0]]){hp.value=value;w.updateHPBar();assert.equal(parseFloat(bar.style.width),percent,hero+' '+value+'/'+max);assert.equal(hp.value,String(value),'L’affichage ne modifie pas les PV');assert.equal(bar.getAttribute('aria-valuemax'),String(max));}
  }
  w.currentSheetPlayer='greg';lvl.value=1;hp.value=60;w.updateHPBar();assert.equal(bar.style.width,'50%');assert.equal(bar.title,'60 / 120 PV');lvl.value=5;hp.value=80;w.updateHPBar();assert.equal(bar.style.width,'50%');assert.equal(bar.getAttribute('aria-valuetext'),'80 / 160 PV');
- for(const field of [hp,lvl])assert.equal(field.getAttribute('oninput'),'updateHPBar()');
+ assert.equal(hp.getAttribute('oninput'),'updateHPBar()');assert.equal(lvl.getAttribute('oninput'),'updateHPBar();updateWeightBar()');
  w.currentSheetPlayer='bibi';lvl.value=20;hp.value=55;w.updateHPBar();assert(parseFloat(bar.style.width)<50);assert.equal(bar.getAttribute('role'),'progressbar');
+ w.refreshSheetEffectiveStatsDisplay=()=>{};evaluate(extract('character-sheet.js','updateWeightBar'));w.currentSheetPlayer='elo';w.document.getElementById('inventaire').value='Pierres (110)';
+ for(const [level,capacity,overweight]of [[7,100,true],[8,120,false],[15,120,false],[16,140,false],[24,160,false]]){
+  lvl.value=level;evaluate(lvl.getAttribute('oninput'));assert.equal(w.document.getElementById('maxWeight').value,String(capacity));assert.equal(w.document.getElementById('elo').classList.contains('overweight'),overweight);assert(w.document.getElementById('inventoryWeightStatus').textContent.includes('110 / '+capacity));
+ }
  console.log('OK fiches : Greg 60/120 = 50 %, quatre personnages, niveaux, KO, maximum, dépassement et description accessible.');
 }finally{dom.window.close()}

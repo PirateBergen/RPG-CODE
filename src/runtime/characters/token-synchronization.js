@@ -3,8 +3,6 @@ function getMaxHP(playerId, level) {
   return helAdjustedMaxHP(playerId,{},s ? s.hp : 100)
 }
 
-function getMaxCarryWeight() { return 100 }
-
 function isCharacterOverweight(playerId, data = null) {
   const source = data || {}
   const inventoryText = String(source.inventaire || "")

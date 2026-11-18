@@ -1,5 +1,10 @@
 const allStats = ["force","charme","perspi","chance","defense"]
 
+function getMaxCarryWeight(playerId, level = 1) {
+  const value=Number(level),lvl=Number.isFinite(value)?Math.max(1,Math.floor(value)):1
+  return 100+20*Math.floor(lvl/8)
+}
+
 function _getLevelUpGains(lvl) {
   if      (lvl <= 2)  return { main:2, secCount:1, secAmt:1, hp:8  }
   else if (lvl <= 3)  return { main:2, secCount:2, secAmt:1, hp:10 }
@@ -35,7 +40,7 @@ function getPlayerStatsAtLevel(playerId, level, build = null) {
     }
   }
   stats.hp    = hp
-  stats.poids = 100
+  stats.poids = getMaxCarryWeight(playerId, level)
   return stats
 }
 

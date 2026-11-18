@@ -171,13 +171,13 @@ function toggleGMShortcutHelp() {
   inventoryHelp.setAttribute("aria-label", "Aide inventaire")
   inventoryHelp.style.cssText = "border-top:1px solid rgba(30,90,102,0.5);margin-top:8px;padding-top:10px;color:#c9dce0;font-family:Georgia,serif;font-size:14px;line-height:1.5;"
   const heading = document.createElement("strong")
-  heading.textContent = "Inventaire — capacité : 100"
+  heading.textContent = "Inventaire — capacité : 100 au départ, +20 tous les 8 niveaux"
   inventoryHelp.appendChild(heading)
   for (const text of [
     "Ouvre ta fiche avec I ou J. Le formulaire Objet · Quantité · Poids unitaire ajoute une ligne avec le bouton Ajouter ou la touche Entrée.",
     "Le bouton Ajouter une caractéristique affiche cinq boutons : Force, Charme, Perspicacité, Chance et Défense. Clique sur la caractéristique souhaitée, puis indique le nombre de points. Répète pour plusieurs bonus : ils s’ajoutent à ta fiche et restent fixes quand tu montes de niveau. Ils sont comptés une fois par ligne d’objet, quelle que soit la quantité. Retirer la ligne retire ses bonus. Actuellement, les bonus des objets présents dans cet inventaire sont actifs sans bouton Équiper.",
     "Tu peux aussi écrire un objet par ligne : Épée (3), Potion x3 (0,5), Lettre (0). Le poids entre parenthèses est celui d’un seul objet, sans unité. Exemple : 3 potions de 0,5 comptent pour 1,5.",
-    "Le total se calcule automatiquement sur 100. Au-delà, le personnage est surchargé et son déplacement manuel est bloqué. Si « Poids incomplet » apparaît, corrige les lignes signalées avant de te fier au total.",
+    "La capacité est de 100 aux niveaux 1 à 7, 120 au niveau 8, 140 au niveau 16, puis +20 tous les 8 niveaux. Au-delà de sa capacité, le personnage est surchargé et son déplacement manuel est bloqué. Si « Poids incomplet » apparaît, corrige les lignes signalées avant de te fier au total.",
     "Les raccourcis restent inactifs pendant que tu écris. Échap ferme la fiche ; l’inventaire reste privé."
   ]) {
     const paragraph = document.createElement("p")

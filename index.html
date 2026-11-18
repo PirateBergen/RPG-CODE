@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.json">
   <!-- ⬇ Changer ce numéro force le rechargement de TOUS les fichiers pour tous les joueurs -->
-  <script>window.GAME_V = "20261118.5"</script>
+  <script>window.GAME_V = "20261118.6"</script>
   <link rel="stylesheet" href="fonts/fonts.css">
   <title>La Prophétie des Mouches</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ctext y='50' font-size='48'%3E%F0%9F%8E%B2%3C/text%3E%3C/svg%3E">
@@ -182,7 +182,7 @@
   <div id="sheetContainer">
     <img loading="lazy" decoding="async" id="sheetImage" src="images/elosheet.jpg">
     <label class="compactSheetLabel" for="lvl">Niveau</label>
-    <input id="lvl"     class="sheetField" oninput="updateHPBar()" style="top:270px;left:420px;width:120px;height:60px;font-size:32px;font-weight:bold;text-align:center;border:2px solid black;background:white;">
+    <input id="lvl"     class="sheetField" oninput="updateHPBar();updateWeightBar()" style="top:270px;left:420px;width:120px;height:60px;font-size:32px;font-weight:bold;text-align:center;border:2px solid black;background:white;">
     <label class="compactSheetLabel" for="xp">Expérience</label>
     <input id="xp"      class="sheetField" style="top:400px;left:420px;width:140px;">
     <label class="compactSheetLabel playerOnly" for="force">Force</label>
@@ -200,7 +200,7 @@
     <div id="weightContainer" style="position:absolute;top:300px;left:60px;width:300px;">
       <input id="weight" readonly aria-label="Poids total calculé" class="sheetField" placeholder="Poids" style="top:0;left:0;width:80px;position:relative;">
       <span style="margin-left:10px;">/</span>
-      <input id="maxWeight" readonly aria-label="Capacité fixe : 100" class="sheetField" placeholder="Max"   style="top:0;left:0;width:80px;position:relative;margin-left:10px;">
+      <input id="maxWeight" readonly aria-label="Capacité d’inventaire selon le niveau" class="sheetField" placeholder="Max"   style="top:0;left:0;width:80px;position:relative;margin-left:10px;">
       <div id="weightBarContainer" style="margin-top:6px;width:220px;height:14px;background:#222;border-radius:6px;overflow:hidden;">
         <div id="weightBar" style="height:100%;width:0%;background:lime;"></div>
       </div>

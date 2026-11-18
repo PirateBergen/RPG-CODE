@@ -69,8 +69,8 @@ function openCharacterSheet(id = null) {
     window.__sheetInventoryModifiers = { force: 0, charme: 0, perspi: 0, chance: 0, defense: 0 }
     ;["lvl","xp","force","charme","perspi","chance","defense","hp"].forEach(k => { const el = document.getElementById(k); if (el) el.value = data[k] || 0 })
     if (!window._playerMaxPoids) window._playerMaxPoids = {}
-    window._playerMaxPoids[playerID] = 100
-    const mw = document.getElementById("maxWeight"); if (mw) mw.value = 100
+    window._playerMaxPoids[playerID] = getMaxCarryWeight(playerID, data.lvl)
+    const mw = document.getElementById("maxWeight"); if (mw) mw.value = window._playerMaxPoids[playerID]
     const invField = document.getElementById("inventaire")
     const notesField = document.getElementById("notes")
     if (invField) invField.value = data.inventaire || ""
@@ -224,7 +224,8 @@ function collectCharacterSheetPatch(){
  }
  if(pending.inventaire||inventory!==String(confirmed.inventaire||"")){data.inventaire=inventory;data.equipmentModifiers=mods;data.carriedWeight=Math.max(0,_parseInventoryWeight(inventory))}
  if(pending.notes||notes!==String(confirmed.notes||""))data.notes=notes
- if(confirmed.poids!==100)data.poids=100
+ const capacity=getMaxCarryWeight(currentSheetPlayer,data.lvl??confirmed.lvl)
+ if(confirmed.poids!==capacity)data.poids=capacity
  const gold=document.getElementById("goldInput");if(gold?.dataset.dirty==="true"){const value=Number(gold.value);if(!gold.value.trim()||!Number.isSafeInteger(value)||value<0||value>999999)throw Error("Or : indiquez un entier entre 0 et 999999");data.gold=value}
  return data
 }
@@ -281,10 +282,11 @@ function _parseInventoryWeight(text) { return parseInventoryWeight(text).total }
 function updateWeightBar() {
   if (!currentSheetPlayer) return
   const inventory = document.getElementById("inventaire"), result = parseInventoryWeight(inventory?.value || "")
-  const total = result.total, max = 100
+  const total = result.total, max = getMaxCarryWeight(currentSheetPlayer,document.getElementById("lvl")?.value||window.__sheetConfirmedCharacterData?.lvl)
   refreshSheetEffectiveStatsDisplay()
   document.getElementById("weight").value = total
   document.getElementById("maxWeight").value = max
+  document.getElementById("maxWeight").setAttribute("aria-label","Capacité d’inventaire : "+max)
   const bar = document.getElementById("weightBar"), pct = Math.max(0, Math.min(100, total / max * 100))
   bar.style.width = pct + "%"; bar.style.background = result.warnings.length ? "#e6a23c" : total > max ? "red" : pct >= 70 ? "orange" : "lime"
   const token = document.getElementById(currentSheetPlayer); if (token) token.classList.toggle("overweight", total > max)
@@ -293,7 +295,7 @@ function updateWeightBar() {
   if (status) {
     status.replaceChildren()
     const summary = document.createElement("strong")
-    summary.textContent = (result.warnings.length ? "Poids incomplet : " : "Poids total : ") + total + " / 100" + (total > max ? " — SURCHARGE : retirez " + Math.round((total - max)*1000)/1000 : "")
+    summary.textContent = (result.warnings.length ? "Poids incomplet : " : "Poids total : ") + total + " / " + max + (total > max ? " — SURCHARGE : retirez " + Math.round((total - max)*1000)/1000 : "")
     status.appendChild(summary)
     for (const warning of result.warnings) { const row = document.createElement("div"); row.textContent = "Ligne " + warning.line + " : " + warning.message; status.appendChild(row) }
     inventory?.setAttribute("aria-invalid", String(result.warnings.length > 0))

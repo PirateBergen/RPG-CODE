@@ -15,7 +15,8 @@ function resolveBalrogSwordRequest(root,request){
   if(payload.operation==="transfer"&&data.status!=="claimed")throw Error("L’épée n’a pas encore été récupérée")
   const target=root.characters?.[payload.holder];if(!target)throw Error("Inventaire introuvable")
   const base=clean(target.inventaire),weight=parseInventoryWeight(base);if(weight.warnings.length)throw Error("Corrigez les poids manquants ou invalides de cet inventaire avant le transfert")
-  if(weight.total+15>100)throw Error("Cet inventaire dépasse 100 avec le poids 15 de l’épée. Libérez de la place ou choisissez l’autre inventaire")
+  const capacity=getMaxCarryWeight(payload.holder,target.lvl)
+  if(weight.total+15>capacity)throw Error("Cet inventaire dépasse "+capacity+" avec le poids 15 de l’épée. Libérez de la place ou choisissez l’autre inventaire")
   for(const id of ["greg","bibi"])root.characters[id].inventaire=clean(root.characters[id].inventaire)
   target.inventaire=(base.trim()?base.trim()+"\n":"")+BALROG_SWORD_LINE
   data.status="claimed";data.holder=payload.holder;data.equipped=payload.holder==="greg";data.claimedBy="greg"

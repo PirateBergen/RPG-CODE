@@ -66,6 +66,7 @@ function bindCombatActionState(block,actor,attack,special=false,enemy=false) {
   block._refreshCombatAction()
 }
 function refreshCombatActionStates() {
+  if(typeof renderKingBattlefield==="function")renderKingBattlefield()
   if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(window.__combatSnapshot)
   refreshCombatHUDContext()
   if(typeof combatTargetRefresh==="function")combatTargetRefresh()
@@ -105,6 +106,7 @@ function refreshCombatHUDContext(){
  let rules=document.getElementById("combatHUDRules")
  if(c?.balanceVersion===3){if(!rules){rules=document.createElement("p");rules.id="combatHUDRules";info.appendChild(rules)}const raw=window.__publicCharacters?.[player]||{};rules.textContent=calibratedRuleSummary(getEffectiveCharacterData(player,raw));rules.hidden=false}else if(rules)rules.hidden=true
  if(typeof refreshKrakenAssistance==="function")refreshKrakenAssistance(document.getElementById("combatHUDAttacks"),player)
+ if(typeof refreshKingAssistance==="function")refreshKingAssistance(document.getElementById("combatHUDAttacks"),player)
  let summary=document.getElementById("combatHUDTurnSummary");if(!summary){summary=document.createElement("p");summary.id="combatHUDTurnSummary";summary.setAttribute("role","status");info.insertBefore(summary,document.getElementById("combatHUDAttacks"))}
  const current=state?.currentActorId,label=current==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(current)?combatEnemyLabel(current):heroDisplayName(current||"—")
  const pill=document.querySelector("#combatHUDMeta .combatHUDMetaPill--turn");if(pill)pill.textContent="Round "+(state?.round||1)+" · "+(state?.phase==="rolling"?"Initiative":label)

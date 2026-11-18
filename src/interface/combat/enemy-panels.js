@@ -44,27 +44,29 @@ function renderAllMobPanels(snapshot=null) {
 }
 
 function buildMobSubPanel(mobData, slot) {
+  const king=isKingEncounter(mobData),themed=king||isKrakenEncounter(mobData)
   const kraken=typeof isKrakenEncounter==="function"&&isKrakenEncounter(mobData)
   const panel = document.createElement("div"); panel.dataset.slot=slot; panel.style.cssText = "background:url('images/mobpanel.png') center/100% 100% no-repeat;padding:12px;filter:drop-shadow(0 12px 18px rgba(0,0,0,0.22));"
   const header = document.createElement("div"); header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"
   const titleWrap = document.createElement("div"); titleWrap.style.cssText = "display:flex;align-items:center;gap:8px;min-width:0;"
   const portrait = document.createElement("img"); portrait.src = "images/" + sanitizeAssetName((mobData.name || "gobelins") + ".png"); portrait.style.cssText = "width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));"; portrait.onerror = () => portrait.style.display = "none"; titleWrap.appendChild(portrait)
-  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=" · World boss · 2 actions"+(!kraken&&mobData.hp<=mobData.maxHP*.5?" · Furie +"+(mobData.balanceVersion===3?12:15)+" %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
+  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=(king?" · World boss · 1 action":" · World boss · 2 actions")+(!kraken&&!king&&mobData.hp<=mobData.maxHP*.5?" · Furie +"+(mobData.balanceVersion===3?12:15)+" %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
 
+  if(mobData.kingMinion)tEl.innerText+=mobData.kingRole==="garde"?" · Garde du Roi":" · Chasseur — vise les isolés"
   if(isJormungandr(mobData)){const note=document.createElement("div");note.textContent="Invulnérable";note.style.cssText="color:#9bd8ff;font:12px Georgia";titleWrap.appendChild(note)}
   if (isGM) {
-    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = kraken?"Replier les attaques":"—"; if(kraken)cBtn.className="krakenEnemyFold"
-    cBtn.onclick=()=>{ if(kraken&&typeof setKrakenEnemyPanelCollapsed==="function"){setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));return} const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
+    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = themed?"Replier les attaques":"—"; if(themed)cBtn.className="krakenEnemyFold"
+    cBtn.onclick=()=>{ if(themed&&typeof setKrakenEnemyPanelCollapsed==="function"){setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));return} const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
     const xBtn = document.createElement("button"); xBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(120,0,0,0.5);color:#ff8888;border:1px solid rgba(180,0,0,0.4);border-radius:3px;cursor:pointer;"; xBtn.innerText = "✕"; xBtn.onclick=()=>removeMobSlot(slot); if(!isJormungandr(mobData))header.appendChild(xBtn)
   }
-  if(kraken&&!isGM){const fold=document.createElement("button");fold.className="krakenEnemyFold";fold.textContent="Replier les attaques";fold.onclick=()=>setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));header.append(fold)}
+  if(themed&&!isGM){const fold=document.createElement("button");fold.className="krakenEnemyFold";fold.textContent="Replier les attaques";fold.onclick=()=>setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));header.append(fold)}
   panel.appendChild(header)
 
   const pct = Math.max(0,Math.min(100,((mobData.hp||0)/(mobData.maxHP||1))*100))
   const hpWrap = document.createElement("div"); hpWrap.style.cssText = "width:100%;height:6px;background:rgba(80,0,0,0.5);border-radius:3px;margin-bottom:8px;"
   const hpFill = document.createElement("div"); hpFill.id = "subPanelHPFill_"+slot; hpFill.classList.add("combatMobHpFill"); hpFill.dataset.health=pct>50?"healthy":pct>25?"wounded":"critical"; hpFill.style.width=pct+"%"; hpWrap.appendChild(hpFill); panel.appendChild(hpWrap)
 
-  const tier = mobData.tier||"weak", atks = kraken?krakenNormalAttacks(mobData):typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
+  const tier = mobData.tier||"weak", atks = king?kingNormalAttacks(mobData):kraken?krakenNormalAttacks(mobData):typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
   const getRange = (attack, lvl, mobTier) => {
     if (typeof getMobDamageRange === "function") return getMobDamageRange(attack, lvl, mobTier,mobData)
     const factor = 1 + Math.max(0, (lvl || 1) - 1) * 0.15
@@ -73,8 +75,8 @@ function buildMobSubPanel(mobData, slot) {
       max: Math.round((attack?.dmgMax || 0) * factor)
     }
   }
-  const specialAtk = kraken?krakenSpecialAttack(mobData):typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
-  const specialUsed = kraken?krakenSpecialUsed(mobData):!!mobData.specialUsed
+  const specialAtk = king?kingSpecialAttack(mobData):kraken?krakenSpecialAttack(mobData):typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
+  const specialUsed = king?kingSpecialUsed(mobData):kraken?krakenSpecialUsed(mobData):!!mobData.specialUsed
 
   if (isGM) {
     // Bouton aléatoire intelligent
@@ -247,7 +249,7 @@ function spawnExtraMobToken(mobData, slot) {
   const container=document.getElementById("combatTokens"); if(!container){ if(!mobData._retryCount) mobData._retryCount=0; if(++mobData._retryCount<10) setTimeout(()=>spawnExtraMobToken(mobData,slot),300); return }
   const existing=document.getElementById("mobToken_"+slot)
   if(existing){ if(existing._slotRef&&existing._slotRefCb) existing._slotRef.off("value",existing._slotRefCb); existing.remove() }
-  const tok=document.createElement("div"); tok.id="mobToken_"+slot; tok.className="token"
+  const tok=document.createElement("div"); tok.id="mobToken_"+slot; tok.className="token";tok.dataset.mobName=mobData.name
   const idx=slot==="mob2"?1:2, startX=Math.round((window.innerWidth-4*110)/2)
   tok.style.cssText=`position:absolute;width:70px;height:70px;left:${startX+(idx+4)*90}px;top:${Math.round(window.innerHeight*0.25)}px;z-index:200;display:flex;flex-direction:column;align-items:center;cursor:pointer;`
   const img=document.createElement("img"); img.style.cssText="width:60px;height:60px;object-fit:contain;border-radius:50%;border:2px solid #cc2200;box-shadow:0 0 10px rgba(200,0,0,0.5);"; img.src="images/"+mobData.name+".png"; img.onerror=()=>img.style.display="none"; tok.appendChild(img)

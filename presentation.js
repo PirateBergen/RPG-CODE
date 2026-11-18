@@ -44,7 +44,7 @@ function createPresentationScope(key,onCleanup=()=>{}){
 }
 
 function cancelMapPresentations(){
- for(const key of ["__cancelHelNidhoggDuo","__cancelHelWrath","__cancelFlySwarm","__cancelFlyBlessing","__cancelPNJVoice","__cancelCharacterPowerSound","__cancelEndSession"])window[key]?.()
+ for(const key of ["__cancelHelNidhoggDuo","__cancelKingScene","__cancelHelWrath","__cancelFlySwarm","__cancelFlyBlessing","__cancelPNJVoice","__cancelCharacterPowerSound","__cancelEndSession"])window[key]?.()
 }
 
 function playCharacterPowerSound(info,{fadeIn=false}={}){
@@ -109,10 +109,12 @@ function presentCombatResolution(action) {
   if (!action?.id || !action.result || action.time < (window.__pageLoadTime || 0)) return
   const result=action.result
   const isAlly=result.mode==="ally"
-  const duration=result.duo?18000:isAlly?14000:Number.isFinite(result.roll)?(result.special?9000:6000):result.mode==="enemy"?(result.special?7000:3400):2000
+  const duration=result.kingScene?(result.kingWarning||result.kingRelease?3600:result.kingScene==="odin"?8600:Number.isFinite(result.roll)&&result.mode!=="enemy"?9600:7100):result.duo?18000:isAlly?14000:Number.isFinite(result.roll)?(result.special?9000:6000):result.mode==="enemy"?(result.special?7000:3400):2000
   if(action.nextTurn?.phase==="active"&&!result.skipTurnBanner)sharedVisualSeen.add("turn-"+action.combatId+"-"+(action.nextTurn.sequence||0))
   enqueueSharedVisual("combat-"+action.id,()=>{
-    if(result.duo){
+    if(result.kingScene){
+      if(Number.isFinite(result.roll)&&result.mode!=="enemy"){_showDiceAnimationNow(result.actor,result.dice||12,result.rollTotal??result.roll,result.roll,{crit:result.crit,fail:result.fail,bonus:result.luckBonus||0,eventId:action.id});sharedVisualLater(()=>presentKingScene(result),2400)}else presentKingScene(result)
+    }else if(result.duo){
       _showDiceAnimationNow("Hel et Nidhogg",20,result.roll,result.roll,{crit:result.crit,fail:result.fail,eventId:action.id});sharedVisualLater(()=>presentHelNidhoggDuo(result),2400)
     }else if(isAlly){
       const pnj=combatAllyDefinition(result.pnjId),def=pnj?.actions.find(a=>a.id===result.actionId)
@@ -160,6 +162,7 @@ function showDefeat(){queueCombatOutcome("defeat")}
 
 function observeCombatPresentation(data) {
     Object.values(data.visualEvents||{}).sort((a,b)=>a.time-b.time).forEach(presentCombatResolution)
+    if(typeof observeKingScenes==="function")observeKingScenes(data)
     const ts=data.turnState
     const previousRolls=window.__seenInitiativeRolls?.[data.id]||{}
     window.__seenInitiativeRolls ||= {};window.__seenInitiativeRolls[data.id]={...(ts?.rolls||{})}

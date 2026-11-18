@@ -48,8 +48,8 @@ function calibratedCombatMob(name,tier,partyLevel,enemyCount=1){
 function getCalibratedMobDamageRange(attack,mob){
  const category=mob.balanceClass||getMobBalanceClass(mob.name,mob.tier),profile=CALIBRATED_ENCOUNTER[category],level=calibratedLevel(mob.partyLevel),health=mob.partyHpReference||calibratedHealth(level)
  const normals=getMobAttacksForMob(mob.name,mob.tier).filter(a=>!a.special&&a.effect!=='all'),average=normals.reduce((n,a)=>n+(a.dmgMin+a.dmgMax)/2,0)/Math.max(1,normals.length)||10,weight=Math.max(.8,Math.min(1.2,((Number(attack.dmgMin)+Number(attack.dmgMax))/2||average)/average))
- const levelFactor=Math.max(.4,Math.min(2.5,Math.pow(((Number(mob.lvl)||level)+8)/(level+profile.offset+8),.8))),fury=!isKrakenEncounter(mob)&&category==='world'&&mob.hp<=mob.maxHP*.5?1.12:1
- const factor=weight*levelFactor*krakenDamageFactor(attack,mob)*(mob.damageGroupFactor||1)*(attack.special?1.35:1)*(attack.effect==='all'?(category==='world'?.45:.60):1)*fury*(category==='world'?1+.12*(level-1)/(level+9):1)*(mob.name==='roi'?1.02:1)
+ const levelFactor=Math.max(.4,Math.min(2.5,Math.pow(((Number(mob.lvl)||level)+8)/(level+profile.offset+8),.8))),fury=!isKrakenEncounter(mob)&&!isKingEncounter(mob)&&category==='world'&&mob.hp<=mob.maxHP*.5?1.12:1
+ const factor=weight*levelFactor*krakenDamageFactor(attack,mob)*kingDamageFactor(attack,mob)*(mob.damageGroupFactor||1)*(attack.special?1.35:1)*(attack.effect==='all'?(category==='world'?.45:.60):1)*fury*(category==='world'?1+.12*(level-1)/(level+9):1)*(mob.name==='roi'?1.02:1)
  const min=Math.max(1,Math.round(health*profile.damage[0]*factor)),max=Math.max(min,Math.round(health*profile.damage[1]*factor));return {min,max}
 }
 function calibratedAllyDamage(pnj,action,roll,crit,fail,level,multiplier=1.6){return Math.round(calibratedPartyDamage(level)*({baldur:1.8,melenchon:2.2,odin:2.8,thor:3,freya:2.5}[pnj.id]||2)*(.6+.8*roll/action.dice)*(crit?multiplier:1)*(fail?.2:1))}

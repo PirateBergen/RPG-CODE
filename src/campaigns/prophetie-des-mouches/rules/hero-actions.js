@@ -2,6 +2,7 @@ function resolveHeroCombatAction(root, request, dice) {
   const actor = request.actor, payload = request.payload || {}, c = root.combat
   requireCombatTurn(root, request, actor)
   if(payload.support==="krakenRelease")return resolveKrakenRelease(root,request,dice)
+  if(payload.support==="kingStrategy")return resolveKingSupport(root,request,dice)
   const raw = root.characters[actor], data = combatCharacter(root, actor)
   const special = !!payload.special
   const attack = getCombatHeroAttack(actor,payload.attack,special)

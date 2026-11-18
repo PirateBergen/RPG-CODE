@@ -139,7 +139,7 @@ async function requestAllyCombatAction(pnj, action, targetId, panel) {
   finally { window.__playerAttackResolving = false }
 }
 
-function calculateCombatMob(mobName,tier,partyLevel,enemyCount=1,version=3){return version===3?initializeKrakenEncounter(calibratedCombatMob(mobName,tier,partyLevel,enemyCount)):balancedCombatMob(mobName,tier,partyLevel,enemyCount)}
+function calculateCombatMob(mobName,tier,partyLevel,enemyCount=1,version=3){return version===3?initializeKingEncounter(initializeKrakenEncounter(calibratedCombatMob(mobName,tier,partyLevel,enemyCount))):balancedCombatMob(mobName,tier,partyLevel,enemyCount)}
 
 async function launchReliableCombat(mainMob, forceTier, extraMobs) {
   if (!isGM || window.__authRole !== "gm" || combatStarting || window.__sessionBusy) return
@@ -171,6 +171,7 @@ async function launchReliableCombat(mainMob, forceTier, extraMobs) {
       root.combat.turnState = { phase: "rolling", round: 1, sequence: 0, currentIndex: 0, currentActorId: "", participants: combatParticipants(root), rolls: {}, order: [] }
       root.combat.turnState.initiativeBonuses=Object.fromEntries(root.combat.turnState.participants.map(p=>[p.id,p.type==="player"?calibratedInitiativeBonus(combatCharacter(root,p.id)):Math.min(3,Math.floor((root.combat[p.id].lvl-level)/2))]))
       root.game.combatState = { active: true, id, mainMob, tier, extraMobs: extraMobs.slice(0, 2), returnMap: root.game.map || currentMap || "taverne.jpg", returnTokens, returnAudio:root.game.mapAudio||null, time: now }
+      if(isKingEncounter(root.combat.mob))recordKingVisual(root,{id,time:now},"mob","phase-1",KING_PHASES[0].quote,{phase:1})
       for(const hero of COMBAT_HEROES)if(root.characters?.[hero]?.cursedEffect==="critOnly")root.characters[hero].cursedCombatId=id
       delete root.game.combatOutcome
       ;["storyImage", "storyImage2", "storyImage3", "highPNJName", "forchurFog"].forEach(key => delete root.game[key])
@@ -289,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         activeMobSlots[slot] = !!data[slot]
         const tokenId=slot==="mob"?"mobToken":"mobToken_"+slot
         let token=document.getElementById(tokenId)
-        if(slot!=="mob"&&data[slot]&&!token){spawnExtraMobToken(data[slot],slot);token=document.getElementById(tokenId)}
+        if(slot!=="mob"&&data[slot]&&(!token||token.dataset.mobName!==data[slot].name)){spawnExtraMobToken(data[slot],slot);token=document.getElementById(tokenId)}
         if(token && data[slot]){
           token.style.display=combatInt(data[slot].hp)>0?"flex":"none"
           const position=slot==="mob"?null:data[slot]

@@ -70,7 +70,7 @@ function hasActiveRuneChallenge() {
 function getAvailablePlayerPowerTabs() {
   const tabs = []
   if(typeof getGrantedDocuments==="function"&&getGrantedDocuments(getLocalPlayerId()).length)tabs.push("documents")
-  if (hasPlayerAllyAccess() || (typeof discoveredAllies==="function"&&discoveredAllies().length)) tabs.push("ally")
+  if (hasPlayerAllyAccess() || (typeof discoveredAllies==="function"&&discoveredAllies().length) || (typeof hasKingOdinCall==="function"&&hasKingOdinCall())) tabs.push("ally")
   if (getUnlockedThuumWords().length) tabs.push("thuum")
   if (hasActiveRuneChallenge()) tabs.push("runes")
   return tabs
@@ -194,6 +194,7 @@ function renderPlayerThuumEntries(panel) {
 }
 
 function renderPlayerAllyEntry(panel) {
+  if(typeof appendKingOdinCall==="function")appendKingOdinCall(panel,getLocalPlayerId())
   const access = window.playerAllyAccessData
   if(typeof renderDiscoveredAllies==="function")renderDiscoveredAllies(panel)
   if (!access || !hasPlayerAllyAccess()) return

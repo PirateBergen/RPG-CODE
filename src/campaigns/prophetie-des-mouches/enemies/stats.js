@@ -19,6 +19,7 @@ const mobStats = {
   kraken:            { tier:"boss",   baseHP:390 },
   nhiddog:           { tier:"boss",   baseHP:330 },
   roi:               { tier:"boss",   baseHP:450 },
+  chnaw:             { tier:"high",   baseHP:90  },
   tavernier:         { tier:"weak",   baseHP:20  },
   soulard:           { tier:"weak",   baseHP:16  },
   serveuse:          { tier:"weak",   baseHP:18  },

@@ -990,27 +990,29 @@ function renderAllMobPanels(snapshot=null) {
 }
 
 function buildMobSubPanel(mobData, slot) {
+  const king=isKingEncounter(mobData),themed=king||isKrakenEncounter(mobData)
   const kraken=typeof isKrakenEncounter==="function"&&isKrakenEncounter(mobData)
   const panel = document.createElement("div"); panel.dataset.slot=slot; panel.style.cssText = "background:url('images/mobpanel.png') center/100% 100% no-repeat;padding:12px;filter:drop-shadow(0 12px 18px rgba(0,0,0,0.22));"
   const header = document.createElement("div"); header.style.cssText = "display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;"
   const titleWrap = document.createElement("div"); titleWrap.style.cssText = "display:flex;align-items:center;gap:8px;min-width:0;"
   const portrait = document.createElement("img"); portrait.src = "images/" + sanitizeAssetName((mobData.name || "gobelins") + ".png"); portrait.style.cssText = "width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.45));"; portrait.onerror = () => portrait.style.display = "none"; titleWrap.appendChild(portrait)
-  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=" · World boss · 2 actions"+(!kraken&&mobData.hp<=mobData.maxHP*.5?" · Furie +"+(mobData.balanceVersion===3?12:15)+" %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
+  const tEl = document.createElement("div"); tEl.style.cssText = "font-family:Cinzel,serif;font-size:12px;color:#ffb6a0;font-weight:bold;letter-spacing:1px;"; tEl.innerText = heroDisplayName(mobData.name||"MOB").toUpperCase()+"  Niv."+(mobData.lvl||1); if(mobData.balanceClass==="world")tEl.innerText+=(king?" · World boss · 1 action":" · World boss · 2 actions")+(!kraken&&!king&&mobData.hp<=mobData.maxHP*.5?" · Furie +"+(mobData.balanceVersion===3?12:15)+" %":""); if(mobData.chargingSpecial)tEl.innerText+=" · ⚠ "+mobData.chargingSpecial.name+" dès le round "+mobData.chargingSpecial.readyRound; titleWrap.appendChild(tEl); header.appendChild(titleWrap)
 
+  if(mobData.kingMinion)tEl.innerText+=mobData.kingRole==="garde"?" · Garde du Roi":" · Chasseur — vise les isolés"
   if(isJormungandr(mobData)){const note=document.createElement("div");note.textContent="Invulnérable";note.style.cssText="color:#9bd8ff;font:12px Georgia";titleWrap.appendChild(note)}
   if (isGM) {
-    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = kraken?"Replier les attaques":"—"; if(kraken)cBtn.className="krakenEnemyFold"
-    cBtn.onclick=()=>{ if(kraken&&typeof setKrakenEnemyPanelCollapsed==="function"){setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));return} const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
+    const cBtn = document.createElement("button"); cBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(40,40,80,0.5);color:#8888ff;border:1px solid rgba(80,80,180,0.4);border-radius:3px;cursor:pointer;"; cBtn.innerText = themed?"Replier les attaques":"—"; if(themed)cBtn.className="krakenEnemyFold"
+    cBtn.onclick=()=>{ if(themed&&typeof setKrakenEnemyPanelCollapsed==="function"){setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));return} const p=panel.closest("#mobAttackPanel"); if(p) p.style.display="none"; const tg=document.getElementById("mobAttackToggle"); if(tg) tg.style.display="block" }; header.appendChild(cBtn)
     const xBtn = document.createElement("button"); xBtn.style.cssText = "padding:2px 8px;font-size:11px;background:rgba(120,0,0,0.5);color:#ff8888;border:1px solid rgba(180,0,0,0.4);border-radius:3px;cursor:pointer;"; xBtn.innerText = "✕"; xBtn.onclick=()=>removeMobSlot(slot); if(!isJormungandr(mobData))header.appendChild(xBtn)
   }
-  if(kraken&&!isGM){const fold=document.createElement("button");fold.className="krakenEnemyFold";fold.textContent="Replier les attaques";fold.onclick=()=>setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));header.append(fold)}
+  if(themed&&!isGM){const fold=document.createElement("button");fold.className="krakenEnemyFold";fold.textContent="Replier les attaques";fold.onclick=()=>setKrakenEnemyPanelCollapsed(!document.getElementById("mobAttackPanel")?.classList.contains("krakenEnemyCollapsed"));header.append(fold)}
   panel.appendChild(header)
 
   const pct = Math.max(0,Math.min(100,((mobData.hp||0)/(mobData.maxHP||1))*100))
   const hpWrap = document.createElement("div"); hpWrap.style.cssText = "width:100%;height:6px;background:rgba(80,0,0,0.5);border-radius:3px;margin-bottom:8px;"
   const hpFill = document.createElement("div"); hpFill.id = "subPanelHPFill_"+slot; hpFill.classList.add("combatMobHpFill"); hpFill.dataset.health=pct>50?"healthy":pct>25?"wounded":"critical"; hpFill.style.width=pct+"%"; hpWrap.appendChild(hpFill); panel.appendChild(hpWrap)
 
-  const tier = mobData.tier||"weak", atks = kraken?krakenNormalAttacks(mobData):typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
+  const tier = mobData.tier||"weak", atks = king?kingNormalAttacks(mobData):kraken?krakenNormalAttacks(mobData):typeof getMobAttacksForMob === "function" ? getMobAttacksForMob(mobData.name, tier) : (mobAttacks[tier]||mobAttacks.weak), mobLvl = mobData.lvl||1
   const getRange = (attack, lvl, mobTier) => {
     if (typeof getMobDamageRange === "function") return getMobDamageRange(attack, lvl, mobTier,mobData)
     const factor = 1 + Math.max(0, (lvl || 1) - 1) * 0.15
@@ -1019,8 +1021,8 @@ function buildMobSubPanel(mobData, slot) {
       max: Math.round((attack?.dmgMax || 0) * factor)
     }
   }
-  const specialAtk = kraken?krakenSpecialAttack(mobData):typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
-  const specialUsed = kraken?krakenSpecialUsed(mobData):!!mobData.specialUsed
+  const specialAtk = king?kingSpecialAttack(mobData):kraken?krakenSpecialAttack(mobData):typeof getMobSpecialAttack === "function" ? getMobSpecialAttack(mobData.name, tier) : null
+  const specialUsed = king?kingSpecialUsed(mobData):kraken?krakenSpecialUsed(mobData):!!mobData.specialUsed
 
   if (isGM) {
     // Bouton aléatoire intelligent
@@ -1193,7 +1195,7 @@ function spawnExtraMobToken(mobData, slot) {
   const container=document.getElementById("combatTokens"); if(!container){ if(!mobData._retryCount) mobData._retryCount=0; if(++mobData._retryCount<10) setTimeout(()=>spawnExtraMobToken(mobData,slot),300); return }
   const existing=document.getElementById("mobToken_"+slot)
   if(existing){ if(existing._slotRef&&existing._slotRefCb) existing._slotRef.off("value",existing._slotRefCb); existing.remove() }
-  const tok=document.createElement("div"); tok.id="mobToken_"+slot; tok.className="token"
+  const tok=document.createElement("div"); tok.id="mobToken_"+slot; tok.className="token";tok.dataset.mobName=mobData.name
   const idx=slot==="mob2"?1:2, startX=Math.round((window.innerWidth-4*110)/2)
   tok.style.cssText=`position:absolute;width:70px;height:70px;left:${startX+(idx+4)*90}px;top:${Math.round(window.innerHeight*0.25)}px;z-index:200;display:flex;flex-direction:column;align-items:center;cursor:pointer;`
   const img=document.createElement("img"); img.style.cssText="width:60px;height:60px;object-fit:contain;border-radius:50%;border:2px solid #cc2200;box-shadow:0 0 10px rgba(200,0,0,0.5);"; img.src="images/"+mobData.name+".png"; img.onerror=()=>img.style.display="none"; tok.appendChild(img)
@@ -1720,6 +1722,7 @@ function openAllyPNJPanel() {
   title.appendChild(titleText)
   title.appendChild(titleClose)
   panel.appendChild(title)
+  if(typeof appendKingOdinCall==="function")appendKingOdinCall(panel)
   const manage=document.createElement("button");manage.type="button";manage.textContent="Gérer les alliances / Rompre une alliance";manage.style.cssText="min-height:44px;width:100%;margin-bottom:10px";manage.onclick=()=>{panel.remove();openAllyDiscoveryPanel()};panel.appendChild(manage)
 
   db.ref("combat/usedAllies").once("value", snap => {
@@ -2288,6 +2291,7 @@ function bindCombatActionState(block,actor,attack,special=false,enemy=false) {
   block._refreshCombatAction()
 }
 function refreshCombatActionStates() {
+  if(typeof renderKingBattlefield==="function")renderKingBattlefield()
   if(typeof renderWorldBossFlee==="function")renderWorldBossFlee(window.__combatSnapshot)
   refreshCombatHUDContext()
   if(typeof combatTargetRefresh==="function")combatTargetRefresh()
@@ -2327,6 +2331,7 @@ function refreshCombatHUDContext(){
  let rules=document.getElementById("combatHUDRules")
  if(c?.balanceVersion===3){if(!rules){rules=document.createElement("p");rules.id="combatHUDRules";info.appendChild(rules)}const raw=window.__publicCharacters?.[player]||{};rules.textContent=calibratedRuleSummary(getEffectiveCharacterData(player,raw));rules.hidden=false}else if(rules)rules.hidden=true
  if(typeof refreshKrakenAssistance==="function")refreshKrakenAssistance(document.getElementById("combatHUDAttacks"),player)
+ if(typeof refreshKingAssistance==="function")refreshKingAssistance(document.getElementById("combatHUDAttacks"),player)
  let summary=document.getElementById("combatHUDTurnSummary");if(!summary){summary=document.createElement("p");summary.id="combatHUDTurnSummary";summary.setAttribute("role","status");info.insertBefore(summary,document.getElementById("combatHUDAttacks"))}
  const current=state?.currentActorId,label=current==="greg"?"Greg et Bibi":COMBAT_MOBS.includes(current)?combatEnemyLabel(current):heroDisplayName(current||"—")
  const pill=document.querySelector("#combatHUDMeta .combatHUDMetaPill--turn");if(pill)pill.textContent="Round "+(state?.round||1)+" · "+(state?.phase==="rolling"?"Initiative":label)
@@ -2342,7 +2347,7 @@ function setKrakenEnemyPanelCollapsed(collapsed){
  if(collapsed)window.GameWindows?.closed(panel,{restoreFocus:false});else window.GameWindows?.register(panel,()=>setKrakenEnemyPanelCollapsed(true),{focusOnOpen:false})
 }
 function installKrakenEnemyPanelControls(panel){
- const c=window.__combatSnapshot;if(!c||!COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])))return
+ const c=window.__combatSnapshot;if(!c||!COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])||isKingEncounter(c[slot])))return
  if(krakenEnemyPanelPreference.combatId!==c.id)krakenEnemyPanelPreference={combatId:c.id,collapsed:false}
  setKrakenEnemyPanelCollapsed(krakenEnemyPanelPreference.collapsed)
 }
@@ -2350,6 +2355,7 @@ function closeBossDossier(){const el=document.getElementById("bossDossierModal")
 function appendBossEncounterPanels(panel,mob,slot){
  if(mob.balanceClass!=="world")return
  const box=document.createElement("section");box.className="bossEncounterSummary"
+ if(isKingEncounter(mob)){const line=document.createElement("p");line.textContent="Phase "+kingStage(mob)+" / 5 — "+kingPhaseInfo(mob).name;box.append(line)}
  if(isKrakenEncounter(mob)){const line=document.createElement("p");line.textContent="Phase "+krakenStage(mob)+" / 3 — "+krakenStageName(mob)+(mob.krakenHold?" · "+heroDisplayName(mob.krakenHold.target)+" saisi":"");box.append(line)}
  const publicButton=document.createElement("button");publicButton.textContent="Phase, menace et indices révélés";publicButton.onclick=()=>openBossDossier(slot,false);box.append(publicButton)
  if(mob.chargingSpecial?.reaction){const reaction=document.createElement("button");reaction.textContent="Ouvrir les jets de réaction";reaction.onclick=()=>openCombatReaction(slot);box.append(reaction)}
@@ -2377,6 +2383,7 @@ function refreshBossDossier(){
  if(!combatActive||c?.id!==ctx.combatId||c.phase!=="active"||!mob||mob.name!==ctx.name||mob.hp<=0||ctx.privateNotes&&!gm){closeBossDossier();return}if(ctx.busy)return
  const signature=JSON.stringify([mob,c.turnState,window.__sharedVisualBusy,window.__authRole]);if(signature===ctx.signature)return;ctx.signature=signature
  const scroll=ctx.box.scrollTop;ctx.content.replaceChildren()
+ if(isKingEncounter(mob)){renderKingDossier(ctx,mob);ctx.box.scrollTop=scroll;return}
  const line=text=>{const p=document.createElement("p");p.textContent=text;ctx.content.append(p)}
  if(isKrakenEncounter(mob)){
   line("Phase "+krakenStage(mob)+" / 3 — "+krakenStageName(mob)+". Seuils : 60 % puis 25 % des PV. Deux actions par tour.")
@@ -2407,5 +2414,68 @@ function refreshKrakenAssistance(box,actor){
   button.onclick=async()=>{if(button.disabled||krakenAssistancePending.has(key))return;button.disabled=true;krakenAssistancePending.add(key);try{await submitCombatAction("hero",actor,{support:"krakenRelease",target:slot})}catch(error){showNotification(error.message)}finally{krakenAssistancePending.delete(key);refreshCombatActionStates()}};section.append(button,hint);box.prepend(section)
  }
 }
-function refreshBossEncounterLayout(){const c=window.__combatSnapshot;document.body.classList.toggle("krakenEncounter",!!(combatActive&&c?.phase==="active"&&COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])&&c[slot].hp>0)));refreshBossDossier()}
+function refreshBossEncounterLayout(){const c=window.__combatSnapshot;document.body.classList.toggle("krakenEncounter",!!(combatActive&&c?.phase==="active"&&COMBAT_MOBS.some(slot=>(isKrakenEncounter(c[slot])||isKingEncounter(c[slot]))&&c[slot].hp>0)));refreshBossDossier()}
 document.addEventListener("DOMContentLoaded",()=>{db.ref("combat").on("value",refreshBossEncounterLayout);setInterval(refreshBossEncounterLayout,1000)})
+const kingDecisionsPending=new Set(),kingPlayerPending=new Set()
+function currentKingSlot(){const c=window.__combatSnapshot;return c?.phase==="active"?COMBAT_MOBS.find(s=>isKingEncounter(c[s])&&c[s].hp>0):null}
+function hasKingOdinCall(){const slot=currentKingSlot();return !!slot&&kingOdinAvailable(window.__combatSnapshot[slot])}
+async function sendKingDecision(slot,change){
+ requireActionAccess({gmOnly:true});requireExplorationConnection()
+ const c=window.__combatSnapshot,mob=c?.[slot],key=c?.id+":"+slot
+ if(kingDecisionsPending.has(key))throw Error("Décision du Roi en cours")
+ const uid=window.__authUid,id="king-decision-"+Date.now()+"-"+Math.random().toString(36).slice(2),revision=persistenceRevision||"initial",command={...change,slot,phase:kingStage(mob),chargeId:mob?.chargingSpecial?.id||null}
+ kingDecisionsPending.add(key)
+ try{const result=await reliableRootTransaction(root=>applyKingTactic(root,uid,c.id,revision,command,id));if(!result.committed)throw Error("Décision non confirmée")}
+ finally{kingDecisionsPending.delete(key)}
+}
+function appendKingOdinCall(panel,actor){
+ if(!hasKingOdinCall())return
+  const slot=currentKingSlot(),button=document.createElement("button"),hint=document.createElement("p")
+ button.type="button";button.className="kingOdinCall";button.textContent="Appel des aurores — Odin";button.dataset.kingOdin="true"
+ hint.textContent="Trois aurores libérées · sans coût en action · protège le groupe contre Turn Around, même si Odin a été trahi."
+ button.onclick=async()=>{button.disabled=true;try{if(window.__authRole==="gm")await sendKingDecision(slot,{kind:"odin"});else{let caller=actor||getLocalPlayerId();if(caller==="greg"&&window.__publicCharacters?.greg?.hp<=0&&window.__publicCharacters?.bibi?.hp>0)caller="bibi";await submitCombatAction("initiative",caller,{kingOdin:true,slot})}}catch(e){showNotification(e.message)}finally{button.disabled=false}}
+ panel.append(button,hint)
+}
+function renderKingDossier(ctx,mob){
+ const phase=kingStage(mob),state=mob.king,charge=mob.chargingSpecial,gm=ctx.privateNotes&&window.__authRole==="gm",line=text=>{const p=document.createElement("p");p.textContent=text;ctx.content.append(p)}
+ line("Phase "+phase+" / 5 — "+kingPhaseInfo(mob).name+" · Une action offensive par tour ; les Schnaw ont leur propre initiative. Seuils : 80 / 60 / 40 / 20 % des PV. Une seule barre de vie.")
+ line(kingPhaseInfo(mob).hint)
+ line(charge?"⚠ "+charge.name+" — prête au round "+charge.readyRound+(charge.kingTargets?.length?" · Cible annoncée : "+charge.kingTargets.map(combatFriendlyName).join(", "):""):"Aucune attaque majeure en préparation."+(kingSpecialUsed(mob)?" La majeure de cette phase est déjà utilisée ou interrompue.":""))
+ if(state.openingHits>0)line("Roi exposé : les "+state.openingHits+" prochaines actions offensives de héros infligent +25 %.")
+ if(phase>=3)line("Schnaw invoqués : "+(state.minionsSummoned||0)+" / 2 au total. Le garde vivant réduit les dégâts reçus par le Roi de 20 %. Aucun renfort infini.")
+ if(phase===5){line("Aurores libérées : "+kingAuroraCount(mob)+" / 3. Refuges : "+(state.refugesConfirmed?(state.refugeTargets||[]).map(heroDisplayName).join(", ")||"personne":"validation MJ requise")+". Protections dans les refuges : 25 / 60 / 85 / 100 % pour 0 / 1 / 2 / 3 aurores.");if(state.odinInvoked)line("Odin répond à l’appel des aurores : Turn Around sera arrêté pour tous. Le pacte avec Odin n’a pas été modifié.")}
+ const button=(label,fn,disabled=false)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.disabled=disabled;b.onclick=async()=>{b.disabled=true;try{await fn();ctx.signature=null}catch(e){ctx.error.textContent=e.message}finally{b.disabled=false;if(bossDossierContext===ctx)refreshBossDossier()}};ctx.content.append(b);return b}
+ if(charge)button(gm?"Ouvrir les réactions / protections":"Voir les jets de réaction",()=>openCombatReaction(ctx.slot),!gm&&!charge.reaction)
+ if(!gm){appendKingOdinCall(ctx.content,getLocalPlayerId());return}
+ const details=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Mémo MJ — les cinq phases et leurs parades";details.append(summary)
+ KING_PHASES.forEach((p,i)=>{const text=document.createElement("p");text.textContent=(i+1)+". "+p.name+" — "+p.hint;details.append(text)});ctx.content.append(details)
+ line("Les joueurs décrivent leur stratégie. Ces boutons valident votre arbitrage sans consommer leur action ; les boutons Stratégies de leur panneau de combat consomment leur action normale.")
+ if(phase===2){
+  button("Valider l’interruption du drain",()=>sendKingDecision(ctx.slot,{kind:"drain"}),charge?.kingStage!==2)
+  button("Valider une perturbation de l’invocation ("+state.disruptions+" / 2)",()=>sendKingDecision(ctx.slot,{kind:"disrupt"}),state.disruptions>=2)
+ }
+ if(phase===5&&charge?.kingStage===5){
+  for(let i=0;i<3;i++)button(state.auroras?.[i]?"Aurore "+(i+1)+" libérée":"Valider la libération de l’aurore "+(i+1),()=>sendKingDecision(ctx.slot,{kind:"aurora",index:i}),!!state.auroras?.[i])
+  appendKingOdinCall(ctx.content)
+ }
+ if(charge?.kingStage===1||charge?.kingStage===5){
+  const field=document.createElement("fieldset"),legend=document.createElement("legend");legend.textContent=charge.kingStage===1?"Personnages derrière le pilier":"Personnages ayant rejoint les refuges";field.append(legend)
+  if(ctx.kingDraftPhase!==phase){ctx.kingDraftPhase=phase;ctx.kingDraftTargets=state.refugesConfirmed?[...(state.refugeTargets||[])]:COMBAT_CHARACTERS.filter(id=>window.__publicCharacters?.[id]?.hp>0)}
+  for(const id of COMBAT_CHARACTERS){if(!(window.__publicCharacters?.[id]?.hp>0))continue;const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.value=id;input.checked=ctx.kingDraftTargets.includes(id);input.onchange=()=>{ctx.kingDraftTargets=[...field.querySelectorAll("input:checked")].map(el=>el.value)};label.append(input,document.createTextNode(heroDisplayName(id)));field.append(label)}
+  ctx.content.append(field)
+  button(charge.kingStage===1?"Valider l’abri — détruire un pilier ("+state.pillars+" restants)":"Valider les personnages dans les refuges",()=>sendKingDecision(ctx.slot,{kind:charge.kingStage===1?"pillar":"refuges",targets:ctx.kingDraftTargets}),charge.kingStage===1&&state.pillars<=0)
+ }
+}
+function refreshKingAssistance(box,actor){
+ if(!box)return
+ if(actor==="greg"&&window.__publicCharacters?.greg?.hp<=0&&window.__publicCharacters?.bibi?.hp>0)actor="bibi"
+ const c=window.__combatSnapshot,slot=currentKingSlot(),old=box.querySelector(".kingAssistance")
+ if(!slot){old?.remove();return}
+ const mob=c[slot],phase=kingStage(mob),key=c.id+":"+actor,signature=JSON.stringify([c.id,c.turnState?.sequence,mob.king,mob.chargingSpecial,actor,window.__sharedVisualBusy,window.__actionOnline,kingPlayerPending.has(key)])
+ if(old?.dataset.signature===signature)return
+ const expanded=old?.open??true;old?.remove();const section=document.createElement("details"),summary=document.createElement("summary"),hint=document.createElement("p");section.className="kingAssistance";section.dataset.signature=signature;section.open=expanded;summary.textContent="Stratégies — Roi · phase "+phase+" / 5";hint.textContent=kingPhaseInfo(mob).hint;section.append(summary,hint);section.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();event.stopImmediatePropagation();section.open=false;summary.focus()}})
+ const add=(label,strategy,index)=>{const b=document.createElement("button");b.type="button";b.textContent=label;b.dataset.kingStrategy=strategy;b.disabled=c.turnState?.phase!=="active"||c.turnState.currentActorId!==combatOwner(actor)||window.__publicCharacters?.[actor]?.hp<=0||!!c.heroHaste||!!window.__sharedVisualBusy||window.__actionOnline===false||kingPlayerPending.has(key);b.onclick=async()=>{b.disabled=true;kingPlayerPending.add(key);try{await submitCombatAction("hero",actor,{support:"kingStrategy",strategy,index,target:slot})}catch(e){showNotification(e.message)}finally{kingPlayerPending.delete(key);refreshCombatActionStates()}};section.append(b)}
+ if(phase===2){if(mob.chargingSpecial?.kingStage===2)add("Briser le lien — action · D12 + Chance, seuil 7","drain");if(mob.king.disruptions<2)add("Perturber l’invocation — action · D12 + Chance, seuil 7","disrupt")}
+ if(phase===5&&mob.chargingSpecial?.kingStage===5){for(let i=0;i<3;i++)if(!mob.king.auroras?.[i])add("Libérer l’aurore "+(i+1)+" — une action, sans jet","aurora",i);appendKingOdinCall(section,actor)}
+ const info=document.createElement("button");info.type="button";info.textContent="Voir la menace et les stratégies";info.onclick=()=>openBossDossier(slot,false);section.append(info);box.prepend(section)
+}

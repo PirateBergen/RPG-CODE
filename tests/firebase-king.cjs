@@ -1,0 +1,32 @@
+const fs=require('fs'),assert=require('assert/strict'),{initializeTestEnvironment}=require('@firebase/rules-unit-testing'),{fullScreen,base}=require('./full-exploration-screen.cjs'),{fixture}=require('./combat.cjs');
+let env;const screens=[],delay=ms=>new Promise(r=>setTimeout(r,ms));
+async function pump(ms){for(let n=0;n<ms;n+=200){screens.forEach(s=>s.clock.tick(200));await delay(8)}}
+async function until(fn){for(let n=0;n<400;n++){if(await fn())return;await pump(100)}throw Error('Timeout '+fn)}
+(async()=>{try{
+ env=await initializeTestEnvironment({projectId:'demo-five-phase-king',database:{host:'127.0.0.1',port:9005,rules:fs.readFileSync(base+'/firebase.database.rules.json','utf8')}});
+ const initial=fixture();delete initial.combat;delete initial.game.combatState;initial.game.allyBreaks={odin:{time:1}};for(const id of ['greg','ju','elo','bibi'])initial.characters[id].lvl=6;
+ await env.withSecurityRulesDisabled(c=>c.database().ref().set(initial));for(const [uid,hero]of [['gm',null],['g','greg'],['y','ju'],['e','elo'],['gm2',null]])screens.push(fullScreen(env.authenticatedContext(uid).database(),uid,hero));
+ await until(()=>screens.every(s=>s.w.__authReady&&s.w.__actionOnline&&s.w.__explorationOnline));screens.forEach(s=>s.start());await pump(3000);
+ const gm=screens[0],read=async p=>(await gm.database.ref(p).once('value')).val();
+ await gm.w.launchReliableCombat('roi','boss',[]);await until(()=>screens.every(s=>s.w.__combatSnapshot?.mob?.encounterProfile==='king-v1'));await pump(20000);
+ let c=await read('combat');const max=c.mob.maxHP;assert(max>700);assert.equal(c.mob.king.phase,1);
+ const order=['greg','ju','elo','mob'].map(id=>({id,type:id==='mob'?'mob':'player',label:id}));
+ async function turn(actor,round=1){const ts=await read("combat/turnState"),entries=ts.order?.length?ts.order:order;await gm.database.ref("combat/turnState").set({...ts,phase:"active",order:entries,participants:ts.participants?.length?ts.participants:order,round,currentActorId:actor,currentIndex:entries.findIndex(p=>p.id===actor),actorActionIndex:0});await until(()=>screens.every(s=>s.w.__combatSnapshot?.turnState?.currentActorId===actor))}
+ async function phase(n){const hp=(await read('combat/mob/hp')),target=Math.floor(max*([0,.99,.79,.59,.39,.19][n]));await gm.w.submitCombatAction('manualDamage','mj',{amount:Math.ceil((hp-target)/((gm.w.__combatSnapshot?.mob3?.kingRole==="garde"&&gm.w.__combatSnapshot.mob3.hp>0)?.8:1)),target:'mob'});await until(()=>screens.every(s=>s.w.__combatSnapshot?.mob?.king?.phase===n));await pump(13000)}
+ await turn('mob');await gm.w.submitCombatAction('enemy','mob',{attack:'Sentence royale',target:'elo'});await until(()=>screens.every(s=>s.w.__combatSnapshot?.mob?.chargingSpecial?.kingStage===1));
+ await gm.w.sendKingDecision('mob',{kind:'pillar',targets:['elo']});assert.equal(await read('combat/mob/king/pillars'),2);
+ await phase(2);gm.w.openBossDossier('mob',true);assert(gm.w.document.getElementById('bossDossierModal').textContent.includes('Valider l’interruption'));gm.w.closeBossDossier();screens[1].w.openBossDossier('mob',true);assert(!screens[1].w.document.getElementById('bossDossierModal'));
+ await turn('mob');await gm.w.submitCombatAction('enemy','mob',{attack:'Le tribut de sang',target:'elo'});await until(()=>gm.w.__combatSnapshot?.mob?.chargingSpecial?.kingStage===2);await gm.w.sendKingDecision('mob',{kind:'drain'});await until(()=>screens.every(s=>!s.w.__combatSnapshot?.mob?.chargingSpecial));assert.equal(await read('combat/mob/king/openingHits'),2);
+ await phase(3);c=await read('combat');assert.equal(c.mob2.name,'chnaw');assert.equal(c.mob3.kingRole,'garde');assert.equal(c.turnState.order.filter(p=>p.id==='mob2').length,1);assert(screens.every(s=>s.w.document.getElementById('mobToken_mob2')));
+ await phase(4);await phase(5);assert(screens.every(s=>s.w.document.querySelectorAll('[data-king-marker^=aurora]').length===3));
+ await turn('greg',3);const chars=await read('characters'),breaks=await read('game/allyBreaks');
+ for(const [index,screen]of [[0,screens[1]],[1,screens[2]],[2,screens[3]]]){await until(()=>screen.w.__combatSnapshot?.turnState?.currentActorId===screen.hero);await screen.w.submitCombatAction('hero',screen.hero,{support:'kingStrategy',strategy:'aurora',index,target:'mob'});await until(()=>screens.every(s=>!!s.w.__combatSnapshot?.mob?.king?.auroras?.[index]))}
+ await pump(25000);assert(screens[3].w.getAvailablePlayerPowerTabs().includes('ally'));const panel=screens[3].w.document.createElement('div');screens[3].w.renderPlayerAllyEntry(panel);assert(panel.querySelector('[data-king-odin]'));
+ const beforeTurn=await read('combat/turnState');await screens[3].w.submitCombatAction('initiative','elo',{kingOdin:true,slot:'mob'});await until(()=>screens.every(s=>s.w.__combatSnapshot?.mob?.king?.odinInvoked));assert.deepEqual(await read('combat/turnState'),beforeTurn);assert.deepEqual(await read('game/allyBreaks'),breaks);
+ await turn('mob',Math.max(3,await read('combat/mob/chargingSpecial/readyRound')));await gm.w.submitCombatAction('enemy','mob',{attack:'Turn Around'});await until(()=>screens.every(s=>s.w.__combatSnapshot?.mob?.king?.specialsUsed?.[5]));assert.deepEqual(await read('characters'),chars);assert.equal((await read('combat/lastAction')).result.amount,0);
+ const saved=gm.w.captureSession((await gm.database.ref().once('value')).val());assert(saved.combat.mob.king.odinInvoked);assert(saved.combat.mob2.kingMinion);assert(saved.game.allyBreaks.odin);const restored=gm.w.sessionFromSave(saved);assert.deepEqual(JSON.parse(JSON.stringify(restored.combat.mob.king)),JSON.parse(JSON.stringify(saved.combat.mob.king)));assert.deepEqual(await read('saves'),initial.saves);
+ await pump(18000);const fresh=fullScreen(env.authenticatedContext('e').database(),'e','elo');fresh.clock.setSystemTime(gm.w.Date.now()+10);fresh.w.__pageLoadTime=gm.w.Date.now()+10;screens.push(fresh);await until(()=>fresh.w.__authReady&&fresh.w.__actionOnline);fresh.start();await pump(2500);assert(fresh.w.__combatSnapshot.mob.king.specialsUsed[5]);assert(!fresh.w.document.getElementById('kingScene'));
+ for(const s of screens)assert.deepEqual(s.errors,[]);
+ console.log('OK Roi cinq phases : cinq sessions puis reconnexion, commandes MJ privées, Schnaw/initiative, trois actions d’aurore, Odin après trahison, Turn Around sans dégâts, sauvegarde et aucune répétition de scène. Émulateur local uniquement.');
+ }finally{screens.forEach(s=>s.close());await env?.cleanup()}
+})().catch(e=>{console.error(e);process.exitCode=1});

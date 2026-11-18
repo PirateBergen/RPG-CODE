@@ -8,7 +8,7 @@ function setKrakenEnemyPanelCollapsed(collapsed){
  if(collapsed)window.GameWindows?.closed(panel,{restoreFocus:false});else window.GameWindows?.register(panel,()=>setKrakenEnemyPanelCollapsed(true),{focusOnOpen:false})
 }
 function installKrakenEnemyPanelControls(panel){
- const c=window.__combatSnapshot;if(!c||!COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])))return
+ const c=window.__combatSnapshot;if(!c||!COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])||isKingEncounter(c[slot])))return
  if(krakenEnemyPanelPreference.combatId!==c.id)krakenEnemyPanelPreference={combatId:c.id,collapsed:false}
  setKrakenEnemyPanelCollapsed(krakenEnemyPanelPreference.collapsed)
 }
@@ -16,6 +16,7 @@ function closeBossDossier(){const el=document.getElementById("bossDossierModal")
 function appendBossEncounterPanels(panel,mob,slot){
  if(mob.balanceClass!=="world")return
  const box=document.createElement("section");box.className="bossEncounterSummary"
+ if(isKingEncounter(mob)){const line=document.createElement("p");line.textContent="Phase "+kingStage(mob)+" / 5 — "+kingPhaseInfo(mob).name;box.append(line)}
  if(isKrakenEncounter(mob)){const line=document.createElement("p");line.textContent="Phase "+krakenStage(mob)+" / 3 — "+krakenStageName(mob)+(mob.krakenHold?" · "+heroDisplayName(mob.krakenHold.target)+" saisi":"");box.append(line)}
  const publicButton=document.createElement("button");publicButton.textContent="Phase, menace et indices révélés";publicButton.onclick=()=>openBossDossier(slot,false);box.append(publicButton)
  if(mob.chargingSpecial?.reaction){const reaction=document.createElement("button");reaction.textContent="Ouvrir les jets de réaction";reaction.onclick=()=>openCombatReaction(slot);box.append(reaction)}
@@ -43,6 +44,7 @@ function refreshBossDossier(){
  if(!combatActive||c?.id!==ctx.combatId||c.phase!=="active"||!mob||mob.name!==ctx.name||mob.hp<=0||ctx.privateNotes&&!gm){closeBossDossier();return}if(ctx.busy)return
  const signature=JSON.stringify([mob,c.turnState,window.__sharedVisualBusy,window.__authRole]);if(signature===ctx.signature)return;ctx.signature=signature
  const scroll=ctx.box.scrollTop;ctx.content.replaceChildren()
+ if(isKingEncounter(mob)){renderKingDossier(ctx,mob);ctx.box.scrollTop=scroll;return}
  const line=text=>{const p=document.createElement("p");p.textContent=text;ctx.content.append(p)}
  if(isKrakenEncounter(mob)){
   line("Phase "+krakenStage(mob)+" / 3 — "+krakenStageName(mob)+". Seuils : 60 % puis 25 % des PV. Deux actions par tour.")
@@ -73,5 +75,5 @@ function refreshKrakenAssistance(box,actor){
   button.onclick=async()=>{if(button.disabled||krakenAssistancePending.has(key))return;button.disabled=true;krakenAssistancePending.add(key);try{await submitCombatAction("hero",actor,{support:"krakenRelease",target:slot})}catch(error){showNotification(error.message)}finally{krakenAssistancePending.delete(key);refreshCombatActionStates()}};section.append(button,hint);box.prepend(section)
  }
 }
-function refreshBossEncounterLayout(){const c=window.__combatSnapshot;document.body.classList.toggle("krakenEncounter",!!(combatActive&&c?.phase==="active"&&COMBAT_MOBS.some(slot=>isKrakenEncounter(c[slot])&&c[slot].hp>0)));refreshBossDossier()}
+function refreshBossEncounterLayout(){const c=window.__combatSnapshot;document.body.classList.toggle("krakenEncounter",!!(combatActive&&c?.phase==="active"&&COMBAT_MOBS.some(slot=>(isKrakenEncounter(c[slot])||isKingEncounter(c[slot]))&&c[slot].hp>0)));refreshBossDossier()}
 document.addEventListener("DOMContentLoaded",()=>{db.ref("combat").on("value",refreshBossEncounterLayout);setInterval(refreshBossEncounterLayout,1000)})

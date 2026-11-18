@@ -23,6 +23,7 @@ function openAllyPNJPanel() {
   title.appendChild(titleText)
   title.appendChild(titleClose)
   panel.appendChild(title)
+  if(typeof appendKingOdinCall==="function")appendKingOdinCall(panel)
   const manage=document.createElement("button");manage.type="button";manage.textContent="Gérer les alliances / Rompre une alliance";manage.style.cssText="min-height:44px;width:100%;margin-bottom:10px";manage.onclick=()=>{panel.remove();openAllyDiscoveryPanel()};panel.appendChild(manage)
 
   db.ref("combat/usedAllies").once("value", snap => {

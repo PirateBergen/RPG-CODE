@@ -17,7 +17,10 @@ function reduceCombatRequestNow(current, id, seed) {
     if(root.combat.heroHaste&&["ally","thuum"].includes(request.kind))throw Error("Terminez les deux attaques de SKARO’H ou passez votre tour")
     // Reaction dice use the already-authorized shared-die request channel. They
     // never modify initiative rolls, turn sequence, or critical gauges.
-    if(request.kind==="initiative"&&request.payload?.reactionId){
+    if(request.kind==="initiative"&&request.payload?.kingOdin){
+      result=resolveKingOdinCall(root,request)
+    }
+    else if(request.kind==="initiative"&&request.payload?.reactionId){
       result=resolveCombatReactionRoll(root,request,dice)
     }
     else if(request.kind === "initiative"){

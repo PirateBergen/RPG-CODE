@@ -26,6 +26,7 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
   if (!target || combatInt(target.hp) <= 0) return 0
   const before = combatInt(target.hp)
   amount=krakenIncomingDamage(root,request,from,slot,amount)
+  amount=kingIncomingDamage(root,request,from,slot,amount)
   if(!options.ignoreNidhoggWound)amount=nidhoggIncomingDamage(root,slot,amount)
   if(isJormungandr(target)){
     const origin=root.game?.combatState?.returnMap||root.game?.map
@@ -40,10 +41,12 @@ function combatDamage(root, request, from, slot, amount, type = "dmg", options =
   }
   combatRecord(root, request, from, heroDisplayName(target.name).toUpperCase(), before - target.hp, type, from + " → " + heroDisplayName(target.name).toUpperCase() + " : -" + (before - target.hp) + " PV ("+before+" → "+target.hp+" / "+target.maxHP+")"+(target.hp<=0?" — KO":""))
   krakenAfterDamage(root,request,slot,before-target.hp)
+  kingAfterDamage(root,request,slot)
   return before - target.hp
 }
 
 function combatOutcome(root,request){
+ for(const slot of COMBAT_MOBS)if(isKingEncounter(root.combat[slot]))synchronizeKingStage(root,slot,request||{id:"king-phase"})
  if(root.characters?.bibi?.hp<=0)for(const slot of COMBAT_MOBS)if(root.combat[slot])delete root.combat[slot].bibiRage
  if(root.combat.eloSummon?.hp<=0)delete root.combat.eloSummon
  if(root.combat.phase==="finished")return true

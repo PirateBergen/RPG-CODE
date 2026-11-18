@@ -1,4 +1,5 @@
 function playRoiIntro(mob, tierMob) {
+  if(isKingEncounter(window.__combatSnapshot?.mob)){_startCombatSequence(mob,tierMob);return}
   stopAllMusic()
   const intro = document.getElementById("combatIntro"); intro.style.display = "flex"
   const cf    = document.getElementById("combatFilter")

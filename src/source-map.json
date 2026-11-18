@@ -35,7 +35,8 @@
       "campaigns/prophetie-des-mouches/rules/balrog-sword.js",
       "engine/combat/damage-routing.js",
       "campaigns/prophetie-des-mouches/rules/hel-pact.js",
-      "campaigns/prophetie-des-mouches/rules/hel-nidhogg.js"
+      "campaigns/prophetie-des-mouches/rules/hel-nidhogg.js",
+      "campaigns/prophetie-des-mouches/enemies/king-profile.js"
     ],
     "game.js": [
       "platform/firebase/bootstrap.js",
@@ -108,7 +109,8 @@
       "campaigns/prophetie-des-mouches/presentation/fly-blessing.js",
       "interface/menus/preferences.js",
       "interface/combat/action-availability.js",
-      "interface/combat/boss-dossier.js"
+      "interface/combat/boss-dossier.js",
+      "interface/combat/king-panel.js"
     ],
     "combat-core.js": [
       "campaigns/prophetie-des-mouches/rules/combat-outcomes.js",
@@ -127,7 +129,8 @@
       "engine/combat/legacy-request-compatibility.js",
       "engine/combat/gm-statuses.js",
       "campaigns/prophetie-des-mouches/rules/kraken-encounter.js",
-      "campaigns/prophetie-des-mouches/rules/hel-nidhogg-combat.js"
+      "campaigns/prophetie-des-mouches/rules/hel-nidhogg-combat.js",
+      "campaigns/prophetie-des-mouches/rules/king-encounter.js"
     ],
     "combat.js": [
       "campaigns/prophetie-des-mouches/presentation/arena-selection.js",
@@ -148,7 +151,8 @@
       "campaigns/prophetie-des-mouches/enemies/quick-selection.js",
       "interface/combat/enemy-dropdown.js",
       "runtime/combat/remote-start.js",
-      "presentation/combat/turn-banner.js"
+      "presentation/combat/turn-banner.js",
+      "campaigns/prophetie-des-mouches/presentation/king-scenes.js"
     ],
     "utils.js": [
       "interface/menus/window-lifecycle.js",
@@ -300,7 +304,8 @@
       "interface/styles/23-dice-choice.css",
       "interface/styles/24-boss-dossier.css",
       "interface/styles/25-hel-pact.css",
-      "interface/styles/26-hel-nidhogg.css"
+      "interface/styles/26-hel-nidhogg.css",
+      "interface/styles/27-king.css"
     ],
     "hel-pact.js": [
       "interface/allies/hel-pact.js"

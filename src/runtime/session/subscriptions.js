@@ -1,5 +1,5 @@
 
-Object.assign(window,{showMobSpecialAttackEvent,showMobAttackPresentation,cleanupRuneChallengeUI,ensureCemeteryGlyphIntro,ensureTokenStateBadgeContainer,setTokenStateBadges,clearCombatTokenStateVisuals,resetLocalCombatVisualState,cleanupTransientGameUI,finalizeNewGameLocally,updateCombatTokenStateVisuals,syncMapElementsFromDB,syncWantedStateFromDB})
+Object.assign(window,{showMobSpecialAttackEvent,showMobAttackPresentation,cleanupRuneChallengeUI,ensureCemeteryGlyphIntro,ensureTokenStateBadgeContainer,setTokenStateBadges,clearCombatTokenStateVisuals,resetLocalCombatVisualState,cleanupTransientGameUI,finalizeNewGameLocally,updateCombatTokenStateVisuals,syncMapElementsFromDB,syncWantedStateFromDB,syncTokenPositionsFromCache})
 window.__pageLoadTime = Date.now()
 try { window.isNewGame = sessionStorage.getItem(persistenceStorageKey("rpg_session_transition")) === "new"; sessionStorage.removeItem(persistenceStorageKey("rpg_session_transition")) } catch (e) {}
 window.__introClickLockUntil = 0
@@ -195,6 +195,7 @@ db.ref("game/storyImage3").on("value", snap => {
 // ─── tokens ───
 db.ref("tokens").on("child_added",   updateTokenFromDB)
 db.ref("tokens").on("child_changed", updateTokenFromDB)
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncTokenPositionsFromCache()})
 
 // ─── characters ───
 syncCharacterSubscriptions()
@@ -238,6 +239,7 @@ db.ref("game/map").on("value", snap => {
     updateWorldMapFogTopLeft()
     updateMapLoreBookVisibility()
     calculateMinZoom(); cameraZoom = minZoom; updateCamera()
+    syncTokenPositionsFromCache()
     document.querySelectorAll(".token").forEach(t => spawnPortal(t.id))
     if (mapMusic[mapName] && !_state._pendingMapAudio) {
       const shouldKeepAuroraMusic = auroraActive && mapName !== "bifrost.jpg"

@@ -155,10 +155,11 @@ function requirePersistenceGM() {
 }
 
 function setSessionBusy(busy, message = "Synchronisation de la partie…") {
+  const wasBusy=window.__sessionBusy
   window.__sessionBusy = busy
   if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
   let overlay = document.getElementById("sessionSyncOverlay")
-  if (!busy) { overlay?.remove(); return }
+  if (!busy) { overlay?.remove(); if(wasBusy&&typeof syncTokenPositionsFromCache==="function")setTimeout(syncTokenPositionsFromCache,0); return }
   if (!overlay) {
     overlay = document.createElement("div"); overlay.id = "sessionSyncOverlay"
     overlay.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;color:#f5e6c8;font:18px Georgia,serif;text-align:center;padding:24px;"
@@ -490,16 +491,25 @@ async function captureSessionPresentation() {
 
 async function awaitResumeSessionPresentation() {
   if (!gameStarted || window.__sessionBusy) return
+  const uid=window.__authUid,revision=persistenceRevision,entryEpoch=window.__entranceEpoch,mapSequence=window.__mapTransitionSequence
+  const tokenPositions=window.__tokenPositions
+  const tokenRevision=window.__tokenPositionRevision||0,combatId=window.__combatSnapshot?.id
   try {
     const [gameSnap, combatSnap, tokensSnap, curseSnap] = await Promise.all([db.ref("game").once("value"), db.ref("combat").once("value"), db.ref("tokens").once("value"), db.ref("curse/wheel").once("value")])
-    const game = gameSnap.val() || {}, combat = combatSnap.val() || {}, tokens = tokensSnap.val() || {}
-    if (window.__sessionBusy) return
+    const game = gameSnap.val() || {}, savedCombat = combatSnap.val() || {}, tokens = tokensSnap.val() || {}
+    if (window.__sessionBusy||!gameStarted||uid!==window.__authUid||revision!==persistenceRevision||entryEpoch!==window.__entranceEpoch||mapSequence!==window.__mapTransitionSequence) return
+    const liveCombat=window.__combatSnapshot
+    if(combatId&&liveCombat?.id!==combatId)return
+    if(liveCombat?.id&&(liveCombat.id!==savedCombat.id||liveCombat.phase!==savedCombat.phase))return
+    const combat=liveCombat?.id?liveCombat:savedCombat
     if (game.sessionView) {
       cameraX = Number(game.sessionView.cameraX) || 0; cameraY = Number(game.sessionView.cameraY) || 0
       calculateMinZoom(); cameraZoom = minZoom
       clampCamera(); updateCamera()
     }
-    Object.entries(tokens).forEach(([id, position]) => {
+    const latestTokens=window.__tokenPositions!==tokenPositions||(window.__tokenPositionRevision||0)!==tokenRevision?window.__tokenPositions:tokens
+    Object.entries(latestTokens||{}).forEach(([id, position]) => {
+      if(!Number.isFinite(position?.x)||!Number.isFinite(position?.y))return
       const token = document.getElementById(id)
       if (token) { token.style.left = position.x + "px"; token.style.top = position.y + "px"; token.classList.toggle("faceLeft", position.facing === 1) }
     })
@@ -530,7 +540,7 @@ async function awaitResumeSessionPresentation() {
     fadeToCombat(); spawnMobToken(currentMob)
     ;["mob2", "mob3"].forEach(slot => { if (combat[slot]) { _state.pendingExtraMobs[slot] = combat[slot].name; spawnExtraMobToken(combat[slot], slot) } })
     if (combat.eloSummon) spawnEloSummonToken(combat.eloSummon)
-    Object.entries(combat.presentation?.positions || {}).forEach(([id, position]) => {
+    Object.entries(resolveCombatTokenPositions(combat,latestTokens)).forEach(([id, position]) => {
       const token = document.getElementById(id)
       if (token) { token.style.left = position.x + "px"; token.style.top = position.y + "px"; token.classList.toggle("faceLeft", position.facing === 1) }
     })

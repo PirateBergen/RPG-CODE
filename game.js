@@ -799,7 +799,7 @@ function safeStartIntro(event) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-Object.assign(window,{showMobSpecialAttackEvent,showMobAttackPresentation,cleanupRuneChallengeUI,ensureCemeteryGlyphIntro,ensureTokenStateBadgeContainer,setTokenStateBadges,clearCombatTokenStateVisuals,resetLocalCombatVisualState,cleanupTransientGameUI,finalizeNewGameLocally,updateCombatTokenStateVisuals,syncMapElementsFromDB,syncWantedStateFromDB})
+Object.assign(window,{showMobSpecialAttackEvent,showMobAttackPresentation,cleanupRuneChallengeUI,ensureCemeteryGlyphIntro,ensureTokenStateBadgeContainer,setTokenStateBadges,clearCombatTokenStateVisuals,resetLocalCombatVisualState,cleanupTransientGameUI,finalizeNewGameLocally,updateCombatTokenStateVisuals,syncMapElementsFromDB,syncWantedStateFromDB,syncTokenPositionsFromCache})
 window.__pageLoadTime = Date.now()
 try { window.isNewGame = sessionStorage.getItem(persistenceStorageKey("rpg_session_transition")) === "new"; sessionStorage.removeItem(persistenceStorageKey("rpg_session_transition")) } catch (e) {}
 window.__introClickLockUntil = 0
@@ -995,6 +995,7 @@ db.ref("game/storyImage3").on("value", snap => {
 // ─── tokens ───
 db.ref("tokens").on("child_added",   updateTokenFromDB)
 db.ref("tokens").on("child_changed", updateTokenFromDB)
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)syncTokenPositionsFromCache()})
 
 // ─── characters ───
 syncCharacterSubscriptions()
@@ -1038,6 +1039,7 @@ db.ref("game/map").on("value", snap => {
     updateWorldMapFogTopLeft()
     updateMapLoreBookVisibility()
     calculateMinZoom(); cameraZoom = minZoom; updateCamera()
+    syncTokenPositionsFromCache()
     document.querySelectorAll(".token").forEach(t => spawnPortal(t.id))
     if (mapMusic[mapName] && !_state._pendingMapAudio) {
       const shouldKeepAuroraMusic = auroraActive && mapName !== "bifrost.jpg"
@@ -2397,11 +2399,12 @@ function isCharacterOverweight(playerId, data = null) {
 }
 
 function updateTokenFromDB(snapshot) {
-  if (window.__sessionBusy) return
   const id   = snapshot.key
   const data = snapshot.val()
   if (!data) return
   window.__tokenPositions ||= {}; window.__tokenPositions[id]=data
+  window.__tokenPositionRevision=(window.__tokenPositionRevision||0)+1
+  if (window.__sessionBusy) return
   if(combatActive&&window.__pendingCombatOutcome?.combatId===window.__localCombatId&&!window.__combatReturnInProgress)return
   if (selected?.id === id && _state.tokenDragging) return
   const token = document.getElementById(id)
@@ -2423,6 +2426,13 @@ function updateTokenFromDB(snapshot) {
     updateTokenGlow(id, data.hp)
     if (lastHP[id] !== undefined && data.hp < lastHP[id]) damageEffect(id)
     lastHP[id] = data.hp
+  }
+}
+
+function syncTokenPositionsFromCache() {
+  if (!gameStarted || window.__sessionBusy || window.__combatReturnInProgress || combatStarting || !["GAME","COMBAT"].includes(gameState)) return
+  for (const [id,data] of Object.entries(window.__tokenPositions || {})) {
+    if (["greg","ju","elo","bibi","mobToken"].includes(id)) updateTokenFromDB({key:id,val:()=>data})
   }
 }
 

@@ -556,7 +556,7 @@ function fadeToCombat() {
     tokenZone.appendChild(mob)
     mob.style.cssText = "position:absolute;left:650px;top:180px;display:flex;z-index:200;"
   }
-  const positions=window.__combatSnapshot?.presentation?.positions || {}
+  const positions=resolveCombatTokenPositions(window.__combatSnapshot,window.__tokenPositions)
   Object.entries(positions).forEach(([id,pos])=>{const token=document.getElementById(id);if(token){token.style.left=pos.x+"px";token.style.top=pos.y+"px"}})
 }
 

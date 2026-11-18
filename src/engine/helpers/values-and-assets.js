@@ -1,3 +1,15 @@
+function resolveCombatTokenPositions(combat, tokens = {}) {
+  const positions={}
+  const valid=p=>p&&Number.isFinite(p.x)&&Number.isFinite(p.y)
+  for(const id of ["greg","ju","elo","bibi","mobToken","mobToken_mob2","mobToken_mob3","eloSummonToken"]){
+    const saved=combat?.presentation?.positions?.[id]
+    const live=id==="mobToken_mob2"?combat?.mob2:id==="mobToken_mob3"?combat?.mob3:id==="eloSummonToken"?combat?.eloSummon:tokens?.[id]
+    const p=valid(live)?live:valid(saved)?saved:null
+    if(p)positions[id]={x:p.x,y:p.y,facing:p.facing===1?1:0}
+  }
+  return positions
+}
+
 function getObjectKeyLoose(obj, wantedKey) {
   if (!obj || typeof obj !== "object") return null
   const wanted = String(wantedKey || "").toLowerCase()

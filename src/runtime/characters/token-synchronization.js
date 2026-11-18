@@ -19,11 +19,12 @@ function isCharacterOverweight(playerId, data = null) {
 }
 
 function updateTokenFromDB(snapshot) {
-  if (window.__sessionBusy) return
   const id   = snapshot.key
   const data = snapshot.val()
   if (!data) return
   window.__tokenPositions ||= {}; window.__tokenPositions[id]=data
+  window.__tokenPositionRevision=(window.__tokenPositionRevision||0)+1
+  if (window.__sessionBusy) return
   if(combatActive&&window.__pendingCombatOutcome?.combatId===window.__localCombatId&&!window.__combatReturnInProgress)return
   if (selected?.id === id && _state.tokenDragging) return
   const token = document.getElementById(id)
@@ -45,6 +46,13 @@ function updateTokenFromDB(snapshot) {
     updateTokenGlow(id, data.hp)
     if (lastHP[id] !== undefined && data.hp < lastHP[id]) damageEffect(id)
     lastHP[id] = data.hp
+  }
+}
+
+function syncTokenPositionsFromCache() {
+  if (!gameStarted || window.__sessionBusy || window.__combatReturnInProgress || combatStarting || !["GAME","COMBAT"].includes(gameState)) return
+  for (const [id,data] of Object.entries(window.__tokenPositions || {})) {
+    if (["greg","ju","elo","bibi","mobToken"].includes(id)) updateTokenFromDB({key:id,val:()=>data})
   }
 }
 

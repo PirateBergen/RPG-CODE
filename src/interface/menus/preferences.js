@@ -5,11 +5,7 @@ function initializeMenuBehaviour() {
     let preference = null
     try { preference = localStorage.getItem("rpg.panel." + panelId) } catch (_) {}
     const open = preference ? preference === "open" : content.style.display !== "none"
-    content.style.display = open ? "block" : "none"
-    panel.style.maxHeight = open ? "260px" : "auto"
-    button.innerText = open ? "▼" : "▲"
-    button.title = open ? "Réduire" : "Déplier"
-    button.setAttribute("aria-expanded", String(open))
+    applyCollapsiblePanelState(content, button, panel, open)
   }
   document.querySelectorAll(".gmSection").forEach(section => {
     if (section.dataset.autoCloseBound) return

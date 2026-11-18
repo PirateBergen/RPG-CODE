@@ -1999,18 +1999,22 @@ async function giveAllyActionToPlayer(pnj,action,playerId,expectedCombatId=windo
   showNotification("✦ "+action.label+" autorisée pour "+heroDisplayName(playerId)+" pendant ce combat.");return true
  }catch(error){showNotification("Autorisation non donnée : "+error.message);return false}
 }
+function applyCollapsiblePanelState(content, button, panel, open) {
+  content.style.display = open ? "block" : "none"
+  button.innerText = open ? "▼" : "▲"
+  panel.style.maxHeight = open ? "260px" : "auto"
+  button.title = open ? "Réduire" : "Déplier"
+  button.setAttribute("aria-expanded", String(open))
+}
+
 function toggleCollapsiblePanel(contentId, buttonId, panelId) {
   const content = document.getElementById(contentId)
   const btn = document.getElementById(buttonId)
   const panel = document.getElementById(panelId)
   if (!content || !btn || !panel) return
-  const collapsed = content.style.display === "none"
-  content.style.display = collapsed ? "block" : "none"
-  btn.innerText = collapsed ? "▼" : "▲"
-  panel.style.maxHeight = collapsed ? "260px" : "auto"
-  btn.title = collapsed ? "Réduire" : "Déplier"
-  btn.setAttribute("aria-expanded", String(collapsed))
-  try { localStorage.setItem("rpg.panel." + panelId, collapsed ? "open" : "closed") } catch (_) {}
+  const open = content.style.display === "none"
+  applyCollapsiblePanelState(content, btn, panel, open)
+  try { localStorage.setItem("rpg.panel." + panelId, open ? "open" : "closed") } catch (_) {}
 }
 
 toggleMJLog = function () {
@@ -2020,10 +2024,6 @@ toggleMJLog = function () {
 toggleDiceLog = function () {
   toggleCollapsiblePanel("diceLogContent", "diceLogToggle", "diceLog")
 }
-
-/* ========================= */
-/* ESSAIM DE MOUCHES         */
-/* ========================= */
 
 function showFlySwarmEffect() {
   if (document.getElementById("flySwarmOverlay")&&!window.__flySwarmScope?.resetting) return // déjà actif
@@ -2186,11 +2186,7 @@ function initializeMenuBehaviour() {
     let preference = null
     try { preference = localStorage.getItem("rpg.panel." + panelId) } catch (_) {}
     const open = preference ? preference === "open" : content.style.display !== "none"
-    content.style.display = open ? "block" : "none"
-    panel.style.maxHeight = open ? "260px" : "auto"
-    button.innerText = open ? "▼" : "▲"
-    button.title = open ? "Réduire" : "Déplier"
-    button.setAttribute("aria-expanded", String(open))
+    applyCollapsiblePanelState(content, button, panel, open)
   }
   document.querySelectorAll(".gmSection").forEach(section => {
     if (section.dataset.autoCloseBound) return

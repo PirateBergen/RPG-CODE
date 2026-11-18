@@ -1,4 +1,15 @@
 const fs=require('fs'),assert=require('assert/strict'),{JSDOM}=require('jsdom'),repo=require('path').resolve(__dirname,'..')+'/';
 const dom=new JSDOM('<section class="gmSection" style="display:block"><button id="dynamic">Donner une note</button><button class="mapCategoryButton">Cartes</button><button data-keep-menu-open="true">Préparer</button><select><option>Force</option></select><input type="checkbox"></section>',{url:'https://example.test',runScripts:'outside-only'}),w=dom.window;
 const source=fs.readFileSync(repo+'ui.js','utf8'),start=source.indexOf('function initializeMenuBehaviour()'),end=source.indexOf('\ninitializeMenuBehaviour()',start);w.eval(source.slice(start,end));w.initializeMenuBehaviour();w.initializeMenuBehaviour();const section=w.document.querySelector('section');w.document.getElementById('dynamic').onclick=()=>{};
+w.eval(source.slice(source.indexOf('function applyCollapsiblePanelState('),source.indexOf('function initializeMenuBehaviour()')));
+for(const id of ['diceLog','mjLog']){
+ const panel=w.document.createElement('div');panel.id=id;panel.innerHTML='<button id="'+id+'Toggle"></button><div id="'+id+'Content"></div>';w.document.body.appendChild(panel);
+ w.localStorage.setItem('rpg.panel.'+id,'closed');w.initializeMenuBehaviour();
+ const content=w.document.getElementById(id+'Content'),button=w.document.getElementById(id+'Toggle');
+ assert.equal(content.style.display,'none');assert.equal(button.getAttribute('aria-expanded'),'false');
+ w.toggleCollapsiblePanel(id+'Content',id+'Toggle',id);
+ assert.equal(content.style.display,'block');assert.equal(panel.style.maxHeight,'260px');assert.equal(button.getAttribute('aria-expanded'),'true');assert.equal(w.localStorage.getItem('rpg.panel.'+id),'open');
+ w.initializeMenuBehaviour();assert.equal(content.style.display,'block');
+ w.toggleCollapsiblePanel(id+'Content',id+'Toggle',id);assert.equal(content.style.display,'none');assert.equal(w.localStorage.getItem('rpg.panel.'+id),'closed');
+}
 (async()=>{for(const selector of ['.mapCategoryButton','[data-keep-menu-open]','select','input']){section.style.display='block';section.querySelector(selector).click();await Promise.resolve();assert.equal(section.style.display,'block',selector)}section.querySelector('#dynamic').click();await Promise.resolve();assert.equal(section.style.display,'none');section.style.display='block';const nested=w.document.createElement('button');nested.onclick=()=>{};nested.innerHTML='<span>Fresque</span>';section.append(nested);nested.querySelector('span').click();await Promise.resolve();assert.equal(section.style.display,'none');section.style.display='block';nested.disabled=true;nested.click();await Promise.resolve();assert.equal(section.style.display,'block');for(const file of ['ui.js','reading.js','ally-discovery.js'])new(require('vm').Script)(fs.readFileSync(repo+file,'utf8'));console.log('OK dynamic document buttons, nested clicks, late buttons, disabled controls, tabs, selects and checkboxes');dom.window.close()})().catch(e=>{console.error(e);process.exitCode=1});

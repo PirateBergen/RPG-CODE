@@ -2604,18 +2604,7 @@ function ensureMapMusicPlayback(mapName, delay = 0) {
           const retryActive = currentMusic === "A" ? document.getElementById("musicA") : document.getElementById("musicB")
           const retryOk = !!(retryActive && !retryActive.paused && retryActive.src && retryActive.volume > 0.01)
           if (retryOk) return
-          const direct = document.getElementById("musicA")
-          if (!direct) return
-          const src = /^(https?:|data:|blob:|\/|audio\/)/i.test(mapMusic[mapName]) ? mapMusic[mapName] : "audio/" + mapMusic[mapName]
-          stopAllMusic()
-          direct.src = src
-          direct.loop = true
-          direct.currentTime = 0
-          direct.__baseVolume = 1
-          direct.__audioChannel = "music"
-          direct.volume = (typeof getUserMusicVolume === "function") ? getUserMusicVolume() : 0.8
-          direct.play().catch(() => {})
-          currentMusic = "A"
+          startMapMusicDirect(mapMusic[mapName])
         }, 700)
       }
     }, 1200)
@@ -2625,9 +2614,13 @@ function ensureMapMusicPlayback(mapName, delay = 0) {
 function playInitialMapMusic(mapName) {
   if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
   if (!mapName || !mapMusic[mapName]) return
+  startMapMusicDirect(mapMusic[mapName])
+}
+
+function startMapMusicDirect(track) {
   const direct = document.getElementById("musicA")
   if (!direct) return
-  const src = /^(https?:|data:|blob:|\/|audio\/)/i.test(mapMusic[mapName]) ? mapMusic[mapName] : "audio/" + mapMusic[mapName]
+  const src = /^(https?:|data:|blob:|\/|audio\/)/i.test(track) ? track : "audio/" + track
   stopAllMusic()
   direct.src = src
   direct.loop = true

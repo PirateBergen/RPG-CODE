@@ -25,18 +25,7 @@ function reduceExplorationRequest(current,id,seed) {
     root.game ||= {}
     let result
     if(request.kind==="summon"){result=resolveExplorationSummon(root,request,id,now)}else if(request.kind==="relic"){result=resolveBalrogSwordRequest(root,request)}else if(request.kind==="dice"){
-      const max=Number(request.payload?.max);if(![4,6,8,10,12,20,100].includes(max))throw Error("Dé invalide")
-      const roll=combatRandom(seed)(max),stat=request.payload?.stat,diceKind=request.payload?.diceKind||"free"
-      if(!["free","chance"].includes(diceKind))throw Error("Type de jet inconnu")
-      if(diceKind==="chance"&&(stat||!COMBAT_CHARACTERS.includes(request.actor)||!root.characters?.[request.actor]))throw Error("Le jet de Chance nécessite un personnage et ne peut pas cumuler une autre statistique")
-      if(stat&&!['force','charme','perspi','chance','defense'].includes(stat))throw Error("Statistique invalide")
-      const value=diceKind==="chance"?calibratedHeroRoll(root.combat?.phase==="active"&&root.combat.balanceVersion===3?combatCharacter(root,request.actor):getEffectiveCharacterData(request.actor,root.characters[request.actor]),roll,max).bonus:stat?combatInt(getEffectiveCharacterData(request.actor,root.characters?.[request.actor]||{})[stat]):0
-      recordHeroCritical(root,request.actor,roll===max,roll===1);root.diceRoll||={};root.diceRoll[id]={player:request.actor,dice:max,result:roll+value,...(stat||diceKind==="chance"?{rawRoll:roll}:{}),...(diceKind==="chance"?{diceKind,bonus:value}:{}),time:now,sender:request.actor}
-      if(diceKind==="chance"){
-        root.game.sessionLog||={};root.game.sessionLog["dice-"+id]={text:heroDisplayName(request.actor)+" — Chance D"+max+" : "+roll+" + "+value+" = "+(roll+value)+(roll===1?" (échec naturel)":roll===max?" (critique naturel)":""),time:now,display:new Date(now).toTimeString().slice(0,5),status:"applied",requestId:id}
-        Object.entries(root.game.sessionLog).sort((a,b)=>(b[1].time||0)-(a[1].time||0)).slice(200).forEach(([key])=>delete root.game.sessionLog[key])
-      }
-      const entries=Object.keys(root.diceRoll);entries.slice(0,Math.max(0,entries.length-80)).forEach(key=>delete root.diceRoll[key]);result={mode:"dice",roll,dice:max,...(diceKind==="chance"?{diceKind,bonus:value,total:roll+value}:{})}
+      result=resolveExplorationDice(root,request,id,seed,now)
     }else if(request.kind==="book"){
       const book=root.game.mapLoreBook,entry=MAP_LORE_BOOK_ENTRIES[book?.id]
       if(!book?.active || book.claimedBy || !entry || book.id!==request.payload?.bookId || book.time!==request.payload?.bookTime || book.map!==root.game.map)throw new Error("Ce livre n’est plus disponible")
@@ -77,6 +66,31 @@ function reduceExplorationRequest(current,id,seed) {
     old.slice(0,Math.max(0,old.length-120)).forEach(([key])=>delete root.game.explorationEvents[key])
     return root
   }catch(error){const unchanged=combatClone(current);unchanged.explorationRequests[id]={...queued,status:"failed",error:error.message};return unchanged}
+}
+
+function resolveExplorationDice(root,request,id,seed,now){
+  const max=Number(request.payload?.max)
+  if(![4,6,8,10,12,20,100].includes(max))throw Error("Dé invalide")
+  const roll=combatRandom(seed)(max),stat=request.payload?.stat,diceKind=request.payload?.diceKind||"free"
+  if(!["free","chance"].includes(diceKind))throw Error("Type de jet inconnu")
+  if(diceKind==="chance"&&(stat||!COMBAT_CHARACTERS.includes(request.actor)||!root.characters?.[request.actor]))throw Error("Le jet de Chance nécessite un personnage et ne peut pas cumuler une autre statistique")
+  if(stat&&!['force','charme','perspi','chance','defense'].includes(stat))throw Error("Statistique invalide")
+  const value=diceKind==="chance"
+    ?calibratedHeroRoll(root.combat?.phase==="active"&&root.combat.balanceVersion===3
+      ?combatCharacter(root,request.actor)
+      :getEffectiveCharacterData(request.actor,root.characters[request.actor]),roll,max).bonus
+    :stat?combatInt(getEffectiveCharacterData(request.actor,root.characters?.[request.actor]||{})[stat]):0
+  recordHeroCritical(root,request.actor,roll===max,roll===1)
+  root.diceRoll||={}
+  root.diceRoll[id]={player:request.actor,dice:max,result:roll+value,...(stat||diceKind==="chance"?{rawRoll:roll}:{}),...(diceKind==="chance"?{diceKind,bonus:value}:{}),time:now,sender:request.actor}
+  if(diceKind==="chance"){
+    root.game.sessionLog||={}
+    root.game.sessionLog["dice-"+id]={text:heroDisplayName(request.actor)+" — Chance D"+max+" : "+roll+" + "+value+" = "+(roll+value)+(roll===1?" (échec naturel)":roll===max?" (critique naturel)":""),time:now,display:new Date(now).toTimeString().slice(0,5),status:"applied",requestId:id}
+    Object.entries(root.game.sessionLog).sort((a,b)=>(b[1].time||0)-(a[1].time||0)).slice(200).forEach(([key])=>delete root.game.sessionLog[key])
+  }
+  const entries=Object.keys(root.diceRoll)
+  entries.slice(0,Math.max(0,entries.length-80)).forEach(key=>delete root.diceRoll[key])
+  return {mode:"dice",roll,dice:max,...(diceKind==="chance"?{diceKind,bonus:value,total:roll+value}:{})}
 }
 
 function resolveExplorationSummon(root,request,id,time){

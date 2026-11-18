@@ -119,19 +119,44 @@ async function updateSummonedAlly(id,change){
  if(!change.remove){if(!Number.isFinite(change.x)||!Number.isFinite(change.y))throw Error("Position invalide");command.x=Math.round(Math.max(0,Math.min(el.offsetWidth,change.x)));command.y=Math.round(Math.max(0,Math.min(el.offsetHeight,change.y)))}
  const result=await reliableRootTransaction(root=>applyFreeAllyTokenChange(root,uid,revision,command));if(!result.committed)throw Error("L’invocation ou la carte a changé");return true
 }
+function createSummonedAllyToken(map,id,pnj){
+ const token=document.createElement("div"),image=document.createElement("img"),name=document.createElement("span")
+ token.className="summonedAllyToken";token.dataset.summonId=id
+ image.src="images/"+pnj.image;image.alt=pnj.name;image.draggable=false
+ name.textContent=pnj.name;token.append(image,name);map.appendChild(token)
+ token.addEventListener("pointerdown",event=>{
+  if(event.button!==0||!isGM||window.__authRole!=="gm"||token.__saving||event.target.closest("button"))return
+  try{requireExplorationConnection()}catch(e){showNotification(e.message);return}
+  event.preventDefault();event.stopPropagation()
+  token.__pointer=event.pointerId;token.setPointerCapture?.(event.pointerId)
+ })
+ token.addEventListener("pointermove",event=>{
+  if(token.__pointer!==event.pointerId||!isGM)return
+  const rect=map.getBoundingClientRect(),scale=Number(cameraZoom)||1
+  token.style.left=Math.max(0,Math.min(map.offsetWidth,(event.clientX-rect.left)/scale))+"px"
+  token.style.top=Math.max(0,Math.min(map.offsetHeight,(event.clientY-rect.top)/scale))+"px"
+ })
+ token.addEventListener("pointerup",async event=>{
+  if(token.__pointer!==event.pointerId)return
+  token.__pointer=null;token.__saving=true
+  try{await updateSummonedAlly(id,{x:parseFloat(token.style.left),y:parseFloat(token.style.top)})}
+  catch(e){showNotification(e.message)}
+  finally{token.__saving=false;syncSummonedAllies()}
+ })
+ for(const type of ["pointercancel","lostpointercapture"])token.addEventListener(type,()=>{
+  if(token.__pointer!=null){token.__pointer=null;syncSummonedAllies()}
+ })
+ return token
+}
 function syncSummonedAllies(){
  const inCombat=gameState==="COMBAT"&&combatActive&&window.__combatSnapshot?.phase==="active",visible=gameStarted&&((gameState==="GAME"&&!combatActive)||inCombat)&&!window.__sessionBusy,gm=isGM&&window.__authRole==="gm",map=document.getElementById("map"),button=document.getElementById("allyBtn")
  if(button)button.style.display=gm&&gameStarted&&inCombat?"flex":"none"
  const entries=visible?Object.entries(window.__summonedAllies||{}).filter(([,t])=>(inCombat?t?.combatId===window.__combatSnapshot.id:!t?.combatId&&t?.map===currentMap)&&ALLY_PNJS.some(p=>p.id===t.pnjId)):[],wanted=new Set(entries.map(([id])=>id))
- document.querySelectorAll(".summonedAllyToken").forEach(el=>{if(!wanted.has(el.dataset.summonId))el.remove()})
+ const tokens=new Map()
+ document.querySelectorAll(".summonedAllyToken").forEach(el=>{const id=el.dataset.summonId;if(!wanted.has(id))el.remove();else if(el.parentElement===map)tokens.set(id,el)})
  if(!map)return
- for(const [id,data]of entries){const pnj=ALLY_PNJS.find(p=>p.id===data.pnjId);let token=[...map.querySelectorAll(".summonedAllyToken")].find(el=>el.dataset.summonId===id)
-  if(!token){token=document.createElement("div");token.className="summonedAllyToken";token.dataset.summonId=id;const image=document.createElement("img"),name=document.createElement("span");image.src="images/"+pnj.image;image.alt=pnj.name;image.draggable=false;name.textContent=pnj.name;token.append(image,name);map.appendChild(token)
-   token.addEventListener("pointerdown",event=>{if(event.button!==0||!isGM||window.__authRole!=="gm"||token.__saving||event.target.closest("button"))return;try{requireExplorationConnection()}catch(e){showNotification(e.message);return}event.preventDefault();event.stopPropagation();token.__pointer=event.pointerId;token.setPointerCapture?.(event.pointerId)})
-   token.addEventListener("pointermove",event=>{if(token.__pointer!==event.pointerId||!isGM)return;const rect=map.getBoundingClientRect(),scale=Number(cameraZoom)||1;token.style.left=Math.max(0,Math.min(map.offsetWidth,(event.clientX-rect.left)/scale))+"px";token.style.top=Math.max(0,Math.min(map.offsetHeight,(event.clientY-rect.top)/scale))+"px"})
-   token.addEventListener("pointerup",async event=>{if(token.__pointer!==event.pointerId)return;token.__pointer=null;token.__saving=true;try{await updateSummonedAlly(id,{x:parseFloat(token.style.left),y:parseFloat(token.style.top)})}catch(e){showNotification(e.message)}finally{token.__saving=false;syncSummonedAllies()}})
-   for(const type of ["pointercancel","lostpointercapture"])token.addEventListener(type,()=>{if(token.__pointer!=null){token.__pointer=null;syncSummonedAllies()}})
-  }
+ for(const [id,data]of entries){const pnj=ALLY_PNJS.find(p=>p.id===data.pnjId);let token=tokens.get(id)
+  if(!token)token=createSummonedAllyToken(map,id,pnj)
   token.style.setProperty("--summon-color",pnj.color);token.style.cursor=gm?"grab":"default";token.setAttribute("aria-label",pnj.name+" — allié invoqué")
   if(token.__pointer==null&&!token.__saving){token.style.left=data.x+"px";token.style.top=data.y+"px"}
   let close=token.querySelector("button");if(!gm)close?.remove();else if(!close){close=document.createElement("button");close.type="button";close.textContent="×";close.title="Retirer cette invocation";close.setAttribute("aria-label","Retirer "+pnj.name);close.onpointerdown=e=>e.stopPropagation();close.onclick=async e=>{e.stopPropagation();close.disabled=true;try{await updateSummonedAlly(id,{remove:true})}catch(error){showNotification(error.message)}finally{close.disabled=false}};token.appendChild(close)}

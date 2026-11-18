@@ -944,12 +944,18 @@ function togglePlayerAttacks(){
 // Ciblage intelligent selon le type d'attaque
 
 
-function renderAllMobPanels() {
-  const ex=document.getElementById("mobAttackPanel"); if(ex) ex.remove()
+function renderAllMobPanels(snapshot=null) {
+  const active = MOB_SLOTS.filter(s => activeMobSlots[s])
+  const fromSnapshot=!!snapshot&&active.every(slot=>snapshot[slot])
+  const renderKey=fromSnapshot?JSON.stringify([isGM,snapshot.id,snapshot.turnState?.round,active.map(slot=>[slot,snapshot[slot]])]):null
+  const ex=document.getElementById("mobAttackPanel")
+  if(combatActive&&active.length&&renderKey&&ex?.__renderKey===renderKey)return
+  if(ex) ex.remove()
   const exT=document.getElementById("mobAttackToggle"); if(exT) exT.remove()
-  const active = MOB_SLOTS.filter(s => activeMobSlots[s]); if (!active.length || !combatActive) return
+  if (!active.length || !combatActive) return
 
   const container = document.createElement("div"); container.id = "mobAttackPanel"
+  container.__renderKey=renderKey
   container.style.cssText = "position:fixed;top:calc(96px + 38vh - 132px);right:22px;width:320px;display:flex;flex-direction:column;gap:10px;z-index:9999999;max-height:48vh;overflow-y:auto;padding:4px;"
 
   // Grab & drop pour le MJ
@@ -972,7 +978,15 @@ function renderAllMobPanels() {
   }
 
   document.body.appendChild(container)
-  active.forEach(slot => { db.ref("combat/"+slot).once("value", snap => { if(!container.isConnected||document.getElementById("mobAttackPanel")!==container)return;const md=snap.val(); if(md){container.appendChild(buildMobSubPanel(md,slot));if(typeof installKrakenEnemyPanelControls==="function")installKrakenEnemyPanelControls(container)} }) })
+  const append=(slot,md)=>{
+    if(!md||!container.isConnected||document.getElementById("mobAttackPanel")!==container)return
+    container.appendChild(buildMobSubPanel(md,slot))
+    if(typeof installKrakenEnemyPanelControls==="function")installKrakenEnemyPanelControls(container)
+  }
+  active.forEach(slot=>{
+    if(fromSnapshot)append(slot,snapshot[slot])
+    else db.ref("combat/"+slot).once("value",snap=>append(slot,snap.val()))
+  })
 }
 
 function buildMobSubPanel(mobData, slot) {

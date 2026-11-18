@@ -3,7 +3,7 @@
 window.__entryChoice=null
 window.__entranceEpoch=0
 window.__entryConfirmed=false
-let entranceBusy=false,entranceLaunch=null,entranceJoinTimer=null,entranceIdentity=null
+let entranceBusy=false,entranceLaunch=null,entranceJoinTimer=null,entranceIdentity=null,entranceStartAttempt=null
 function entranceMessage(text){const e=document.getElementById("entranceFeedback");if(e)e.textContent=text||""}
 function renderEntrance(){
  const gm=window.__authRole==="gm"
@@ -90,21 +90,32 @@ const entranceOriginalIntro=startIntro
 startIntro=function(){if(!window.__entryConfirmed){renderEntrance();return}const r=entranceOriginalIntro();renderEntrance();return r}
 const entranceOriginalStartGame=startGame
 startGame=async function(){
- if(window.__sessionBusy||gameStarted)return
+ if(window.__sessionBusy||gameStarted||entranceStartAttempt)return
  try{requireActionConnection()}catch(e){showNotification(e.message);return}
  if(window.__authRole!=="gm"){queueEntranceJoin();return}
  if(!window.__entryConfirmed)return
- window.__entranceEpoch++
- if(window.__isolatedTestMode){window.isNewGame=false;entranceOriginalStartGame();return}
- const revision=persistenceRevision||"initial",id=db.ref().push().key,introduction=!!window.isNewGame
+ const attempt={epoch:++window.__entranceEpoch,uid:window.__authUid,revision:persistenceRevision||"initial"}
+ entranceStartAttempt=attempt
+ const button=document.getElementById("startButton"),label=button?.querySelector(".btn-inner"),previousLabel=label?.textContent,wasDisabled=button?.disabled
+ if(button){button.disabled=true;button.setAttribute("aria-busy","true")}
+ if(label)label.textContent="OUVERTURE…"
+ const isCurrent=()=>window.__entryConfirmed&&window.__authRole==="gm"&&window.__authUid===attempt.uid&&window.__entranceEpoch===attempt.epoch&&(persistenceRevision||"initial")===attempt.revision&&!window.__sessionBusy
  try{
+  if(window.__isolatedTestMode){window.isNewGame=false;entranceOriginalStartGame();return}
+  const id=db.ref().push().key,introduction=!!window.isNewGame
   const result=await transactCombatRoot(root=>{
-   if(root?.roles?.[window.__authUid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==revision)return undefined
-   const next=combatClone(root);next.game||={};next.game.lobbyLaunch={id,time:Date.now(),revision,introduction};return next
+   if(!isCurrent()||root?.roles?.[attempt.uid]!=="gm"||root.sessionControl?.phase||(root.sessionControl?.revision||"initial")!==attempt.revision)return undefined
+   const next=combatClone(root);next.game||={};next.game.lobbyLaunch={id,time:Date.now(),revision:attempt.revision,introduction};return next
   })
+  if(!isCurrent())return
   if(!result.committed)throw Error("La partie se synchronise. Réessayez.")
   entranceOriginalStartGame()
  }catch(e){showNotification("Lancement impossible : "+e.message)}
+ finally{
+  if(entranceStartAttempt===attempt)entranceStartAttempt=null
+  if(button){button.disabled=wasDisabled;button.removeAttribute("aria-busy")}
+  if(label)label.textContent=previousLabel
+ }
 }
 const entranceOriginalIntroLayer=showIntroLayer
 showIntroLayer=function(...args){const r=entranceOriginalIntroLayer(...args);renderEntrance();return r}

@@ -296,7 +296,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if(position && selected?.id!==tokenId && Number.isFinite(position.x)){token.style.left=position.x+"px";token.style.top=position.y+"px"}
         }
       })
-      renderAllMobPanels(); updateThuumButton(); refreshCombatActionStates()
+      renderAllMobPanels(data); updateThuumButton(); refreshCombatActionStates()
 
       if(data.phase==="finished"&&window.__pendingCombatOutcome)observeCombatEnding(window.__pendingCombatOutcome)
     }

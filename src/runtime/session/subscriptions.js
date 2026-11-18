@@ -108,7 +108,7 @@ db.ref("combat/mob").on("value", snap => {
       const mobAttackPanel = document.getElementById("mobAttackPanel")
       const mobPanelMissing = !mobAttackPanel || mobAttackPanel.style.display === "none"
       if (typeof renderAllMobPanels === "function" && mobPanelMissing) {
-        setTimeout(() => renderAllMobPanels(), 40)
+        setTimeout(() => renderAllMobPanels(window.__combatSnapshot), 40)
       } else {
         const spFill = document.getElementById("subPanelHPFill_mob")
         if (spFill) {

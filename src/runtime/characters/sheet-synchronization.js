@@ -8,7 +8,7 @@ function watchCharacter(snapshot) {
   window.__combatConditionCharacters ||= {}; window.__combatConditionCharacters[playerID]={hp:data.hp,lvl:data.lvl,...(canAccessCharacter(playerID)?{maxHp:getCharacterMaxHp(playerID,{...data,helMark:false})}:{})}
   if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
 
-  updateTokenStats(playerID)
+  updateTokenStats(playerID, data)
   updateGMStats(playerID, data)
 
   const xp         = parseInt(data.xp)        || 0

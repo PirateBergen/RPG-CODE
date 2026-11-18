@@ -28,15 +28,12 @@ function updateTokenFromDB(snapshot) {
   if (selected?.id === id && _state.tokenDragging) return
   const token = document.getElementById(id)
   if (!token) return
-  const currentX = parseInt(token.style.left) || 0
-  const currentY = parseInt(token.style.top)  || 0
   if (id === "bibi") { tokenFollowLabel(data) }
   if(!Number.isFinite(data.x)||!Number.isFinite(data.y))return
   token.style.left = data.x + "px"
   token.style.top  = data.y + "px"
   if (data.facing === 1) token.classList.add("faceLeft")
   else if (data.facing === 0) token.classList.remove("faceLeft")
-  updateTokenStats(id)
   if (data.hp !== undefined) {
     if (id === "greg" && data.hp < 50) showBibiSpeech("Miiii !")
     db.ref("characters/" + id + "/lvl").once("value", lvlSnap => {
@@ -51,10 +48,10 @@ function updateTokenFromDB(snapshot) {
   }
 }
 
-function updateTokenStats(id) {
+function updateTokenStats(id, characterData = null) {
   const stats = document.getElementById("stats_" + id)
   if (!stats) return
-  readCharacter(id, snapshot => {
+  const render = snapshot => {
     const data = snapshot.val(); if (!data) return
     const hp         = data.hp || 0
     const curse      = data.curse || 0
@@ -88,7 +85,9 @@ function updateTokenStats(id) {
     const bar = document.getElementById("hp_" + id)
     if (bar) bar.style.width = Math.max(0, Math.min(100, (hp / maxHP) * 100)) + "%"
     updateTokenGlow(id, hp)
-  })
+  }
+  if (characterData) render({val:()=>characterData})
+  else readCharacter(id, render)
 }
 
 

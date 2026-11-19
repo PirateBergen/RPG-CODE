@@ -1233,10 +1233,11 @@ function presentKingScene(result){
  const milliseconds=result.kingWarning||result.kingRelease||result.kingTransition?3500:scene==="odin"?8500:7000
  if(scene==="intro"){
   window.__kingIntroAudioCombatId=combatId;stopAllMusic();close.disabled=true;close.textContent="Entrée du Roi — lecture en cours…"
-  const portrait=scope.node(document.createElement("img"));portrait.className="kingIntroPortrait";portrait.src="images/roi.png";portrait.alt="Le Roi";canvas.hidden=true;canvas.before(portrait)
+  const portrait=scope.node(document.createElement("img"));portrait.className="kingIntroPortrait";portrait.src="images/roi.png";portrait.alt="Le Roi";canvas.hidden=true;stage.hidden=true;overlay.classList.add("kingIntroOnly");overlay.append(portrait)
   const voice=scope.audio(new Audio("audio/roi.mp3"));setManagedAudioBaseVolume(voice,1)
   const ended=()=>{
    if(scope.cancelled||!voicePlaying)return
+   portrait.remove();stage.hidden=false;overlay.classList.remove("kingIntroOnly")
    voicePlaying=false;if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId
    close.disabled=!gm;close.textContent=gm?"Continuer — fermer pour tous (Échap)":"En attente du MJ"
    if(window.__combatSnapshot?.id===combatId&&combatActive)crossfadeMusic("audio/worldboss.mp3")

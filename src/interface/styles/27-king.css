@@ -19,3 +19,5 @@
 #kingScene.kingOnField.kingPreparing .kingSceneStage{top:50%;transform:translate(-50%,-50%)}
 
 #kingScene.kingOnField .kingSceneStage{z-index:2}.kingAttackFlash{position:fixed;inset:0;pointer-events:none;z-index:1;animation:kingAttackFlash .65s ease-out both}@keyframes kingAttackFlash{0%{background:#fff2ce;opacity:.65}18%{background:#ff4036;opacity:.35}100%{background:#8c1020;opacity:0}}.kingImpactShake{animation:kingImpactShake .7s ease-out both}@keyframes kingImpactShake{0%,100%{translate:0 0}10%{translate:-10px 6px}22%{translate:9px -7px}35%{translate:-7px -3px}48%{translate:6px 5px}62%{translate:-4px 2px}78%{translate:2px -2px}}@media(prefers-reduced-motion:reduce){.kingImpactShake,.kingAttackFlash{animation:none!important}}
+
+#kingScene.kingIntroOnly .kingIntroPortrait{display:block;max-width:90vw;height:80dvh;object-fit:contain}#kingScene .kingSceneStage[hidden]{display:none}

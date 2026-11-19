@@ -1215,7 +1215,7 @@ function presentKingScene(result){
  outcome.hidden=!!result.kingWarning
  stage.append(title,canvas,caption,outcome,close);overlay.append(stage);document.body.append(overlay)
  const onField=scene!=="intro"&&scene!=="odin"
- if(onField){overlay.classList.add("kingOnField");overlay.setAttribute("role","region");overlay.removeAttribute("aria-modal");overlay.append(canvas);canvas.className="kingFieldCanvas"}
+ if(onField){overlay.classList.add("kingOnField");overlay.classList.toggle("kingPreparing",!!result.kingWarning);overlay.setAttribute("role","region");overlay.removeAttribute("aria-modal");overlay.append(canvas);canvas.className="kingFieldCanvas"}
  let voicePlaying=scene==="intro",pendingClose=false
  const finish=()=>{if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId;window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
  const onClosed=(id,closed)=>{if(id===combatId&&closed[sceneId]){if(voicePlaying)pendingClose=true;else scope.cancel()}};window.__kingSceneClosed=onClosed

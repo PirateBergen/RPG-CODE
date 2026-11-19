@@ -6714,3 +6714,5 @@ body.krakenEncounter #combatReactionBar{display:none}
 #kingScene.kingOnField .kingFieldCanvas{position:fixed;inset:0;width:100vw;height:100dvh;max-width:none;max-height:none;object-fit:fill;pointer-events:none;z-index:-1}
 #kingScene.kingOnField .kingSceneStage{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:min(660px,calc(100% - 20px));max-height:30dvh;padding:8px 12px;border:0;background:rgba(8,10,18,.85);box-shadow:none;pointer-events:none}
 #kingScene.kingOnField .kingSceneStage h2{font-size:16px;margin:0 0 4px}#kingScene.kingOnField .kingSceneStage p{margin:3px 0;font-size:13px}#kingScene.kingOnField .kingSceneStage button{pointer-events:auto;min-height:44px;padding:6px 12px;font-size:13px}
+
+#kingScene.kingOnField.kingPreparing .kingSceneStage{top:50%;transform:translate(-50%,-50%)}

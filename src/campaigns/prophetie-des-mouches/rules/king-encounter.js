@@ -55,7 +55,7 @@ function kingIncomingDamage(root,request,from,slot,amount){
 }
 function kingReactionReduction(mob,attack,id,reduction,charge){
  if(!isKingEncounter(mob))return reduction
- reduction=Math.max(reduction,charge?.kingShelter?.[id]||0)
+ reduction=Math.max(reduction,charge?.kingShelter?.[id]||0,charge?.kingProtections?.[id]||0)
  if(attack.kingStage===5){
   if(mob.king.odinInvoked)return 100
   if((mob.king.refugeTargets||[]).includes(id))reduction=Math.max(reduction,[25,60,85,100][kingAuroraCount(mob)])
@@ -115,7 +115,14 @@ function applyKingTactic(current,uid,combatId,revision,change,id){
  if(!COMBAT_MOBS.includes(slot)||!isKingEncounter(mob)||mob.hp<=0||change.phase!==kingStage(mob))throw Error("La phase du Roi a changé")
  mob.king.specialsUsed||={};mob.king.auroras||={}
  let message,scene
- if(change.kind==="drain"){
+ if(change.kind==="protections"){
+  const charge=mob.chargingSpecial,decisions=change.decisions
+  if(!charge||charge.id!==change.chargeId)throw Error("L’attaque annoncée a changé")
+  const allowed=[...COMBAT_CHARACTERS,...(root.combat.eloSummon?.active&&root.combat.eloSummon.hp>0?["eloSummon"]:[])].filter(actor=>combatFriendlyTarget(root,actor)?.hp>0)
+  if(!decisions||typeof decisions!=="object"||Array.isArray(decisions)||Object.keys(decisions).length!==allowed.length||allowed.some(actor=>!Number.isInteger(decisions[actor])||decisions[actor]<0||decisions[actor]>100)||Object.keys(decisions).some(actor=>!allowed.includes(actor)))throw Error("Validez une protection de 0 à 100 % pour chaque personnage vivant")
+  charge.kingProtections=combatClone(decisions);charge.kingProtectionsConfirmed=true
+  message="Le MJ valide les protections de « "+charge.name+" » : "+allowed.map(actor=>combatFriendlyName(actor)+" −"+decisions[actor]+" %").join(" · ")
+ }else if(change.kind==="drain"){
   if(mob.chargingSpecial?.kingStage!==2||mob.chargingSpecial.id!==change.chargeId)throw Error("Ce drain n’est plus en préparation")
   delete mob.chargingSpecial;mob.king.specialsUsed[2]=true;mob.specialUsed=kingSpecialUsed(mob);kingGrantOpening(mob)
   message="Le MJ valide l’interruption du drain : aucun soin, deux actions offensives de héros à +25 %.";scene="blood"

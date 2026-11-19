@@ -18,7 +18,7 @@ function appendBossEncounterPanels(panel,mob,slot){
  const box=document.createElement("section");box.className="bossEncounterSummary"
  if(isKingEncounter(mob)){const line=document.createElement("p");line.textContent="Phase "+kingStage(mob)+" / 5 — "+kingPhaseInfo(mob).name;box.append(line)}
  if(isKrakenEncounter(mob)){const line=document.createElement("p");line.textContent="Phase "+krakenStage(mob)+" / 3 — "+krakenStageName(mob)+(mob.krakenHold?" · "+heroDisplayName(mob.krakenHold.target)+" saisi":"");box.append(line)}
- const publicButton=document.createElement("button");publicButton.textContent="Phase, menace et indices révélés";publicButton.onclick=()=>openBossDossier(slot,false);box.append(publicButton)
+ if(!isKingEncounter(mob)){const publicButton=document.createElement("button");publicButton.textContent="Phase, menace et indices révélés";publicButton.onclick=()=>openBossDossier(slot,false);box.append(publicButton)}
  if(mob.chargingSpecial?.reaction){const reaction=document.createElement("button");reaction.textContent="Ouvrir les jets de réaction";reaction.onclick=()=>openCombatReaction(slot);box.append(reaction)}
  if(window.__authRole==="gm"){const notes=document.createElement("button");notes.textContent="Notes MJ — faiblesses et stratégies";notes.onclick=()=>openBossDossier(slot,true);box.append(notes)}
  panel.append(box)
@@ -31,7 +31,7 @@ async function sendBossTactic(slot,noteId,kind,stage){
 }
 function openBossDossier(slot,privateNotes=false){
  const c=window.__combatSnapshot,mob=c?.[slot];if(!combatActive||c?.phase!=="active"||!mob||mob.hp<=0)return
- if(privateNotes&&window.__authRole!=="gm")return
+ if((privateNotes||isKingEncounter(mob))&&window.__authRole!=="gm")return
  closeBossDossier();const overlay=document.createElement("div"),box=document.createElement("section"),title=document.createElement("h2"),content=document.createElement("div"),error=document.createElement("p"),close=document.createElement("button")
  overlay.id="bossDossierModal";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-label",privateNotes?"Notes MJ du world boss":"Informations du world boss");box.className="bossDossierBox";title.textContent=(privateNotes?"Notes MJ — ":"")+heroDisplayName(mob.name);error.setAttribute("role","alert");close.textContent="Fermer — Échap";close.onclick=closeBossDossier;const header=document.createElement("header"),topClose=document.createElement("button");topClose.className="bossDossierClose";topClose.textContent="Fermer";topClose.onclick=closeBossDossier;header.append(title,topClose);box.append(header,content,error,close);overlay.append(box);document.body.append(overlay)
  bossDossierContext={slot,combatId:c.id,name:mob.name,privateNotes,box,content,error,busy:false,signature:null}
@@ -75,5 +75,5 @@ function refreshKrakenAssistance(box,actor){
   button.onclick=async()=>{if(button.disabled||krakenAssistancePending.has(key))return;button.disabled=true;krakenAssistancePending.add(key);try{await submitCombatAction("hero",actor,{support:"krakenRelease",target:slot})}catch(error){showNotification(error.message)}finally{krakenAssistancePending.delete(key);refreshCombatActionStates()}};section.append(button,hint);box.prepend(section)
  }
 }
-function refreshBossEncounterLayout(){const c=window.__combatSnapshot;document.body.classList.toggle("krakenEncounter",!!(combatActive&&c?.phase==="active"&&COMBAT_MOBS.some(slot=>(isKrakenEncounter(c[slot])||isKingEncounter(c[slot]))&&c[slot].hp>0)));refreshBossDossier()}
+function refreshBossEncounterLayout(){const c=window.__combatSnapshot;const protection=document.getElementById("kingProtectionModal");if(protection&&(!combatActive||c?.id!==protection.dataset.combatId||c?.[protection.dataset.slot]?.chargingSpecial?.id!==protection.dataset.chargeId))closeKingProtection();document.body.classList.toggle("krakenEncounter",!!(combatActive&&c?.phase==="active"&&COMBAT_MOBS.some(slot=>(isKrakenEncounter(c[slot])||isKingEncounter(c[slot]))&&c[slot].hp>0)));refreshBossDossier();if(typeof refreshKingProtectionPrompt==="function")refreshKingProtectionPrompt()}
 document.addEventListener("DOMContentLoaded",()=>{db.ref("combat").on("value",refreshBossEncounterLayout);setInterval(refreshBossEncounterLayout,1000)})

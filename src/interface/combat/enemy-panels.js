@@ -157,6 +157,7 @@ function buildMobSubPanel(mobData, slot) {
       }
       bindCombatActionState(sBtn,slot,specialAtk,true,true)
       panel.appendChild(sBtn)
+      if(king&&mobData.chargingSpecial){const protections=document.createElement("button");protections.textContent="Protections MJ — avant l’impact";protections.onclick=()=>openKingProtection(slot);panel.append(protections)}
       if(mobData.chargingSpecial&&typeof openCombatReaction==="function"){
         const reactionButton=document.createElement("button");reactionButton.className="combatReactionLaunch";reactionButton.dataset.reactionSlot=slot;reactionButton.textContent=mobData.chargingSpecial.reaction?"Réactions / protections":"Faire réagir les joueurs";reactionButton.onclick=()=>openCombatReaction(slot);panel.appendChild(reactionButton)
       }
@@ -217,7 +218,7 @@ function buildMobSubPanel(mobData, slot) {
       sRow.appendChild(sLine)
       const sDesc = document.createElement("div")
       sDesc.classList.add("combatMobReadonlySpecialDescription"); sDesc.classList.toggle("is-unavailable",specialUsed)
-      sDesc.innerText = specialAtk.flavor || specialAtk.effect || "Attaque signature à usage unique."
+      sDesc.innerText = king ? "Attaque majeure du Roi." : specialAtk.flavor || specialAtk.effect || "Attaque signature à usage unique."
       sRow.appendChild(sDesc)
       panel.appendChild(sRow)
     }

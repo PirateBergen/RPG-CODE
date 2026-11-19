@@ -1,4 +1,5 @@
 function cleanupTransientGameUI(options = {}) {
+  if(typeof closeKingProtection==="function")closeKingProtection()
   window.__cancelHelNidhoggDuo?.();window.__cancelHelWrath?.();document.getElementById("helWrathMenu")?.__close?.()
   window.__cancelAntrePassage?.()
   window.__cancelQuantumGift?.()

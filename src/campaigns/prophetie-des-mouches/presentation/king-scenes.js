@@ -1,7 +1,7 @@
 const kingSceneImageCache=new Map()
 const KING_SCENE_TITLES={intro:"La Couronne qui refuse le destin",sentence:"Sentence royale",blood:"Le tribut de sang",schnaw:"Mes sujets vous dévoreront",sweep:"Personne ne décide de mon destin",aurora:"Turn Around",odin:"L’appel des aurores"}
 function loadKingSceneImages(scene){
- const files={roi:"roi.png",chnaw:"chnaw.png",odin:"odin.png",hel:"hel.png",nidhogg:"nhiddog.png",greg:"greg pion.png",elo:"ELO PION.png",pika:"pika-token.svg",bibi:"bibi.png",arena:"arenefinal.jpg"}
+ const files={roi:"roi.png",chnaw:"chnaw.png",odin:"odin.png",hel:"hel.png",nidhogg:"nhiddog.png",greg:"greg pion.png",elo:"ELO PION.png",pika:"pika-token.svg",bibi:"bibi.png",arena:"roi-salle-du-trone.jpg"}
  const wanted=["roi","arena",...(scene==="intro"?[]:["greg","elo","pika","bibi"]),...(scene==="schnaw"?["chnaw"]:[]),...(scene==="odin"?["odin"]:[])]
  return Promise.all(wanted.map(key=>{if(kingSceneImageCache.has(key))return kingSceneImageCache.get(key);const promise=new Promise(resolve=>{
   const file=files[key]
@@ -22,7 +22,8 @@ function presentKingScene(result){
  const gm=window.__authRole==="gm"||(!window.__authRole&&isGM)
  const overlay=document.createElement("div"),stage=document.createElement("section"),title=document.createElement("h2"),canvas=document.createElement("canvas"),caption=document.createElement("p"),outcome=document.createElement("p"),close=document.createElement("button")
  overlay.id="kingScene";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-label",KING_SCENE_TITLES[scene]||"Le Roi")
- stage.className="kingSceneStage";title.textContent=result.kingRelease?"Une aurore est libérée":(result.kingWarning?"Préparation — ":"")+(KING_SCENE_TITLES[scene]||"Le Roi");canvas.width=960;canvas.height=600;canvas.setAttribute("role","img");canvas.setAttribute("aria-label",title.textContent);outcome.textContent=result.explanation||result.message||"";close.textContent="Fermer — Échap";close.type="button"
+ stage.className="kingSceneStage";title.textContent=result.kingRelease?"Une aurore est libérée":(result.kingWarning?"Préparation — ":"")+(scene==="strike"?result.attack:KING_SCENE_TITLES[scene]||"Le Roi");canvas.width=960;canvas.height=600;canvas.setAttribute("role","img");canvas.setAttribute("aria-label",title.textContent);outcome.textContent=result.explanation||result.message||"";close.textContent="Fermer — Échap";close.type="button"
+ outcome.hidden=!!result.kingWarning
  stage.append(title,canvas,caption,outcome,close);overlay.append(stage);document.body.append(overlay)
  const finish=()=>{window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
  const onClosed=(id,closed)=>{if(id===combatId&&closed[sceneId])scope.cancel()};window.__kingSceneClosed=onClosed
@@ -41,8 +42,9 @@ function presentKingScene(result){
  loadKingSceneImages(scene).then(images=>{
   if(scope.cancelled||window.__combatSnapshot?.id!==combatId)return
   if(["sentence","schnaw","sweep","aurora"].includes(scene)){const rumble=scope.audio(new Audio("audio/tremblement.mp3"));setManagedAudioBaseVolume(rumble,.18,"effects");rumble.play().catch(()=>{})}
-  const fired=new Set(),sound=(id)=>{if(fired.has(id))return;fired.add(id);const file={pow:"pow.mp3",schnaw:"chnaws.mp3",crystal:"cristalfx.mp3"}[id];if(!file)return;const audio=scope.audio(new Audio("audio/"+file));setManagedAudioBaseVolume(audio,id==="pow"?.35:.4,"effects");audio.play().catch(()=>{})}
+  const fired=new Set(),sound=(id)=>{if(fired.has(id))return;fired.add(id);const file={pow:"pow.mp3",schnaw:"chnaws.mp3",crystal:"cristalfx.mp3"}[id];if(!file)return;const audio=scope.audio(new Audio("audio/"+file));setManagedAudioBaseVolume(audio,id==="pow"?(result.kingWarning?.2:.35):.4,"effects");audio.play().catch(()=>{})}
   const data={...result,scene,kingLights:result.kingLights??result.lights??0},draw=createKingSceneRenderer(canvas,images,data,text=>{if(caption.textContent!==text)caption.textContent=text},sound),reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  if(reduced&&result.kingWarning&&scene==="sentence")sound("pow")
   if(result.kingTransition||result.kingRelease){draw(scene==="intro"?4:5.5);caption.textContent=result.message||caption.textContent;return}
   if(reduced){draw(result.kingWarning?2:9.5);return}
   const started=performance.now();let last=0
@@ -69,7 +71,7 @@ function renderKingBattlefield(){
  overlay?.remove();overlay=document.createElement("div");overlay.id="kingBattlefield";overlay.dataset.signature=signature;overlay.setAttribute("aria-label","Repères du combat du Roi");host.prepend(overlay)
  if(phase===5&&kingAuroraCount(mob)>0){const sky=document.createElement("div");sky.className="kingFreedSky";sky.setAttribute("aria-label","Les aurores libérées illuminent le ciel");overlay.append(sky)}
  const marker=(name,cls,x,y,text)=>{const node=document.createElement("div");node.className=cls;node.style.left=x+"%";node.style.top=y+"%";node.dataset.kingMarker=name;const label=document.createElement("span");label.textContent=text;node.append(label);overlay.append(node)}
- if(phase===1)for(let i=0;i<mob.king.pillars;i++)marker("pillar-"+i,"kingPillar",32+i*18,47,"Pilier")
+
  if(phase===2)for(let i=0;i<2;i++)marker("ritual-"+i,"kingRitual",24+i*50,40,"Rituel Schnaw")
  if(phase===5&&mob.chargingSpecial?.kingStage===5){for(let i=0;i<3;i++)marker("aurora-"+i,"kingAuroraMarker"+(mob.king.auroras?.[i]?" is-released":""),20+i*30,38,"Aurore "+(i+1)+(mob.king.auroras?.[i]?" libérée":""));marker("refuge","kingRefuge",50,72,mob.king.refugesConfirmed?"Refuges validés par le MJ":"Refuge — validation MJ")}
 }
@@ -96,10 +98,12 @@ function createKingSceneRenderer(canvas,images,result,setCaption,onSound){
   if(sc==='intro'){
    glow(480,290,260,'#b59a48',.4);sprite('roi',480,470,325*(.94+.06*fade(0,5)));crown(480,125,55,'#dfc783',t>7);particles('#edcf85',50,480,340,220,((t*.08)%1));
    caption(t<5?'« Enfants de mouche… Votre prophétie ne signifie rien. »':'« Personne ne décide de mon destin. »');
+  }else if(sc==='strike'){
+   sprite('roi',480,315,190);players();glow(targetX,440,75,'#ce344e',Math.max(0,1-Math.abs(t-5)/3));caption(result.attack||'Le Roi attaque');cue('pow',4.5);
   }else if(sc==='sentence'){
-   sprite('roi',480,315,190);crown(480,110,30,'#e5c580');players();c.save();c.fillStyle='#82736d';c.fillRect(370,345,35,73);c.fillStyle='#b5a895';c.fillRect(365,340,45,10);c.restore();const aimX=success?390:targetX;
-   if(t<4.5){line([[480,300],[aimX,480]],'#f06d66',5,.3+.25*Math.sin(t*5));ring(targetX,480,36,13,'#ff7676');crown(targetX,399,20,'#f47676');caption('Sentence annoncée · rejoindre l’abri ou sortir de la trajectoire');}
-   else{const endY=success?345:480;line([[480,300],[aimX,endY]],'#ffad7c',26,clamp(1-(t-4.5)*1.5));line([[480,300],[aimX,endY]],'#fff2bb',7,clamp(1-(t-4.5)*1.5));particles('#edc795',50,aimX,endY,150,clamp((t-4.5)/2));caption(success?'Le pilier absorbe Sentence royale.':'Sentence royale frappe le personnage exposé.');cue('pow',4.5)}
+   sprite('roi',480,315,190);crown(480,110,30,'#e5c580');players();const aimX=targetX;
+   if(t<4.5){line([[480,300],[aimX,480]],'#f06d66',5,.3+.25*Math.sin(t*5));ring(targetX,480,36,13,'#ff7676');crown(targetX,399,20,'#f47676');particles('#ad9785',30,480,320,200,(t*.12)%1);caption(result.kingWarning?(result.message||'Le Roi prépare Sentence royale — '+(result.targets||[]).map(combatFriendlyName).join(', ')+' est visé.'):'Sentence royale');cue('pow',1.4);}
+   else{const endY=480;line([[480,300],[aimX,endY]],'#ffad7c',26,clamp(1-(t-4.5)*1.5));line([[480,300],[aimX,endY]],'#fff2bb',7,clamp(1-(t-4.5)*1.5));particles('#edc795',50,aimX,endY,150,clamp((t-4.5)/2));caption(success?'La protection validée par le MJ arrête Sentence royale.':'Sentence royale frappe sa cible.');cue('pow',4.5)}
   }else if(sc==='blood'){
    sprite('roi',480,315,190);players();glow(targetX,450,90,'#d22640',.5);const broken=success&&t>=5;
    if(!broken){const pts=[];for(let i=0;i<=40;i++){const p=i/40;pts.push([480+(targetX-480)*p+Math.sin(p*13-t*5)*9,300+155*p])}line(pts,'#ca2749',7,.8);for(let i=0;i<7;i++){const p=((i/7+t*.28)%1);glow(targetX+(480-targetX)*p,455-155*p,15,'#ff5567',.8)}}else particles('#ff3c67',60,520,375,170,clamp((t-5)/3));

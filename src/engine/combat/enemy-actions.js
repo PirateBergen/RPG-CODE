@@ -22,11 +22,12 @@ function resolveEnemyCombatAction(root, request, dice) {
   if (mob.yuSkipNextTurn?.active) { delete mob.yuSkipNextTurn; nextCombatTurn(root, request,true); return { actor: slot, mode: "skip", message: "L’ennemi est neutralisé pour cette action" } }
   let reaction=null,kingCharge=null
   if(attack.special&&mob.balanceClass==="world"){
-    if(!mob.chargingSpecial){mob.chargingSpecial={id:request.id,name:attack.name,readyRound:(c.turnState.round||1)+1,...(isKrakenEncounter(mob)?{krakenStage:attack.krakenStage}:{}),...(isKingEncounter(mob)?{kingStage:attack.kingStage,kingTargets:chooseEnemyTarget(root,slot,attack,payload.target,dice)}:{})};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:heroDisplayName(mob.name).toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !",...(isKingEncounter(mob)?{kingScene:KING_PHASES[attack.kingStage-1].scene,kingWarning:true,kingSlot:slot,kingLights:kingAuroraCount(mob)}:{})}}
+    if(!mob.chargingSpecial){mob.chargingSpecial={id:request.id,name:attack.name,readyRound:(c.turnState.round||1)+1,...(isKrakenEncounter(mob)?{krakenStage:attack.krakenStage}:{}),...(isKingEncounter(mob)?{kingStage:attack.kingStage,kingTargets:chooseEnemyTarget(root,slot,attack,payload.target,dice)}:{})};nextCombatTurn(root,request);return {actor:slot,mode:"warning",attack:attack.name,special:true,message:isKingEncounter(mob)?"Le Roi prépare "+attack.name+" — "+mob.chargingSpecial.kingTargets.map(combatFriendlyName).join(", ")+" est visé. Déclenchement au prochain round.":heroDisplayName(mob.name).toUpperCase()+" prépare « "+attack.name+" » pour le prochain round !",...(isKingEncounter(mob)?{kingScene:KING_PHASES[attack.kingStage-1].scene,kingWarning:true,targets:mob.chargingSpecial.kingTargets,kingSlot:slot,kingLights:kingAuroraCount(mob)}:{})}}
     if(c.turnState.round<mob.chargingSpecial.readyRound)throw new Error("La spéciale se prépare pour le prochain round ; choisissez une autre action")
     reaction=mob.chargingSpecial.reaction
     if(reaction?.status==="rolling")throw Error("Réactions en attente : le MJ doit valider les protections ou annuler l’événement")
     if(isKingEncounter(mob)){
+      if(!mob.chargingSpecial.kingProtectionsConfirmed)throw Error("Le MJ doit valider les protections de chaque personnage avant l’impact")
       kingCharge=combatClone(mob.chargingSpecial)
       if(attack.kingStage===5&&!mob.king.refugesConfirmed&&!mob.king.odinInvoked)throw Error("Le MJ doit valider les refuges de Turn Around, même si personne ne s’y trouve")
     }
@@ -71,6 +72,6 @@ function resolveEnemyCombatAction(root, request, dice) {
   mob.lastAttack = attack.name
   const presentation = { attackName: attack.name+(mob.balanceClass==="world"&&mob.hp<=mob.maxHP*.5?" — Furie":""), icon: attack.icon || "⚔", dmg: targets.length===1?applied:damage, damageSummary:targets.map(id=>{const hit=Object.entries(c.hits||{}).filter(([key])=>key.startsWith(request.id+"_")).map(([,hit])=>hit).filter(h=>h.type==="mob"&&(h.to===id.toUpperCase()||id==="eloSummon"&&h.to==="John Pork")).at(-1);return combatFriendlyName(id)+" −"+(hit?.amount||0)+" PV"}).join(" · "), target: targets.length > 1 ? "TOUS" : combatFriendlyName(targets[0]||"AUCUNE").toUpperCase(), mobName: heroDisplayName(mob.name).toUpperCase(), time: request.time, special: !!attack.special, animation: attack.animation || "" }
   nextCombatTurn(root, request)
-  return { actor: slot, attack: attack.name, amount: applied, targets, explanation:consequences.join(" "), mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}),...(isKingEncounter(mob)?{kingScene:attack.special?KING_PHASES[attack.kingStage-1].scene:"sentence",kingSlot:slot,kingLights:kingAuroraCount(mob),kingProtected:applied===0,kingOdin:attack.kingStage===5&&!!mob.king.odinInvoked}:{}) }
+  return { actor: slot, attack: attack.name, amount: applied, targets, explanation:consequences.join(" "), mode: "enemy", special: !!attack.special, presentation, ...(specialRoll ? {roll:specialRoll,dice:20} : {}),...(isKingEncounter(mob)?{kingScene:attack.special?KING_PHASES[attack.kingStage-1].scene:"strike",kingSlot:slot,kingLights:kingAuroraCount(mob),kingProtected:applied===0,kingOdin:attack.kingStage===5&&!!mob.king.odinInvoked}:{}) }
 }
 

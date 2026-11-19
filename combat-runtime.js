@@ -114,6 +114,8 @@ async function requestEnemyCombatAction(attack, mobData, panel, forcedTarget, sl
   if(window.__sharedVisualBusy || Date.now()<(window.__combatIntroUntil||0)){showNotification("Attendez la fin de l’animation.");return}
   if (!isGM || window.__mobAttackResolving) return
   const actor = slot || panel?.dataset.slot || mobData.slot || "mob"
+  const current=window.__combatSnapshot?.[actor],charge=current?.chargingSpecial
+  if(isKingEncounter(current)&&charge&&!charge.kingProtectionsConfirmed&&(!attack||attack.special)&&(window.__combatSnapshot.turnState?.round||1)>=charge.readyRound){openKingProtection(actor,()=>requestEnemyCombatAction(attack,mobData,panel,forcedTarget,actor));return}
   window.__mobAttackResolving = true
   refreshCombatActionStates()
   try { requireActionAccess({gmOnly:true});await submitCombatAction("enemy", actor, { attack: attack?.name || "", random: !attack, target: forcedTarget && forcedTarget !== "all" ? forcedTarget : (panel?._manualTarget || null) }) }

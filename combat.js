@@ -389,7 +389,10 @@ function _startCombatSequence(mob, tierMob) {
     (mob === "kraken" && currentMap === "tourbillon.jpg") ||
     (mob === "balraug" && currentMap === "balraug.jpg")
 
-  if (!keepMapMusic) {
+  const kingCombat=window.__combatSnapshot
+  const kingIntro=mob==="roi"&&isKingEncounter(kingCombat?.mob)&&Object.values(kingCombat.kingEvents||{}).some(event=>event.phase===1&&event.time>=(window.__pageLoadTime||0)&&!kingCombat.kingSceneDismissals?.["king-"+event.id])
+  if(kingIntro){window.__kingIntroAudioCombatId=window.__combatSnapshot.id;stopAllMusic()}
+  if (!keepMapMusic&&!kingIntro) {
     fadeMusicOut(() => {
       const track = tierMob === "boss"
         ? "audio/worldboss.mp3"
@@ -1211,10 +1214,11 @@ function presentKingScene(result){
  stage.className="kingSceneStage";title.textContent=result.kingRelease?"Une aurore est libérée":(result.kingWarning?"Préparation — ":"")+(scene==="strike"?result.attack:KING_SCENE_TITLES[scene]||"Le Roi");canvas.width=960;canvas.height=600;canvas.setAttribute("role","img");canvas.setAttribute("aria-label",title.textContent);outcome.textContent=result.explanation||result.message||"";close.textContent="Fermer — Échap";close.type="button"
  outcome.hidden=!!result.kingWarning
  stage.append(title,canvas,caption,outcome,close);overlay.append(stage);document.body.append(overlay)
- const finish=()=>{window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
- const onClosed=(id,closed)=>{if(id===combatId&&closed[sceneId])scope.cancel()};window.__kingSceneClosed=onClosed
+ let voicePlaying=scene==="intro",pendingClose=false
+ const finish=()=>{if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId;window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
+ const onClosed=(id,closed)=>{if(id===combatId&&closed[sceneId]){if(voicePlaying)pendingClose=true;else scope.cancel()}};window.__kingSceneClosed=onClosed
  const requestClose=async()=>{
-  if(!gm||close.disabled)return
+  if(!gm||close.disabled||voicePlaying)return
   if(!sceneId){scope.cancel();return}
   close.disabled=true
   try{requireActionAccess({gmOnly:true});requireExplorationConnection();const uid=window.__authUid,revision=persistenceRevision||"initial";const tx=await reliableRootTransaction(root=>applyKingSceneDismissal(root,uid,combatId,revision,sceneId));if(!tx.committed)throw Error("Fermeture non confirmée");scope.cancel()}
@@ -1224,7 +1228,21 @@ function presentKingScene(result){
  scope.listen(overlay,"keydown",e=>{if(e.key==="Escape"){e.preventDefault();e.stopImmediatePropagation();requestClose()}})
  window.GameWindows?.register(overlay,requestClose);close.focus({preventScroll:true})
  const milliseconds=result.kingWarning||result.kingRelease||result.kingTransition?3500:scene==="odin"?8500:7000
- if(scene==="intro"){const voice=scope.audio(new Audio("audio/roi.mp3"));setManagedAudioBaseVolume(voice,1);voice.play().catch(()=>{})}
+ if(scene==="intro"){
+  window.__kingIntroAudioCombatId=combatId;stopAllMusic();close.disabled=true;close.textContent="Entrée du Roi — lecture en cours…"
+  const portrait=scope.node(document.createElement("img"));portrait.className="kingIntroPortrait";portrait.src="images/roi.png";portrait.alt="Le Roi";canvas.hidden=true;canvas.before(portrait)
+  const voice=scope.audio(new Audio("audio/roi.mp3"));setManagedAudioBaseVolume(voice,1)
+  const ended=()=>{
+   if(scope.cancelled||!voicePlaying)return
+   voicePlaying=false;if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId
+   close.disabled=!gm;close.textContent=gm?"Continuer — fermer pour tous (Échap)":"En attente du MJ"
+   if(window.__combatSnapshot?.id===combatId&&combatActive)crossfadeMusic("audio/worldboss.mp3")
+   if(pendingClose)scope.cancel()
+  }
+  scope.listen(voice,"ended",ended);scope.listen(voice,"error",ended)
+  let started=false;const start=()=>{if(started||scope.cancelled)return;started=true;voice.play().catch(ended)}
+  scope.listen(portrait,"load",start);scope.listen(portrait,"error",ended);if(portrait.complete&&portrait.naturalWidth>0)start()
+ }
  loadKingSceneImages(scene).then(images=>{
   if(scope.cancelled||window.__combatSnapshot?.id!==combatId)return
   if(["sentence","schnaw","sweep","aurora"].includes(scene)){const rumble=scope.audio(new Audio("audio/tremblement.mp3"));setManagedAudioBaseVolume(rumble,.18,"effects");rumble.play().catch(()=>{})}

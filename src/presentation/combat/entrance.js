@@ -3,7 +3,10 @@ function _startCombatSequence(mob, tierMob) {
     (mob === "kraken" && currentMap === "tourbillon.jpg") ||
     (mob === "balraug" && currentMap === "balraug.jpg")
 
-  if (!keepMapMusic) {
+  const kingCombat=window.__combatSnapshot
+  const kingIntro=mob==="roi"&&isKingEncounter(kingCombat?.mob)&&Object.values(kingCombat.kingEvents||{}).some(event=>event.phase===1&&event.time>=(window.__pageLoadTime||0)&&!kingCombat.kingSceneDismissals?.["king-"+event.id])
+  if(kingIntro){window.__kingIntroAudioCombatId=window.__combatSnapshot.id;stopAllMusic()}
+  if (!keepMapMusic&&!kingIntro) {
     fadeMusicOut(() => {
       const track = tierMob === "boss"
         ? "audio/worldboss.mp3"

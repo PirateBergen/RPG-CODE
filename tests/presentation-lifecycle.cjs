@@ -1,4 +1,6 @@
 const assert=require('assert/strict'),vm=require('vm'),fs=require('fs'),path=require('path'),{screen,extract}=require('./presentation.cjs');
+const introProbe=screen('MJ',true);try{introProbe.w.__combatSnapshot={id:'king-audio',mob:{name:'roi',encounterProfile:'king-v1'},kingEvents:{intro:{id:'intro',phase:1,time:Date.now()}}};introProbe.w.combatSequence('roi','boss');introProbe.clock.tick(100);assert(introProbe.seen.some(e=>e.name==='stopAllMusic'));assert(!introProbe.seen.some(e=>e.name==='crossfadeMusic'));assert.equal(introProbe.w.__kingIntroAudioCombatId,'king-audio')}finally{introProbe.close()}
+const reconnectProbe=screen('MJ',true);try{let music=0;reconnectProbe.w.crossfadeMusic=()=>music++;reconnectProbe.w.__combatSnapshot={id:'saved-king',mob:{name:'roi',encounterProfile:'king-v1'},kingEvents:{intro:{id:'intro',phase:1,time:1}}};reconnectProbe.w.combatSequence('roi','boss');reconnectProbe.clock.tick(100);assert.equal(music,1);assert.equal(reconnectProbe.w.__kingIntroAudioCombatId,undefined)}finally{reconnectProbe.close()}
 const s=screen('MJ',true),w=s.w,ctx=s.dom.getInternalVMContext();try{
  for(const name of ['stopCombatStatsSubscription','disposeHighPNJScroll','resetLocalCombatVisualState','resetMadnessPresentation','updateMadnessVisibility'])w[name]=()=>{};
  vm.runInContext(extract('game.js','cleanupTransientGameUI'),ctx);

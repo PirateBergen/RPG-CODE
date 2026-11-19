@@ -66,6 +66,7 @@ function syncManagedAudioVolumes() {
 }
 
 function crossfadeMusic(newMusic) {
+  if(window.__kingIntroAudioCombatId&&window.__kingIntroAudioCombatId===window.__combatSnapshot?.id&&combatActive)return
   if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
   if (
     auroraActive &&

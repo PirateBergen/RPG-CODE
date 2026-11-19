@@ -993,3 +993,14 @@ function applyKingTactic(current,uid,combatId,revision,change,id){
  if(scene)recordKingVisual(root,request,slot,scene,message,{lights:kingAuroraCount(mob),success:true,kingRelease:change.kind==="aurora"})
  return root
 }
+
+function applyKingSceneDismissal(current,uid,combatId,revision,sceneId){
+ if(current?.roles?.[uid]!=="gm")throw Error("Action réservée au MJ")
+ if(current.sessionControl?.phase||(current.sessionControl?.revision||"initial")!==revision||current.combat?.id!==combatId)throw Error("Le combat ou la session a changé")
+ const c=current.combat
+ const event=sceneId.startsWith("king-")?c.kingEvents?.[sceneId.slice(5)]:sceneId.startsWith("combat-")?c.visualEvents?.[sceneId.slice(7)]:null
+ if(!event||!(event.phase||event.scene||event.result?.kingScene))throw Error("Fenêtre du Roi introuvable")
+ const root=combatClone(current);root.combat.kingSceneDismissals||={};root.combat.kingSceneDismissals[sceneId]={time:Date.now(),uid}
+ Object.keys(root.combat.kingSceneDismissals).slice(0,-150).forEach(key=>delete root.combat.kingSceneDismissals[key])
+ return root
+}

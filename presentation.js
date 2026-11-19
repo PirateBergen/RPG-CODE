@@ -83,14 +83,18 @@ function drainSharedVisuals() {
   window.__sharedVisualBusy = true
   if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
   const epoch=sharedVisualEpoch
-  try { next.play() } catch (error) { console.error("Animation partagée", error) }
+  let completion
+  try { completion=next.play() } catch (error) { console.error("Animation partagée", error) }
   if(epoch!==sharedVisualEpoch)return
-  sharedVisualLater(() => {
+  const finish=() => {
+    if(epoch!==sharedVisualEpoch)return
     sharedVisualRunning = false
     window.__sharedVisualBusy = false
     if(typeof refreshCombatActionStates==="function")refreshCombatActionStates()
     drainSharedVisuals()
-  }, next.duration)
+  }
+  if(completion&&typeof completion.then==="function")completion.then(finish,error=>{console.error("Animation partagée",error);finish()})
+  else sharedVisualLater(finish,next.duration)
 }
 
 function showDiceAnimation(player, dice, result, rawRoll) {
@@ -113,7 +117,10 @@ function presentCombatResolution(action) {
   if(action.nextTurn?.phase==="active"&&!result.skipTurnBanner)sharedVisualSeen.add("turn-"+action.combatId+"-"+(action.nextTurn.sequence||0))
   enqueueSharedVisual("combat-"+action.id,()=>{
     if(result.kingScene){
-      if(Number.isFinite(result.roll)&&result.mode!=="enemy"){_showDiceAnimationNow(result.actor,result.dice||12,result.rollTotal??result.roll,result.roll,{crit:result.crit,fail:result.fail,bonus:result.luckBonus||0,eventId:action.id});sharedVisualLater(()=>presentKingScene(result),2400)}else presentKingScene(result)
+      const epoch=sharedVisualEpoch
+      const show=()=>presentKingScene({...result,kingSceneId:"combat-"+action.id}).then(()=>{if(epoch===sharedVisualEpoch&&action.nextTurn?.phase==="active"&&!result.skipTurnBanner&&window.__pendingCombatOutcome?.combatId!==action.combatId)_showCombatTurnBanner(action.nextTurn)})
+      if(Number.isFinite(result.roll)&&result.mode!=="enemy"){_showDiceAnimationNow(result.actor,result.dice||12,result.rollTotal??result.roll,result.roll,{crit:result.crit,fail:result.fail,bonus:result.luckBonus||0,eventId:action.id});return new Promise(resolve=>sharedVisualLater(()=>show().then(resolve),2400))}
+      return show()
     }else if(result.duo){
       _showDiceAnimationNow("Hel et Nidhogg",20,result.roll,result.roll,{crit:result.crit,fail:result.fail,eventId:action.id});sharedVisualLater(()=>presentHelNidhoggDuo(result),2400)
     }else if(isAlly){
@@ -161,6 +168,7 @@ function showVictory(){queueCombatOutcome("victory")}
 function showDefeat(){queueCombatOutcome("defeat")}
 
 function observeCombatPresentation(data) {
+    if(typeof observeKingSceneClosures==="function")observeKingSceneClosures(data)
     Object.values(data.visualEvents||{}).sort((a,b)=>a.time-b.time).forEach(presentCombatResolution)
     if(typeof observeKingScenes==="function")observeKingScenes(data)
     const ts=data.turnState

@@ -1216,8 +1216,9 @@ function presentKingScene(result){
  stage.append(title,canvas,caption,outcome,close);overlay.append(stage);document.body.append(overlay)
  const onField=scene!=="intro"&&scene!=="odin"
  if(onField){overlay.classList.add("kingOnField");overlay.classList.toggle("kingPreparing",!!result.kingWarning);overlay.setAttribute("role","region");overlay.removeAttribute("aria-modal");overlay.append(canvas);canvas.className="kingFieldCanvas"}
+ const shakenNodes=new Set()
  let voicePlaying=scene==="intro",pendingClose=false
- const finish=()=>{if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId;window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
+ const finish=()=>{for(const node of shakenNodes)node.classList.remove("kingImpactShake");if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId;window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
  const onClosed=(id,closed)=>{if(id===combatId&&closed[sceneId]){if(voicePlaying)pendingClose=true;else scope.cancel()}};window.__kingSceneClosed=onClosed
  const requestClose=async()=>{
   if(!gm||close.disabled||voicePlaying)return
@@ -1246,9 +1247,12 @@ function presentKingScene(result){
   scope.listen(portrait,"load",start);scope.listen(portrait,"error",ended);if(portrait.complete&&portrait.naturalWidth>0)start()
  }
  if(onField){
-  const sounds=new Set(),sound=id=>{if(sounds.has(id))return;sounds.add(id);const file={pow:"pow.mp3",crystal:"cristalfx.mp3",schnaw:"chnaws.mp3",rumble:"tremblement.mp3"}[id];if(!file)return;const audio=scope.audio(new Audio("audio/"+file));setManagedAudioBaseVolume(audio,id==="rumble"?.14:result.kingWarning?.2:.35,"effects");audio.play().catch(()=>{})}
+  let impactShown=false
+  const heavy=result.mode==="enemy"&&result.special&&!result.kingWarning
+  const impact=()=>{if(impactShown||!heavy)return;impactShown=true;if(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)return;const flash=scope.node(document.createElement("div"));flash.className="kingAttackFlash";overlay.append(flash);const camera=document.getElementById("camera")||document.getElementById("map"),tokens=document.getElementById("combatTokens");for(const node of [camera,tokens]){if(!node||node===tokens&&camera?.contains(tokens))continue;node.classList.add("kingImpactShake");shakenNodes.add(node)}scope.later(()=>{flash.remove();for(const node of shakenNodes)node.classList.remove("kingImpactShake");shakenNodes.clear()},800)}
+  const sounds=new Set(),sound=id=>{if(sounds.has(id))return;sounds.add(id);if(id==="pow"||id==="crystal")impact();const file={pow:"pow.mp3",crystal:"cristalfx.mp3",schnaw:"chnaws.mp3",rumble:"tremblement.mp3"}[id];if(!file)return;const audio=scope.audio(new Audio("audio/"+file));setManagedAudioBaseVolume(audio,id==="rumble"?(heavy?.35:.14):result.kingWarning?.2:heavy?.65:.35,"effects");audio.play().catch(()=>{})}
   const draw=createKingFieldRenderer(canvas,{...result,scene},text=>{caption.textContent=text},sound),reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
-  const finalTime=result.kingWarning?2:9,started=performance.now();let last=0,held=false
+  const finalTime=result.kingWarning?2:reduced?4:9,started=performance.now();let last=0,held=false
   const hold=()=>{if(held)return;held=true;scope.every(()=>{if(window.__combatSnapshot?.id!==combatId){scope.cancel();return}draw(finalTime)},250)}
   if(["sentence","schnaw","sweep","aurora"].includes(scene))sound("rumble")
   if(reduced||result.kingTransition||result.kingRelease){draw(finalTime);hold()}
@@ -1370,7 +1374,7 @@ function createKingFieldRenderer(canvas,result,setCaption,onSound){
     if(origin){
      if(scene==="blood"){path(origin,target,"#ad2048",5,pulse);for(let i=0;i<6;i++){const progress=(seconds*.22+i/6)%1;ring({x:target.x+(origin.x-target.x)*progress,y:target.y+(origin.y-target.y)*progress,r:4},"#ff577e",1,.8)}if(seconds>3)cue("crystal")}
      else if(warning){path(origin,target,"#e94c55",2,pulse*.65);if(seconds>=1)cue("pow")}
-     else{const impact=seconds<3?.25:seconds<6?1:Math.max(.12,1-(seconds-6)/3);path(origin,target,"#ed514c",seconds<3?3:16,impact);if(seconds>=3){path(origin,target,"#fff1bd",4,impact);cue("pow")}if(result.kingProtected)ring(target,"#a4e9dc",1.6,.9)}
+     else{const major=scene==="sentence",impact=seconds<3?.3:seconds<5.5?1:Math.max(0,1-(seconds-5.5)/1.8);if(major){path(origin,target,"#a71939",seconds<3?10:72,impact*.32);path(origin,target,"#ff3d42",seconds<3?4:38,impact*.6)}path(origin,target,"#ed514c",seconds<3?3:major?24:16,impact);if(seconds>=3){path(origin,target,"#fff1bd",major?10:4,impact);cue("pow");const age=seconds-3;if(major&&age<3){ring({...target,r:target.r+age*75},"#ff9d62",1,Math.max(0,1-age/3));ring({...target,r:target.r+age*50},"#fff2ce",1,Math.max(0,1-age/2));for(let i=0;i<40;i++){const angle=i*2.399,radius=(30+i%9*5)+age*(45+i%7*10),p={x:target.x+Math.cos(angle)*radius,y:target.y+Math.sin(angle)*radius};path(p,{x:p.x+Math.cos(angle)*12,y:p.y+Math.sin(angle)*12},i%3?"#ff824a":"#fff0c4",2,Math.max(0,1-age/3))}}}if(result.kingProtected)ring(target,"#a4e9dc",1.6,.9)}
     }
    }
    setCaption(warning?(result.message||"Le Roi prépare "+(result.attack||"Sentence royale")+"."):(result.attack||KING_SCENE_TITLES[scene]||"Le Roi attaque"))

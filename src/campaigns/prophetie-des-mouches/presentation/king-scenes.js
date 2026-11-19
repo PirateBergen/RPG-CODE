@@ -25,6 +25,8 @@ function presentKingScene(result){
  stage.className="kingSceneStage";title.textContent=result.kingRelease?"Une aurore est libérée":(result.kingWarning?"Préparation — ":"")+(scene==="strike"?result.attack:KING_SCENE_TITLES[scene]||"Le Roi");canvas.width=960;canvas.height=600;canvas.setAttribute("role","img");canvas.setAttribute("aria-label",title.textContent);outcome.textContent=result.explanation||result.message||"";close.textContent="Fermer — Échap";close.type="button"
  outcome.hidden=!!result.kingWarning
  stage.append(title,canvas,caption,outcome,close);overlay.append(stage);document.body.append(overlay)
+ const onField=scene!=="intro"&&scene!=="odin"
+ if(onField){overlay.classList.add("kingOnField");overlay.setAttribute("role","region");overlay.removeAttribute("aria-modal");overlay.append(canvas);canvas.className="kingFieldCanvas"}
  let voicePlaying=scene==="intro",pendingClose=false
  const finish=()=>{if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId;window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
  const onClosed=(id,closed)=>{if(id===combatId&&closed[sceneId]){if(voicePlaying)pendingClose=true;else scope.cancel()}};window.__kingSceneClosed=onClosed
@@ -54,7 +56,16 @@ function presentKingScene(result){
   let started=false;const start=()=>{if(started||scope.cancelled)return;started=true;voice.play().catch(ended)}
   scope.listen(portrait,"load",start);scope.listen(portrait,"error",ended);if(portrait.complete&&portrait.naturalWidth>0)start()
  }
- loadKingSceneImages(scene).then(images=>{
+ if(onField){
+  const sounds=new Set(),sound=id=>{if(sounds.has(id))return;sounds.add(id);const file={pow:"pow.mp3",crystal:"cristalfx.mp3",schnaw:"chnaws.mp3",rumble:"tremblement.mp3"}[id];if(!file)return;const audio=scope.audio(new Audio("audio/"+file));setManagedAudioBaseVolume(audio,id==="rumble"?.14:result.kingWarning?.2:.35,"effects");audio.play().catch(()=>{})}
+  const draw=createKingFieldRenderer(canvas,{...result,scene},text=>{caption.textContent=text},sound),reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  const finalTime=result.kingWarning?2:9,started=performance.now();let last=0,held=false
+  const hold=()=>{if(held)return;held=true;scope.every(()=>{if(window.__combatSnapshot?.id!==combatId){scope.cancel();return}draw(finalTime)},250)}
+  if(["sentence","schnaw","sweep","aurora"].includes(scene))sound("rumble")
+  if(reduced||result.kingTransition||result.kingRelease){draw(finalTime);hold()}
+  else {const tick=now=>{if(scope.cancelled)return;if(window.__combatSnapshot?.id!==combatId){scope.cancel();return}const elapsed=(now-started)/1000;if(now-last>=32){last=now;draw(result.kingWarning?Math.min(2,elapsed):Math.min(9,elapsed*9/(milliseconds/1000)))}if(elapsed*1000<milliseconds)scope.frame(tick);else hold()};scope.frame(tick)}
+ }
+ else loadKingSceneImages(scene).then(images=>{
   if(scope.cancelled||window.__combatSnapshot?.id!==combatId)return
   if(["sentence","schnaw","sweep","aurora"].includes(scene)){const rumble=scope.audio(new Audio("audio/tremblement.mp3"));setManagedAudioBaseVolume(rumble,.18,"effects");rumble.play().catch(()=>{})}
   const fired=new Set(),sound=(id)=>{if(fired.has(id))return;fired.add(id);const file={pow:"pow.mp3",schnaw:"chnaws.mp3",crystal:"cristalfx.mp3"}[id];if(!file)return;const audio=scope.audio(new Audio("audio/"+file));setManagedAudioBaseVolume(audio,id==="pow"?(result.kingWarning?.2:.35):.4,"effects");audio.play().catch(()=>{})}
@@ -149,4 +160,40 @@ function createKingSceneRenderer(canvas,images,result,setCaption,onSound){
  }
 
  return seconds=>{t=seconds;draw()}
+}
+
+// Effets transparents ancrés aux pions réels : aucune arène ni personnage redessiné.
+function createKingFieldRenderer(canvas,result,setCaption,onSound){
+ const ctx=canvas.getContext("2d"),scene=result.scene,warning=!!result.kingWarning,fired=new Set()
+ const cue=id=>{if(!fired.has(id)){fired.add(id);onSound(id)}}
+ const point=id=>{const node=document.getElementById(id==="mob"?"mobToken":id?.startsWith("mob")?"mobToken_"+id:id==="eloSummon"?"eloSummonToken":id);if(!node)return null;const rect=node.getBoundingClientRect();return rect.width>0&&rect.height>0?{x:rect.left+rect.width/2,y:rect.top+rect.height/2,r:Math.max(20,Math.min(rect.width,rect.height)/2)}:null}
+ const path=(a,b,color,width,alpha=1)=>{ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=width;ctx.shadowColor=color;ctx.shadowBlur=14;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.restore()}
+ const ring=(p,color,size=1,alpha=1)=>{ctx.save();ctx.globalAlpha=alpha;ctx.strokeStyle=color;ctx.lineWidth=3;ctx.shadowColor=color;ctx.shadowBlur=18;ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*size,p.r*size*.65,0,0,Math.PI*2);ctx.stroke();ctx.restore()}
+ return seconds=>{
+  if(document.hidden)return
+  const width=window.innerWidth,height=window.innerHeight,ratio=Math.min(1.5,window.devicePixelRatio||1)
+  if(canvas.width!==Math.round(width*ratio)||canvas.height!==Math.round(height*ratio)){canvas.width=Math.round(width*ratio);canvas.height=Math.round(height*ratio)}ctx.setTransform(ratio,0,0,ratio,0,0);ctx.clearRect(0,0,width,height)
+  const map=document.getElementById("map")?.getBoundingClientRect();ctx.save();if(map&&map.width>0&&map.height>0){ctx.beginPath();ctx.rect(map.left,map.top,map.width,map.height);ctx.clip()}
+  const c=window.__combatSnapshot,mob=c?.[result.kingSlot||"mob"],charge=mob?.chargingSpecial,origin=point(result.kingSlot||"mob"),ids=result.targets?.length?result.targets:charge?.kingTargets||[],targets=ids.map(point).filter(Boolean),pulse=.65+.2*Math.sin(seconds*4)
+  if(scene==="sentence"||scene==="strike"||scene==="blood"){
+   for(const target of targets){
+    ring(target,scene==="blood"?"#db315a":"#ff706a",1.2,pulse)
+    if(origin){
+     if(scene==="blood"){path(origin,target,"#ad2048",5,pulse);for(let i=0;i<6;i++){const progress=(seconds*.22+i/6)%1;ring({x:target.x+(origin.x-target.x)*progress,y:target.y+(origin.y-target.y)*progress,r:4},"#ff577e",1,.8)}if(seconds>3)cue("crystal")}
+     else if(warning){path(origin,target,"#e94c55",2,pulse*.65);if(seconds>=1)cue("pow")}
+     else{const impact=seconds<3?.25:seconds<6?1:Math.max(.12,1-(seconds-6)/3);path(origin,target,"#ed514c",seconds<3?3:16,impact);if(seconds>=3){path(origin,target,"#fff1bd",4,impact);cue("pow")}if(result.kingProtected)ring(target,"#a4e9dc",1.6,.9)}
+    }
+   }
+   setCaption(warning?(result.message||"Le Roi prépare "+(result.attack||"Sentence royale")+"."):(result.attack||KING_SCENE_TITLES[scene]||"Le Roi attaque"))
+  }else if(scene==="schnaw"){
+   for(const slot of COMBAT_MOBS){const p=point(slot);if(p&&c?.[slot]?.kingMinion){ring(p,"#d24b68",1.5,pulse);ring(p,"#8a214e",1.9,.45)}}cue("schnaw");setCaption(result.message||"Les Schnaw répondent au Roi.")
+  }else if(scene==="sweep"){
+   if(origin){ctx.save();ctx.strokeStyle="#e84e70";ctx.lineWidth=warning?3:10;ctx.globalAlpha=warning?.35:.7;ctx.shadowColor="#ef335d";ctx.shadowBlur=20;const radius=Math.min(width,height)*.36;ctx.beginPath();ctx.arc(origin.x,origin.y,radius,-Math.PI+(seconds%3)*.5,(seconds%3)*.5);ctx.stroke();ctx.restore()}for(const target of targets)ring(target,"#f57e90",1.3,pulse);if(!warning)cue("pow");setCaption(result.message||"Le refus du destin")
+  }else if(scene==="aurora"||scene==="odin"){
+   const lights=scene==="odin"?3:result.kingLights||0,colors=["#6ce8ba","#6c9eff","#bf84e8"],bounds=map?.width>0?map:{left:0,top:0,width,height}
+   for(let i=0;i<lights;i++){ctx.save();ctx.strokeStyle=colors[i];ctx.lineWidth=18;ctx.shadowColor=colors[i];ctx.shadowBlur=25;ctx.globalAlpha=.35;ctx.beginPath();for(let x=0;x<=bounds.width;x+=12){const y=bounds.top+bounds.height*(.12+i*.07)+Math.sin(x/130+seconds*.5+i)*18;ctx.lineTo(bounds.left+x,y)}ctx.stroke();ctx.restore()}
+   for(const id of ["greg","ju","elo","bibi","eloSummon"]){const p=point(id);if(p&&(scene==="odin"||mob?.king?.refugeTargets?.includes(id)))ring(p,"#a0efdd",1.7,.8)}cue("crystal");setCaption(result.message||result.explanation||KING_SCENE_TITLES[scene])
+  }
+  ctx.restore()
+ }
 }

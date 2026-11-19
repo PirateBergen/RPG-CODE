@@ -1242,7 +1242,7 @@ function presentKingScene(result){
    if(pendingClose)scope.cancel()
   }
   scope.listen(voice,"ended",ended);scope.listen(voice,"error",ended)
-  let started=false;const start=()=>{if(started||scope.cancelled)return;started=true;voice.play().catch(ended)}
+  let started=false;const start=()=>{if(started||scope.cancelled)return;started=true;voice.play().then(()=>{if(!scope.cancelled&&voicePlaying)scope.later(()=>{if(voicePlaying){voice.pause();ended()}},12000)}).catch(ended)}
   scope.listen(portrait,"load",start);scope.listen(portrait,"error",ended);if(portrait.complete&&portrait.naturalWidth>0)start()
  }
  if(onField){

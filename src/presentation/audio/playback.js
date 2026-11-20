@@ -65,7 +65,7 @@ function syncManagedAudioVolumes() {
   })
 }
 
-function crossfadeMusic(newMusic) {
+function crossfadeMusic(newMusic, {fadeInMs=0} = {}) {
   if(window.__kingIntroAudioCombatId&&window.__kingIntroAudioCombatId===window.__combatSnapshot?.id&&combatActive)return
   if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){ensureOregonVoyageMusic();return}
   if (
@@ -113,7 +113,7 @@ function crossfadeMusic(newMusic) {
       clearInterval(fadeOutIv)
       next.src = normalizedMusic
       next.loop = false
-      next.__baseVolume=1;next.__audioChannel="music";next.volume = 0
+      next.__baseVolume=fadeInMs>0?0:1;next.__audioChannel="music";next.volume = 0
       next.currentTime = 0
       next.play().catch(() => {})
 
@@ -144,8 +144,10 @@ function crossfadeMusic(newMusic) {
         }
       })
 
+      const fadeInStarted=performance.now()
       musicFadeInterval = setInterval(() => {
         if(typeof oregonVoyageMusicPriority==="function"&&oregonVoyageMusicPriority()){clearInterval(musicFadeInterval);musicFadeInterval=null;_musicTransitioning=false;ensureOregonVoyageMusic();return}
+        if(fadeInMs>0){const progress=Math.min(1,(performance.now()-fadeInStarted)/fadeInMs);setManagedAudioBaseVolume(next,(1-Math.cos(progress*Math.PI))/2,"music");if(progress<1)return}
         if (next.volume < getUserMusicVolume()) {
           next.volume = Math.min(getUserMusicVolume(), next.volume + 0.05)
         } else {

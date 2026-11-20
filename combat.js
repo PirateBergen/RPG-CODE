@@ -1235,17 +1235,26 @@ function presentKingScene(result){
   window.__kingIntroAudioCombatId=combatId;stopAllMusic();close.disabled=true;close.textContent="Entrée du Roi — lecture en cours…"
   const portrait=scope.node(document.createElement("img"));portrait.className="kingIntroPortrait";portrait.src="images/roi.png";portrait.alt="Le Roi";canvas.hidden=true;stage.hidden=true;overlay.classList.add("kingIntroOnly");overlay.append(portrait)
   const voice=scope.audio(new Audio("audio/roi.mp3"));setManagedAudioBaseVolume(voice,1)
-  const ended=()=>{
+  const smoke=scope.node(document.createElement("div"));smoke.className="kingIntroSmoke";smoke.setAttribute("aria-hidden","true")
+  for(let i=0;i<6;i++){const puff=document.createElement("span");puff.style.setProperty("--puff",i);smoke.append(puff)}
+  let fading=false,fadeTimer=null
+  const revealText=()=>{
    if(scope.cancelled||!voicePlaying)return
-   portrait.remove();stage.hidden=false;overlay.classList.remove("kingIntroOnly")
+   clearInterval(fadeTimer);setManagedAudioBaseVolume(voice,0);voice.pause();portrait.remove();smoke.remove();stage.hidden=false;overlay.classList.remove("kingIntroOnly")
    voicePlaying=false;if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId
    close.disabled=!gm;close.textContent=gm?"Continuer — fermer pour tous (Échap)":"En attente du MJ"
-   if(window.__combatSnapshot?.id===combatId&&combatActive)crossfadeMusic("audio/worldboss.mp3")
+   if(window.__combatSnapshot?.id===combatId&&combatActive)crossfadeMusic("audio/worldboss.mp3",{fadeInMs:5000})
    if(pendingClose)scope.cancel()
   }
-  scope.listen(voice,"ended",ended);scope.listen(voice,"error",ended)
-  let started=false;const start=()=>{if(started||scope.cancelled)return;started=true;voice.play().then(()=>{if(!scope.cancelled&&voicePlaying)scope.later(()=>{if(voicePlaying){voice.pause();ended()}},14000)}).catch(ended)}
-  scope.listen(portrait,"load",start);scope.listen(portrait,"error",ended);if(portrait.complete&&portrait.naturalWidth>0)start()
+  const beginFade=()=>{
+   if(scope.cancelled||!voicePlaying||fading)return;fading=true;portrait.classList.add("is-fading");overlay.append(smoke)
+   const started=performance.now();fadeTimer=scope.every(()=>{if(!voicePlaying)return;const progress=Math.min(1,(performance.now()-started)/1600);setManagedAudioBaseVolume(voice,(1+Math.cos(progress*Math.PI))/2)},40)
+   scope.later(revealText,1600)
+  }
+  scope.listen(voice,"ended",beginFade);scope.listen(voice,"error",beginFade)
+  let started=false;const start=()=>{if(started||scope.cancelled)return;started=true;voice.play().then(()=>{if(!scope.cancelled&&voicePlaying)scope.later(beginFade,14400)}).catch(beginFade)}
+
+  scope.listen(portrait,"load",start);scope.listen(portrait,"error",beginFade);if(portrait.complete&&portrait.naturalWidth>0)start()
  }
  if(onField){
   let impactShown=false

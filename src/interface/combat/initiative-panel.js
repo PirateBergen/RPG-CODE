@@ -7,6 +7,7 @@ function renderCombatInitiativeToggle(state) {
   const existing = document.getElementById("combatInitiativeToggle")
   if (existing) existing.remove()
   if (!combatActive || !state) return
+  if(typeof isKingIntroPending==="function"&&isKingIntroPending()){closeCombatInitiativeOverlay();document.getElementById("combatInitiativeToggle")?.remove();return}
 
   const wrap = document.createElement("div")
   wrap.id = "combatInitiativeToggle"

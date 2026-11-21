@@ -45,6 +45,7 @@ async function initCombatTurnState() {
 const initiativeRollsInFlight=new Set()
 function initiativeRollKey(actorId){return (window.__combatSnapshot?.id||"")+":"+actorId}
 function canRollInitiativeForActor(actorId, state) {
+  if(typeof isKingIntroPending==="function"&&isKingIntroPending())return false
   if(initiativeRollsInFlight.has(initiativeRollKey(actorId)))return false
   if (!state || state.phase !== "rolling" || actorId === "bibi" || !(state.participants || []).some(p => p.id === actorId) || Number.isInteger(state.rolls?.[actorId])) return false
   return isGM || !!(myToken && myToken.id === actorId && canAccessCharacter(actorId))
@@ -107,6 +108,7 @@ function renderCombatInitiativeToggle(state) {
   const existing = document.getElementById("combatInitiativeToggle")
   if (existing) existing.remove()
   if (!combatActive || !state) return
+  if(typeof isKingIntroPending==="function"&&isKingIntroPending()){closeCombatInitiativeOverlay();document.getElementById("combatInitiativeToggle")?.remove();return}
 
   const wrap = document.createElement("div")
   wrap.id = "combatInitiativeToggle"
@@ -343,7 +345,7 @@ function launchFromMobMenu() {
 function _launchCombatWithMobs(mainMob, forceTier, extraMobs) { return launchReliableCombat(mainMob, forceTier, extraMobs) }
 
 function combatSequence(mob, forceTier) {
-  window.__combatIntroUntil = Date.now()+((mob === "roi" && !isKingEncounter(window.__combatSnapshot?.mob) && (forceTier||mobStats[mob]?.tier)==="boss")?24500:6500)
+  window.__combatIntroUntil = Date.now()+((mob === "roi" && !isKingEncounter(window.__combatSnapshot?.mob) && (forceTier||mobStats[mob]?.tier)==="boss")?24500:(typeof isKingIntroPending==="function"&&isKingIntroPending()?3500:6500))
   const tierMob = forceTier || (mobStats[mob] ? mobStats[mob].tier : "weak")
   if (mob === "roi" && tierMob === "boss") playRoiIntro(mob, tierMob)
   else _startCombatSequence(mob, tierMob)
@@ -414,7 +416,7 @@ function _startCombatSequence(mob, tierMob) {
 
   setTimeout(() => {
     intro.style.display = "none"
-    showMobIntro(mob)
+    if(!kingIntro)showMobIntro(mob)
 
     setTimeout(() => {
       const fade = document.getElementById("fadeScreen")
@@ -474,7 +476,7 @@ function _startCombatSequence(mob, tierMob) {
           }
         }, 600)
       }, 800)
-    }, 2500)
+    }, kingIntro?0:2500)
   }, 2000)
 }
 
@@ -1198,10 +1200,18 @@ function loadKingSceneImages(scene){
  });kingSceneImageCache.set(key,promise);return promise})).then(Object.fromEntries)
 }
 const kingSceneClosures=new Map()
+function isKingIntroPending(data=window.__combatSnapshot){
+ if(!isKingEncounter(data?.mob))return false
+ if(window.__kingIntroPresentationId===data.id)return true
+ const opening=Object.values(data.kingEvents||{}).find(event=>event.phase===1)
+ return !!opening&&opening.time>=(window.__pageLoadTime||0)&&!data.kingSceneDismissals?.["king-"+opening.id]&&!kingSceneClosures.get(data.id)?.["king-"+opening.id]
+}
 function observeKingSceneClosures(data){
+ const opening=Object.values(data.kingEvents||{}).find(event=>event.phase===1),key=opening?"king-"+opening.id:null,newlyClosed=key&&data.kingSceneDismissals?.[key]&&!kingSceneClosures.get(data.id)?.[key]
  kingSceneClosures.set(data.id,data.kingSceneDismissals||{})
  if(kingSceneClosures.size>3)kingSceneClosures.delete(kingSceneClosures.keys().next().value)
  window.__kingSceneClosed?.(data.id,data.kingSceneDismissals||{})
+ if(newlyClosed&&!isKingIntroPending(data)&&combatActive&&typeof renderCombatInitiativeOverlay==="function")renderCombatInitiativeOverlay(data.turnState)
 }
 function presentKingScene(result){
  const scene=result.kingScene||result.scene||"intro",combatId=window.__combatSnapshot?.id
@@ -1218,7 +1228,7 @@ function presentKingScene(result){
  if(onField){overlay.classList.add("kingOnField");overlay.classList.toggle("kingPreparing",!!result.kingWarning);overlay.setAttribute("role","region");overlay.removeAttribute("aria-modal");overlay.append(canvas);canvas.className="kingFieldCanvas"}
  const shakenNodes=new Set()
  let voicePlaying=scene==="intro",pendingClose=false
- const finish=()=>{for(const node of shakenNodes)node.classList.remove("kingImpactShake");if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId;window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
+ const finish=()=>{if(window.__kingIntroPresentationId===combatId)delete window.__kingIntroPresentationId;for(const node of shakenNodes)node.classList.remove("kingImpactShake");if(window.__kingIntroAudioCombatId===combatId)delete window.__kingIntroAudioCombatId;window.GameWindows?.closed(overlay);if(window.__kingSceneClosed===onClosed)window.__kingSceneClosed=null;if(scene==="intro"&&kingSceneClosures.get(combatId)?.[sceneId]&&combatActive&&window.__combatSnapshot?.id===combatId&&typeof renderCombatInitiativeOverlay==="function")renderCombatInitiativeOverlay(window.__combatSnapshot.turnState);resolveClosed()},scope=createPresentationScope("__cancelKingScene",finish);scope.node(overlay)
  const onClosed=(id,closed)=>{if(id===combatId&&closed[sceneId]){if(voicePlaying)pendingClose=true;else scope.cancel()}};window.__kingSceneClosed=onClosed
  const requestClose=async()=>{
   if(!gm||close.disabled||voicePlaying)return
@@ -1232,6 +1242,9 @@ function presentKingScene(result){
  window.GameWindows?.register(overlay,requestClose);close.focus({preventScroll:true})
  const milliseconds=result.kingWarning||result.kingRelease||result.kingTransition?3500:scene==="odin"?8500:7000
  if(scene==="intro"){
+  window.__kingIntroPresentationId=combatId
+  if(typeof closeCombatInitiativeOverlay==="function")closeCombatInitiativeOverlay();document.getElementById("combatInitiativeToggle")?.remove()
+  caption.hidden=!!outcome.textContent
   window.__kingIntroAudioCombatId=combatId;stopAllMusic();close.disabled=true;close.textContent="Entrée du Roi — lecture en cours…"
   const portrait=scope.node(document.createElement("img"));portrait.className="kingIntroPortrait";portrait.src="images/roi.png";portrait.alt="Le Roi";canvas.hidden=true;stage.hidden=true;overlay.classList.add("kingIntroOnly");overlay.append(portrait)
   const voice=scope.audio(new Audio("audio/roi.mp3"));setManagedAudioBaseVolume(voice,1)
@@ -1272,9 +1285,9 @@ function presentKingScene(result){
   if(scope.cancelled||window.__combatSnapshot?.id!==combatId)return
   if(["sentence","schnaw","sweep","aurora"].includes(scene)){const rumble=scope.audio(new Audio("audio/tremblement.mp3"));setManagedAudioBaseVolume(rumble,.18,"effects");rumble.play().catch(()=>{})}
   const fired=new Set(),sound=(id)=>{if(fired.has(id))return;fired.add(id);const file={pow:"pow.mp3",schnaw:"chnaws.mp3",crystal:"cristalfx.mp3"}[id];if(!file)return;const audio=scope.audio(new Audio("audio/"+file));setManagedAudioBaseVolume(audio,id==="pow"?(result.kingWarning?.2:.35):.4,"effects");audio.play().catch(()=>{})}
-  const data={...result,scene,kingLights:result.kingLights??result.lights??0},draw=createKingSceneRenderer(canvas,images,data,text=>{if(caption.textContent!==text)caption.textContent=text},sound),reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  const data={...result,scene,kingLights:result.kingLights??result.lights??0},draw=createKingSceneRenderer(canvas,images,data,text=>{if((scene!=="intro"||!outcome.textContent)&&caption.textContent!==text)caption.textContent=text},sound),reduced=window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
   if(reduced&&result.kingWarning&&scene==="sentence")sound("pow")
-  if(result.kingTransition||result.kingRelease){draw(scene==="intro"?4:5.5);caption.textContent=result.message||caption.textContent;return}
+  if(result.kingTransition||result.kingRelease){draw(scene==="intro"?4:5.5);if(scene!=="intro")caption.textContent=result.message||caption.textContent;return}
   if(reduced){draw(result.kingWarning?2:9.5);return}
   const started=performance.now();let last=0
   const tick=now=>{if(scope.cancelled)return;if(window.__combatSnapshot?.id!==combatId){scope.cancel();return}const seconds=(now-started)/1000;if(now-last>=32){last=now;draw(result.kingWarning?Math.min(4,seconds):Math.min(12,seconds*12/(milliseconds/1000)))}if(seconds*1000<milliseconds)scope.frame(tick)}
@@ -1286,7 +1299,7 @@ function observeKingScenes(data){
  for(const event of Object.values(data.kingEvents||{}).sort((a,b)=>a.time-b.time)){
   if(!Number.isFinite(event.time)||event.time<(window.__pageLoadTime||0))continue
   const phase=event.phase,scene=phase?(phase===1?"intro":KING_PHASES[phase-1].scene):event.scene
-  enqueueSharedVisual("king-"+event.id,()=>presentKingScene({...event,kingScene:scene,kingSceneId:"king-"+event.id,kingTransition:!!phase,kingLights:event.lights||0}),phase||event.kingRelease?3600:scene==="odin"?8600:7100,1.5)
+  enqueueSharedVisual("king-"+event.id,()=>presentKingScene({...event,kingScene:scene,kingSceneId:"king-"+event.id,kingTransition:!!phase,kingLights:event.lights||0}),phase||event.kingRelease?3600:scene==="odin"?8600:7100,phase===1?-10:1.5)
  }
 }
 function renderKingBattlefield(){

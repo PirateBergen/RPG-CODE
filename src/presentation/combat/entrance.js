@@ -28,7 +28,7 @@ function _startCombatSequence(mob, tierMob) {
 
   setTimeout(() => {
     intro.style.display = "none"
-    showMobIntro(mob)
+    if(!kingIntro)showMobIntro(mob)
 
     setTimeout(() => {
       const fade = document.getElementById("fadeScreen")
@@ -88,7 +88,7 @@ function _startCombatSequence(mob, tierMob) {
           }
         }, 600)
       }, 800)
-    }, 2500)
+    }, kingIntro?0:2500)
   }, 2000)
 }
 

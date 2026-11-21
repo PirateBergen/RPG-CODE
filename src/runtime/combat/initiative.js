@@ -25,6 +25,7 @@ async function initCombatTurnState() {
 const initiativeRollsInFlight=new Set()
 function initiativeRollKey(actorId){return (window.__combatSnapshot?.id||"")+":"+actorId}
 function canRollInitiativeForActor(actorId, state) {
+  if(typeof isKingIntroPending==="function"&&isKingIntroPending())return false
   if(initiativeRollsInFlight.has(initiativeRollKey(actorId)))return false
   if (!state || state.phase !== "rolling" || actorId === "bibi" || !(state.participants || []).some(p => p.id === actorId) || Number.isInteger(state.rolls?.[actorId])) return false
   return isGM || !!(myToken && myToken.id === actorId && canAccessCharacter(actorId))

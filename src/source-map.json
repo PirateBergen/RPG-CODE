@@ -325,6 +325,7 @@
     ],
     "campaign-editor.js": [
       "platform/storage/draft-store.js",
+      "interface/editor/character-profile.js",
       "interface/editor/characters.js",
       "interface/editor/campaign-editor.js"
     ],

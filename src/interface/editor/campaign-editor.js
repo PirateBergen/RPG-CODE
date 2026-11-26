@@ -49,11 +49,13 @@
   $('editor').addEventListener('input',()=>mark(true))
   $('editor').addEventListener('submit',guard(event=>{
     event.preventDefault();if(!store)throw Error('Stockage indisponible : exportez votre brouillon pour le conserver.')
-    const record=store.save({...current,definition:definition()});open(record);message('Brouillon enregistré dans ce navigateur.')
+    let record
+    try{record=store.save({...current,definition:definition()})}catch(error){if(error.name==='QuotaExceededError')throw Error('Le stockage du navigateur est plein. Exportez ce brouillon pour conserver vos modifications, puis libérez de la place.');throw error}
+    open(record);message('Brouillon enregistré dans ce navigateur.')
   }))
   $('export').addEventListener('click',guard(()=>{
     const d=definition(),url=URL.createObjectURL(new Blob([exportCampaignDraft(d)],{type:'application/json'})),link=document.createElement('a')
-    link.href=url;link.download=d.id+'.campagne-brouillon.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Fichier de brouillon exporté. Les médias restent des références.')
+    link.href=url;link.download=d.id+'.campagne-brouillon.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Fichier de brouillon exporté. Les images ajoutées aux fiches sont incluses ; les autres médias restent des références.')
   }))
   $('delete').addEventListener('click',guard(()=>{
     if(!current?.revision || !window.confirm('Supprimer ce brouillon local et ses modifications ? Cette action ne touche aucune partie.'))return

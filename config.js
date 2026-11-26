@@ -156,6 +156,23 @@ function createCampaignDefinition(input) {
     if (!["hero", "companion"].includes(character.kind)) throw Error("Type de personnage inconnu")
     if (typeof character.portrait !== "string" || /[:\\]/.test(character.portrait) || character.portrait.startsWith("/") || character.portrait.split("/").some(part => !part || part === "." || part === "..") || !/\.(png|jpe?g|webp|svg)$/i.test(character.portrait)) throw Error("Portrait de personnage invalide")
     const build={}
+    for (const key of ['race','class','alignment']) if(character[key]!==undefined) {
+      if(typeof character[key]!=='string'||character[key].length>100)throw Error('Identité de personnage invalide')
+      build[key]=character[key]
+    }
+    if(character.customInfo!==undefined){
+      if(!Array.isArray(character.customInfo)||character.customInfo.length>30||character.customInfo.some(item=>!item||typeof item.label!=='string'||!item.label.trim()||item.label.length>100||typeof item.value!=='string'||item.value.length>2000))throw Error('Informations personnalisées invalides')
+      build.customInfo=character.customInfo.map(item=>({label:item.label,value:item.value}))
+    }
+    if(character.appearance!==undefined){
+      if(!character.appearance||typeof character.appearance!=='object'||Array.isArray(character.appearance))throw Error('Images de personnage invalides')
+      build.appearance={}
+      for(const key of ['portrait','fullBody'])if(character.appearance[key]!==undefined){
+        const value=character.appearance[key]
+        if(typeof value!=='string'||value.length>400000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(value))throw Error('Image de personnage invalide ou trop volumineuse')
+        build.appearance[key]=value
+      }
+    }
     if(character.stats!==undefined){
       const stats=copyCampaignContent(character.stats)
       if(!stats||typeof stats!=="object"||Array.isArray(stats)||["force","charme","perspi","chance","defense","hp","poids"].some(key=>!Number.isFinite(stats[key])||stats[key]<0)||stats.hp<=0)throw Error("Statistiques de personnage invalides")
@@ -176,7 +193,8 @@ function createCampaignDefinition(input) {
 // Draft exchange only: references media, does not bundle assets or save a played session.
 function exportCampaignDraft(definition) {
   const content=createCampaignDefinition(definition)
-  const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media:"references",definition:content},null,2)
+  const embedded=content.characters.some(character=>Object.keys(character.appearance || {}).length)
+  const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media:embedded?"references-and-portraits":"references",definition:content},null,2)
   if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
   return text
 }
@@ -184,7 +202,7 @@ function importCampaignDraft(text) {
   if(typeof text!=="string" || text.length>8*1024*1024) throw Error("Fichier de brouillon invalide ou trop volumineux")
   let packet
   try{packet=JSON.parse(text)}catch(error){throw Error("Le brouillon ne contient pas un JSON valide")}
-  if(!packet || packet.format!=="rpg-campaign-draft" || packet.version!==1 || packet.media!=="references")throw Error("Format ou version de brouillon non pris en charge")
+  if(!packet || packet.format!=="rpg-campaign-draft" || packet.version!==1 || !["references","references-and-portraits"].includes(packet.media))throw Error("Format ou version de brouillon non pris en charge")
   return createCampaignDefinition(packet.definition)
 }
 const CAMPAIGN_BASE_STATS = {

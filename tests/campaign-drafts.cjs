@@ -32,3 +32,11 @@ assert.throws(()=>vm.runInContext("removeDraftCharacter(removeDraftCharacter(neu
 assert.throws(()=>vm.runInContext("removeDraftCharacter(ACTIVE_CAMPAIGN,'greg')",context),/lié/);
 assert.throws(()=>vm.runInContext("updateDraftCharacter(neutral,'new-hero',{name:'A',stats:{force:1},mainStat:'force'})",context),/Statistiques/);
 console.log('OK brouillons : copie isolée, description, stockage distinct, concurrence, corruption et quota.');
+vm.runInContext(`
+const profileHero={...createDraftHero('profile'),race:'Elfe',class:'Barde',alignment:'Chaotique neutre',customInfo:[{label:'Don',value:'Musique'}],appearance:{portrait:'data:image/jpeg;base64,/9j/AA=='}}
+const profileCampaign=createCampaignDefinition({schemaVersion:1,id:'profile',title:'Profil',characters:[profileHero]})
+const roundtrip=importCampaignDraft(exportCampaignDraft(profileCampaign))
+if(JSON.stringify(roundtrip)!==JSON.stringify(profileCampaign))throw Error('Profil perdu dans un échange')
+globalThis.profileHero=profileHero
+`,context);
+for(const patch of ["appearance:{portrait:'data:image/svg+xml;base64,AAAA'}","customInfo:[{label:'',value:'invalide'}]","race:42"]){assert.throws(()=>vm.runInContext(`createCampaignDefinition({schemaVersion:1,id:'invalid',title:'Invalide',characters:[{...profileHero,${patch}}]})`,context));}

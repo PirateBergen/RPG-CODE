@@ -37,6 +37,58 @@ function createLocalCampaignDraftStore(storage) {
     }
   }
 }
+// User-selected raster images are decoded locally and reduced before being embedded.
+async function readDraftCharacterImage(file) {
+  if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10*1024*1024)throw Error('Choisissez une image PNG, JPEG ou WebP de 10 Mo maximum.')
+  const bitmap=await createImageBitmap(file)
+  try {
+    if(bitmap.width*bitmap.height>40000000)throw Error('Cette image est trop grande. Choisissez une version plus petite.')
+    let size=900, result=''
+    do {
+      const ratio=Math.min(1,size/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas')
+      canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio))
+      const ctx=canvas.getContext('2d');ctx.fillStyle='#19232d';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height)
+      result=canvas.toDataURL('image/jpeg',.82);size=Math.floor(size*.75)
+    }while(result.length>400000 && size>=150)
+    if(result.length>400000)throw Error('Image trop volumineuse après réduction.')
+    return result
+  }finally{bitmap.close()}
+}
+function createDraftCharacterProfile() {
+  const $=id=>document.getElementById(id)
+  let appearance={},generation=0,pending=0
+  const sequences={portrait:0,fullBody:0}
+  function preview(key) {
+    const image=$(key+'Preview');image.hidden=!appearance[key];if(appearance[key])image.src=appearance[key];else image.removeAttribute('src')
+    $(key+'Remove').disabled=!appearance[key]
+  }
+  function addInfo(item={label:'',value:''}) {
+    if($('customInfo').children.length>=30)throw Error('30 informations personnalisées maximum.')
+    const row=document.createElement('fieldset'),legend=document.createElement('legend'),label=document.createElement('input'),value=document.createElement('textarea'),remove=document.createElement('button'),labelTitle=document.createElement('label'),valueTitle=document.createElement('label')
+    legend.textContent='Information personnalisée';label.maxLength=100;label.required=true;label.value=item.label;value.maxLength=2000;value.rows=3;value.value=item.value
+    labelTitle.textContent='Intitulé (ex. : origine, don, idéal)';valueTitle.textContent='Contenu';labelTitle.append(label);valueTitle.append(value)
+    remove.type='button';remove.textContent='Retirer cette information';remove.addEventListener('click',()=>row.remove());row.append(legend,labelTitle,valueTitle,remove);$('customInfo').append(row)
+  }
+  $('addCustomInfo').addEventListener('click',()=>{try{addInfo()}catch(e){$('characterError').textContent=e.message}})
+  for(const key of ['portrait','fullBody']) {
+    $(key+'File').addEventListener('change',async()=>{
+      const file=$(key+'File').files[0],token=generation;$(key+'File').value='';if(!file)return
+      const sequence=++sequences[key]
+      pending++;$('characterError').textContent='Préparation de l’image…'
+      try{const data=await readDraftCharacterImage(file);if(token===generation&&sequence===sequences[key]){appearance[key]=data;preview(key);$('characterError').textContent=''}}
+      catch(e){if(token===generation&&sequence===sequences[key])$('characterError').textContent=e.message || 'Impossible de lire cette image.'}
+      finally{if(token===generation)pending--}
+    })
+    $(key+'Remove').addEventListener('click',()=>{sequences[key]++;appearance={...appearance};delete appearance[key];preview(key)})
+  }
+  return {
+    open(c){generation++;pending=0;appearance={...c.appearance};$('characterRace').value=c.race || '';$('characterClass').value=c.class || '';
+      for(const option of $('characterAlignment').querySelectorAll('[data-custom]'))option.remove()
+      if(c.alignment&&![...$('characterAlignment').options].some(option=>option.value===c.alignment)){const option=document.createElement('option');option.value=c.alignment;option.textContent=c.alignment;option.dataset.custom='true';$('characterAlignment').append(option)}
+      $('characterAlignment').value=c.alignment || '';$('customInfo').replaceChildren();(c.customInfo || []).forEach(addInfo);for(const key of ['portrait','fullBody']){$(key+'File').value='';preview(key)}},
+    read(){if(pending)throw Error('Attendez la fin de la préparation des images.');return {race:$('characterRace').value.trim(),class:$('characterClass').value.trim(),alignment:$('characterAlignment').value,customInfo:[...$('customInfo').children].map(row=>({label:row.querySelector('input').value.trim(),value:row.querySelector('textarea').value})),appearance}}
+  }
+}
 const DRAFT_CHARACTER_STATS = {force:'Force',charme:'Charme',perspi:'Perspicacité',chance:'Chance',defense:'Défense',hp:'PV maximum',poids:'Capacité d’inventaire'}
 function createDraftHero(id, name = 'Nouveau héros') {
   return {id,name,kind:'hero',portrait:'images/draft-hero.svg',stats:{force:10,charme:10,perspi:10,chance:10,defense:10,hp:100,poids:100},mainStat:'force'}
@@ -44,7 +96,8 @@ function createDraftHero(id, name = 'Nouveau héros') {
 // Validate the whole draft before replacing a character; keep identities and dependencies.
 function updateDraftCharacter(definition, id, changes) {
   if (!definition.characters.some(c=>c.id===id)) throw Error('Personnage introuvable')
-  return createCampaignDefinition({...definition,characters:definition.characters.map(c=>c.id===id?{...c,name:changes.name,stats:changes.stats,mainStat:changes.mainStat}:c)})
+  const profile=Object.fromEntries(['race','class','alignment','customInfo','appearance'].filter(key=>changes[key]!==undefined).map(key=>[key,changes[key]]))
+  return createCampaignDefinition({...definition,characters:definition.characters.map(c=>c.id===id?{...c,...profile,name:changes.name,stats:changes.stats,mainStat:changes.mainStat}:c)})
 }
 function removeDraftCharacter(definition, id) {
   if (!definition.characters.some(c=>c.id===id)) throw Error('Personnage introuvable')
@@ -54,6 +107,7 @@ function removeDraftCharacter(definition, id) {
 }
 function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,message,guard}) {
   const $=id=>document.getElementById(id), dialog=$('characterDialog'), fields=$('characterStats')
+  const profile=createDraftCharacterProfile()
   let selected=null, pendingHero=null
   for(const [key,label] of Object.entries(DRAFT_CHARACTER_STATS)) {
     const wrapper=document.createElement('div'), title=document.createElement('label'),input=document.createElement('input')
@@ -66,12 +120,15 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
     for(const c of getDefinition().characters) {
       const row=document.createElement('div'),name=document.createElement('h3'),detail=document.createElement('p'),button=document.createElement('button')
       row.className='character-card';name.textContent=c.name;detail.className='hint';detail.textContent=c.kind==='companion'?'Compagnon de '+getDefinition().characters.find(hero=>hero.id===c.owner)?.name:'Héros · '+(c.stats?c.stats.hp+' PV maximum':'statistiques à définir')
-      button.type='button';button.textContent='Modifier';button.setAttribute('aria-label','Modifier '+c.name);button.addEventListener('click',()=>edit(c));row.append(name,detail,button);list.append(row)
+      button.type='button';button.textContent='Modifier';button.setAttribute('aria-label','Modifier '+c.name);button.addEventListener('click',()=>edit(c));row.append(name,detail)
+      if(c.appearance?.portrait){const image=document.createElement('img');image.src=c.appearance.portrait;image.alt='Portrait de '+c.name;image.className='hero-avatar';row.prepend(image)}
+      const identity=document.createElement('p');identity.className='hint';identity.textContent=[c.race,c.class,c.alignment].filter(Boolean).join(' · ');row.append(identity,button);list.append(row)
     }
   }
   function edit(c, isNew=false) {
     pendingHero=isNew?c:null
     selected=c.id;$('characterName').value=c.name
+    profile.open(c)
     const stats=c.stats || createDraftHero('preview').stats
     for(const key of Object.keys(DRAFT_CHARACTER_STATS))$('stat-'+key).value=stats[key]
     $('characterMainStat').value=c.mainStat || 'force';$('characterError').textContent='';dialog.showModal();$('characterName').focus()
@@ -87,7 +144,7 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
       const stats=Object.fromEntries(Object.keys(DRAFT_CHARACTER_STATS).map(key=>[key,$('stat-'+key).valueAsNumber]))
       if(Object.values(stats).some(value=>!Number.isSafeInteger(value)))throw Error('Utilisez des nombres entiers pour les statistiques.')
       const d=pendingHero?createCampaignDefinition({...getDefinition(),characters:[...getDefinition().characters,pendingHero]}):getDefinition()
-      replaceDefinition(updateDraftCharacter(d,selected,{name,stats,mainStat:$('characterMainStat').value}));changed();render();dialog.close();message('Fiche modifiée. Enregistrez le brouillon pour la conserver.')
+      replaceDefinition(updateDraftCharacter(d,selected,{name,stats,mainStat:$('characterMainStat').value,...profile.read()}));changed();render();dialog.close();message('Fiche modifiée. Enregistrez le brouillon pour la conserver.')
     }catch(error){$('characterError').textContent=error.message}
   })
   $('characterRemove').addEventListener('click',()=>{
@@ -151,11 +208,13 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
   $('editor').addEventListener('input',()=>mark(true))
   $('editor').addEventListener('submit',guard(event=>{
     event.preventDefault();if(!store)throw Error('Stockage indisponible : exportez votre brouillon pour le conserver.')
-    const record=store.save({...current,definition:definition()});open(record);message('Brouillon enregistré dans ce navigateur.')
+    let record
+    try{record=store.save({...current,definition:definition()})}catch(error){if(error.name==='QuotaExceededError')throw Error('Le stockage du navigateur est plein. Exportez ce brouillon pour conserver vos modifications, puis libérez de la place.');throw error}
+    open(record);message('Brouillon enregistré dans ce navigateur.')
   }))
   $('export').addEventListener('click',guard(()=>{
     const d=definition(),url=URL.createObjectURL(new Blob([exportCampaignDraft(d)],{type:'application/json'})),link=document.createElement('a')
-    link.href=url;link.download=d.id+'.campagne-brouillon.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Fichier de brouillon exporté. Les médias restent des références.')
+    link.href=url;link.download=d.id+'.campagne-brouillon.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);message('Fichier de brouillon exporté. Les images ajoutées aux fiches sont incluses ; les autres médias restent des références.')
   }))
   $('delete').addEventListener('click',guard(()=>{
     if(!current?.revision || !window.confirm('Supprimer ce brouillon local et ses modifications ? Cette action ne touche aucune partie.'))return

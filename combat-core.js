@@ -63,9 +63,10 @@ function sealCombatOutcome(root,type,request={}){
 }
 
 
-const COMBAT_HEROES = ["greg", "ju", "elo"]
+// Le moteur reçoit ses personnages de la définition de la campagne.
+const COMBAT_HEROES = ACTIVE_CAMPAIGN.characters.filter(character => character.kind === "hero").map(character => character.id)
 const COMBAT_MOBS = ["mob", "mob2", "mob3"]
-const COMBAT_CHARACTERS = [...COMBAT_HEROES, "bibi"]
+const COMBAT_CHARACTERS = [...COMBAT_HEROES, ...ACTIVE_CAMPAIGN.characters.filter(character => character.kind === "companion").map(character => character.id)]
 function recordHeroCritical(root,actor,crit,fail){
  if(!COMBAT_HEROES.includes(actor)||!root.characters?.[actor])return
  const c=root.characters[actor]

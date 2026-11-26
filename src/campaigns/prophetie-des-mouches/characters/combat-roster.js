@@ -1,6 +1,3 @@
-const COMBAT_HEROES = ["greg", "ju", "elo"]
-const COMBAT_MOBS = ["mob", "mob2", "mob3"]
-const COMBAT_CHARACTERS = [...COMBAT_HEROES, "bibi"]
 function recordHeroCritical(root,actor,crit,fail){
  if(!COMBAT_HEROES.includes(actor)||!root.characters?.[actor])return
  const c=root.characters[actor]

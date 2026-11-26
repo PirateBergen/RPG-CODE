@@ -1,5 +1,5 @@
 function heroDisplayName(id) { const text=pikaDisplayText(String(id || "").trim());return text==="Pika"?text:text.toUpperCase() }
-function heroPortraitFile(id) { return id === "ju" ? "pika-token.svg" : id + ".png" }
+function heroPortraitFile(id) { return ACTIVE_CAMPAIGN.characters.find(character => character.id === id)?.portrait || id + ".png" }
 function migratePikaCharacter(character) {
   if (!character || character.buildVersion === "pika-bard-v1") return false
   const level = Math.max(1, parseInt(character.lvl, 10) || 1)

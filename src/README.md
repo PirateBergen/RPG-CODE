@@ -35,3 +35,5 @@ Les gros fichiers historiques `config.js`, `game.js`, `ui.js`, `combat.js`, `com
 Le dossier de campagne regroupe le contenu actuel et les exceptions narratives identifiées. Cette organisation n’installe ni bibliothèque de campagnes, ni éditeur, ni nouveaux chemins de sauvegarde. Le futur créateur devra définir le contrat de description d’une campagne et remplacer progressivement les dépendances restantes aux identifiants des héros et événements actuels.
 
 Le HTML d’accueil, les médias existants et les chemins de stockage restent compatibles avec la campagne en cours. Le travail de séparation ne lance aucune migration de partie.
+
+La première frontière de contenu est maintenant explicite : `engine/campaigns/definition.js` valide une description sans accès au stockage ; `campaigns/prophetie-des-mouches/definition.js` fournit la campagne active historique. Le moteur construit sa liste de combattants depuis cette fiche. Les statistiques, actions narratives et autres dépendances aux héros restent à découpler progressivement. Aucun sélecteur de campagne ni nouvel espace de sauvegarde n’est activé par cette étape.

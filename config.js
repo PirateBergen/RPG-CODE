@@ -17,6 +17,38 @@ const GAME_STATE = {
 /* STATS JOUEURS             */
 /* ========================= */
 
+// Description de contenu uniquement : ni connexion, ni écriture de partie.
+function createCampaignDefinition(input) {
+  if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
+  if (typeof input.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.id)) throw Error("Identifiant de campagne invalide")
+  if (typeof input.title !== "string" || !input.title.trim()) throw Error("Titre de campagne absent")
+  if (!Array.isArray(input.characters) || !input.characters.length) throw Error("Personnages de campagne absents")
+  const ids = new Set()
+  const characters = input.characters.map(character => {
+    if (!character || typeof character.id !== "string" || !/^[a-z][a-z0-9_-]*$/.test(character.id) || ["constructor", "prototype", "__proto__"].includes(character.id) || ids.has(character.id)) throw Error("Identifiant de personnage invalide ou dupliqué")
+    ids.add(character.id)
+    if (typeof character.name !== "string" || !character.name.trim()) throw Error("Nom de personnage absent")
+    if (!["hero", "companion"].includes(character.kind)) throw Error("Type de personnage inconnu")
+    if (typeof character.portrait !== "string" || /[:\\]/.test(character.portrait) || character.portrait.startsWith("/") || character.portrait.split("/").some(part => !part || part === "." || part === "..") || !/\.(png|jpe?g|webp|svg)$/i.test(character.portrait)) throw Error("Portrait de personnage invalide")
+    return {id:character.id, name:character.name, kind:character.kind, portrait:character.portrait, ...(character.kind === "companion" ? {owner:character.owner} : {})}
+  })
+  const heroes = new Set(characters.filter(character => character.kind === "hero").map(character => character.id))
+  if (!heroes.size) throw Error("La campagne doit définir un héros")
+  for (const character of characters) if (character.kind === "companion" && !heroes.has(character.owner)) throw Error("Le compagnon doit appartenir à un héros de la campagne")
+  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
+}
+// Campagne historique active. Changer de campagne et de stockage sera une étape distincte.
+const ACTIVE_CAMPAIGN = createCampaignDefinition({
+  schemaVersion:1,
+  id:"prophetie-des-mouches",
+  title:"La Prophétie des Mouches",
+  characters:[
+    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
+    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
+    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png"},
+    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png"}
+  ]
+})
 const playerBaseStats = {
   greg: { force:6, charme:4, perspi:4, chance:4, defense:5, hp:120, poids:100 },
   ju:   { force:3, charme:7, perspi:6, chance:5, defense:4, hp:100, poids:100 },
@@ -1419,7 +1451,7 @@ const ALLY_PNJS = [
 
 
 function heroDisplayName(id) { const text=pikaDisplayText(String(id || "").trim());return text==="Pika"?text:text.toUpperCase() }
-function heroPortraitFile(id) { return id === "ju" ? "pika-token.svg" : id + ".png" }
+function heroPortraitFile(id) { return ACTIVE_CAMPAIGN.characters.find(character => character.id === id)?.portrait || id + ".png" }
 function migratePikaCharacter(character) {
   if (!character || character.buildVersion === "pika-bard-v1") return false
   const level = Math.max(1, parseInt(character.lvl, 10) || 1)

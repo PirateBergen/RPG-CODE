@@ -4,6 +4,8 @@
   "bundles": {
     "config.js": [
       "engine/game-states.js",
+      "engine/campaigns/definition.js",
+      "campaigns/prophetie-des-mouches/definition.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
       "engine/characters/progression.js",
       "campaigns/prophetie-des-mouches/enemies/stats.js",
@@ -114,6 +116,7 @@
     ],
     "combat-core.js": [
       "campaigns/prophetie-des-mouches/rules/combat-outcomes.js",
+      "engine/combat/roster.js",
       "campaigns/prophetie-des-mouches/characters/combat-roster.js",
       "engine/combat/turns-and-dice.js",
       "engine/combat/journal.js",

@@ -174,6 +174,12 @@ function createCampaignAbilities(input) {
     if(!v||!['slash','projectile','fire','frost','lightning','heal','shield','smoke','swarm'].includes(v.preset)||!/^#[a-f0-9]{6}$/i.test(v.color)||![1,2,3].includes(v.intensity))throw Error('Visuel de capacité invalide')
     if(v.image!==undefined&&(a.kind!=='special'||typeof v.image!=='string'||v.image.length>600000||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(v.image)))throw Error('Image de spéciale invalide')
     const extra={}
+    if(a.growth!==undefined){
+      const g=a.growth
+      if(!g||!Number.isFinite(g.percent)||g.percent<0||g.percent>100||!Number.isSafeInteger(g.every)||g.every<1||g.every>1000||!Number.isSafeInteger(g.startLevel)||g.startLevel<1||g.startLevel>1000)throw Error('Progression automatique invalide')
+      if(a.progression?.length)throw Error('Choisissez une progression automatique ou des paliers, sans les cumuler.')
+      extra.growth={percent:g.percent,every:g.every,startLevel:g.startLevel}
+    }
     if(a.announcement!==undefined){
       if(!a.announcement||!['auto','custom','none'].includes(a.announcement.mode)||typeof a.announcement.text!=='string'||a.announcement.text.length>1000)throw Error('Annonce de capacité invalide')
       extra.announcement={mode:a.announcement.mode,text:a.announcement.text}
@@ -194,9 +200,14 @@ function createCampaignAbilities(input) {
 function resolveCampaignAbilityLevel(ability,level) {
   if(!Number.isSafeInteger(level)||level<1||level>1000)throw Error('Niveau de test invalide (1 à 1 000).')
   const base=createCampaignAbilities([ability])[0]
+  if(base.growth){
+    const bonus=campaignAbilityGrowthBonus(base.growth,level),factor=1+bonus/100
+    return {...base,powerMin:Math.round(base.powerMin*factor*100)/100,powerMax:Math.round(base.powerMax*factor*100)/100}
+  }
   const tier=base.progression?.filter(tier=>tier.level<=level).at(-1)
   return tier?{...base,powerMin:tier.powerMin,powerMax:tier.powerMax,visual:{...base.visual,intensity:tier.intensity}}:base
 }
+function campaignAbilityGrowthBonus(growth,level){return Math.round(Math.floor(Math.max(0,level-growth.startLevel)/growth.every)*growth.percent*10000)/10000}
 function campaignAbilityAnnouncement(ability,characterName) {
   if(ability.announcement?.mode==='none')return ''
   const automatic=characterName+' lance '+ability.name+' !'

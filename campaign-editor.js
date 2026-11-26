@@ -247,9 +247,15 @@ function createDraftAbilityProgression() {
     tierRow({level,powerMin:$('ability-powerMin').valueAsNumber || 0,powerMax:$('ability-powerMax').valueAsNumber || 0,intensity:Number($('abilityIntensity').value)})
   })
   $('abilityAnnouncementMode').addEventListener('change',()=>{$('abilityAnnouncementCustom').hidden=$('abilityAnnouncementMode').value!=='custom'})
+  function mode(){const value=$('abilityGrowthMode').value;$('abilityAutomaticGrowth').hidden=value!=='automatic';$('abilityLegacyGrowth').hidden=value!=='legacy';for(const input of $('abilityAutomaticGrowth').querySelectorAll('input'))input.disabled=value!=='automatic';for(const input of $('abilityLegacyGrowth').querySelectorAll('input,select'))input.disabled=value!=='legacy';explain()}
+  function explain(){const percent=$('abilityGrowthPercent').valueAsNumber,every=$('abilityGrowthEvery').valueAsNumber,start=$('abilityGrowthStart').valueAsNumber;$('abilityGrowthExample').textContent=Number.isFinite(percent)&&Number.isInteger(every)&&every>0&&Number.isInteger(start)?`Base au niveau ${start} ; +${percent} % au niveau ${start+every} ; +${Math.round(percent*2*10000)/10000} % au niveau ${start+2*every}. Les bonus sont calculés sur la puissance de base, sans multiplication entre eux.`:'Renseignez un pourcentage et un intervalle valides.'}
+  $('abilityGrowthMode').addEventListener('change',mode)
+  for(const id of ['abilityGrowthPercent','abilityGrowthEvery','abilityGrowthStart'])$(id).addEventListener('input',explain)
   return {
-    open(ability){$('abilityTiers').replaceChildren();(ability?.progression || []).forEach(tierRow);$('abilityAnnouncementMode').value=ability?.announcement?.mode || 'auto';$('abilityAnnouncementText').value=ability?.announcement?.text || '';$('abilityAnnouncementCustom').hidden=$('abilityAnnouncementMode').value!=='custom';$('abilityTestLevel').value=1},
-    read(){return {announcement:{mode:$('abilityAnnouncementMode').value,text:$('abilityAnnouncementText').value},progression:[...$('abilityTiers').children].map(row=>Object.fromEntries([...row.querySelectorAll('[data-tier-field]')].map(input=>[input.dataset.tierField,input.type==='number'?input.valueAsNumber:Number(input.value)])))}}
+    open(ability){$('abilityTiers').replaceChildren();(ability?.progression || []).forEach(tierRow);$('abilityAnnouncementMode').value=ability?.announcement?.mode || 'auto';$('abilityAnnouncementText').value=ability?.announcement?.text || '';$('abilityAnnouncementCustom').hidden=$('abilityAnnouncementMode').value!=='custom';$('abilityTestLevel').value=1;
+      $('abilityGrowthMode').querySelector('[value=legacy]')?.remove();if(ability?.progression?.length){const option=document.createElement('option');option.value='legacy';option.textContent='Paliers existants (conservés)';$('abilityGrowthMode').append(option)}
+      $('abilityGrowthMode').value=ability?.growth?'automatic':ability?.progression?.length?'legacy':'fixed';$('abilityGrowthPercent').value=ability?.growth?.percent ?? 2;$('abilityGrowthEvery').value=ability?.growth?.every ?? 2;$('abilityGrowthStart').value=ability?.growth?.startLevel ?? 1;mode()},
+    read(){const value=$('abilityGrowthMode').value;return {announcement:{mode:$('abilityAnnouncementMode').value,text:$('abilityAnnouncementText').value},...(value==='automatic'?{growth:{percent:$('abilityGrowthPercent').valueAsNumber,every:$('abilityGrowthEvery').valueAsNumber,startLevel:$('abilityGrowthStart').valueAsNumber}}:{}),...(value==='legacy'?{progression:[...$('abilityTiers').children].map(row=>Object.fromEntries([...row.querySelectorAll('[data-tier-field]')].map(input=>[input.dataset.tierField,input.type==='number'?input.valueAsNumber:Number(input.value)])))}:{})}}
   }
 }
 const DRAFT_SEQUENCE_LABELS={none:'Aucun effet',slash:'Entaille',projectile:'Projectile',fire:'Flammes',frost:'Givre',lightning:'Éclair',heal:'Halo de soin',shield:'Bouclier',smoke:'Brume',swarm:'Nuée',beam:'Rayon',wave:'Vague',explosion:'Explosion',mark:'Marque au sol'}
@@ -258,24 +264,27 @@ function draftSequenceModel(model,color='#d8b477') {
   const models={physical:[phase('none',600),phase('slash',700),phase('explosion',600,{shake:true})],magic:[phase('swarm',1000),phase('projectile',900),phase('wave',700)],summon:[phase('smoke',1200,{darken:true}),phase('mark',1200),phase('wave',800)],dark:[phase('smoke',1400,{darken:true}),phase('beam',1000),phase('explosion',900,{shake:true,darken:true})],healing:[phase('swarm',800),phase('heal',1200),phase('shield',800)]}
   return Object.fromEntries(Object.keys(CAMPAIGN_SEQUENCE_PHASES).map((key,i)=>[key,(models[model] || models.magic)[i]]))
 }
-function createDraftSequenceEditor() {
+function createDraftSequenceEditor({onPreview}) {
   const $=id=>document.getElementById(id)
   let generation=0,pending=0
   const controls={}
+  function watch(label,action){const button=document.createElement('button');button.type='button';button.className='effect-watch';button.textContent='Voir';button.setAttribute('aria-label','Voir : '+label);button.addEventListener('click',action);return button}
+  function quickPhase(fields,overrides={}){return {enabled:true,duration:1400,effect:fields.effect.value,color:fields.color.value || '#d8b477',size:Number.isInteger(fields.size.valueAsNumber)&&fields.size.valueAsNumber>=25&&fields.size.valueAsNumber<=200?fields.size.valueAsNumber:100,direction:fields.direction.value,darken:false,shake:false,flash:false,images:[],...overrides}}
   function select(label,options,value){const wrap=document.createElement('label'),input=document.createElement('select');wrap.textContent=label;for(const [key,text]of Object.entries(options)){const option=document.createElement('option');option.value=key;option.textContent=text;input.append(option)}input.value=value;wrap.append(input);return {wrap,input}}
   function imageRow(parent,item) {
     const row=document.createElement('fieldset'),legend=document.createElement('legend'),image=document.createElement('img');legend.textContent='Image de l’étape';image.src=item.image;image.alt='Élément de l’animation';image.className='sequence-editor-image'
     const motion=select('Apparition / déplacement',{fade:'Fondu',left:'Depuis la gauche',right:'Depuis la droite',rise:'Depuis le bas'},item.motion),position=select('Position',{actor:'Côté personnage',center:'Centre',target:'Côté cible'},item.position)
     row.sequenceData={image:item.image,motion:motion.input,position:position.input}
-    const remove=document.createElement('button');remove.type='button';remove.textContent='Retirer cet élément';remove.addEventListener('click',()=>row.remove());row.append(legend,image,motion.wrap,position.wrap,remove);parent.append(row)
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Retirer cet élément';remove.addEventListener('click',()=>row.remove());row.append(legend,image,motion.wrap,position.wrap,watch('le mouvement de cette image',()=>onPreview({enabled:true,duration:1800,effect:'none',color:'#d8b477',size:100,direction:'forward',darken:false,shake:false,flash:false,images:[{image:item.image,motion:motion.input.value,position:position.input.value}]},'Mouvement de l’image')),remove);parent.append(row)
   }
   for(const [key,title]of Object.entries(CAMPAIGN_SEQUENCE_PHASES)) {
     const details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement('div');summary.textContent=title;details.append(summary,body);$('sequenceSteps').append(details)
     const fields={}
     for(const [name,label]of Object.entries({enabled:'Activer cette étape',darken:'Assombrir le décor',shake:'Tremblement à l’impact',flash:'Flash unique doux'})){
-      const wrap=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.dataset.sequenceField=name;wrap.className='sequence-checkbox';wrap.append(input,document.createTextNode(label));body.append(wrap);fields[name]=input
+      const wrap=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.dataset.sequenceField=name;wrap.className='sequence-checkbox';wrap.append(input,document.createTextNode(label));fields[name]=input
+      if(name==='enabled')body.append(wrap);else{const line=document.createElement('div');line.className='effect-control';line.append(wrap,watch(title+' — '+label,()=>onPreview(quickPhase(fields,{effect:'none',[name]:true}),label)));body.append(line)}
     }
-    const effect=select('Effet',DRAFT_SEQUENCE_LABELS,'none'),direction=select('Direction',{forward:'Personnage vers cible',reverse:'Cible vers personnage'},'forward');body.append(effect.wrap,direction.wrap);fields.effect=effect.input;fields.direction=direction.input
+    const effect=select('Effet',DRAFT_SEQUENCE_LABELS,'none'),direction=select('Direction',{forward:'Personnage vers cible',reverse:'Cible vers personnage'},'forward');const effectLine=document.createElement('div');effectLine.className='effect-control';effectLine.append(effect.wrap,watch(title+' — effet sélectionné',()=>onPreview(quickPhase(fields),DRAFT_SEQUENCE_LABELS[fields.effect.value])));body.append(effectLine,direction.wrap);fields.effect=effect.input;fields.direction=direction.input
     for(const [name,label,type,min,max,step]of [['duration','Durée (secondes)','number',.2,8,.1],['size','Taille de l’effet (%)','number',25,200,1],['color','Couleur','color']]){
       const wrap=document.createElement('label'),input=document.createElement('input');wrap.textContent=label;input.type=type;input.dataset.sequenceField=name;if(type==='number'){input.min=min;input.max=max;input.step=step}wrap.append(input);body.append(wrap);fields[name]=input
     }
@@ -334,7 +343,7 @@ function removeDraftAbility(definition,heroId,id) {
 function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id)
   const progression=createDraftAbilityProgression()
-  const sequenceEditor=createDraftSequenceEditor()
+  const sequenceEditor=createDraftSequenceEditor({onPreview:quickPreview})
   const sequencePlayer=createDraftSequencePlayer($('abilityStage'),$('abilityFx'),text=>{$('abilityPhaseStatus').textContent=text})
   let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
   for(const [value,label] of Object.entries(DRAFT_ABILITY_VISUALS)){const option=document.createElement('option');option.value=value;option.textContent=label;$('abilityPreset').append(option)}
@@ -379,7 +388,14 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     $('abilityPreviewScene').selectedIndex=$('abilityPreviewScene').options.length>1?1:0;setBackdrop();$('abilityPreviewPart').value='all'
     $('abilityPreview').showModal();replay();$('abilityReplay').onclick=replay;$('abilityPreviewClose').focus({preventScroll:true});$('abilityPreview').scrollTop=0
   }
-  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
+  function quickPreview(phase,title){try{
+    const sequence=draftSequenceModel('magic');for(const key of Object.keys(CAMPAIGN_SEQUENCE_PHASES))sequence[key].enabled=false;sequence.launch=phase
+    const ability={id:'ability-effect-preview',kind:'special',name:title,description:'',type:'effect',dice:6,stat:'none',target:'enemy',powerMin:0,powerMax:0,cooldown:0,uses:0,effect:{kind:'none',value:0,turns:0},visual:{preset:'slash',color:phase.color,intensity:2,sequence},announcement:{mode:'none',text:''}}
+    const previous=$('abilityTestLevel').value;$('abilityTestLevel').value=1;try{preview(createCampaignAbilities([ability])[0])}finally{$('abilityTestLevel').value=previous}
+    $('abilityLevelSummary').textContent='Essai isolé de cet effet · aucun réglage modifié'
+  }catch(error){$('abilityError').textContent=error.message}}
+  $('abilityQuickEffect').addEventListener('click',()=>{const phase=draftSequenceModel('magic',$('abilityColor').value).launch;phase.effect=$('abilityPreset').value;quickPreview(phase,DRAFT_ABILITY_VISUALS[phase.effect])})
+  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;const bonus=ability.growth?` · bonus automatique +${campaignAbilityGrowthBonus(ability.growth,level)} %`:'';$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax}${bonus} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
   $('abilityPreviewLevel').addEventListener('change',replay)
   function setBackdrop(){const backdrop=getDefinition().locations?.find(p=>p.id===$('abilityPreviewScene').value)?.background;$('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')}
   $('abilityPreviewScene').addEventListener('change',setBackdrop)

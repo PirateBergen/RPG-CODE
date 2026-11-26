@@ -102,3 +102,15 @@ assert.throws(()=>vm.runInContext('createCampaignAbilitySequence(sequence,"norma
 for(const patch of ["duration:0","effect:'javascript'","size:500","images:[{image:'https://bad/image.png',motion:'fade',position:'center'}]","flash:'yes'","direction:'sideways'"]){assert.throws(()=>vm.runInContext(`createCampaignAbilitySequence({...sequence,impact:{...sequence.impact,${patch}}},'special')`,context));}
 assert.throws(()=>vm.runInContext("createCampaignAbilitySequence({...sequence,order:['impact','impact','launch']},'special')",context),/Ordre/);
 vm.runInContext(`for(const model of ['physical','magic','summon','dark','healing'])createCampaignAbilitySequence(draftSequenceModel(model),'normal');const reordered=createCampaignAbilitySequence({...sequence,order:['impact','preparation','launch']},'special');if(reordered.order[0]!=='impact')throw Error('Ordre perdu')`,context);
+vm.runInContext(`
+const automatic={...ability,powerMin:100,powerMax:200,growth:{percent:2,every:2,startLevel:1}},automaticBefore=JSON.stringify(automatic)
+for(const [level,min,max]of [[1,100,200],[2,100,200],[3,102,204],[4,102,204],[5,104,208],[101,200,400]]){const value=resolveCampaignAbilityLevel(automatic,level);if(value.powerMin!==min||value.powerMax!==max||value.effect.value!==25||value.visual.intensity!==ability.visual.intensity)throw Error('Calcul automatique incorrect')}
+if(resolveCampaignAbilityLevel({...automatic,powerMin:4,powerMax:8},3).powerMin!==4.08)throw Error('Petit bonus arrondi trop tôt')
+if(resolveCampaignAbilityLevel({...automatic,growth:{percent:1.5,every:3,startLevel:5}},7).powerMin!==100||resolveCampaignAbilityLevel({...automatic,growth:{percent:1.5,every:3,startLevel:5}},8).powerMin!==101.5)throw Error('Niveau de départ incorrect')
+if(JSON.stringify(automatic)!==automaticBefore)throw Error('Définition mutée')
+const growthPacket=importCampaignDraft(exportCampaignDraft(setDraftAbility(neutral,'new-hero',automatic)))
+if(growthPacket.characters[0].abilities[0].growth.every!==2)throw Error('Progression automatique perdue')
+globalThis.automatic=automatic
+`,context);
+for(const growth of [{percent:-1,every:2,startLevel:1},{percent:2,every:0,startLevel:1},{percent:2,every:2.5,startLevel:1},{percent:2,every:2,startLevel:0},{percent:Infinity,every:2,startLevel:1}]){context.badGrowth=growth;assert.throws(()=>vm.runInContext('createCampaignAbilities([{...ability,growth:badGrowth}])',context));}
+assert.throws(()=>vm.runInContext('createCampaignAbilities([{...evolving,growth:automatic.growth}])',context),/sans les cumuler/);

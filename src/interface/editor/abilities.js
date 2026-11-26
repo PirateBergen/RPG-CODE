@@ -14,7 +14,7 @@ function removeDraftAbility(definition,heroId,id) {
 function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id)
   const progression=createDraftAbilityProgression()
-  const sequenceEditor=createDraftSequenceEditor()
+  const sequenceEditor=createDraftSequenceEditor({onPreview:quickPreview})
   const sequencePlayer=createDraftSequencePlayer($('abilityStage'),$('abilityFx'),text=>{$('abilityPhaseStatus').textContent=text})
   let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
   for(const [value,label] of Object.entries(DRAFT_ABILITY_VISUALS)){const option=document.createElement('option');option.value=value;option.textContent=label;$('abilityPreset').append(option)}
@@ -59,7 +59,14 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     $('abilityPreviewScene').selectedIndex=$('abilityPreviewScene').options.length>1?1:0;setBackdrop();$('abilityPreviewPart').value='all'
     $('abilityPreview').showModal();replay();$('abilityReplay').onclick=replay;$('abilityPreviewClose').focus({preventScroll:true});$('abilityPreview').scrollTop=0
   }
-  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
+  function quickPreview(phase,title){try{
+    const sequence=draftSequenceModel('magic');for(const key of Object.keys(CAMPAIGN_SEQUENCE_PHASES))sequence[key].enabled=false;sequence.launch=phase
+    const ability={id:'ability-effect-preview',kind:'special',name:title,description:'',type:'effect',dice:6,stat:'none',target:'enemy',powerMin:0,powerMax:0,cooldown:0,uses:0,effect:{kind:'none',value:0,turns:0},visual:{preset:'slash',color:phase.color,intensity:2,sequence},announcement:{mode:'none',text:''}}
+    const previous=$('abilityTestLevel').value;$('abilityTestLevel').value=1;try{preview(createCampaignAbilities([ability])[0])}finally{$('abilityTestLevel').value=previous}
+    $('abilityLevelSummary').textContent='Essai isolé de cet effet · aucun réglage modifié'
+  }catch(error){$('abilityError').textContent=error.message}}
+  $('abilityQuickEffect').addEventListener('click',()=>{const phase=draftSequenceModel('magic',$('abilityColor').value).launch;phase.effect=$('abilityPreset').value;quickPreview(phase,DRAFT_ABILITY_VISUALS[phase.effect])})
+  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;const bonus=ability.growth?` · bonus automatique +${campaignAbilityGrowthBonus(ability.growth,level)} %`:'';$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax}${bonus} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
   $('abilityPreviewLevel').addEventListener('change',replay)
   function setBackdrop(){const backdrop=getDefinition().locations?.find(p=>p.id===$('abilityPreviewScene').value)?.background;$('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')}
   $('abilityPreviewScene').addEventListener('change',setBackdrop)

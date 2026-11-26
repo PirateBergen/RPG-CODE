@@ -329,6 +329,7 @@
       "interface/editor/character-profile.js",
       "interface/editor/characters.js",
       "interface/editor/locations.js",
+      "interface/editor/ability-progression.js",
       "interface/editor/abilities.js",
       "interface/editor/campaign-editor.js"
     ],

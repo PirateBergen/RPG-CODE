@@ -75,3 +75,16 @@ if(createCampaignAbilities(Array.from({length:120},(_,i)=>({...ability,id:'abili
 globalThis.ability=ability
 `,context);
 for(const patch of ["dice:5","powerMax:-1","effect:{kind:'damageReduction',value:101,turns:1}","effect:{kind:'stun',value:0,turns:0}","visual:{preset:'script',color:'#ffffff',intensity:1}","visual:{preset:'slash',color:'#ffffff',intensity:1,image:'data:image/svg+xml;base64,AAA'}"]){assert.throws(()=>vm.runInContext(`createCampaignAbilities([{...ability,${patch}}])`,context));}
+vm.runInContext(`
+const evolving={...ability,announcement:{mode:'custom',text:'{personnage} utilise {attaque} !'},progression:[{level:10,powerMin:12,powerMax:18,intensity:3},{level:5,powerMin:8,powerMax:12,intensity:2}]}
+const progressionBefore=JSON.stringify(evolving)
+if(resolveCampaignAbilityLevel(evolving,4).powerMax!==ability.powerMax||resolveCampaignAbilityLevel(evolving,5).powerMax!==12||resolveCampaignAbilityLevel(evolving,9).powerMax!==12||resolveCampaignAbilityLevel(evolving,10).powerMax!==18||resolveCampaignAbilityLevel(evolving,1000).powerMax!==18)throw Error('Seuils de progression incorrects')
+if(resolveCampaignAbilityLevel(evolving,10).effect.value!==25||JSON.stringify(evolving)!==progressionBefore)throw Error('Progression cumulée ou mutée')
+if(campaignAbilityAnnouncement(ability,'Aurore')!=='Aurore lance Garde !'||campaignAbilityAnnouncement(evolving,'Aurore')!=='Aurore utilise Garde !'||campaignAbilityAnnouncement({...evolving,announcement:{mode:'none',text:''}},'Aurore')!=='')throw Error('Annonce incorrecte')
+if(campaignAbilityAnnouncement({...evolving,announcement:{mode:'custom',text:''}},'Aurore')!=='Aurore lance Garde !')throw Error('Repli automatique absent')
+const storedEvolution=importCampaignDraft(exportCampaignDraft(setDraftAbility(neutral,'new-hero',evolving))).characters[0].abilities[0]
+if(storedEvolution.progression[0].level!==5||storedEvolution.announcement.text!==evolving.announcement.text)throw Error('Évolution perdue dans un échange')
+globalThis.evolving=evolving
+`,context);
+for(const patch of ["progression:[{level:1,powerMin:1,powerMax:2,intensity:1}]","progression:[{level:5,powerMin:1,powerMax:2,intensity:1},{level:5,powerMin:2,powerMax:3,intensity:2}]","announcement:{mode:'execute',text:'evil'}","announcement:{mode:'custom',text:'x'.repeat(1001)}"]){assert.throws(()=>vm.runInContext(`createCampaignAbilities([{...ability,${patch}}])`,context));}
+for(const level of [0,-1,1.5,1001,NaN]){context.invalidLevel=level;assert.throws(()=>vm.runInContext('resolveCampaignAbilityLevel(evolving,invalidLevel)',context));}

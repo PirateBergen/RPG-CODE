@@ -229,6 +229,29 @@ function createDraftLocationPanel({getDefinition,replaceDefinition,changed,messa
   })
   return {render}
 }
+function createDraftAbilityProgression() {
+  const $=id=>document.getElementById(id)
+  function tierRow(tier) {
+    const row=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='Palier d’évolution';row.append(legend)
+    for(const [key,title,min,max] of [['level','À partir du niveau',2,1000],['powerMin','Nouvelle puissance minimum',0,1000000],['powerMax','Nouvelle puissance maximum',0,1000000]]){
+      const label=document.createElement('label'),input=document.createElement('input');label.textContent=title;input.type='number';input.min=min;input.max=max;input.step=1;input.required=true;input.dataset.tierField=key;input.value=tier[key];label.append(input);row.append(label)
+    }
+    const label=document.createElement('label'),select=document.createElement('select');label.textContent='Intensité visuelle à ce palier'
+    for(const [value,text] of [[1,'Douce'],[2,'Normale'],[3,'Forte']]){const option=document.createElement('option');option.value=value;option.textContent=text;select.append(option)}
+    select.dataset.tierField='intensity';select.value=tier.intensity;label.append(select);row.append(label)
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Retirer ce palier';remove.addEventListener('click',()=>row.remove());row.append(remove);$('abilityTiers').append(row)
+  }
+  $('addAbilityTier').addEventListener('click',()=>{
+    const levels=[...$('abilityTiers').querySelectorAll('[data-tier-field=level]')].map(input=>input.valueAsNumber).filter(Number.isFinite),level=Math.max(1,...levels)+1
+    if(level>1000){$('abilityError').textContent='Le niveau maximum des paliers est 1 000.';return}
+    tierRow({level,powerMin:$('ability-powerMin').valueAsNumber || 0,powerMax:$('ability-powerMax').valueAsNumber || 0,intensity:Number($('abilityIntensity').value)})
+  })
+  $('abilityAnnouncementMode').addEventListener('change',()=>{$('abilityAnnouncementCustom').hidden=$('abilityAnnouncementMode').value!=='custom'})
+  return {
+    open(ability){$('abilityTiers').replaceChildren();(ability?.progression || []).forEach(tierRow);$('abilityAnnouncementMode').value=ability?.announcement?.mode || 'auto';$('abilityAnnouncementText').value=ability?.announcement?.text || '';$('abilityAnnouncementCustom').hidden=$('abilityAnnouncementMode').value!=='custom';$('abilityTestLevel').value=1},
+    read(){return {announcement:{mode:$('abilityAnnouncementMode').value,text:$('abilityAnnouncementText').value},progression:[...$('abilityTiers').children].map(row=>Object.fromEntries([...row.querySelectorAll('[data-tier-field]')].map(input=>[input.dataset.tierField,input.type==='number'?input.valueAsNumber:Number(input.value)])))}}
+  }
+}
 const DRAFT_ABILITY_VISUALS={slash:'Entaille',projectile:'Projectile magique',fire:'Flammes',frost:'Givre',lightning:'Éclair',heal:'Halo de soin',shield:'Bouclier',smoke:'Brume sombre',swarm:'Nuée de particules'}
 function setDraftAbility(definition,heroId,ability) {
   if(!definition.characters.some(c=>c.id===heroId))throw Error('Personnage introuvable')
@@ -244,7 +267,8 @@ function removeDraftAbility(definition,heroId,id) {
 }
 function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id)
-  let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null
+  const progression=createDraftAbilityProgression()
+  let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
   for(const [value,label] of Object.entries(DRAFT_ABILITY_VISUALS)){const option=document.createElement('option');option.value=value;option.textContent=label;$('abilityPreset').append(option)}
   function picture(){$('abilityImagePreview').hidden=!image;if(image)$('abilityImagePreview').src=image;else $('abilityImagePreview').removeAttribute('src');$('abilityImageRemove').disabled=!image}
   function kind(){$('abilityImagePanel').hidden=$('abilityKind').value!=='special'}
@@ -253,7 +277,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     if(pending)throw Error('Attendez la fin de la préparation de l’image.')
     const value={id:selected || 'ability-'+crypto.randomUUID(),kind:$('abilityKind').value,name:$('abilityName').value.trim(),description:$('abilityDescription').value,type:$('abilityType').value,dice:Number($('abilityDice').value),stat:$('abilityStat').value,target:$('abilityTarget').value,effect:{kind:$('abilityEffect').value,value:$('abilityEffectValue').valueAsNumber,turns:$('abilityEffectTurns').valueAsNumber},visual:{preset:$('abilityPreset').value,color:$('abilityColor').value,intensity:Number($('abilityIntensity').value),...($('abilityKind').value==='special'&&image?{image}:{})}}
     for(const key of ['powerMin','powerMax','cooldown','uses'])value[key]=$('ability-'+key).valueAsNumber
-    return createCampaignAbilities([value])[0]
+    return createCampaignAbilities([{...value,...progression.read()}])[0]
   }
   function render() {
     const hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityOwner').textContent='Attaques de '+hero.name
@@ -270,18 +294,23 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     $('legacyAbilities').textContent=old.length?'Attaques du modèle conservées : '+old.map(a=>a.name).join(', ')+'. Leur conversion vers ce créateur sera traitée séparément.':''
   }
   function edit(ability,newKind='normal') {
+    progression.open(ability)
     selected=ability?.id || null;generation++;pending=0;image=ability?.visual.image || null;picture();$('abilityImageFile').value=''
     $('abilityKind').value=ability?.kind || newKind;kind();$('abilityName').value=ability?.name || '';$('abilityDescription').value=ability?.description || '';$('abilityType').value=ability?.type || 'damage';$('abilityDice').value=ability?.dice || 6;$('abilityStat').value=ability?.stat || 'force';$('abilityTarget').value=ability?.target || 'enemy'
     for(const [key,value] of Object.entries({powerMin:4,powerMax:8,cooldown:0,uses:0}))$('ability-'+key).value=ability?.[key] ?? value
     $('abilityEffect').value=ability?.effect.kind || 'none';$('abilityEffectValue').value=ability?.effect.value ?? 0;$('abilityEffectTurns').value=ability?.effect.turns ?? 1;$('abilityPreset').value=ability?.visual.preset || 'slash';$('abilityColor').value=ability?.visual.color || '#d8b477';$('abilityIntensity').value=ability?.visual.intensity || 2;$('abilityError').textContent='';$('abilityRemove').hidden=!ability;$('abilityDialog').showModal();$('abilityName').focus()
   }
   function preview(ability) {
+    resolveCampaignAbilityLevel(ability,$('abilityTestLevel').valueAsNumber)
+    previewAbility=ability;$('abilityPreviewLevel').value=$('abilityTestLevel').value
     $('abilityPreviewTitle').textContent=ability.name;$('abilityPreviewActor').textContent=getDefinition().characters.find(c=>c.id===heroId).name
     $('abilityPreviewTarget').textContent=ability.target==='self'?'Soi-même':['ally','allAllies'].includes(ability.target)?'Allié':'Cible'
     const backdrop=getDefinition().locations?.find(p=>p.background)?.background
     $('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')
-    $('abilityPreview').showModal();play(ability);$('abilityReplay').onclick=()=>play(ability);$('abilityPreviewClose').focus()
+    $('abilityPreview').showModal();replay();$('abilityReplay').onclick=replay;$('abilityPreviewClose').focus({preventScroll:true});$('abilityPreview').scrollTop=0
   }
+  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
+  $('abilityPreviewLevel').addEventListener('change',replay)
   function play(ability) {
     clearTimeout(previewTimer);const stage=$('abilityStage'),effects=$('abilityFx');effects.replaceChildren();stage.className='ability-stage';stage.style.setProperty('--ability-color',ability.visual.color)
     void stage.offsetWidth;stage.classList.add('playing','intensity-'+ability.visual.intensity,'preset-'+ability.visual.preset)
@@ -290,7 +319,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     if(ability.visual.image){const artwork=document.createElement('img');artwork.src=ability.visual.image;artwork.alt='Illustration de la capacité';artwork.className='ability-artwork';effects.append(artwork)}
     previewTimer=setTimeout(()=>{stage.className='ability-stage';effects.replaceChildren()},2400)
   }
-  $('abilityPreview').addEventListener('close',()=>{clearTimeout(previewTimer);$('abilityFx').replaceChildren();$('abilityStage').className='ability-stage';$('abilityReplay').onclick=null})
+  $('abilityPreview').addEventListener('close',()=>{clearTimeout(previewTimer);$('abilityFx').replaceChildren();$('abilityStage').className='ability-stage';$('abilityReplay').onclick=null;previewAbility=null;$('abilityAnnouncement').textContent='';$('abilityPreviewError').textContent=''})
   $('abilityPreviewClose').addEventListener('click',()=>$('abilityPreview').close())
   $('abilityTest').addEventListener('click',()=>{try{preview(read())}catch(e){$('abilityError').textContent=e.message}})
   $('addNormalAbility').addEventListener('click',()=>edit(null,'normal'));$('addSpecialAbility').addEventListener('click',()=>edit(null,'special'))

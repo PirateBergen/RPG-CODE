@@ -1,0 +1,19 @@
+const CAMPAIGN_STATUS_MODIFIERS={maxHP:'PV maximum (%)',force:'Force (points)',charme:'Charme (points)',perspi:'Perspicacité (points)',chance:'Chance (points)',defense:'Défense (points)',damageDealt:'Dégâts infligés (%)',damageTaken:'Dégâts reçus (%)'}
+function createCampaignStatusStep(step,definition){
+  if(!['apply','remove'].includes(step.operation)||typeof step.effectId!=='string'||!/^effect-[a-z0-9-]+$/.test(step.effectId)||typeof step.label!=='string'||!step.label.trim()||step.label.length>120||!['blessing','curse'].includes(step.category)||!['allHeroes','selected','allEnemies'].includes(step.target)||!Array.isArray(step.characterIds)||new Set(step.characterIds).size!==step.characterIds.length||step.characterIds.some(id=>!definition.characters.some(actor=>actor.id===id))||(step.target==='selected'&&!step.characterIds.length))throw Error('Donnez un nom à l’effet et choisissez ses cibles.')
+  const result={operation:step.operation,effectId:step.effectId,label:step.label.trim(),category:step.category,target:step.target,characterIds:step.target==='selected'?[...step.characterIds]:[]}
+  if(step.operation==='apply'){
+    if(!Object.hasOwn(CAMPAIGN_STATUS_MODIFIERS,step.modifier)||!Number.isFinite(step.value)||step.value===0||Math.abs(step.value)>1000000||(['maxHP','damageDealt','damageTaken'].includes(step.modifier)&&(step.value<(step.modifier==='maxHP'?-99:-100)||step.value>300))||!['untilRemoved','rounds'].includes(step.duration)||!Number.isSafeInteger(step.rounds)||step.rounds<1||step.rounds>100)throw Error('Réglages de bénédiction ou malédiction invalides. Pourcentages : −99 à +300 pour les PV maximum, −100 à +300 pour les dégâts.')
+    Object.assign(result,{modifier:step.modifier,value:step.value,duration:step.duration,rounds:step.rounds})
+  }
+  return result
+}
+function recalculateCampaignStatusActor(input){
+  const actor=copyCampaignContent(input),statuses=actor.statuses || [],sum=key=>statuses.filter(effect=>effect.modifier===key).reduce((total,effect)=>total+effect.value,0),base=actor.baseMaxHP ?? actor.maxHP
+  actor.baseMaxHP=base;actor.statuses=statuses;actor.maxHP=Math.max(1,Math.round(base*(1+Math.max(-99,Math.min(300,sum('maxHP')))/100)*100)/100);actor.hp=Math.max(0,Math.min(actor.maxHP,actor.hp))
+  actor.stats={...(actor.baseStats || actor.stats || {}),hp:actor.maxHP};for(const key of ['force','charme','perspi','chance','defense'])actor.stats[key]=Math.max(0,(actor.baseStats?.[key] || 0)+sum(key))
+  actor.damageDealtPct=Math.max(-100,Math.min(300,sum('damageDealt')));actor.damageTakenPct=Math.max(-100,Math.min(300,sum('damageTaken')));return actor
+}
+function applyCampaignStatusToActor(input,step){const actor=copyCampaignContent(input);actor.statuses=(actor.statuses || []).filter(effect=>effect.effectId!==step.effectId);if(step.operation==='apply')actor.statuses.push({effectId:step.effectId,label:step.label,category:step.category,modifier:step.modifier,value:step.value,remaining:step.duration==='rounds'?step.rounds:null});return recalculateCampaignStatusActor(actor)}
+function advanceCampaignActionRound(input){const state=copyCampaignContent(input),tick=actor=>recalculateCampaignStatusActor({...actor,statuses:(actor.statuses || []).map(effect=>effect.remaining===null?effect:{...effect,remaining:effect.remaining-1}).filter(effect=>effect.remaining===null||effect.remaining>0)});state.characters=Object.fromEntries(Object.entries(state.characters).map(([id,actor])=>[id,tick(actor)]));if(state.combat?.active)state.combat.enemies=state.combat.enemies.map(tick);state.round=(state.round || 0)+1;return state}
+function resolveCampaignActionDamage(source,target,base){if(!Number.isFinite(base)||base<0)throw Error('Dégâts de base invalides.');return Math.round(base*(1+(source?.damageDealtPct || 0)/100)*(1+(target?.damageTakenPct || 0)/100)*100)/100}

@@ -13,6 +13,7 @@
       "engine/campaigns/staging.js",
       "engine/campaigns/map-groups.js",
       "engine/campaigns/audio-library.js",
+      "engine/campaigns/named-statuses.js",
       "engine/campaigns/gm-actions.js",
       "engine/campaigns/gm-action-rules.js",
       "engine/campaigns/definition.js",

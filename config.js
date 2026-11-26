@@ -306,7 +306,26 @@ function createCampaignAudioTracks(input){
 }
 function draftAudioTrackKey(track){return track.source==='custom'?'sha256:'+track.sha256:'asset:'+track.path}
 function removeDraftAudioTrack(definition,id){return createCampaignDefinition({...definition,audioTracks:(definition.audioTracks || []).filter(track=>track.id!==id),...(definition.locations?{locations:definition.locations.map(place=>{if(place.audioId!==id)return place;const {audioId,...rest}=place;return rest})}:{})})}
-const CAMPAIGN_GM_STEP_KINDS=['text','npc','image','sound','effect','clear','health','combat']
+const CAMPAIGN_STATUS_MODIFIERS={maxHP:'PV maximum (%)',force:'Force (points)',charme:'Charme (points)',perspi:'Perspicacité (points)',chance:'Chance (points)',defense:'Défense (points)',damageDealt:'Dégâts infligés (%)',damageTaken:'Dégâts reçus (%)'}
+function createCampaignStatusStep(step,definition){
+  if(!['apply','remove'].includes(step.operation)||typeof step.effectId!=='string'||!/^effect-[a-z0-9-]+$/.test(step.effectId)||typeof step.label!=='string'||!step.label.trim()||step.label.length>120||!['blessing','curse'].includes(step.category)||!['allHeroes','selected','allEnemies'].includes(step.target)||!Array.isArray(step.characterIds)||new Set(step.characterIds).size!==step.characterIds.length||step.characterIds.some(id=>!definition.characters.some(actor=>actor.id===id))||(step.target==='selected'&&!step.characterIds.length))throw Error('Donnez un nom à l’effet et choisissez ses cibles.')
+  const result={operation:step.operation,effectId:step.effectId,label:step.label.trim(),category:step.category,target:step.target,characterIds:step.target==='selected'?[...step.characterIds]:[]}
+  if(step.operation==='apply'){
+    if(!Object.hasOwn(CAMPAIGN_STATUS_MODIFIERS,step.modifier)||!Number.isFinite(step.value)||step.value===0||Math.abs(step.value)>1000000||(['maxHP','damageDealt','damageTaken'].includes(step.modifier)&&(step.value<(step.modifier==='maxHP'?-99:-100)||step.value>300))||!['untilRemoved','rounds'].includes(step.duration)||!Number.isSafeInteger(step.rounds)||step.rounds<1||step.rounds>100)throw Error('Réglages de bénédiction ou malédiction invalides. Pourcentages : −99 à +300 pour les PV maximum, −100 à +300 pour les dégâts.')
+    Object.assign(result,{modifier:step.modifier,value:step.value,duration:step.duration,rounds:step.rounds})
+  }
+  return result
+}
+function recalculateCampaignStatusActor(input){
+  const actor=copyCampaignContent(input),statuses=actor.statuses || [],sum=key=>statuses.filter(effect=>effect.modifier===key).reduce((total,effect)=>total+effect.value,0),base=actor.baseMaxHP ?? actor.maxHP
+  actor.baseMaxHP=base;actor.statuses=statuses;actor.maxHP=Math.max(1,Math.round(base*(1+Math.max(-99,Math.min(300,sum('maxHP')))/100)*100)/100);actor.hp=Math.max(0,Math.min(actor.maxHP,actor.hp))
+  actor.stats={...(actor.baseStats || actor.stats || {}),hp:actor.maxHP};for(const key of ['force','charme','perspi','chance','defense'])actor.stats[key]=Math.max(0,(actor.baseStats?.[key] || 0)+sum(key))
+  actor.damageDealtPct=Math.max(-100,Math.min(300,sum('damageDealt')));actor.damageTakenPct=Math.max(-100,Math.min(300,sum('damageTaken')));return actor
+}
+function applyCampaignStatusToActor(input,step){const actor=copyCampaignContent(input);actor.statuses=(actor.statuses || []).filter(effect=>effect.effectId!==step.effectId);if(step.operation==='apply')actor.statuses.push({effectId:step.effectId,label:step.label,category:step.category,modifier:step.modifier,value:step.value,remaining:step.duration==='rounds'?step.rounds:null});return recalculateCampaignStatusActor(actor)}
+function advanceCampaignActionRound(input){const state=copyCampaignContent(input),tick=actor=>recalculateCampaignStatusActor({...actor,statuses:(actor.statuses || []).map(effect=>effect.remaining===null?effect:{...effect,remaining:effect.remaining-1}).filter(effect=>effect.remaining===null||effect.remaining>0)});state.characters=Object.fromEntries(Object.entries(state.characters).map(([id,actor])=>[id,tick(actor)]));if(state.combat?.active)state.combat.enemies=state.combat.enemies.map(tick);state.round=(state.round || 0)+1;return state}
+function resolveCampaignActionDamage(source,target,base){if(!Number.isFinite(base)||base<0)throw Error('Dégâts de base invalides.');return Math.round(base*(1+(source?.damageDealtPct || 0)/100)*(1+(target?.damageTakenPct || 0)/100)*100)/100}
+const CAMPAIGN_GM_STEP_KINDS=['text','npc','image','sound','effect','clear','health','combat','status']
 const CAMPAIGN_GM_EFFECTS=['none','slash','projectile','fire','frost','lightning','heal','shield','smoke','swarm','beam','wave','explosion','mark']
 function createCampaignGmActions(input,definition){
   if(!Array.isArray(input)||input.length>100)throw Error('100 boutons MJ maximum par campagne.')
@@ -318,7 +337,7 @@ function createCampaignGmActions(input,definition){
     if(!Array.isArray(action.steps)||action.steps.length<1||action.steps.length>30)throw Error('Ajoutez de 1 à 30 étapes à votre bouton.')
     return {id:action.id,name:action.name.trim(),locationIds:[...action.locationIds],steps:action.steps.map(step=>{
       if(!step||!CAMPAIGN_GM_STEP_KINDS.includes(step.kind)||!['manual','auto'].includes(step.advance)||!Number.isFinite(step.delay)||step.delay<.2||step.delay>30)throw Error('Étape MJ invalide : délai de 0,2 à 30 secondes.')
-      const result={kind:step.kind,advance:['text','health','combat'].includes(step.kind)?'manual':step.advance,delay:step.delay}
+      const result={kind:step.kind,advance:['text','health','combat','status'].includes(step.kind)?'manual':step.advance,delay:step.delay}
       if(step.kind==='text'){if(typeof step.text!=='string'||!step.text.trim()||step.text.length>5000)throw Error('Écrivez le texte de votre étape (5 000 caractères maximum).');result.text=step.text}
       if(step.kind==='npc'){if(!definition.npcs?.some(npc=>npc.id===step.npcId))throw Error('Un bouton MJ utilise un PNJ introuvable. Modifiez son étape avant de retirer le PNJ.');result.npcId=step.npcId}
       if(step.kind==='sound'){if(!definition.audioTracks?.some(track=>track.id===step.audioId))throw Error('Un bouton MJ utilise un son introuvable. Modifiez son étape avant de retirer ce son.');if(!Number.isInteger(step.volume)||step.volume<0||step.volume>100)throw Error('Volume de son invalide.');result.audioId=step.audioId;result.volume=step.volume}
@@ -333,29 +352,30 @@ function createCampaignGmActions(input,definition){
         if(!Array.isArray(step.enemies)||!step.enemies.length||step.enemies.length>20)throw Error('Ajoutez au moins un ennemi à la rencontre (20 maximum).')
         let total=0;result.enemies=step.enemies.map(entry=>{const enemy=definition.bestiary?.find(item=>item.id===entry.enemyId);if(!enemy)throw Error('Un bouton utilise un ennemi introuvable. Modifiez sa rencontre avant de retirer cet ennemi.');resolveDraftEnemy(enemy,entry.variant,entry.level);if(!Number.isSafeInteger(entry.count)||entry.count<1||entry.count>20)throw Error('Nombre d’ennemis invalide (1 à 20).');total+=entry.count;return {enemyId:entry.enemyId,variant:entry.variant,level:entry.level,count:entry.count}});if(total>20)throw Error('20 ennemis maximum par rencontre.')
       }
+      if(step.kind==='status')Object.assign(result,createCampaignStatusStep(step,definition))
       return result
     })}
   })
 }
 // Pure gameplay commands: caller owns the session and its persistence/permissions.
-function createCampaignActionSession(definition){return {characters:Object.fromEntries(definition.characters.map(actor=>{const maxHP=actor.stats?.hp || 100;return [actor.id,{hp:maxHP,maxHP}]})),combat:null,applied:[]}}
-function reconcileCampaignActionSession(definition,state){const base=createCampaignActionSession(definition);return {...state,characters:Object.fromEntries(Object.entries(base.characters).map(([id,actor])=>[id,{...actor,hp:state.characters[id]?.hp===0?0:Math.max(0,Math.min(actor.maxHP,actor.maxHP-Math.max(0,(state.characters[id]?.maxHP ?? actor.maxHP)-(state.characters[id]?.hp ?? actor.hp))))}]))}}
+function createCampaignActionSession(definition){return {characters:Object.fromEntries(definition.characters.map(actor=>{const maxHP=actor.stats?.hp || 100;return [actor.id,recalculateCampaignStatusActor({hp:maxHP,maxHP,baseMaxHP:maxHP,baseStats:actor.stats || {},statuses:[]})]})),combat:null,applied:[],round:0}}
+function reconcileCampaignActionSession(definition,state){const base=createCampaignActionSession(definition);return {...state,characters:Object.fromEntries(Object.entries(base.characters).map(([id,actor])=>{const previous=state.characters[id];if(!previous)return [id,actor];const updated=recalculateCampaignStatusActor({...previous,baseMaxHP:actor.baseMaxHP,baseStats:actor.baseStats});if((previous.baseMaxHP ?? previous.maxHP)!==actor.baseMaxHP)updated.hp=previous.hp===0?0:Math.max(0,updated.maxHP-Math.max(0,previous.maxHP-previous.hp));return [id,updated]}))}}
 function applyCampaignGameplayStep(definition,input,step,eventId){
   if(typeof eventId!=='string'||!eventId||eventId.length>200)throw Error('Identifiant d’exécution invalide.')
   if(input.applied.includes(eventId))return {state:input,changes:[],duplicate:true}
   const checked=createCampaignGmActions([{id:'event-command',name:'Commande',locationIds:[],steps:[step]}],definition)[0].steps[0]
-  if(!['health','combat'].includes(checked.kind))throw Error('Cette étape ne modifie pas le jeu.')
+  if(!['health','combat','status'].includes(checked.kind))throw Error('Cette étape ne modifie pas le jeu.')
   const state=copyCampaignContent(reconcileCampaignActionSession(definition,input)),changes=[]
   if(checked.kind==='combat'){
     if(state.combat?.active)throw Error('Un combat est déjà en cours. Terminez-le avant de déclencher une nouvelle rencontre.')
     const participants=definition.characters.filter(actor=>state.characters[actor.id].hp>0).map(actor=>actor.id)
     if(!participants.some(id=>definition.characters.find(actor=>actor.id===id).kind==='hero'))throw Error('Aucun héros ne peut commencer ce combat : leurs PV sont à zéro.')
-    const enemies=[];for(const entry of checked.enemies){const base=definition.bestiary.find(enemy=>enemy.id===entry.enemyId),resolved=resolveDraftEnemy(base,entry.variant,entry.level);for(let i=0;i<entry.count;i++)enemies.push({id:eventId+'-enemy-'+enemies.length,enemyId:base.id,name:base.name,variant:entry.variant,level:entry.level,hp:resolved.stats.hp,maxHP:resolved.stats.hp,stats:resolved.stats,abilities:resolved.abilities})}
+    const enemies=[];for(const entry of checked.enemies){const base=definition.bestiary.find(enemy=>enemy.id===entry.enemyId),resolved=resolveDraftEnemy(base,entry.variant,entry.level);for(let i=0;i<entry.count;i++)enemies.push({id:eventId+'-enemy-'+enemies.length,enemyId:base.id,name:base.name,variant:entry.variant,level:entry.level,hp:resolved.stats.hp,maxHP:resolved.stats.hp,baseMaxHP:resolved.stats.hp,baseStats:resolved.stats,statuses:[],stats:resolved.stats,abilities:resolved.abilities})}
     state.combat={active:true,participants,enemies};changes.push({kind:'combat',count:enemies.length})
   }else{
     let targets;if(checked.target==='allEnemies'){if(!state.combat?.active||!state.combat.enemies.length)throw Error('Aucun ennemi en combat à cibler.');targets=state.combat.enemies.map(enemy=>({actor:enemy,id:enemy.id,name:enemy.name}))}
     else targets=definition.characters.filter(actor=>checked.target==='allHeroes'?actor.kind==='hero':checked.characterIds.includes(actor.id)).map(actor=>({actor:state.characters[actor.id],id:actor.id,name:actor.name}))
-    for(const target of targets){const before=target.actor.hp,amount=checked.unit==='percentMax'?Math.round(target.actor.maxHP*checked.amount)/100:checked.amount;target.actor.hp=Math.round(Math.max(0,Math.min(target.actor.maxHP,before+(checked.operation==='heal'?amount:-amount)))*100)/100;changes.push({kind:'health',id:target.id,name:target.name,before,after:target.actor.hp,maxHP:target.actor.maxHP})}
+    for(const target of targets){if(checked.kind==='status'){const updated=applyCampaignStatusToActor(target.actor,checked);if(checked.target==='allEnemies'){const index=state.combat.enemies.findIndex(actor=>actor.id===target.id);state.combat.enemies[index]=updated}else state.characters[target.id]=updated;changes.push({kind:'status',name:target.name,label:checked.label,operation:checked.operation});continue}const before=target.actor.hp,amount=checked.unit==='percentMax'?Math.round(target.actor.maxHP*checked.amount)/100:checked.amount;target.actor.hp=Math.round(Math.max(0,Math.min(target.actor.maxHP,before+(checked.operation==='heal'?amount:-amount)))*100)/100;changes.push({kind:'health',id:target.id,name:target.name,before,after:target.actor.hp,maxHP:target.actor.maxHP})}
   }
   state.applied=[...state.applied,eventId].slice(-1000);return {state,changes,duplicate:false}
 }

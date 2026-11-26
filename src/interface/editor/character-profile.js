@@ -1,5 +1,5 @@
 // User-selected raster images are decoded locally and reduced before being embedded.
-async function readDraftImage(file,{maxSide=900,maxLength=400000}={}) {
+async function readDraftImage(file,{maxSide=900,maxLength=400000,preserveTransparency=false}={}) {
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10*1024*1024)throw Error('Choisissez une image PNG, JPEG ou WebP de 10 Mo maximum.')
   const bitmap=await createImageBitmap(file)
   try {
@@ -8,8 +8,8 @@ async function readDraftImage(file,{maxSide=900,maxLength=400000}={}) {
     do {
       const ratio=Math.min(1,size/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas')
       canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio))
-      const ctx=canvas.getContext('2d');ctx.fillStyle='#19232d';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height)
-      result=canvas.toDataURL('image/jpeg',.82);size=Math.floor(size*.75)
+      const ctx=canvas.getContext('2d');if(!preserveTransparency){ctx.fillStyle='#19232d';ctx.fillRect(0,0,canvas.width,canvas.height)}ctx.drawImage(bitmap,0,0,canvas.width,canvas.height)
+      result=canvas.toDataURL(preserveTransparency?'image/png':'image/jpeg',.82);size=Math.floor(size*.75)
     }while(result.length>maxLength && size>=150)
     if(result.length>maxLength)throw Error('Image trop volumineuse après réduction.')
     return result

@@ -14,7 +14,7 @@ function removeDraftCharacter(definition, id) {
   if (definition.characters.filter(c=>c.kind==='hero'&&c.id!==id).length===0) throw Error('Conservez au moins un héros dans la campagne.')
   return createCampaignDefinition({...definition,characters:definition.characters.filter(c=>c.id!==id)})
 }
-function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,message,guard}) {
+function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,message,guard,onAbilities}) {
   const $=id=>document.getElementById(id), dialog=$('characterDialog'), fields=$('characterStats')
   const profile=createDraftCharacterProfile()
   let selected=null, pendingHero=null
@@ -31,7 +31,8 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
       row.className='character-card';name.textContent=c.name;detail.className='hint';detail.textContent=c.kind==='companion'?'Compagnon de '+getDefinition().characters.find(hero=>hero.id===c.owner)?.name:'Héros · '+(c.stats?c.stats.hp+' PV maximum':'statistiques à définir')
       button.type='button';button.textContent='Modifier';button.setAttribute('aria-label','Modifier '+c.name);button.addEventListener('click',()=>edit(c));row.append(name,detail)
       if(c.appearance?.portrait){const image=document.createElement('img');image.src=c.appearance.portrait;image.alt='Portrait de '+c.name;image.className='hero-avatar';row.prepend(image)}
-      const identity=document.createElement('p');identity.className='hint';identity.textContent=[c.race,c.class,c.alignment].filter(Boolean).join(' · ');row.append(identity,button);list.append(row)
+      const identity=document.createElement('p');identity.className='hint';identity.textContent=[c.race,c.class,c.alignment].filter(Boolean).join(' · ');row.append(identity,button)
+      const abilities=document.createElement('button');abilities.type='button';abilities.textContent='Attaques et capacités';abilities.setAttribute('aria-label','Attaques et capacités de '+c.name);abilities.addEventListener('click',()=>onAbilities(c.id));row.append(abilities);list.append(row)
     }
   }
   function edit(c, isNew=false) {

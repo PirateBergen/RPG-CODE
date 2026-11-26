@@ -27,6 +27,7 @@ function createCampaignDefinition(input) {
     if (!["hero", "companion"].includes(character.kind)) throw Error("Type de personnage inconnu")
     if (typeof character.portrait !== "string" || /[:\\]/.test(character.portrait) || character.portrait.startsWith("/") || character.portrait.split("/").some(part => !part || part === "." || part === "..") || !/\.(png|jpe?g|webp|svg)$/i.test(character.portrait)) throw Error("Portrait de personnage invalide")
     const build={}
+    if(character.abilities!==undefined)build.abilities=createCampaignAbilities(character.abilities)
     for (const key of ['race','class','alignment']) if(character[key]!==undefined) {
       if(typeof character[key]!=='string'||character[key].length>100)throw Error('Identité de personnage invalide')
       build[key]=character[key]

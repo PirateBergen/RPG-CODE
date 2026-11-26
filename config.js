@@ -141,6 +141,25 @@ function applyCampaignRule(name, args, fallback, rules = ACTIVE_CAMPAIGN_RULES, 
   const value=handler(...args)
   return value === undefined ? fallback : value
 }
+// Authoring data only; no execution or writes to a played campaign.
+function createCampaignAbilities(input) {
+  if(!Array.isArray(input))throw Error('Liste de capacités invalide')
+  const ids=new Set()
+  return input.map(a=>{
+    if(!a||typeof a.id!=='string'||!/^ability-[a-z0-9-]+$/.test(a.id)||ids.has(a.id))throw Error('Identifiant de capacité invalide ou dupliqué')
+    ids.add(a.id)
+    if(!['normal','special'].includes(a.kind)||typeof a.name!=='string'||!a.name.trim()||a.name.length>120||typeof a.description!=='string'||a.description.length>5000)throw Error('Nom ou description de capacité invalide')
+    if(!['damage','heal','protection','effect'].includes(a.type)||![4,6,8,10,12,20,100].includes(a.dice)||!['force','charme','perspi','chance','defense','none'].includes(a.stat)||!['enemy','ally','self','allEnemies','allAllies'].includes(a.target))throw Error('Paramètres de capacité invalides')
+    for(const key of ['powerMin','powerMax','cooldown','uses'])if(!Number.isSafeInteger(a[key])||a[key]<0||a[key]>1000000)throw Error('Valeur de capacité invalide')
+    if(a.powerMax<a.powerMin)throw Error('La puissance maximum doit être supérieure ou égale au minimum.')
+    const e=a.effect,v=a.visual
+    if(!e||!['none','damageReduction','damageBoost','poison','stun'].includes(e.kind)||!Number.isSafeInteger(e.value)||e.value<0||e.value>100||!Number.isSafeInteger(e.turns)||e.turns<0||e.turns>100)throw Error('Effet de capacité invalide')
+    if(e.kind!=='none'&&e.turns<1)throw Error('Précisez la durée de l’effet (au moins un tour).')
+    if(!v||!['slash','projectile','fire','frost','lightning','heal','shield','smoke','swarm'].includes(v.preset)||!/^#[a-f0-9]{6}$/i.test(v.color)||![1,2,3].includes(v.intensity))throw Error('Visuel de capacité invalide')
+    if(v.image!==undefined&&(a.kind!=='special'||typeof v.image!=='string'||v.image.length>600000||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(v.image)))throw Error('Image de spéciale invalide')
+    return {id:a.id,kind:a.kind,name:a.name,description:a.description,type:a.type,dice:a.dice,stat:a.stat,target:a.target,powerMin:a.powerMin,powerMax:a.powerMax,cooldown:a.cooldown,uses:a.uses,effect:{kind:e.kind,value:e.value,turns:e.turns},visual:{preset:v.preset,color:v.color,intensity:v.intensity,...(v.image?{image:v.image}:{})}}
+  })
+}
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
@@ -170,6 +189,7 @@ function createCampaignDefinition(input) {
     if (!["hero", "companion"].includes(character.kind)) throw Error("Type de personnage inconnu")
     if (typeof character.portrait !== "string" || /[:\\]/.test(character.portrait) || character.portrait.startsWith("/") || character.portrait.split("/").some(part => !part || part === "." || part === "..") || !/\.(png|jpe?g|webp|svg)$/i.test(character.portrait)) throw Error("Portrait de personnage invalide")
     const build={}
+    if(character.abilities!==undefined)build.abilities=createCampaignAbilities(character.abilities)
     for (const key of ['race','class','alignment']) if(character[key]!==undefined) {
       if(typeof character[key]!=='string'||character[key].length>100)throw Error('Identité de personnage invalide')
       build[key]=character[key]
@@ -208,7 +228,7 @@ function createCampaignDefinition(input) {
 function exportCampaignDraft(definition) {
   const content=createCampaignDefinition(definition)
   const embedded=content.characters.some(character=>Object.keys(character.appearance || {}).length)
-  const media=content.locations?.some(place=>place.background)?"references-and-images":embedded?"references-and-portraits":"references"
+  const media=content.locations?.some(place=>place.background)||content.characters.some(c=>c.abilities?.some(a=>a.visual.image))?"references-and-images":embedded?"references-and-portraits":"references"
   const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media,definition:content},null,2)
   if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
   return text

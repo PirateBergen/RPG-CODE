@@ -7,6 +7,7 @@
       "engine/campaigns/catalogs.js",
       "engine/campaigns/content-catalogs.js",
       "engine/campaigns/rules.js",
+      "engine/campaigns/abilities.js",
       "engine/campaigns/definition.js",
       "engine/campaigns/draft-format.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
@@ -328,10 +329,12 @@
       "interface/editor/character-profile.js",
       "interface/editor/characters.js",
       "interface/editor/locations.js",
+      "interface/editor/abilities.js",
       "interface/editor/campaign-editor.js"
     ],
     "campaign-editor.css": [
-      "interface/editor/campaign-editor.css"
+      "interface/editor/campaign-editor.css",
+      "interface/editor/ability-visuals.css"
     ]
   }
 }

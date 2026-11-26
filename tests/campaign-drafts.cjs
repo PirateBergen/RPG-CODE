@@ -60,3 +60,18 @@ if(JSON.parse(packet).media!=='references-and-images'||importCampaignDraft(packe
 if(setDraftLocation(illustrated,location).locations[0].background!==undefined)throw Error('Fond non retiré')
 `,context);
 for(const background of ['https://example.com/image.jpg','data:image/svg+xml;base64,AAAA','data:image/jpeg;base64,/9j/'+ 'A'.repeat(1200000)]){context.badBackground=background;assert.throws(()=>vm.runInContext('setDraftLocation(neutral,{...location,background:badBackground})',context));}
+vm.runInContext(fs.readFileSync('src/interface/editor/abilities.js','utf8'),context);
+vm.runInContext(`
+const ability={id:'ability-test',kind:'normal',name:'Garde',description:'Protection',type:'protection',dice:6,stat:'defense',target:'self',powerMin:0,powerMax:0,cooldown:1,uses:0,effect:{kind:'damageReduction',value:25,turns:2},visual:{preset:'shield',color:'#00aaff',intensity:2}}
+const abilityBaseline=JSON.stringify(ACTIVE_CAMPAIGN),withAbility=setDraftAbility(neutral,'new-hero',ability)
+if(neutral.characters[0].abilities!==undefined||withAbility.characters[0].abilities[0].effect.value!==25)throw Error('Capacité non isolée')
+const special={...ability,id:'ability-special',kind:'special',visual:{...ability.visual,image:'data:image/png;base64,iVBORw0KGgoAAA=='}}
+const withSpecial=setDraftAbility(withAbility,'new-hero',special),exchanged=importCampaignDraft(exportCampaignDraft(withSpecial))
+if(JSON.stringify(withSpecial)!==JSON.stringify(exchanged)||JSON.parse(exportCampaignDraft(withSpecial)).media!=='references-and-images')throw Error('Capacité perdue à l’export')
+if(removeDraftAbility(withSpecial,'new-hero','ability-test').characters[0].abilities.length!==1)throw Error('Suppression incorrecte')
+const modelWithAbility=setDraftAbility(ACTIVE_CAMPAIGN,'greg',ability)
+if(JSON.stringify(ACTIVE_CAMPAIGN)!==abilityBaseline||JSON.stringify(modelWithAbility.attacks)!==JSON.stringify(ACTIVE_CAMPAIGN.attacks))throw Error('Anciennes attaques modifiées')
+if(createCampaignAbilities(Array.from({length:120},(_,i)=>({...ability,id:'ability-'+i}))).length!==120)throw Error('Limite de quantité inattendue')
+globalThis.ability=ability
+`,context);
+for(const patch of ["dice:5","powerMax:-1","effect:{kind:'damageReduction',value:101,turns:1}","effect:{kind:'stun',value:0,turns:0}","visual:{preset:'script',color:'#ffffff',intensity:1}","visual:{preset:'slash',color:'#ffffff',intensity:1,image:'data:image/svg+xml;base64,AAA'}"]){assert.throws(()=>vm.runInContext(`createCampaignAbilities([{...ability,${patch}}])`,context));}

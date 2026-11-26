@@ -13,6 +13,7 @@
       "engine/campaigns/staging.js",
       "engine/campaigns/map-groups.js",
       "engine/campaigns/audio-library.js",
+      "engine/campaigns/gm-actions.js",
       "engine/campaigns/definition.js",
       "engine/campaigns/draft-format.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
@@ -344,6 +345,8 @@
       "interface/editor/staging-board.js",
       "interface/editor/map-navigator.js",
       "interface/editor/npcs.js",
+      "interface/editor/gm-action-player.js",
+      "interface/editor/gm-actions.js",
       "interface/editor/gm-workspace.js",
       "interface/editor/audio-library.js",
       "interface/editor/campaign-editor.js"
@@ -352,7 +355,8 @@
       "interface/editor/campaign-editor.css",
       "interface/editor/ability-visuals.css",
       "interface/editor/ability-sequence.css",
-      "interface/editor/gm-workspace.css"
+      "interface/editor/gm-workspace.css",
+      "interface/editor/gm-actions.css"
     ]
   }
 }

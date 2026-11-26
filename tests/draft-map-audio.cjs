@@ -5,6 +5,7 @@ function fakeAudio(){return {paused:true,currentTime:0,assignments:0,playCalls:0
 (async()=>{
  const audio=fakeAudio(),revoked=[],player=ctx.createDraftMapAudioPlayer({createAudio:()=>audio,resolveSource:async track=>({url:'blob:'+track.sha256,disposable:true}),revoke:url=>revoked.push(url)});
  player.setVolume(.35);await player.play(a);audio.currentTime=12.5;await player.play({...a,id:'sound-another',name:'Renommé'});assert.equal(audio.currentTime,12.5);assert.equal(audio.assignments,1);assert.equal(audio.playCalls,1);assert.equal(audio.volume,.35);
+ player.pause();assert(audio.paused);assert.equal(audio.currentTime,12.5);await player.play(a);assert(!audio.paused);assert.equal(audio.currentTime,12.5);assert.equal(audio.assignments,1);
  await player.play(b);assert.equal(audio.currentTime,0);assert.equal(audio.assignments,2);assert(revoked.includes('blob:'+a.sha256));assert.equal(audio.volume,.35);player.stop();assert(audio.paused);assert.equal(player.currentKey(),null);
  let resolvePending;const other=fakeAudio(),disposed=[],race=ctx.createDraftMapAudioPlayer({createAudio:()=>other,resolveSource:track=>track.id===b.id?new Promise(resolve=>resolvePending=resolve):Promise.resolve({url:'blob:a',disposable:true}),revoke:url=>disposed.push(url)});
  await race.play(a);other.currentTime=8;const pending=race.play(b);await race.play(a);resolvePending({url:'blob:late-b',disposable:true});await pending;assert.equal(other.src,'blob:a');assert.equal(other.currentTime,8);assert(disposed.includes('blob:late-b'));assert.equal(other.assignments,1);

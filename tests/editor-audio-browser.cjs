@@ -15,3 +15,5 @@ module.exports=async(page,viewport,root)=>{
  }
 };
 module.exports.installSpy=installSpy;
+
+module.exports.wav=wav;

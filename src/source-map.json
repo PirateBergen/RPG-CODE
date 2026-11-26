@@ -11,6 +11,7 @@
       "engine/campaigns/abilities.js",
       "engine/campaigns/bestiary.js",
       "engine/campaigns/staging.js",
+      "engine/campaigns/map-groups.js",
       "engine/campaigns/definition.js",
       "engine/campaigns/draft-format.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
@@ -338,6 +339,7 @@
       "interface/editor/enemy-templates.js",
       "interface/editor/bestiary.js",
       "interface/editor/staging-board.js",
+      "interface/editor/map-navigator.js",
       "interface/editor/gm-workspace.js",
       "interface/editor/campaign-editor.js"
     ],

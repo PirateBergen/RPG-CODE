@@ -144,3 +144,17 @@ for(const patch of ["x:101","y:-1","refId:'unknown'","kind:'script'","id:'../uns
 assert.throws(()=>vm.runInContext("setDraftBoard(prepared,location.id,[{...prepared.staging[0].tokens[1],variant:'unknown'}])",context),/catégorie/);
 assert.throws(()=>vm.runInContext("createCampaignDefinition({...prepared,staging:[prepared.staging[0],prepared.staging[0]]})",context),/Carte/);
 assert.throws(()=>vm.runInContext("createCampaignDefinition({...prepared,npcs:[{id:'npc-test',name:'Gardienne',description:'',image:'https://bad/image.png'}]})",context),/Image/);
+vm.runInContext(`
+const grouped=setDraftMapGroup(prepared,{id:'region-rivebois',name:'Rivebois'}),inGroup=setDraftLocation(grouped,{...location,groupId:'region-rivebois'})
+if(inGroup.locations[0].groupId!=='region-rivebois'||prepared.mapGroups!==undefined)throw Error('Onglet non isolé')
+const renamed=setDraftMapGroup(inGroup,{id:'region-rivebois',name:'Bois'})
+if(renamed.locations[0].groupId!=='region-rivebois')throw Error('Renommage casse les cartes')
+const ungrouped=removeDraftMapGroup(inGroup,'region-rivebois')
+if(ungrouped.locations[0].groupId!==undefined||JSON.stringify(ungrouped.staging)!==JSON.stringify(prepared.staging))throw Error('Suppression d’onglet efface des données')
+const autoBefore=JSON.stringify(prepared),automaticTokens=draftMapHeroTokens(prepared,location.id)
+if(automaticTokens.length!==prepared.characters.length||automaticTokens[0].x!==25||automaticTokens.some(token=>token.kind!=='character')||JSON.stringify(prepared)!==autoBefore)throw Error('Affichage automatique incorrect')
+if(draftMapHeroTokens(neutral,'lieu-new')[0].id!==draftMapHeroTokens(neutral,'lieu-new')[0].id||draftMapHeroTokens(neutral,'lieu-new')[0].id===draftMapHeroTokens(neutral,'lieu-other')[0].id)throw Error('Identifiants automatiques instables')
+if(JSON.stringify(importCampaignDraft(exportCampaignDraft(inGroup)))!==JSON.stringify(inGroup))throw Error('Onglets perdus à l’export')
+`,context);
+assert.throws(()=>vm.runInContext("setDraftLocation(prepared,{...location,groupId:'region-unknown'})",context),/Onglet/);
+assert.throws(()=>vm.runInContext("createCampaignMapGroups([{id:'region-a',name:'Brume'},{id:'region-b',name:'brume'}])",context),/utilisé/);

@@ -10,3 +10,5 @@ summary{cursor:pointer;min-height:44px;padding:10px 0;font-weight:700}details{ma
 
 /* Texture de l’atelier uniquement ; panneaux opaques pour la lecture. */
 :root{background:#563a27 url("images/editor-wood-background.jpg") repeat;background-size:736px 736px}body{min-height:100vh;background:linear-gradient(#10182055,#10182088)}header>h1,header>p:not(.notice){text-shadow:0 2px 5px #000,0 0 12px #0008}aside,section{box-shadow:0 10px 30px #0004}
+
+#enemyDialog{width:min(700px,calc(100% - 32px))}#enemyError{color:#ffc0b5}.enemy-card{border:1px solid #536572;border-radius:10px;padding:16px;margin:16px 0;overflow-wrap:anywhere;display:flow-root}.enemy-card h3{margin:0}.enemy-card button{width:auto;margin:6px 8px 0 0}.enemy-thumb{width:72px;height:90px;object-fit:contain;float:right;margin:0 0 12px 12px}#enemyVariants{display:flex;flex-wrap:wrap;gap:8px 24px}#enemyVariants label{min-height:44px;margin:0}#enemyStats label{font-size:14px}#enemyStatsPreview{overflow-wrap:anywhere;font-size:14px}#bestiaryPanel>button{margin:10px 0}

@@ -114,3 +114,20 @@ globalThis.automatic=automatic
 `,context);
 for(const growth of [{percent:-1,every:2,startLevel:1},{percent:2,every:0,startLevel:1},{percent:2,every:2.5,startLevel:1},{percent:2,every:2,startLevel:0},{percent:Infinity,every:2,startLevel:1}]){context.badGrowth=growth;assert.throws(()=>vm.runInContext('createCampaignAbilities([{...ability,growth:badGrowth}])',context));}
 assert.throws(()=>vm.runInContext('createCampaignAbilities([{...evolving,growth:automatic.growth}])',context),/sans les cumuler/);
+vm.runInContext(fs.readFileSync('src/interface/editor/enemy-templates.js','utf8'),context);
+vm.runInContext(`
+const enemyBaseline=JSON.stringify(ACTIVE_CAMPAIGN),enemyExamples=['goblin','wolf','bandit','draugr','golem'].map((key,i)=>createDraftEnemyTemplate(key,'enemy-'+i))
+const allVariants={...enemyExamples[0],variants:Object.keys(DRAFT_ENEMY_VARIANTS)},enemyBefore=JSON.stringify(allVariants)
+if(resolveDraftEnemy(allVariants,'medium',1).stats.hp!==32||resolveDraftEnemy(allVariants,'worldBoss',1).stats.hp!==320||resolveDraftEnemy(allVariants,'worldBoss',3).stats.hp!==371.2||JSON.stringify(allVariants)!==enemyBefore)throw Error('Variantes ou progression incorrectes')
+const enemyDraft=createCampaignDefinition({...neutral,bestiary:[allVariants,...enemyExamples.slice(1)]}),heroBefore=JSON.stringify(enemyDraft.characters)
+const editedEnemyAbility=setDraftAbility(enemyDraft,allVariants.id,{...allVariants.abilities[0],name:'Entaille gobeline'},'enemy')
+if(editedEnemyAbility.bestiary[0].abilities[0].name!=='Entaille gobeline'||JSON.stringify(editedEnemyAbility.characters)!==heroBefore||enemyDraft.bestiary[0].abilities[0].name==='Entaille gobeline')throw Error('Capacités ennemies non isolées')
+if(removeDraftAbility(editedEnemyAbility,allVariants.id,'ability-basic','enemy').bestiary[0].abilities.length!==0)throw Error('Suppression de capacité ennemie incorrecte')
+if(removeDraftEnemy(enemyDraft,allVariants.id).bestiary.length!==4)throw Error('Suppression d’ennemi incorrecte')
+if(JSON.stringify(importCampaignDraft(exportCampaignDraft(enemyDraft)))!==JSON.stringify(enemyDraft))throw Error('Bestiaire perdu à l’export')
+const withBestiary=createCampaignDefinition({...ACTIVE_CAMPAIGN,bestiary:enemyExamples})
+if(JSON.stringify(ACTIVE_CAMPAIGN)!==enemyBaseline||JSON.stringify(withBestiary.enemies)!==JSON.stringify(ACTIVE_CAMPAIGN.enemies))throw Error('Bestiaire historique modifié')
+globalThis.exampleEnemy=allVariants
+`,context);
+for(const patch of ["variants:[]","variants:['weak','weak']","variants:['unknown']","stats:{...exampleEnemy.stats,hp:0}","growth:{hpPercent:101,statsPercent:3,every:1}","resistances:[{name:'Feu',percent:25}],weaknesses:[{name:'feu',percent:20}]","appearance:{portrait:'https://bad/image.png'}"]){assert.throws(()=>vm.runInContext(`createCampaignBestiary([{...exampleEnemy,${patch}}])`,context));}
+assert.throws(()=>vm.runInContext("createCampaignBestiary([exampleEnemy,exampleEnemy])",context),/dupliqué/);

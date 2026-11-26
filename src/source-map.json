@@ -9,6 +9,7 @@
       "engine/campaigns/rules.js",
       "engine/campaigns/ability-sequence.js",
       "engine/campaigns/abilities.js",
+      "engine/campaigns/bestiary.js",
       "engine/campaigns/definition.js",
       "engine/campaigns/draft-format.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
@@ -333,6 +334,8 @@
       "interface/editor/ability-progression.js",
       "interface/editor/ability-sequence.js",
       "interface/editor/abilities.js",
+      "interface/editor/enemy-templates.js",
+      "interface/editor/bestiary.js",
       "interface/editor/campaign-editor.js"
     ],
     "campaign-editor.css": [

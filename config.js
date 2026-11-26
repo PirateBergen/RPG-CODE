@@ -214,6 +214,41 @@ function campaignAbilityAnnouncement(ability,characterName) {
   if(ability.announcement?.mode!=='custom'||!ability.announcement.text.trim())return automatic
   return ability.announcement.text.replace(/\{(personnage|attaque)\}/g,(_,key)=>key==='personnage'?characterName:ability.name)
 }
+const DRAFT_ENEMY_VARIANTS={weak:{label:'Faible',hp:.7,stats:.85},medium:{label:'Moyen',hp:1,stats:1},high:{label:'Fort',hp:1.6,stats:1.2},boss:{label:'Boss',hp:4,stats:1.5},worldBoss:{label:'World boss',hp:10,stats:2.2}}
+function createCampaignBestiary(input) {
+  if(!Array.isArray(input))throw Error('Bestiaire de brouillon invalide')
+  const ids=new Set(),statKeys=['hp','force','charme','perspi','chance','defense']
+  return input.map(enemy=>{
+    if(!enemy||typeof enemy.id!=='string'||!/^enemy-[a-z0-9-]+$/.test(enemy.id)||ids.has(enemy.id))throw Error('Identifiant d’ennemi invalide ou dupliqué')
+    ids.add(enemy.id)
+    if(typeof enemy.name!=='string'||!enemy.name.trim()||enemy.name.length>120||typeof enemy.description!=='string'||enemy.description.length>5000||!isCampaignAssetPath(enemy.portrait,['png','jpg','jpeg','webp','svg']))throw Error('Fiche d’ennemi invalide')
+    if(!Array.isArray(enemy.variants)||!enemy.variants.length||new Set(enemy.variants).size!==enemy.variants.length||enemy.variants.some(key=>!Object.hasOwn(DRAFT_ENEMY_VARIANTS,key)))throw Error('Cochez au moins une catégorie d’ennemi.')
+    if(!Number.isSafeInteger(enemy.baseLevel)||enemy.baseLevel<1||enemy.baseLevel>1000)throw Error('Niveau de référence invalide')
+    if(!enemy.stats||statKeys.some(key=>!Number.isFinite(enemy.stats[key])||enemy.stats[key]<0||enemy.stats[key]>1000000)||enemy.stats.hp<=0)throw Error('Statistiques d’ennemi invalides')
+    const g=enemy.growth;if(!g||!Number.isSafeInteger(g.every)||g.every<1||g.every>1000||['hpPercent','statsPercent'].some(key=>!Number.isFinite(g[key])||g[key]<0||g[key]>100))throw Error('Progression d’ennemi invalide')
+    const used=new Set(),traits={}
+    for(const key of ['resistances','weaknesses']){
+      if(!Array.isArray(enemy[key])||enemy[key].length>20)throw Error('Résistances ou faiblesses invalides (20 maximum chacune)')
+      traits[key]=enemy[key].map(item=>{
+        if(!item||typeof item.name!=='string'||!item.name.trim()||item.name.length>80||!Number.isFinite(item.percent)||item.percent<0||item.percent>(key==='resistances'?100:200)||used.has(item.name.trim().toLocaleLowerCase('fr')))throw Error('Résistance/faiblesse invalide ou contradictoire')
+        used.add(item.name.trim().toLocaleLowerCase('fr'));return {name:item.name.trim(),percent:item.percent}
+      })
+    }
+    const appearance={}
+    if(enemy.appearance!==undefined){
+      if(!enemy.appearance||typeof enemy.appearance!=='object'||Array.isArray(enemy.appearance))throw Error('Images d’ennemi invalides')
+      for(const key of ['portrait','fullBody'])if(enemy.appearance[key]!==undefined){const image=enemy.appearance[key];if(typeof image!=='string'||image.length>600000||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(image))throw Error('Image d’ennemi invalide');appearance[key]=image}
+    }
+    return {id:enemy.id,name:enemy.name,description:enemy.description,portrait:enemy.portrait,variants:[...enemy.variants],baseLevel:enemy.baseLevel,stats:Object.fromEntries(statKeys.map(key=>[key,enemy.stats[key]])),growth:{hpPercent:g.hpPercent,statsPercent:g.statsPercent,every:g.every},...traits,...(enemy.appearance!==undefined?{appearance}:{}),abilities:createCampaignAbilities(enemy.abilities || [])}
+  })
+}
+function resolveDraftEnemy(enemy,variant,level) {
+  const base=createCampaignBestiary([enemy])[0]
+  if(!base.variants.includes(variant))throw Error('Cette catégorie n’est pas cochée pour cet ennemi.')
+  if(!Number.isSafeInteger(level)||level<base.baseLevel||level>1000)throw Error('Choisissez un niveau entre le niveau de référence et 1 000.')
+  const steps=Math.floor((level-base.baseLevel)/base.growth.every),mod=DRAFT_ENEMY_VARIANTS[variant]
+  return {...base,stats:Object.fromEntries(Object.entries(base.stats).map(([key,value])=>[key,Math.round(value*(key==='hp'?mod.hp*(1+steps*base.growth.hpPercent/100):mod.stats*(1+steps*base.growth.statsPercent/100))*100)/100]))}
+}
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
@@ -275,14 +310,15 @@ function createCampaignDefinition(input) {
   for (const character of characters) if (character.kind === "companion" && !heroes.has(character.owner)) throw Error("Le compagnon doit appartenir à un héros de la campagne")
   if(input.ruleSet!==undefined&&(typeof input.ruleSet!=="string"||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.ruleSet)))throw Error("Identifiant de règles invalide")
   const content={...(input.story!==undefined?{story:createCampaignStory(input.story,characters)}:{}), ...(input.ruleSet!==undefined?{ruleSet:input.ruleSet}:{}),...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
-  const catalogs={...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
+  const catalogs={...(input.bestiary!==undefined?{bestiary:createCampaignBestiary(input.bestiary)}:{}),...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
   return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, ...locations, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
 }
 // Draft exchange only: references media, does not bundle assets or save a played session.
 function exportCampaignDraft(definition) {
   const content=createCampaignDefinition(definition)
-  const embedded=content.characters.some(character=>Object.keys(character.appearance || {}).length)
-  const media=content.locations?.some(place=>place.background)||content.characters.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
+  const actors=[...content.characters,...(content.bestiary || [])]
+  const embedded=actors.some(character=>Object.keys(character.appearance || {}).length)
+  const media=content.locations?.some(place=>place.background)||actors.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
   const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media,definition:content},null,2)
   if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
   return text

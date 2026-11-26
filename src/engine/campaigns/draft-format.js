@@ -1,8 +1,9 @@
 // Draft exchange only: references media, does not bundle assets or save a played session.
 function exportCampaignDraft(definition) {
   const content=createCampaignDefinition(definition)
-  const embedded=content.characters.some(character=>Object.keys(character.appearance || {}).length)
-  const media=content.locations?.some(place=>place.background)||content.characters.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
+  const actors=[...content.characters,...(content.bestiary || [])]
+  const embedded=actors.some(character=>Object.keys(character.appearance || {}).length)
+  const media=content.locations?.some(place=>place.background)||actors.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
   const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media,definition:content},null,2)
   if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
   return text

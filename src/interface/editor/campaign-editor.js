@@ -9,17 +9,18 @@
   const characterPanel=createDraftCharacterPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,guard,onAbilities:id=>abilityPanel.open(id)})
   const abilityPanel=createDraftAbilityPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
   const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
+  const bestiaryPanel=createDraftBestiaryPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,onAbilities:id=>abilityPanel.open(id,'enemy')})
   function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision }
   function definition() {return createCampaignDefinition({...current.definition,title:$('title').value.trim(),description:$('description').value})}
   function open(record) {
     current=record; $('empty').hidden=true; $('editor').hidden=false
     $('title').value=record.definition.title; $('description').value=record.definition.description || ''
-    summary();characterPanel.render();locationPanel.render()
+    summary();characterPanel.render();locationPanel.render();bestiaryPanel.render()
     mark(!record.revision); message(record.revision?'Brouillon ouvert.':'Brouillon prêt. Enregistrez-le pour le retrouver.'); refresh()
   }
   function summary() {
     const d=current.definition
-    $('summary').textContent=`Contenu : ${d.characters.length} personnage(s), ${d.locations?.length || 0} lieu(x) créé(s), ${Object.keys(d.world?.names || {}).length} carte(s) du modèle, ${Object.keys(d.enemies?.stats || {}).length} ennemi(s), ${d.allies?.length || 0} allié(s).`
+    $('summary').textContent=`Contenu : ${d.characters.length} personnage(s), ${d.locations?.length || 0} lieu(x) créé(s), ${d.bestiary?.length || 0} ennemi(s) créé(s), ${Object.keys(d.world?.names || {}).length} carte(s) du modèle, ${Object.keys(d.enemies?.stats || {}).length} ennemi(s) du modèle, ${d.allies?.length || 0} allié(s).`
   }
   function refresh() {
     const library=$('library'); library.replaceChildren()

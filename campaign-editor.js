@@ -328,24 +328,29 @@ function createDraftSequencePlayer(stage,effects,onPhase) {
   return {play,cancel}
 }
 const DRAFT_ABILITY_VISUALS={slash:'Entaille',projectile:'Projectile magique',fire:'Flammes',frost:'Givre',lightning:'Éclair',heal:'Halo de soin',shield:'Bouclier',smoke:'Brume sombre',swarm:'Nuée de particules'}
-function setDraftAbility(definition,heroId,ability) {
-  if(!definition.characters.some(c=>c.id===heroId))throw Error('Personnage introuvable')
-  return createCampaignDefinition({...definition,characters:definition.characters.map(c=>{
+function setDraftAbility(definition,heroId,ability,ownerKind='character') {
+  if(!['character','enemy'].includes(ownerKind))throw Error('Type de propriétaire inconnu')
+  const key=ownerKind==='enemy'?'bestiary':'characters',actors=definition[key] || []
+  if(!actors.some(c=>c.id===heroId))throw Error('Personnage ou ennemi introuvable')
+  return createCampaignDefinition({...definition,[key]:actors.map(c=>{
     if(c.id!==heroId)return c
     const list=c.abilities || []
     return {...c,abilities:list.some(a=>a.id===ability.id)?list.map(a=>a.id===ability.id?ability:a):[...list,ability]}
   })})
 }
-function removeDraftAbility(definition,heroId,id) {
-  if(!definition.characters.find(c=>c.id===heroId)?.abilities?.some(a=>a.id===id))throw Error('Capacité introuvable')
-  return createCampaignDefinition({...definition,characters:definition.characters.map(c=>c.id===heroId?{...c,abilities:c.abilities.filter(a=>a.id!==id)}:c)})
+function removeDraftAbility(definition,heroId,id,ownerKind='character') {
+  if(!['character','enemy'].includes(ownerKind))throw Error('Type de propriétaire inconnu')
+  const key=ownerKind==='enemy'?'bestiary':'characters',actors=definition[key] || []
+  if(!actors.find(c=>c.id===heroId)?.abilities?.some(a=>a.id===id))throw Error('Capacité introuvable')
+  return createCampaignDefinition({...definition,[key]:actors.map(c=>c.id===heroId?{...c,abilities:c.abilities.filter(a=>a.id!==id)}:c)})
 }
 function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id)
   const progression=createDraftAbilityProgression()
   const sequenceEditor=createDraftSequenceEditor({onPreview:quickPreview})
   const sequencePlayer=createDraftSequencePlayer($('abilityStage'),$('abilityFx'),text=>{$('abilityPhaseStatus').textContent=text})
-  let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
+  let heroId=null,ownerKind='character',selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
+  const owner=()=>getDefinition()[ownerKind==='enemy'?'bestiary':'characters']?.find(c=>c.id===heroId)
   for(const [value,label] of Object.entries(DRAFT_ABILITY_VISUALS)){const option=document.createElement('option');option.value=value;option.textContent=label;$('abilityPreset').append(option)}
   function picture(){$('abilityImagePreview').hidden=!image;if(image)$('abilityImagePreview').src=image;else $('abilityImagePreview').removeAttribute('src');$('abilityImageRemove').disabled=!image}
   function kind(){$('abilityImagePanel').hidden=$('abilityKind').value!=='special'}
@@ -358,7 +363,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     return createCampaignAbilities([{...value,...progression.read()}])[0]
   }
   function render() {
-    const hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityOwner').textContent='Attaques de '+hero.name
+    const hero=owner();$('abilityOwner').textContent='Attaques de '+hero.name
     for(const type of ['normal','special']) {
       const list=$(type+'Abilities');list.replaceChildren()
       for(const ability of hero.abilities || [])if(ability.kind===type) {
@@ -381,7 +386,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
   function preview(ability) {
     resolveCampaignAbilityLevel(ability,$('abilityTestLevel').valueAsNumber)
     previewAbility=ability;$('abilityPreviewLevel').value=$('abilityTestLevel').value
-    $('abilityPreviewTitle').textContent=ability.name;$('abilityPreviewActor').textContent=getDefinition().characters.find(c=>c.id===heroId).name
+    $('abilityPreviewTitle').textContent=ability.name;$('abilityPreviewActor').textContent=owner().name
     $('abilityPreviewTarget').textContent=ability.target==='self'?'Soi-même':['ally','allAllies'].includes(ability.target)?'Allié':'Cible'
     $('abilityPreviewScene').replaceChildren();const neutral=document.createElement('option');neutral.value='';neutral.textContent='Décor neutre';$('abilityPreviewScene').append(neutral)
     for(const place of getDefinition().locations || [])if(place.background){const option=document.createElement('option');option.value=place.id;option.textContent=place.name;$('abilityPreviewScene').append(option)}
@@ -395,7 +400,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     $('abilityLevelSummary').textContent='Essai isolé de cet effet · aucun réglage modifié'
   }catch(error){$('abilityError').textContent=error.message}}
   $('abilityQuickEffect').addEventListener('click',()=>{const phase=draftSequenceModel('magic',$('abilityColor').value).launch;phase.effect=$('abilityPreset').value;quickPreview(phase,DRAFT_ABILITY_VISUALS[phase.effect])})
-  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;const bonus=ability.growth?` · bonus automatique +${campaignAbilityGrowthBonus(ability.growth,level)} %`:'';$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax}${bonus} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
+  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=owner();$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;const bonus=ability.growth?` · bonus automatique +${campaignAbilityGrowthBonus(ability.growth,level)} %`:'';$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax}${bonus} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
   $('abilityPreviewLevel').addEventListener('change',replay)
   function setBackdrop(){const backdrop=getDefinition().locations?.find(p=>p.id===$('abilityPreviewScene').value)?.background;$('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')}
   $('abilityPreviewScene').addEventListener('change',setBackdrop)
@@ -420,9 +425,69 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     try{const result=await readDraftImage(file,{maxSide:1200,maxLength:600000,preserveTransparency:true});if(token===generation&&request===sequence){image=result;picture();$('abilityError').textContent=''}}catch(e){if(token===generation&&request===sequence)$('abilityError').textContent=e.message || 'Image illisible'}finally{if(token===generation)pending--}
   })
   $('abilityImageRemove').addEventListener('click',()=>{sequence++;image=null;picture()})
-  $('abilityForm').addEventListener('submit',event=>{event.preventDefault();try{replaceDefinition(setDraftAbility(getDefinition(),heroId,read()));changed();render();$('abilityDialog').close();message('Capacité ajoutée au brouillon. Pensez à l’enregistrer.')}catch(e){$('abilityError').textContent=e.message}})
-  $('abilityRemove').addEventListener('click',()=>{try{if(!selected||!window.confirm('Retirer cette capacité du brouillon ?'))return;replaceDefinition(removeDraftAbility(getDefinition(),heroId,selected));changed();render();$('abilityDialog').close()}catch(e){$('abilityError').textContent=e.message}})
-  return {open(id){heroId=id;render();$('abilityLibrary').showModal()}}
+  $('abilityForm').addEventListener('submit',event=>{event.preventDefault();try{replaceDefinition(setDraftAbility(getDefinition(),heroId,read(),ownerKind));changed();render();$('abilityDialog').close();message('Capacité ajoutée au brouillon. Pensez à l’enregistrer.')}catch(e){$('abilityError').textContent=e.message}})
+  $('abilityRemove').addEventListener('click',()=>{try{if(!selected||!window.confirm('Retirer cette capacité du brouillon ?'))return;replaceDefinition(removeDraftAbility(getDefinition(),heroId,selected,ownerKind));changed();render();$('abilityDialog').close()}catch(e){$('abilityError').textContent=e.message}})
+  return {open(id,type='character'){heroId=id;ownerKind=type;render();$('abilityLibrary').showModal()}}
+}
+function createDraftEnemyTemplate(template,id) {
+  const templates={goblin:{name:'Gobelin',description:'Petit pillard rusé, dangereux en groupe.',portrait:'images/gobelins.png',hp:32,force:8,defense:4,variants:['weak','medium','high'],attack:'Coup de lame',power:[4,8],visual:'slash'},wolf:{name:'Loup',description:'Prédateur rapide qui cherche à isoler sa proie.',portrait:'images/loup.png',hp:68,force:12,defense:5,variants:['weak','medium','high'],attack:'Morsure',power:[6,10],visual:'slash'},bandit:{name:'Bandit',description:'Combattant opportuniste qui préfère les embuscades.',portrait:'images/bandit.png',hp:34,force:10,defense:6,variants:['weak','medium','high'],attack:'Estoc',power:[5,9],visual:'projectile'},draugr:{name:'Draugr',description:'Gardien mort-vivant lent mais tenace.',portrait:'images/draugr.png',hp:80,force:13,defense:9,variants:['weak','medium','high','boss'],attack:'Frappe funéraire',power:[7,12],visual:'smoke'},golem:{name:'Golem de pierre',description:'Créature lourde et résistante, dont les articulations sont exposées.',portrait:'images/golem.png',hp:64,force:18,defense:14,variants:['medium','high','boss','worldBoss'],attack:'Poing de pierre',power:[10,16],visual:'fire'}}
+  const t=templates[template]
+  const normal={id:'ability-basic',kind:'normal',name:t?.attack || 'Frappe',description:'Attaque de base personnalisable.',type:'damage',dice:6,stat:'force',target:'enemy',powerMin:t?.power[0] || 4,powerMax:t?.power[1] || 8,cooldown:0,uses:0,effect:{kind:'none',value:0,turns:1},visual:{preset:t?.visual || 'slash',color:'#d8b477',intensity:2},growth:{percent:2,every:2,startLevel:1}}
+  const enemy={id,name:t?.name || 'Nouvel ennemi',description:t?.description || '',portrait:t?.portrait || 'images/draft-hero.svg',variants:t?[...t.variants]:['medium'],baseLevel:1,stats:{hp:t?.hp || 60,force:t?.force || 10,charme:2,perspi:6,chance:5,defense:t?.defense || 6},growth:{hpPercent:8,statsPercent:3,every:1},resistances:[],weaknesses:[],abilities:[normal]}
+  if(template==='golem'){
+    enemy.resistances=[{name:'Coups physiques',percent:25}];enemy.weaknesses=[{name:'Articulations exposées',percent:20}]
+    enemy.abilities.push({...normal,id:'ability-stone-guard',kind:'special',name:'Carapace de pierre',description:'Durcit son corps pendant deux tours.',type:'protection',target:'self',powerMin:0,powerMax:0,cooldown:3,effect:{kind:'damageReduction',value:25,turns:2},visual:{preset:'shield',color:'#86b3ce',intensity:2}})
+  }
+  if(template==='draugr')enemy.weaknesses=[{name:'Feu',percent:20}]
+  return createCampaignBestiary([enemy])[0]
+}
+function setDraftEnemy(definition,enemy) {
+  const list=definition.bestiary || []
+  return createCampaignDefinition({...definition,bestiary:list.some(item=>item.id===enemy.id)?list.map(item=>item.id===enemy.id?enemy:item):[...list,enemy]})
+}
+function removeDraftEnemy(definition,id){if(!definition.bestiary?.some(item=>item.id===id))throw Error('Ennemi introuvable');return createCampaignDefinition({...definition,bestiary:definition.bestiary.filter(item=>item.id!==id)})}
+const DRAFT_ENEMY_STATS={hp:'PV maximum',force:'Force / puissance',charme:'Charme',perspi:'Perspicacité',chance:'Chance',defense:'Défense'}
+function createDraftBestiaryPanel({getDefinition,replaceDefinition,changed,message,onAbilities}) {
+  const $=id=>document.getElementById(id),dialog=$('enemyDialog');let current=null,generation=0,pending=0,appearance={}
+  const requests={portrait:0,fullBody:0}
+  for(const [key,value]of Object.entries(DRAFT_ENEMY_VARIANTS)){
+    const label=document.createElement('label'),input=document.createElement('input');label.className='sequence-checkbox';input.type='checkbox';input.value=key;input.name='enemyVariant';label.append(input,document.createTextNode(value.label));$('enemyVariants').append(label)
+  }
+  for(const [key,label]of Object.entries(DRAFT_ENEMY_STATS)){
+    const wrap=document.createElement('label'),input=document.createElement('input');wrap.textContent=label;input.id='enemyStat-'+key;input.type='number';input.min=key==='hp'?'1':'0';input.max=1000000;input.step='any';input.required=true;wrap.append(input);$('enemyStats').append(wrap)
+  }
+  function traitRow(kind,item={name:'',percent:20}) {
+    const list=$(kind==='resistances'?'enemyResistances':'enemyWeaknesses');if(list.children.length>=20)throw Error('20 lignes maximum par rubrique.')
+    const row=document.createElement('fieldset'),legend=document.createElement('legend'),nameLabel=document.createElement('label'),name=document.createElement('input'),percentLabel=document.createElement('label'),percent=document.createElement('input'),remove=document.createElement('button')
+    legend.textContent=kind==='resistances'?'Résistance':'Faiblesse';nameLabel.textContent='Type ou condition (ex. : feu)';name.value=item.name;name.maxLength=80;name.required=true;nameLabel.append(name);percentLabel.textContent=kind==='resistances'?'Dégâts subis en moins (%)':'Dégâts subis en plus (%)';percent.type='number';percent.min=0;percent.max=kind==='resistances'?100:200;percent.step='any';percent.required=true;percent.value=item.percent;percentLabel.append(percent);remove.type='button';remove.textContent='Retirer cette ligne';remove.addEventListener('click',()=>{row.remove();updatePreview()});row.append(legend,nameLabel,percentLabel,remove);list.append(row)
+  }
+  for(const [id,key]of [['enemyAddResistance','resistances'],['enemyAddWeakness','weaknesses']])$(id).addEventListener('click',()=>{try{traitRow(key)}catch(e){$('enemyError').textContent=e.message}})
+  function images(){for(const [key,prefix]of [['portrait','enemyPortrait'],['fullBody','enemyFullBody']]){const source=appearance[key] || (key==='portrait'?current?.portrait:null);$(prefix+'Preview').hidden=!source;if(source)$(prefix+'Preview').src=source;else $(prefix+'Preview').removeAttribute('src');$(prefix+'Remove').disabled=!appearance[key]}}
+  for(const [key,prefix]of [['portrait','enemyPortrait'],['fullBody','enemyFullBody']]){
+    $(prefix+'File').addEventListener('change',async()=>{const file=$(prefix+'File').files[0],token=generation,request=++requests[key];$(prefix+'File').value='';if(!file)return;pending++;$('enemyError').textContent='Préparation de l’image…';try{const image=await readDraftImage(file,{maxSide:1200,maxLength:600000,preserveTransparency:true});if(token===generation&&request===requests[key]){appearance[key]=image;images();$('enemyError').textContent=''}}catch(e){if(token===generation&&request===requests[key])$('enemyError').textContent=e.message || 'Image illisible'}finally{if(token===generation)pending--}})
+    $(prefix+'Remove').addEventListener('click',()=>{requests[key]++;delete appearance[key];images()})
+  }
+  function read(forPreview=false){
+    const traits=id=>[...$(id).children].map(row=>({name:row.querySelector('input').value.trim(),percent:row.querySelector('input[type=number]').valueAsNumber}))
+    return {...current,name:$('enemyName').value.trim() || (forPreview?'Ennemi':''),description:$('enemyDescription').value,variants:[...$('enemyVariants').querySelectorAll('input:checked')].map(input=>input.value),baseLevel:$('enemyBaseLevel').valueAsNumber,stats:Object.fromEntries(Object.keys(DRAFT_ENEMY_STATS).map(key=>[key,$('enemyStat-'+key).valueAsNumber])),growth:{hpPercent:$('enemyHpGrowth').valueAsNumber,statsPercent:$('enemyStatsGrowth').valueAsNumber,every:$('enemyGrowthEvery').valueAsNumber},resistances:traits('enemyResistances'),weaknesses:traits('enemyWeaknesses'),appearance:{...appearance}}
+  }
+  function updatePreview(){if(!current)return;try{const data=read(true),select=$('enemyTestVariant'),previous=select.value;select.replaceChildren();for(const key of data.variants){const option=document.createElement('option');option.value=key;option.textContent=DRAFT_ENEMY_VARIANTS[key].label;select.append(option)}if(data.variants.includes(previous))select.value=previous;const result=resolveDraftEnemy(data,select.value,$('enemyTestLevel').valueAsNumber);$('enemyStatsPreview').textContent=Object.entries(result.stats).map(([key,value])=>DRAFT_ENEMY_STATS[key]+' : '+value).join(' · ')}catch(e){$('enemyStatsPreview').textContent=e.message}}
+  function edit(enemy){generation++;pending=0;current=copyCampaignContent(enemy);appearance={...enemy.appearance};$('enemyName').value=enemy.name;$('enemyDescription').value=enemy.description;$('enemyBaseLevel').value=enemy.baseLevel;for(const input of $('enemyVariants').querySelectorAll('input'))input.checked=enemy.variants.includes(input.value);for(const key of Object.keys(DRAFT_ENEMY_STATS))$('enemyStat-'+key).value=enemy.stats[key];$('enemyHpGrowth').value=enemy.growth.hpPercent;$('enemyStatsGrowth').value=enemy.growth.statsPercent;$('enemyGrowthEvery').value=enemy.growth.every;$('enemyTestLevel').value=enemy.baseLevel;for(const [key,id]of [['resistances','enemyResistances'],['weaknesses','enemyWeaknesses']]){$(id).replaceChildren();enemy[key].forEach(item=>traitRow(key,item))}for(const prefix of ['enemyPortrait','enemyFullBody'])$(prefix+'File').value='';images();$('enemyError').textContent='';updatePreview();dialog.showModal();$('enemyName').focus()}
+  function render(){
+    const list=$('bestiary');list.replaceChildren();for(const enemy of getDefinition().bestiary || []){
+      const card=document.createElement('div'),name=document.createElement('h3'),image=document.createElement('img'),info=document.createElement('p'),editButton=document.createElement('button'),abilities=document.createElement('button'),copy=document.createElement('button'),remove=document.createElement('button');card.className='enemy-card';name.textContent=enemy.name;image.src=enemy.appearance?.portrait || enemy.portrait;image.alt='Portrait de '+enemy.name;image.className='enemy-thumb';info.className='hint';info.textContent=enemy.variants.map(key=>DRAFT_ENEMY_VARIANTS[key].label).join(' · ')
+      for(const [button,text,action]of [[editButton,'Modifier',()=>edit(enemy)],[abilities,'Attaques et capacités',()=>onAbilities(enemy.id)],[copy,'Dupliquer',()=>{try{replaceDefinition(setDraftEnemy(getDefinition(),{...enemy,id:'enemy-'+crypto.randomUUID(),name:enemy.name.slice(0,110)+' (copie)'}));changed();render();message('Copie ajoutée au brouillon.')}catch(e){message(e.message,true)}}],[remove,'Retirer',()=>{if(!window.confirm('Retirer cet ennemi et ses capacités du brouillon ?'))return;replaceDefinition(removeDraftEnemy(getDefinition(),enemy.id));changed();render();message('Ennemi retiré du brouillon.')}]] ) {button.type='button';button.textContent=text;button.setAttribute('aria-label',text+' : '+enemy.name);button.addEventListener('click',action)}
+      card.append(image,name,info,editButton,abilities,copy,remove);list.append(card)
+    }
+    if(!list.children.length){const empty=document.createElement('p');empty.className='hint';empty.textContent='Aucun ennemi créé. Ajoutez les exemples ou créez votre propre monstre.';list.append(empty)}
+    $('enemyLegacyNotice').textContent=getDefinition().enemies?`${Object.keys(getDefinition().enemies.stats).length} ennemis du modèle sont conservés séparément avec leurs règles. Ils ne sont pas remplacés par ces nouvelles fiches.`:''
+  }
+  $('enemyAdd').addEventListener('click',()=>edit(createDraftEnemyTemplate(null,'enemy-'+crypto.randomUUID())))
+  $('enemyAddTemplate').addEventListener('click',()=>edit(createDraftEnemyTemplate($('enemyTemplate').value,'enemy-'+crypto.randomUUID())))
+  $('enemyAddExamples').addEventListener('click',()=>{try{const examples=['goblin','wolf','bandit','draugr','golem'].map(key=>createDraftEnemyTemplate(key,'enemy-'+crypto.randomUUID()));replaceDefinition(createCampaignDefinition({...getDefinition(),bestiary:[...(getDefinition().bestiary || []),...examples]}));changed();render();message('Cinq monstres de départ ajoutés. Enregistrez le brouillon pour les conserver.')}catch(e){message(e.message,true)}})
+  $('enemyCancel').addEventListener('click',()=>dialog.close());$('enemyForm').addEventListener('input',updatePreview);$('enemyForm').addEventListener('change',updatePreview)
+  $('enemyForm').addEventListener('submit',event=>{event.preventDefault();try{if(pending)throw Error('Attendez la fin de la préparation des images.');replaceDefinition(setDraftEnemy(getDefinition(),read()));changed();render();dialog.close();message('Ennemi préparé. Enregistrez le brouillon pour le conserver.')}catch(e){$('enemyError').textContent=e.message}})
+  return {render}
 }
 (() => {
   const $=id=>document.getElementById(id)
@@ -435,17 +500,18 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
   const characterPanel=createDraftCharacterPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,guard,onAbilities:id=>abilityPanel.open(id)})
   const abilityPanel=createDraftAbilityPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
   const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
+  const bestiaryPanel=createDraftBestiaryPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,onAbilities:id=>abilityPanel.open(id,'enemy')})
   function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision }
   function definition() {return createCampaignDefinition({...current.definition,title:$('title').value.trim(),description:$('description').value})}
   function open(record) {
     current=record; $('empty').hidden=true; $('editor').hidden=false
     $('title').value=record.definition.title; $('description').value=record.definition.description || ''
-    summary();characterPanel.render();locationPanel.render()
+    summary();characterPanel.render();locationPanel.render();bestiaryPanel.render()
     mark(!record.revision); message(record.revision?'Brouillon ouvert.':'Brouillon prêt. Enregistrez-le pour le retrouver.'); refresh()
   }
   function summary() {
     const d=current.definition
-    $('summary').textContent=`Contenu : ${d.characters.length} personnage(s), ${d.locations?.length || 0} lieu(x) créé(s), ${Object.keys(d.world?.names || {}).length} carte(s) du modèle, ${Object.keys(d.enemies?.stats || {}).length} ennemi(s), ${d.allies?.length || 0} allié(s).`
+    $('summary').textContent=`Contenu : ${d.characters.length} personnage(s), ${d.locations?.length || 0} lieu(x) créé(s), ${d.bestiary?.length || 0} ennemi(s) créé(s), ${Object.keys(d.world?.names || {}).length} carte(s) du modèle, ${Object.keys(d.enemies?.stats || {}).length} ennemi(s) du modèle, ${d.allies?.length || 0} allié(s).`
   }
   function refresh() {
     const library=$('library'); library.replaceChildren()

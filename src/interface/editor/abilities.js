@@ -1,22 +1,27 @@
 const DRAFT_ABILITY_VISUALS={slash:'Entaille',projectile:'Projectile magique',fire:'Flammes',frost:'Givre',lightning:'Éclair',heal:'Halo de soin',shield:'Bouclier',smoke:'Brume sombre',swarm:'Nuée de particules'}
-function setDraftAbility(definition,heroId,ability) {
-  if(!definition.characters.some(c=>c.id===heroId))throw Error('Personnage introuvable')
-  return createCampaignDefinition({...definition,characters:definition.characters.map(c=>{
+function setDraftAbility(definition,heroId,ability,ownerKind='character') {
+  if(!['character','enemy'].includes(ownerKind))throw Error('Type de propriétaire inconnu')
+  const key=ownerKind==='enemy'?'bestiary':'characters',actors=definition[key] || []
+  if(!actors.some(c=>c.id===heroId))throw Error('Personnage ou ennemi introuvable')
+  return createCampaignDefinition({...definition,[key]:actors.map(c=>{
     if(c.id!==heroId)return c
     const list=c.abilities || []
     return {...c,abilities:list.some(a=>a.id===ability.id)?list.map(a=>a.id===ability.id?ability:a):[...list,ability]}
   })})
 }
-function removeDraftAbility(definition,heroId,id) {
-  if(!definition.characters.find(c=>c.id===heroId)?.abilities?.some(a=>a.id===id))throw Error('Capacité introuvable')
-  return createCampaignDefinition({...definition,characters:definition.characters.map(c=>c.id===heroId?{...c,abilities:c.abilities.filter(a=>a.id!==id)}:c)})
+function removeDraftAbility(definition,heroId,id,ownerKind='character') {
+  if(!['character','enemy'].includes(ownerKind))throw Error('Type de propriétaire inconnu')
+  const key=ownerKind==='enemy'?'bestiary':'characters',actors=definition[key] || []
+  if(!actors.find(c=>c.id===heroId)?.abilities?.some(a=>a.id===id))throw Error('Capacité introuvable')
+  return createCampaignDefinition({...definition,[key]:actors.map(c=>c.id===heroId?{...c,abilities:c.abilities.filter(a=>a.id!==id)}:c)})
 }
 function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id)
   const progression=createDraftAbilityProgression()
   const sequenceEditor=createDraftSequenceEditor({onPreview:quickPreview})
   const sequencePlayer=createDraftSequencePlayer($('abilityStage'),$('abilityFx'),text=>{$('abilityPhaseStatus').textContent=text})
-  let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
+  let heroId=null,ownerKind='character',selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
+  const owner=()=>getDefinition()[ownerKind==='enemy'?'bestiary':'characters']?.find(c=>c.id===heroId)
   for(const [value,label] of Object.entries(DRAFT_ABILITY_VISUALS)){const option=document.createElement('option');option.value=value;option.textContent=label;$('abilityPreset').append(option)}
   function picture(){$('abilityImagePreview').hidden=!image;if(image)$('abilityImagePreview').src=image;else $('abilityImagePreview').removeAttribute('src');$('abilityImageRemove').disabled=!image}
   function kind(){$('abilityImagePanel').hidden=$('abilityKind').value!=='special'}
@@ -29,7 +34,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     return createCampaignAbilities([{...value,...progression.read()}])[0]
   }
   function render() {
-    const hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityOwner').textContent='Attaques de '+hero.name
+    const hero=owner();$('abilityOwner').textContent='Attaques de '+hero.name
     for(const type of ['normal','special']) {
       const list=$(type+'Abilities');list.replaceChildren()
       for(const ability of hero.abilities || [])if(ability.kind===type) {
@@ -52,7 +57,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
   function preview(ability) {
     resolveCampaignAbilityLevel(ability,$('abilityTestLevel').valueAsNumber)
     previewAbility=ability;$('abilityPreviewLevel').value=$('abilityTestLevel').value
-    $('abilityPreviewTitle').textContent=ability.name;$('abilityPreviewActor').textContent=getDefinition().characters.find(c=>c.id===heroId).name
+    $('abilityPreviewTitle').textContent=ability.name;$('abilityPreviewActor').textContent=owner().name
     $('abilityPreviewTarget').textContent=ability.target==='self'?'Soi-même':['ally','allAllies'].includes(ability.target)?'Allié':'Cible'
     $('abilityPreviewScene').replaceChildren();const neutral=document.createElement('option');neutral.value='';neutral.textContent='Décor neutre';$('abilityPreviewScene').append(neutral)
     for(const place of getDefinition().locations || [])if(place.background){const option=document.createElement('option');option.value=place.id;option.textContent=place.name;$('abilityPreviewScene').append(option)}
@@ -66,7 +71,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     $('abilityLevelSummary').textContent='Essai isolé de cet effet · aucun réglage modifié'
   }catch(error){$('abilityError').textContent=error.message}}
   $('abilityQuickEffect').addEventListener('click',()=>{const phase=draftSequenceModel('magic',$('abilityColor').value).launch;phase.effect=$('abilityPreset').value;quickPreview(phase,DRAFT_ABILITY_VISUALS[phase.effect])})
-  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;const bonus=ability.growth?` · bonus automatique +${campaignAbilityGrowthBonus(ability.growth,level)} %`:'';$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax}${bonus} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
+  function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=owner();$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;const bonus=ability.growth?` · bonus automatique +${campaignAbilityGrowthBonus(ability.growth,level)} %`:'';$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax}${bonus} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
   $('abilityPreviewLevel').addEventListener('change',replay)
   function setBackdrop(){const backdrop=getDefinition().locations?.find(p=>p.id===$('abilityPreviewScene').value)?.background;$('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')}
   $('abilityPreviewScene').addEventListener('change',setBackdrop)
@@ -91,7 +96,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     try{const result=await readDraftImage(file,{maxSide:1200,maxLength:600000,preserveTransparency:true});if(token===generation&&request===sequence){image=result;picture();$('abilityError').textContent=''}}catch(e){if(token===generation&&request===sequence)$('abilityError').textContent=e.message || 'Image illisible'}finally{if(token===generation)pending--}
   })
   $('abilityImageRemove').addEventListener('click',()=>{sequence++;image=null;picture()})
-  $('abilityForm').addEventListener('submit',event=>{event.preventDefault();try{replaceDefinition(setDraftAbility(getDefinition(),heroId,read()));changed();render();$('abilityDialog').close();message('Capacité ajoutée au brouillon. Pensez à l’enregistrer.')}catch(e){$('abilityError').textContent=e.message}})
-  $('abilityRemove').addEventListener('click',()=>{try{if(!selected||!window.confirm('Retirer cette capacité du brouillon ?'))return;replaceDefinition(removeDraftAbility(getDefinition(),heroId,selected));changed();render();$('abilityDialog').close()}catch(e){$('abilityError').textContent=e.message}})
-  return {open(id){heroId=id;render();$('abilityLibrary').showModal()}}
+  $('abilityForm').addEventListener('submit',event=>{event.preventDefault();try{replaceDefinition(setDraftAbility(getDefinition(),heroId,read(),ownerKind));changed();render();$('abilityDialog').close();message('Capacité ajoutée au brouillon. Pensez à l’enregistrer.')}catch(e){$('abilityError').textContent=e.message}})
+  $('abilityRemove').addEventListener('click',()=>{try{if(!selected||!window.confirm('Retirer cette capacité du brouillon ?'))return;replaceDefinition(removeDraftAbility(getDefinition(),heroId,selected,ownerKind));changed();render();$('abilityDialog').close()}catch(e){$('abilityError').textContent=e.message}})
+  return {open(id,type='character'){heroId=id;ownerKind=type;render();$('abilityLibrary').showModal()}}
 }

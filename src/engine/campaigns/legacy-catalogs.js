@@ -22,3 +22,6 @@ const ODIN_VISIONS = ACTIVE_CAMPAIGN.story?.odinVisions || []
 const runeEventDialogues = ACTIVE_CAMPAIGN.story?.runeDialogues || []
 const SPELL_PLAYERS = ACTIVE_CAMPAIGN.story?.cemetery?.players || []
 const SPELL_MAX_TRIES = ACTIVE_CAMPAIGN.story?.cemetery?.maxTries ?? 0
+
+const playerBaseStats = Object.fromEntries(ACTIVE_CAMPAIGN.characters.filter(character=>character.stats).map(character=>[character.id,character.stats]))
+const playerMainStat = Object.fromEntries(ACTIVE_CAMPAIGN.characters.filter(character=>character.mainStat).map(character=>[character.id,character.mainStat]))

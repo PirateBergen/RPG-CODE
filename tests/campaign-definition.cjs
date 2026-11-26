@@ -3,7 +3,7 @@ const base=path.resolve(__dirname,'..'),context=vm.createContext({}),read=name=>
 vm.runInContext(read('src/engine/campaigns/catalogs.js'),context);
 vm.runInContext(read('src/engine/campaigns/content-catalogs.js'),context);
 vm.runInContext(read('src/engine/campaigns/definition.js'),context);
-for(const file of ['enemies/stats.js','enemies/categories.js','world/locations-and-music.js','characters/attacks.js','enemies/attacks.js','enemies/special-attacks.js','items/shop-catalog.js','allies/catalog.js','events/introduction.js','events/curse-choices.js','events/odin-visions.js','events/rune-dialogues.js','events/cemetery-settings.js'])vm.runInContext(read('src/campaigns/prophetie-des-mouches/'+file),context);
+for(const file of ['characters/base-stats.js','enemies/stats.js','enemies/categories.js','world/locations-and-music.js','characters/attacks.js','enemies/attacks.js','enemies/special-attacks.js','items/shop-catalog.js','allies/catalog.js','events/introduction.js','events/curse-choices.js','events/odin-visions.js','events/rune-dialogues.js','events/cemetery-settings.js'])vm.runInContext(read('src/campaigns/prophetie-des-mouches/'+file),context);
 vm.runInContext(read('src/campaigns/prophetie-des-mouches/definition.js'),context);
 vm.runInContext(read('src/engine/combat/roster.js'),context);
 vm.runInContext(read('src/campaigns/prophetie-des-mouches/characters/identity-and-compatibility.js'),context);

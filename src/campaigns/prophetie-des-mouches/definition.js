@@ -11,9 +11,9 @@ const ACTIVE_CAMPAIGN = createCampaignDefinition({
   ruleSet:"prophetie-des-mouches",
   story:{introduction:CAMPAIGN_INTRODUCTION, curseChoices:CAMPAIGN_CURSE_CHOICES, odinVisions:CAMPAIGN_ODIN_VISIONS, runeDialogues:CAMPAIGN_RUNE_DIALOGUES, cemetery:{players:CAMPAIGN_CEMETERY_PLAYERS,maxTries:CAMPAIGN_CEMETERY_MAX_TRIES}},
   characters:[
-    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
-    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
-    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png"},
-    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png"}
+    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png", stats:CAMPAIGN_BASE_STATS.greg, mainStat:CAMPAIGN_MAIN_STATS.greg},
+    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg", stats:CAMPAIGN_BASE_STATS.ju, mainStat:CAMPAIGN_MAIN_STATS.ju},
+    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png", stats:CAMPAIGN_BASE_STATS.elo, mainStat:CAMPAIGN_MAIN_STATS.elo},
+    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png", stats:CAMPAIGN_BASE_STATS.bibi, mainStat:CAMPAIGN_MAIN_STATS.bibi}
   ]
 })

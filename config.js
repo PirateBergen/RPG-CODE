@@ -149,12 +149,20 @@ function createCampaignDefinition(input) {
   if (!Array.isArray(input.characters) || !input.characters.length) throw Error("Personnages de campagne absents")
   const ids = new Set()
   const characters = input.characters.map(character => {
-    if (!character || typeof character.id !== "string" || !/^[a-z][a-z0-9_-]*$/.test(character.id) || ["constructor", "prototype", "__proto__"].includes(character.id) || ids.has(character.id)) throw Error("Identifiant de personnage invalide ou dupliqué")
+    if (!character || typeof character.id !== "string" || !/^[a-z][a-z0-9_-]*$/.test(character.id) || ["constructor", "prototype", "__proto__", "mob", "mob2", "mob3"].includes(character.id) || ids.has(character.id)) throw Error("Identifiant de personnage invalide ou dupliqué")
     ids.add(character.id)
     if (typeof character.name !== "string" || !character.name.trim()) throw Error("Nom de personnage absent")
     if (!["hero", "companion"].includes(character.kind)) throw Error("Type de personnage inconnu")
     if (typeof character.portrait !== "string" || /[:\\]/.test(character.portrait) || character.portrait.startsWith("/") || character.portrait.split("/").some(part => !part || part === "." || part === "..") || !/\.(png|jpe?g|webp|svg)$/i.test(character.portrait)) throw Error("Portrait de personnage invalide")
-    return {id:character.id, name:character.name, kind:character.kind, portrait:character.portrait, ...(character.kind === "companion" ? {owner:character.owner} : {})}
+    const build={}
+    if(character.stats!==undefined){
+      const stats=copyCampaignContent(character.stats)
+      if(!stats||typeof stats!=="object"||Array.isArray(stats)||["force","charme","perspi","chance","defense","hp","poids"].some(key=>!Number.isFinite(stats[key])||stats[key]<0)||stats.hp<=0)throw Error("Statistiques de personnage invalides")
+      build.stats=Object.fromEntries(["force","charme","perspi","chance","defense","hp","poids"].map(key=>[key,stats[key]]))
+    }
+    if(character.mainStat!==undefined){if(!["force","charme","perspi","chance","defense"].includes(character.mainStat))throw Error("Statistique principale invalide");build.mainStat=character.mainStat}
+    if(character.stats!==undefined&&character.mainStat===undefined)throw Error("Statistique principale absente")
+    return {...build,id:character.id, name:character.name, kind:character.kind, portrait:character.portrait, ...(character.kind === "companion" ? {owner:character.owner} : {})}
   })
   const heroes = new Set(characters.filter(character => character.kind === "hero").map(character => character.id))
   if (!heroes.size) throw Error("La campagne doit définir un héros")
@@ -164,14 +172,28 @@ function createCampaignDefinition(input) {
   const catalogs={...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
   return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...catalogs, ...content, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
 }
-const playerBaseStats = {
+// Draft exchange only: references media, does not bundle assets or save a played session.
+function exportCampaignDraft(definition) {
+  const content=createCampaignDefinition(definition)
+  const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media:"references",definition:content},null,2)
+  if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
+  return text
+}
+function importCampaignDraft(text) {
+  if(typeof text!=="string" || text.length>8*1024*1024) throw Error("Fichier de brouillon invalide ou trop volumineux")
+  let packet
+  try{packet=JSON.parse(text)}catch(error){throw Error("Le brouillon ne contient pas un JSON valide")}
+  if(!packet || packet.format!=="rpg-campaign-draft" || packet.version!==1 || packet.media!=="references")throw Error("Format ou version de brouillon non pris en charge")
+  return createCampaignDefinition(packet.definition)
+}
+const CAMPAIGN_BASE_STATS = {
   greg: { force:6, charme:4, perspi:4, chance:4, defense:5, hp:120, poids:100 },
   ju:   { force:3, charme:7, perspi:6, chance:5, defense:4, hp:100, poids:100 },
   elo:  { force:4, charme:7, perspi:5, chance:5, defense:4, hp:110, poids:100 },
   bibi: { force:5, charme:4, perspi:4, chance:6, defense:4, hp:110, poids:100 }
 }
 
-const playerMainStat = { greg:"force", ju:"charme", elo:"charme", bibi:"chance" }
+const CAMPAIGN_MAIN_STATS = { greg:"force", ju:"charme", elo:"charme", bibi:"chance" }
 
 const allStats = ["force","charme","perspi","chance","defense"]
 
@@ -1578,10 +1600,10 @@ const ACTIVE_CAMPAIGN = createCampaignDefinition({
   ruleSet:"prophetie-des-mouches",
   story:{introduction:CAMPAIGN_INTRODUCTION, curseChoices:CAMPAIGN_CURSE_CHOICES, odinVisions:CAMPAIGN_ODIN_VISIONS, runeDialogues:CAMPAIGN_RUNE_DIALOGUES, cemetery:{players:CAMPAIGN_CEMETERY_PLAYERS,maxTries:CAMPAIGN_CEMETERY_MAX_TRIES}},
   characters:[
-    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
-    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
-    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png"},
-    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png"}
+    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png", stats:CAMPAIGN_BASE_STATS.greg, mainStat:CAMPAIGN_MAIN_STATS.greg},
+    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg", stats:CAMPAIGN_BASE_STATS.ju, mainStat:CAMPAIGN_MAIN_STATS.ju},
+    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png", stats:CAMPAIGN_BASE_STATS.elo, mainStat:CAMPAIGN_MAIN_STATS.elo},
+    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png", stats:CAMPAIGN_BASE_STATS.bibi, mainStat:CAMPAIGN_MAIN_STATS.bibi}
   ]
 })
 // Stable public bindings while the rest of the engine is progressively decoupled.
@@ -1608,6 +1630,9 @@ const ODIN_VISIONS = ACTIVE_CAMPAIGN.story?.odinVisions || []
 const runeEventDialogues = ACTIVE_CAMPAIGN.story?.runeDialogues || []
 const SPELL_PLAYERS = ACTIVE_CAMPAIGN.story?.cemetery?.players || []
 const SPELL_MAX_TRIES = ACTIVE_CAMPAIGN.story?.cemetery?.maxTries ?? 0
+
+const playerBaseStats = Object.fromEntries(ACTIVE_CAMPAIGN.characters.filter(character=>character.stats).map(character=>[character.id,character.stats]))
+const playerMainStat = Object.fromEntries(ACTIVE_CAMPAIGN.characters.filter(character=>character.mainStat).map(character=>[character.id,character.mainStat]))
 function heroDisplayName(id) { const text=pikaDisplayText(String(id || "").trim());return text==="Pika"?text:text.toUpperCase() }
 function heroPortraitFile(id) { return ACTIVE_CAMPAIGN.characters.find(character => character.id === id)?.portrait || id + ".png" }
 function migratePikaCharacter(character) {

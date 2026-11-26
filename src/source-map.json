@@ -8,6 +8,7 @@
       "engine/campaigns/content-catalogs.js",
       "engine/campaigns/rules.js",
       "engine/campaigns/definition.js",
+      "engine/campaigns/draft-format.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
       "engine/characters/progression.js",
       "campaigns/prophetie-des-mouches/enemies/stats.js",

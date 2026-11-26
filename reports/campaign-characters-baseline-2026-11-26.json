@@ -1,0 +1,667 @@
+{
+  "format": 1,
+  "baselineCommit": "18a8cfedab1aa06fc088d4870348ac6e27d61cc8",
+  "stats": {
+    "playerBaseStats": {
+      "greg": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100
+      },
+      "ju": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100
+      },
+      "elo": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100
+      },
+      "bibi": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100
+      }
+    },
+    "playerMainStat": {
+      "greg": "force",
+      "ju": "charme",
+      "elo": "charme",
+      "bibi": "chance"
+    }
+  },
+  "progression": [
+    {
+      "id": "greg",
+      "level": 1,
+      "stats": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100
+      }
+    },
+    {
+      "id": "greg",
+      "level": 6,
+      "stats": {
+        "force": 19,
+        "charme": 7,
+        "perspi": 9,
+        "chance": 7,
+        "defense": 7,
+        "hp": 174,
+        "poids": 100
+      }
+    },
+    {
+      "id": "greg",
+      "level": 8,
+      "stats": {
+        "force": 25,
+        "charme": 9,
+        "perspi": 9,
+        "chance": 9,
+        "defense": 11,
+        "hp": 202,
+        "poids": 120
+      }
+    },
+    {
+      "id": "greg",
+      "level": 15,
+      "stats": {
+        "force": 56,
+        "charme": 19,
+        "perspi": 19,
+        "chance": 16,
+        "defense": 18,
+        "hp": 320,
+        "poids": 120
+      }
+    },
+    {
+      "id": "greg",
+      "level": 30,
+      "stats": {
+        "force": 131,
+        "charme": 40,
+        "perspi": 43,
+        "chance": 40,
+        "defense": 39,
+        "hp": 590,
+        "poids": 160
+      }
+    },
+    {
+      "id": "ju",
+      "level": 1,
+      "stats": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100
+      }
+    },
+    {
+      "id": "ju",
+      "level": 6,
+      "stats": {
+        "force": 8,
+        "charme": 20,
+        "perspi": 9,
+        "chance": 7,
+        "defense": 7,
+        "hp": 154,
+        "poids": 100
+      }
+    },
+    {
+      "id": "ju",
+      "level": 8,
+      "stats": {
+        "force": 8,
+        "charme": 26,
+        "perspi": 11,
+        "chance": 11,
+        "defense": 9,
+        "hp": 182,
+        "poids": 120
+      }
+    },
+    {
+      "id": "ju",
+      "level": 15,
+      "stats": {
+        "force": 18,
+        "charme": 57,
+        "perspi": 18,
+        "chance": 18,
+        "defense": 19,
+        "hp": 300,
+        "poids": 120
+      }
+    },
+    {
+      "id": "ju",
+      "level": 30,
+      "stats": {
+        "force": 42,
+        "charme": 132,
+        "perspi": 42,
+        "chance": 39,
+        "defense": 40,
+        "hp": 570,
+        "poids": 160
+      }
+    },
+    {
+      "id": "elo",
+      "level": 1,
+      "stats": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100
+      }
+    },
+    {
+      "id": "elo",
+      "level": 6,
+      "stats": {
+        "force": 7,
+        "charme": 20,
+        "perspi": 7,
+        "chance": 8,
+        "defense": 9,
+        "hp": 164,
+        "poids": 100
+      }
+    },
+    {
+      "id": "elo",
+      "level": 8,
+      "stats": {
+        "force": 9,
+        "charme": 26,
+        "perspi": 11,
+        "chance": 10,
+        "defense": 9,
+        "hp": 192,
+        "poids": 120
+      }
+    },
+    {
+      "id": "elo",
+      "level": 15,
+      "stats": {
+        "force": 16,
+        "charme": 57,
+        "perspi": 18,
+        "chance": 20,
+        "defense": 19,
+        "hp": 310,
+        "poids": 120
+      }
+    },
+    {
+      "id": "elo",
+      "level": 30,
+      "stats": {
+        "force": 40,
+        "charme": 132,
+        "perspi": 39,
+        "chance": 41,
+        "defense": 43,
+        "hp": 580,
+        "poids": 160
+      }
+    },
+    {
+      "id": "bibi",
+      "level": 1,
+      "stats": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100
+      }
+    },
+    {
+      "id": "bibi",
+      "level": 6,
+      "stats": {
+        "force": 10,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 19,
+        "defense": 7,
+        "hp": 164,
+        "poids": 100
+      }
+    },
+    {
+      "id": "bibi",
+      "level": 8,
+      "stats": {
+        "force": 10,
+        "charme": 9,
+        "perspi": 10,
+        "chance": 25,
+        "defense": 9,
+        "hp": 192,
+        "poids": 120
+      }
+    },
+    {
+      "id": "bibi",
+      "level": 15,
+      "stats": {
+        "force": 20,
+        "charme": 16,
+        "perspi": 17,
+        "chance": 56,
+        "defense": 19,
+        "hp": 310,
+        "poids": 120
+      }
+    },
+    {
+      "id": "bibi",
+      "level": 30,
+      "stats": {
+        "force": 44,
+        "charme": 40,
+        "perspi": 38,
+        "chance": 131,
+        "defense": 40,
+        "hp": 580,
+        "poids": 160
+      }
+    }
+  ],
+  "initiative": [
+    {
+      "greg": 100,
+      "bibi": 100,
+      "participants": [
+        {
+          "id": "greg",
+          "type": "player",
+          "label": "Greg / Bibi",
+          "image": "greg.png"
+        },
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "Pika",
+          "image": "pika-token.svg"
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "Elo",
+          "image": "elo.png"
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "GOBELINS",
+          "image": "gobelins.png"
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "LOUP",
+          "image": "loup.png"
+        }
+      ],
+      "alive": {
+        "greg": true,
+        "ju": true,
+        "elo": true,
+        "bibi": true
+      }
+    },
+    {
+      "greg": 0,
+      "bibi": 100,
+      "participants": [
+        {
+          "id": "greg",
+          "type": "player",
+          "label": "Greg / Bibi",
+          "image": "greg.png"
+        },
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "Pika",
+          "image": "pika-token.svg"
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "Elo",
+          "image": "elo.png"
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "GOBELINS",
+          "image": "gobelins.png"
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "LOUP",
+          "image": "loup.png"
+        }
+      ],
+      "alive": {
+        "greg": true,
+        "ju": true,
+        "elo": true,
+        "bibi": true
+      }
+    },
+    {
+      "greg": 100,
+      "bibi": 0,
+      "participants": [
+        {
+          "id": "greg",
+          "type": "player",
+          "label": "Greg / Bibi",
+          "image": "greg.png"
+        },
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "Pika",
+          "image": "pika-token.svg"
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "Elo",
+          "image": "elo.png"
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "GOBELINS",
+          "image": "gobelins.png"
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "LOUP",
+          "image": "loup.png"
+        }
+      ],
+      "alive": {
+        "greg": true,
+        "ju": true,
+        "elo": true,
+        "bibi": false
+      }
+    },
+    {
+      "greg": 0,
+      "bibi": 0,
+      "participants": [
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "Pika",
+          "image": "pika-token.svg"
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "Elo",
+          "image": "elo.png"
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "GOBELINS",
+          "image": "gobelins.png"
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "LOUP",
+          "image": "loup.png"
+        }
+      ],
+      "alive": {
+        "greg": false,
+        "ju": true,
+        "elo": true,
+        "bibi": false
+      }
+    }
+  ],
+  "normalization": {
+    "before": {
+      "phase": "active",
+      "round": 1,
+      "currentActorId": "bibi",
+      "currentIndex": -1,
+      "sequence": 0,
+      "order": [
+        {
+          "id": "greg",
+          "type": "player",
+          "label": "greg",
+          "roll": 12,
+          "index": 0
+        },
+        {
+          "id": "bibi",
+          "label": "Bibi",
+          "type": "player",
+          "roll": 12
+        },
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "ju",
+          "roll": 11,
+          "index": 1
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "elo",
+          "roll": 10,
+          "index": 2
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "mob",
+          "roll": 9,
+          "index": 3
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "mob2",
+          "roll": 8,
+          "index": 4
+        }
+      ],
+      "participants": [
+        {
+          "id": "greg",
+          "type": "player",
+          "label": "greg",
+          "roll": 12,
+          "index": 0
+        },
+        {
+          "id": "bibi",
+          "label": "Bibi",
+          "type": "player",
+          "roll": 12
+        },
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "ju",
+          "roll": 11,
+          "index": 1
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "elo",
+          "roll": 10,
+          "index": 2
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "mob",
+          "roll": 9,
+          "index": 3
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "mob2",
+          "roll": 8,
+          "index": 4
+        }
+      ],
+      "rolls": {
+        "greg": 12,
+        "ju": 11,
+        "elo": 10,
+        "mob": 9,
+        "mob2": 8,
+        "bibi": 12
+      }
+    },
+    "after": {
+      "phase": "active",
+      "round": 1,
+      "currentActorId": "greg",
+      "currentIndex": 0,
+      "sequence": 0,
+      "order": [
+        {
+          "id": "greg",
+          "type": "player",
+          "label": "Greg / Bibi",
+          "roll": 12,
+          "index": 0
+        },
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "ju",
+          "roll": 11,
+          "index": 1
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "elo",
+          "roll": 10,
+          "index": 2
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "mob",
+          "roll": 9,
+          "index": 3
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "mob2",
+          "roll": 8,
+          "index": 4
+        }
+      ],
+      "participants": [
+        {
+          "id": "greg",
+          "type": "player",
+          "label": "Greg / Bibi",
+          "roll": 12,
+          "index": 0
+        },
+        {
+          "id": "ju",
+          "type": "player",
+          "label": "ju",
+          "roll": 11,
+          "index": 1
+        },
+        {
+          "id": "elo",
+          "type": "player",
+          "label": "elo",
+          "roll": 10,
+          "index": 2
+        },
+        {
+          "id": "mob",
+          "type": "mob",
+          "label": "mob",
+          "roll": 9,
+          "index": 3
+        },
+        {
+          "id": "mob2",
+          "type": "mob",
+          "label": "mob2",
+          "roll": 8,
+          "index": 4
+        }
+      ],
+      "rolls": {
+        "greg": 12,
+        "ju": 11,
+        "elo": 10,
+        "mob": 9,
+        "mob2": 8
+      }
+    }
+  }
+}

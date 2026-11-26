@@ -6,12 +6,20 @@ function createCampaignDefinition(input) {
   if (!Array.isArray(input.characters) || !input.characters.length) throw Error("Personnages de campagne absents")
   const ids = new Set()
   const characters = input.characters.map(character => {
-    if (!character || typeof character.id !== "string" || !/^[a-z][a-z0-9_-]*$/.test(character.id) || ["constructor", "prototype", "__proto__"].includes(character.id) || ids.has(character.id)) throw Error("Identifiant de personnage invalide ou dupliqué")
+    if (!character || typeof character.id !== "string" || !/^[a-z][a-z0-9_-]*$/.test(character.id) || ["constructor", "prototype", "__proto__", "mob", "mob2", "mob3"].includes(character.id) || ids.has(character.id)) throw Error("Identifiant de personnage invalide ou dupliqué")
     ids.add(character.id)
     if (typeof character.name !== "string" || !character.name.trim()) throw Error("Nom de personnage absent")
     if (!["hero", "companion"].includes(character.kind)) throw Error("Type de personnage inconnu")
     if (typeof character.portrait !== "string" || /[:\\]/.test(character.portrait) || character.portrait.startsWith("/") || character.portrait.split("/").some(part => !part || part === "." || part === "..") || !/\.(png|jpe?g|webp|svg)$/i.test(character.portrait)) throw Error("Portrait de personnage invalide")
-    return {id:character.id, name:character.name, kind:character.kind, portrait:character.portrait, ...(character.kind === "companion" ? {owner:character.owner} : {})}
+    const build={}
+    if(character.stats!==undefined){
+      const stats=copyCampaignContent(character.stats)
+      if(!stats||typeof stats!=="object"||Array.isArray(stats)||["force","charme","perspi","chance","defense","hp","poids"].some(key=>!Number.isFinite(stats[key])||stats[key]<0)||stats.hp<=0)throw Error("Statistiques de personnage invalides")
+      build.stats=Object.fromEntries(["force","charme","perspi","chance","defense","hp","poids"].map(key=>[key,stats[key]]))
+    }
+    if(character.mainStat!==undefined){if(!["force","charme","perspi","chance","defense"].includes(character.mainStat))throw Error("Statistique principale invalide");build.mainStat=character.mainStat}
+    if(character.stats!==undefined&&character.mainStat===undefined)throw Error("Statistique principale absente")
+    return {...build,id:character.id, name:character.name, kind:character.kind, portrait:character.portrait, ...(character.kind === "companion" ? {owner:character.owner} : {})}
   })
   const heroes = new Set(characters.filter(character => character.kind === "hero").map(character => character.id))
   if (!heroes.size) throw Error("La campagne doit définir un héros")

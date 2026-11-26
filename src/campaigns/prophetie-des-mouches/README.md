@@ -23,3 +23,5 @@ La fiche rattache également les catalogues existants de `world/locations-and-mu
 Les fichiers d’attaques des personnages et ennemis, le catalogue de boutiques et celui des alliés alimentent la fiche active. Ils conservent leurs données et identifiants historiques ; les anciennes variables sont fournies par l’adaptateur partagé. Les résolutions de combat et les exceptions narratives restent inchangées.
 
 `story` rattache les textes et réglages d’événements existants. `rules/adapters.js` garde les effets de Hel et de l’épée du Balrog dans cette histoire ; leurs permissions, formules et états sauvegardés ne changent pas. Les correctifs de contenu historiques propres aux personnages sont séparés du calcul partagé du poids d’inventaire.
+
+Les statistiques de départ et statistiques principales sont rattachées aux personnages de la fiche. Greg et Bibi continuent de partager un tour ; Pika conserve son identifiant historique `ju`. L’échange de brouillons ne constitue pas encore l’export complet de cette histoire jouable et ne contient aucune progression de partie.

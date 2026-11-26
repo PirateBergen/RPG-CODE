@@ -12,6 +12,7 @@
       "engine/campaigns/bestiary.js",
       "engine/campaigns/staging.js",
       "engine/campaigns/map-groups.js",
+      "engine/campaigns/audio-library.js",
       "engine/campaigns/definition.js",
       "engine/campaigns/draft-format.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
@@ -330,6 +331,8 @@
     ],
     "campaign-editor.js": [
       "platform/storage/draft-store.js",
+      "platform/storage/draft-audio.js",
+      "presentation/audio/draft-map-audio.js",
       "interface/editor/character-profile.js",
       "interface/editor/characters.js",
       "interface/editor/locations.js",
@@ -341,6 +344,7 @@
       "interface/editor/staging-board.js",
       "interface/editor/map-navigator.js",
       "interface/editor/gm-workspace.js",
+      "interface/editor/audio-library.js",
       "interface/editor/campaign-editor.js"
     ],
     "campaign-editor.css": [

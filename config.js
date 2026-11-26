@@ -289,6 +289,22 @@ function draftMapHeroTokens(definition,locationId){
   const saved=definition.staging?.find(board=>board.locationId===locationId)?.tokens || []
   return definition.characters.map((actor,index)=>saved.find(token=>token.kind==='character'&&token.refId===actor.id) || {id:'token-auto-'+Array.from(locationId+'|'+actor.id).map(letter=>letter.codePointAt(0).toString(16).padStart(2,'0')).join(''),kind:'character',refId:actor.id,x:15+(index%4)*23,y:35+(Math.floor(index/4)%3)*22})
 }
+function createCampaignAudioTracks(input){
+  if(!Array.isArray(input))throw Error('Bibliothèque de sons invalide')
+  const ids=new Set()
+  return input.map(track=>{
+    if(!track||typeof track.id!=='string'||!/^sound-[a-z0-9-]+$/.test(track.id)||ids.has(track.id)||typeof track.name!=='string'||!track.name.trim()||track.name.length>120)throw Error('Nom ou identifiant de son invalide')
+    ids.add(track.id)
+    if(track.source==='builtin'){
+      if(!isCampaignAssetPath(track.path,['mp3','wav','ogg','m4a'])||!track.path.startsWith('audio/'))throw Error('Chemin de son invalide')
+      return {id:track.id,name:track.name.trim(),source:'builtin',path:track.path}
+    }
+    if(track.source!=='custom'||typeof track.sha256!=='string'||!/^[a-f0-9]{64}$/.test(track.sha256)||typeof track.fileName!=='string'||!track.fileName.trim()||track.fileName.length>255||!['audio/mpeg','audio/wav','audio/ogg','audio/mp4'].includes(track.mime)||!Number.isSafeInteger(track.bytes)||track.bytes<1||track.bytes>50*1024*1024)throw Error('Référence de son personnalisé invalide')
+    return {id:track.id,name:track.name.trim(),source:'custom',sha256:track.sha256,fileName:track.fileName,mime:track.mime,bytes:track.bytes}
+  })
+}
+function draftAudioTrackKey(track){return track.source==='custom'?'sha256:'+track.sha256:'asset:'+track.path}
+function removeDraftAudioTrack(definition,id){return createCampaignDefinition({...definition,audioTracks:(definition.audioTracks || []).filter(track=>track.id!==id),...(definition.locations?{locations:definition.locations.map(place=>{if(place.audioId!==id)return place;const {audioId,...rest}=place;return rest})}:{})})}
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
@@ -298,6 +314,7 @@ function createCampaignDefinition(input) {
   if (!Array.isArray(input.characters) || !input.characters.length) throw Error("Personnages de campagne absents")
   const ids = new Set()
   const locations={}
+  if(input.audioTracks!==undefined)locations.audioTracks=createCampaignAudioTracks(input.audioTracks)
   if(input.mapGroups!==undefined)locations.mapGroups=createCampaignMapGroups(input.mapGroups)
   if(input.locations!==undefined){
     if(!Array.isArray(input.locations)||input.locations.length>200)throw Error('Liste des lieux invalide (200 maximum)')
@@ -309,8 +326,9 @@ function createCampaignDefinition(input) {
       if(!['region','city','village','wilderness','dungeon','building','other'].includes(place.type))throw Error('Type de lieu invalide')
       for(const key of ['description','gmNotes'])if(typeof place[key]!=='string'||place[key].length>5000)throw Error('Texte de lieu invalide (5 000 caractères maximum)')
       if(place.groupId!==undefined&&!locations.mapGroups?.some(group=>group.id===place.groupId))throw Error('Onglet de carte introuvable')
+      if(place.audioId!==undefined&&!locations.audioTracks?.some(track=>track.id===place.audioId))throw Error('Son de carte introuvable')
       if(place.background!==undefined&&(typeof place.background!=='string'||place.background.length>1200000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(place.background)))throw Error('Image de fond invalide ou trop volumineuse')
-      return {id:place.id,name:place.name,type:place.type,description:place.description,gmNotes:place.gmNotes,...(place.groupId!==undefined?{groupId:place.groupId}:{}),...(place.background!==undefined?{background:place.background}:{})}
+      return {id:place.id,name:place.name,type:place.type,description:place.description,gmNotes:place.gmNotes,...(place.audioId!==undefined?{audioId:place.audioId}:{}),...(place.groupId!==undefined?{groupId:place.groupId}:{}),...(place.background!==undefined?{background:place.background}:{})}
     })
   }
   const characters = input.characters.map(character => {

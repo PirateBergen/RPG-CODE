@@ -8,9 +8,10 @@
   const uuid=()=>crypto.randomUUID()
   const characterPanel=createDraftCharacterPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,guard,onAbilities:id=>abilityPanel.open(id)})
   const abilityPanel=createDraftAbilityPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
-  const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
+  const audioLibrary=createDraftAudioLibrary({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()}})
+  const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,audioLibrary})
   const bestiaryPanel=createDraftBestiaryPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,onAbilities:id=>abilityPanel.open(id,'enemy')})
-  const workspace=createDraftGmWorkspace({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},onCreateMap:groupId=>locationPanel.create(groupId),onEditMap:place=>locationPanel.edit(place),onSave:()=>{if(!$('title').value.trim())throw Error('Donnez un titre à la campagne avant de l’enregistrer.');$('editor').requestSubmit()},message})
+  const workspace=createDraftGmWorkspace({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},onCreateMap:groupId=>locationPanel.create(groupId),onEditMap:place=>locationPanel.edit(place),onSave:()=>{if(!$('title').value.trim())throw Error('Donnez un titre à la campagne avant de l’enregistrer.');$('editor').requestSubmit()},message,audioLibrary})
   function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision }
   function definition() {return createCampaignDefinition({...current.definition,title:$('title').value.trim(),description:$('description').value})}
   function open(record) {

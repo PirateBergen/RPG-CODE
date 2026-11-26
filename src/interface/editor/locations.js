@@ -7,7 +7,7 @@ function removeDraftLocation(definition,id) {
   if(!definition.locations?.some(place=>place.id===id))throw Error('Lieu introuvable')
   return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id),...(definition.staging!==undefined?{staging:definition.staging.filter(board=>board.locationId!==id)}:{})})
 }
-function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message}) {
+function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message,audioLibrary}) {
   const $=id=>document.getElementById(id),dialog=$('locationDialog')
   let selected=null,background=null,generation=0,sequence=0,pending=0
   function preview() {
@@ -33,6 +33,7 @@ function createDraftLocationPanel({getDefinition,replaceDefinition,changed,messa
   for(const [value,label] of Object.entries(DRAFT_LOCATION_TYPES)){const option=document.createElement('option');option.value=value;option.textContent=label;$('locationType').append(option)}
   function edit(place,groupId='') {
     generation++;pending=0;background=place?.background || null;$('locationBackgroundFile').value='';preview()
+    audioLibrary.fillSelect($('locationAudioSelect'),place?.audioId || '')
     $('locationGroup').replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent='À classer';$('locationGroup').append(empty);for(const group of getDefinition().mapGroups || []){const option=document.createElement('option');option.value=group.id;option.textContent=group.name;$('locationGroup').append(option)}$('locationGroup').value=place?.groupId || groupId
     selected=place?.id || null;$('locationName').value=place?.name || '';$('locationType').value=place?.type || 'other';$('locationDescription').value=place?.description || '';$('locationNotes').value=place?.gmNotes || '';$('locationError').textContent='';$('locationRemove').hidden=!place;dialog.showModal();$('locationName').focus()
   }
@@ -58,7 +59,7 @@ function createDraftLocationPanel({getDefinition,replaceDefinition,changed,messa
     event.preventDefault()
     try {
       if(pending)throw Error('Attendez la fin de la préparation de l’image.')
-      const place={id:selected || 'lieu-'+crypto.randomUUID(),name:$('locationName').value.trim(),type:$('locationType').value,description:$('locationDescription').value,gmNotes:$('locationNotes').value,...($('locationGroup').value?{groupId:$('locationGroup').value}:{}),...(background?{background}:{})}
+      const place={id:selected || 'lieu-'+crypto.randomUUID(),name:$('locationName').value.trim(),type:$('locationType').value,description:$('locationDescription').value,gmNotes:$('locationNotes').value,...($('locationAudioSelect').value?{audioId:$('locationAudioSelect').value}:{}),...($('locationGroup').value?{groupId:$('locationGroup').value}:{}),...(background?{background}:{})}
       replaceDefinition(setDraftLocation(getDefinition(),place));changed();render();dialog.close();message('Lieu préparé. Enregistrez le brouillon pour le conserver.')
     }catch(error){$('locationError').textContent=error.message}
   })

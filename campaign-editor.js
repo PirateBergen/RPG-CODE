@@ -37,6 +37,28 @@ function createLocalCampaignDraftStore(storage) {
     }
   }
 }
+function createDraftAudioStore(){
+  let opening=null
+  function database(){if(!opening)opening=new Promise((resolve,reject)=>{const request=indexedDB.open('rpg-campaign-editor-audio-v1',1);request.onupgradeneeded=()=>request.result.createObjectStore('files');request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();opening=null};resolve(db)};request.onerror=()=>{opening=null;reject(Error('Le stockage audio du navigateur est indisponible. Conservez vos fichiers originaux.'))};request.onblocked=()=>{opening=null;reject(Error('Fermez les autres onglets de l’éditeur pour ouvrir le stockage audio.'))}});return opening}
+  async function run(mode,action){const db=await database();return new Promise((resolve,reject)=>{const transaction=db.transaction('files',mode),request=action(transaction.objectStore('files'));transaction.oncomplete=()=>resolve(request.result);transaction.onerror=transaction.onabort=()=>reject(Error('Impossible de conserver ce son dans le navigateur. Vérifiez l’espace disponible et gardez le fichier original.'))})}
+  return {get:hash=>run('readonly',store=>store.get(hash)),put:(hash,blob)=>run('readwrite',store=>store.put(blob,hash))}
+}
+async function readDraftAudioFile(file){
+  const extension=file.name.split('.').pop().toLowerCase(),mime={mp3:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',m4a:'audio/mp4'}[extension]
+  if(!mime||file.size<1||file.size>50*1024*1024)throw Error('Choisissez un fichier MP3, WAV, OGG ou M4A de 50 Mo maximum.')
+  const bytes=await file.arrayBuffer(),digest=await crypto.subtle.digest('SHA-256',bytes),sha256=Array.from(new Uint8Array(digest)).map(byte=>byte.toString(16).padStart(2,'0')).join(''),blob=new Blob([bytes],{type:mime})
+  const url=URL.createObjectURL(blob),test=new Audio();test.preload='metadata'
+  try{await new Promise((resolve,reject)=>{const timeout=setTimeout(()=>reject(Error('Ce fichier audio ne peut pas être lu par ce navigateur.')),15000);test.onloadedmetadata=()=>{clearTimeout(timeout);resolve()};test.onerror=()=>{clearTimeout(timeout);reject(Error('Fichier audio illisible ou format non pris en charge.'))};test.src=url})}finally{test.onloadedmetadata=test.onerror=null;test.pause();test.removeAttribute('src');test.load();URL.revokeObjectURL(url)}
+  return {sha256,mime,blob,fileName:file.name,bytes:file.size}
+}
+function createDraftMapAudioPlayer({resolveSource,createAudio=()=>new Audio(),revoke=url=>URL.revokeObjectURL(url)}){
+  const audio=createAudio();audio.loop=true;audio.volume=.5;let key=null,url=null,disposable=false,generation=0
+  function release(){audio.pause();audio.removeAttribute('src');audio.load();if(url&&disposable)revoke(url);key=null;url=null;disposable=false}
+  return {
+    async play(track){const token=++generation;if(!track){release();return}const next=draftAudioTrackKey(track);if(key===next&&url){if(audio.paused)try{await audio.play()}catch(error){if(token===generation)throw error}return}let source;try{source=await resolveSource(track)}catch(error){if(token===generation)release();if(token===generation)throw error;return}if(token!==generation){if(source.disposable)revoke(source.url);return}release();key=next;url=source.url;disposable=!!source.disposable;audio.src=url;try{await audio.play()}catch(error){if(token===generation)throw error}},
+    stop(){generation++;release()},setVolume(value){audio.volume=Math.min(1,Math.max(0,Number(value)||0))},currentKey:()=>key
+  }
+}
 // User-selected raster images are decoded locally and reduced before being embedded.
 async function readDraftImage(file,{maxSide=900,maxLength=400000,preserveTransparency=false}={}) {
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10*1024*1024)throw Error('Choisissez une image PNG, JPEG ou WebP de 10 Mo maximum.')
@@ -167,7 +189,7 @@ function removeDraftLocation(definition,id) {
   if(!definition.locations?.some(place=>place.id===id))throw Error('Lieu introuvable')
   return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id),...(definition.staging!==undefined?{staging:definition.staging.filter(board=>board.locationId!==id)}:{})})
 }
-function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message}) {
+function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message,audioLibrary}) {
   const $=id=>document.getElementById(id),dialog=$('locationDialog')
   let selected=null,background=null,generation=0,sequence=0,pending=0
   function preview() {
@@ -193,6 +215,7 @@ function createDraftLocationPanel({getDefinition,replaceDefinition,changed,messa
   for(const [value,label] of Object.entries(DRAFT_LOCATION_TYPES)){const option=document.createElement('option');option.value=value;option.textContent=label;$('locationType').append(option)}
   function edit(place,groupId='') {
     generation++;pending=0;background=place?.background || null;$('locationBackgroundFile').value='';preview()
+    audioLibrary.fillSelect($('locationAudioSelect'),place?.audioId || '')
     $('locationGroup').replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent='À classer';$('locationGroup').append(empty);for(const group of getDefinition().mapGroups || []){const option=document.createElement('option');option.value=group.id;option.textContent=group.name;$('locationGroup').append(option)}$('locationGroup').value=place?.groupId || groupId
     selected=place?.id || null;$('locationName').value=place?.name || '';$('locationType').value=place?.type || 'other';$('locationDescription').value=place?.description || '';$('locationNotes').value=place?.gmNotes || '';$('locationError').textContent='';$('locationRemove').hidden=!place;dialog.showModal();$('locationName').focus()
   }
@@ -218,7 +241,7 @@ function createDraftLocationPanel({getDefinition,replaceDefinition,changed,messa
     event.preventDefault()
     try {
       if(pending)throw Error('Attendez la fin de la préparation de l’image.')
-      const place={id:selected || 'lieu-'+crypto.randomUUID(),name:$('locationName').value.trim(),type:$('locationType').value,description:$('locationDescription').value,gmNotes:$('locationNotes').value,...($('locationGroup').value?{groupId:$('locationGroup').value}:{}),...(background?{background}:{})}
+      const place={id:selected || 'lieu-'+crypto.randomUUID(),name:$('locationName').value.trim(),type:$('locationType').value,description:$('locationDescription').value,gmNotes:$('locationNotes').value,...($('locationAudioSelect').value?{audioId:$('locationAudioSelect').value}:{}),...($('locationGroup').value?{groupId:$('locationGroup').value}:{}),...(background?{background}:{})}
       replaceDefinition(setDraftLocation(getDefinition(),place));changed();render();dialog.close();message('Lieu préparé. Enregistrez le brouillon pour le conserver.')
     }catch(error){$('locationError').textContent=error.message}
   })
@@ -537,7 +560,7 @@ function createDraftMapNavigator({getDefinition,commit,onSelect,onCreateMap,onEd
   $('prepCreateMap').addEventListener('click',()=>onCreateMap(regionId || ''));$('prepEditMap').addEventListener('click',()=>{if(currentPlace)onEditMap(currentPlace)})
   return {render,reveal(id){const place=getDefinition().locations?.find(place=>place.id===id);if(place)regionId=place.groupId || ''}}
 }
-function createDraftGmWorkspace({getDefinition,replaceDefinition,changed,onSave,message,onCreateMap,onEditMap}) {
+function createDraftGmWorkspace({getDefinition,replaceDefinition,changed,onSave,message,onCreateMap,onEditMap,audioLibrary}) {
   const $=id=>document.getElementById(id),dialog=$('gmWorkspace');let locationId=null,selectedId=null,npcImage=null,npcGeneration=0,npcPending=false
   const tokens=()=>locationId?draftMapHeroTokens(getDefinition(),locationId):[]
   function status(text,error=false){ $('workspaceStatus').textContent=text; $('workspaceStatus').classList.toggle('workspace-error',error) }
@@ -545,7 +568,7 @@ function createDraftGmWorkspace({getDefinition,replaceDefinition,changed,onSave,
   function commit(value){replaceDefinition(value);changed();status('Campagne modifiée. Enregistrez le brouillon pour la conserver.')}
   const board=createDraftStagingBoard({getDefinition,onSelect:id=>{selectedId=id;board.select(id)},onMove:(id,patch)=>{try{const token=tokens().find(token=>token.id===id);if(!token)return;const saved=getDefinition().staging?.find(item=>item.locationId===locationId)?.tokens || [];const updated={...token,...patch};commit(setDraftBoard(getDefinition(),locationId,saved.some(item=>item.id===id)?saved.map(item=>item.id===id?updated:item):[...saved,updated]));renderMap()}catch(e){status(e.message,true)}}})
   const navigator=createDraftMapNavigator({getDefinition,commit,onSelect:place=>{locationId=place?.id || null;selectedId=null;renderMap()},onCreateMap,onEditMap})
-  function renderMap(){const place=navigator.render(locationId);if(locationId!==place?.id)selectedId=null;locationId=place?.id || null;$('prepMapEmpty').hidden=!!place;$('prepMapName').textContent=place?.name || 'Choisissez une carte';board.render(place,selectedId,tokens())}
+  function renderMap(){const place=navigator.render(locationId);if(locationId!==place?.id)selectedId=null;locationId=place?.id || null;$('prepMapEmpty').hidden=!!place;$('prepMapName').textContent=place?.name || 'Choisissez une carte';board.render(place,selectedId,tokens());audioLibrary.mapChanged(place)}
   $('prepZoom').addEventListener('input',()=>{$('prepBoard').style.width=$('prepZoom').value+'%';$('prepZoomValue').textContent=$('prepZoom').value+' %'})
   $('locationDialog').addEventListener('close',()=>{if(dialog.open){navigator.reveal(locationId);renderMap()}})
   function goTab(key){for(const button of $('workspaceTabs').querySelectorAll('[role=tab]')){const active=button.dataset.workspaceTab===key;button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1}for(const panel of $('workspaceBody').children)panel.hidden=panel.id!=='workspace-'+key;$('workspaceBody').scrollTop=0}
@@ -553,15 +576,50 @@ function createDraftGmWorkspace({getDefinition,replaceDefinition,changed,onSave,
   function backToEditor(id){dialog.close();const panel=$(id);panel.open=true;panel.scrollIntoView({block:'start'});panel.querySelector('summary')?.focus()}
   for(const [button,panel]of [['workspaceEditPlaces','locationPanel'],['workspaceEditHeroes','characterPanel'],['workspaceEditBestiary','bestiaryPanel']])$(button).addEventListener('click',()=>backToEditor(panel))
   $('workspaceClose').addEventListener('click',()=>dialog.close());$('workspaceSave').addEventListener('click',guard(()=>{onSave();status($('error').textContent || $('status').textContent,!!$('error').textContent)}))
-  dialog.addEventListener('close',()=>board.render(getDefinition().locations?.find(place=>place.id===locationId),selectedId,tokens()))
+  dialog.addEventListener('close',()=>{audioLibrary.setWorkspaceOpen(false);board.render(getDefinition().locations?.find(place=>place.id===locationId),selectedId,tokens())})
   $('workspaceNotes').addEventListener('input',()=>{replaceDefinition({...getDefinition(),preparationNotes:$('workspaceNotes').value});changed();status('Notes modifiées. Enregistrez le brouillon pour les conserver.')})
   $('workspaceNpcImage').addEventListener('change',async()=>{const file=$('workspaceNpcImage').files[0],token=++npcGeneration;$('workspaceNpcImage').value='';if(!file)return;npcPending=true;try{const data=await readDraftImage(file,{maxSide:1200,maxLength:600000,preserveTransparency:true});if(token===npcGeneration){npcImage=data;$('workspaceNpcPreview').src=data;$('workspaceNpcPreview').hidden=false;status('Image du PNJ prête.')}}catch(e){if(token===npcGeneration)status(e.message,true)}finally{if(token===npcGeneration)npcPending=false}})
   $('workspaceNpcRemoveImage').addEventListener('click',()=>{npcGeneration++;npcPending=false;npcImage=null;$('workspaceNpcPreview').removeAttribute('src');$('workspaceNpcPreview').hidden=true})
   $('workspaceNpcAdd').addEventListener('click',guard(()=>{if(npcPending)throw Error('Attendez la préparation de l’image du PNJ.');const npc={id:'npc-'+crypto.randomUUID(),name:$('workspaceNpcName').value.trim(),description:$('workspaceNpcDescription').value,...(npcImage?{image:npcImage}:{})};commit(createCampaignDefinition({...getDefinition(),npcs:[...(getDefinition().npcs || []),npc]}));$('workspaceNpcName').value='';$('workspaceNpcDescription').value='';$('workspaceNpcRemoveImage').click();renderNpcs()}))
   function renderNpcs(){const list=$('workspaceNpcs');list.replaceChildren();for(const npc of getDefinition().npcs || []){const card=document.createElement('div'),name=document.createElement('h3'),text=document.createElement('p'),remove=document.createElement('button');card.className='workspace-card';name.textContent=npc.name;text.textContent=npc.description;remove.type='button';remove.textContent='Retirer '+npc.name;remove.addEventListener('click',guard(()=>{if(!window.confirm('Retirer ce PNJ et ses pions de préparation ?'))return;commit(createCampaignDefinition({...getDefinition(),...withoutDraftActorTokens(getDefinition(),'npc',npc.id),npcs:getDefinition().npcs.filter(item=>item.id!==npc.id)}));renderNpcs();renderMap()}));card.append(name,text,remove);list.append(card)}if(!list.children.length)list.textContent='Aucun PNJ créé pour le moment.';$('workspaceAlliesInfo').textContent=getDefinition().allies?.length?`${getDefinition().allies.length} alliés du modèle sont conservés pour la campagne.`:''}
   function render(){if(!getDefinition())return;renderMap();renderNpcs();$('workspaceHeroList').textContent=getDefinition().characters.map(actor=>actor.name).join(' · ');$('workspaceEnemyList').textContent=(getDefinition().bestiary || []).map(actor=>actor.name).join(' · ') || 'Aucun ennemi préparé.';$('workspaceNotes').value=getDefinition().preparationNotes || '';}
-  $('openGmWorkspace').addEventListener('click',()=>{render();goTab('maps');status('Mode préparation locale. Aucun joueur connecté à cette carte.');dialog.showModal();$('workspaceClose').focus({preventScroll:true})})
+  $('openGmWorkspace').addEventListener('click',()=>{render();goTab('maps');status('Mode préparation locale. Aucun joueur connecté à cette carte.');dialog.showModal();audioLibrary.setWorkspaceOpen(true);$('workspaceClose').focus({preventScroll:true})})
   return {render}
+}
+function createDraftAudioLibrary({getDefinition,replaceDefinition,changed}){
+  const $=id=>document.getElementById(id),dialog=$('audioLibraryDialog'),store=createDraftAudioStore();let currentMapId=null,enabled=false,workspaceOpen=false,context='location',importGeneration=0,syncGeneration=0
+  const player=createDraftMapAudioPlayer({resolveSource:async track=>{if(track.source==='builtin')return {url:track.path,disposable:false};const blob=await store.get(track.sha256);if(!blob)throw Error('Fichier audio absent de ce navigateur : réassociez « '+track.fileName+' » dans la bibliothèque.');return {url:URL.createObjectURL(blob),disposable:true}}})
+  const tracks=()=>getDefinition()?.audioTracks || [],mapPlace=()=>getDefinition()?.locations?.find(place=>place.id===currentMapId),currentTrack=()=>tracks().find(track=>track.id===mapPlace()?.audioId)
+  function status(text,error=false){$('audioLibraryStatus').textContent=text;$('audioLibraryStatus').classList.toggle('workspace-error',error)}
+  function fillSelect(select,value=select.value){select.replaceChildren();const empty=document.createElement('option');empty.value='';empty.textContent='Sans son';select.append(empty);for(const track of tracks()){const option=document.createElement('option');option.value=track.id;option.textContent=track.name;select.append(option)}select.value=tracks().some(track=>track.id===value)?value:''}
+  function mapUi(){fillSelect($('mapSoundSelect'),mapPlace()?.audioId || '');$('mapSoundToggle').textContent=enabled?'Couper les ambiances':'Écouter les ambiances';$('mapSoundToggle').setAttribute('aria-pressed',String(enabled));$('mapSoundState').textContent=currentTrack()?(enabled?'Ambiance active : ':'Ambiance prête : ')+currentTrack().name:'Carte sans ambiance sonore.'}
+  async function sync(){const token=++syncGeneration;mapUi();if(!workspaceOpen||dialog.open)return;if(!enabled){player.stop();return}try{await player.play(currentTrack());if(token===syncGeneration)mapUi()}catch(error){if(token!==syncGeneration)return;enabled=false;mapUi();$('mapSoundState').textContent=error.name==='NotAllowedError'?'Cliquez sur « Écouter les ambiances » pour autoriser le son.':error.message}}
+  function commit(value){replaceDefinition(value);changed()}
+  function assignMap(id){const place=mapPlace();if(!place)return;const {audioId,...rest}=place;commit(setDraftLocation(getDefinition(),{...rest,...(id?{audioId:id}:{})}));sync()}
+  function refresh(){fillSelect($('locationAudioSelect'));mapUi();if(dialog.open)render()}
+  function selectImported(id){refresh();if(context==='location'&&$('locationDialog').open)$('locationAudioSelect').value=id;else if(context==='map'&&mapPlace())assignMap(id)}
+  async function importFile(file,expected){const token=++importGeneration;status('Préparation du son personnalisé…');try{const result=await readDraftAudioFile(file);if(token!==importGeneration)return;if(expected&&result.sha256!==expected.sha256)throw Error('Ce fichier ne correspond pas au son attendu. Choisissez le fichier original : '+expected.fileName);await store.put(result.sha256,result.blob);if(token!==importGeneration)return;const existing=tracks().find(track=>track.source==='custom'&&track.sha256===result.sha256);let id=existing?.id;if(!id){const track={id:'sound-'+crypto.randomUUID(),name:($('audioImportName').value.trim() || file.name.replace(/\.[^.]+$/,'') || 'Son personnalisé').slice(0,120),source:'custom',sha256:result.sha256,fileName:result.fileName,mime:result.mime,bytes:result.bytes};commit(createCampaignDefinition({...getDefinition(),audioTracks:[...tracks(),track]}));id=track.id}if(expected){refresh();sync()}else selectImported(id);status(existing?'Fichier réassocié au son existant. Vous pouvez le réutiliser sur vos cartes.':context==='map'?'Son personnalisé ajouté à la carte affichée. Enregistrez le brouillon.':'Son personnalisé ajouté et sélectionné. Appliquez la fiche de la carte, puis enregistrez le brouillon.')}catch(error){if(token===importGeneration)status(error.message,true)}}
+  $('audioImportFile').addEventListener('change',()=>{const file=$('audioImportFile').files[0];$('audioImportFile').value='';if(file)importFile(file)})
+  $('audioAddBuiltin').addEventListener('click',()=>{try{const examples={forest:{name:'Forêt',path:'audio/foret.mp3'},tavern:{name:'Taverne',path:'audio/ambiancetaverne.mp3'},market:{name:'Marché',path:'audio/marche.mp3'}},entry=examples[$('audioBuiltinChoice').value],existing=tracks().find(track=>track.source==='builtin'&&track.path===entry.path),id=existing?.id || 'sound-'+crypto.randomUUID();if(!existing)commit(createCampaignDefinition({...getDefinition(),audioTracks:[...tracks(),{id,source:'builtin',...entry}]}));selectImported(id);status('Son de base disponible pour les cartes.')}catch(error){status(error.message,true)}})
+  function render(){const list=$('audioLibraryList');list.replaceChildren();for(const track of tracks()){
+    const row=document.createElement('div'),label=document.createElement('label'),name=document.createElement('input'),info=document.createElement('p'),availability=document.createElement('p'),rename=document.createElement('button'),test=document.createElement('button'),remove=document.createElement('button');row.className='audio-track-card';row.dataset.audioId=track.id;label.textContent='Nom du son';name.value=track.name;name.maxLength=120;label.append(name);info.className=availability.className='hint';info.textContent=track.source==='custom'?'Fichier personnel : '+track.fileName:'Son de base disponible sur le site';rename.type=test.type=remove.type='button';rename.textContent='Renommer';test.textContent='Écouter';test.setAttribute('aria-label','Écouter '+track.name);remove.textContent='Retirer de la bibliothèque'
+    rename.addEventListener('click',()=>{try{commit(createCampaignDefinition({...getDefinition(),audioTracks:tracks().map(item=>item.id===track.id?{...item,name:name.value.trim()}:item)}));refresh();status('Nom modifié. Les cartes gardent le même son.')}catch(error){status(error.message,true)}})
+    test.addEventListener('click',async()=>{try{await player.play(track);status('Écoute : '+track.name)}catch(error){status(error.message,true)}})
+    remove.addEventListener('click',()=>{if(!window.confirm('Retirer ce son ? Les cartes qui l’utilisent passeront en « Sans son ».'))return;commit(removeDraftAudioTrack(getDefinition(),track.id));if(player.currentKey()===draftAudioTrackKey(track))player.stop();refresh();status('Son retiré de cette campagne. Le fichier original reste inchangé.')})
+    row.append(label,info,availability,rename,test,remove)
+    if(track.source==='custom'){
+      availability.textContent='Vérification du fichier local…';store.get(track.sha256).then(blob=>{if(row.isConnected)availability.textContent=blob?'Fichier disponible dans ce navigateur.':'Fichier à réassocier dans ce navigateur.'}).catch(()=>{if(row.isConnected)availability.textContent='Stockage audio indisponible.'})
+      const attach=document.createElement('label'),file=document.createElement('input');attach.textContent='Réassocier le fichier original';file.type='file';file.accept='.mp3,.wav,.ogg,.m4a';file.addEventListener('change',()=>{const selected=file.files[0];file.value='';if(selected)importFile(selected,track)});attach.append(file);row.append(attach)
+    }
+    list.append(row)
+  }if(!list.children.length)list.textContent='Aucun son ajouté. Importez vos fichiers personnels ou choisissez un son de base.'}
+  function open(value='location'){context=value;status('');render();dialog.showModal()}
+  $('locationManageAudio').addEventListener('click',()=>open('location'));$('mapManageAudio').addEventListener('click',()=>open('map'));$('audioLibraryClose').addEventListener('click',()=>dialog.close());$('audioStopTest').addEventListener('click',()=>{player.stop();status('Écoute arrêtée.')})
+  dialog.addEventListener('close',()=>{importGeneration++;if(workspaceOpen&&enabled)sync();else player.stop()})
+  $('mapSoundSelect').addEventListener('change',()=>{try{assignMap($('mapSoundSelect').value)}catch(error){$('mapSoundState').textContent=error.message}})
+  $('mapSoundToggle').addEventListener('click',()=>{enabled=!enabled;sync()});$('mapSoundVolume').addEventListener('input',()=>{player.setVolume(Number($('mapSoundVolume').value)/100);$('mapSoundVolumeValue').textContent=$('mapSoundVolume').value+' %'})
+  window.addEventListener('pagehide',()=>{syncGeneration++;player.stop()})
+  return {fillSelect,refresh,mapChanged(place){currentMapId=place?.id || null;sync()},setWorkspaceOpen(value){workspaceOpen=value;if(!value){syncGeneration++;enabled=false;player.stop();mapUi()}else sync()}}
 }
 (() => {
   const $=id=>document.getElementById(id)
@@ -573,9 +631,10 @@ function createDraftGmWorkspace({getDefinition,replaceDefinition,changed,onSave,
   const uuid=()=>crypto.randomUUID()
   const characterPanel=createDraftCharacterPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,guard,onAbilities:id=>abilityPanel.open(id)})
   const abilityPanel=createDraftAbilityPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
-  const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
+  const audioLibrary=createDraftAudioLibrary({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()}})
+  const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,audioLibrary})
   const bestiaryPanel=createDraftBestiaryPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,onAbilities:id=>abilityPanel.open(id,'enemy')})
-  const workspace=createDraftGmWorkspace({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},onCreateMap:groupId=>locationPanel.create(groupId),onEditMap:place=>locationPanel.edit(place),onSave:()=>{if(!$('title').value.trim())throw Error('Donnez un titre à la campagne avant de l’enregistrer.');$('editor').requestSubmit()},message})
+  const workspace=createDraftGmWorkspace({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},onCreateMap:groupId=>locationPanel.create(groupId),onEditMap:place=>locationPanel.edit(place),onSave:()=>{if(!$('title').value.trim())throw Error('Donnez un titre à la campagne avant de l’enregistrer.');$('editor').requestSubmit()},message,audioLibrary})
   function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision }
   function definition() {return createCampaignDefinition({...current.definition,title:$('title').value.trim(),description:$('description').value})}
   function open(record) {

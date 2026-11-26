@@ -88,3 +88,17 @@ globalThis.evolving=evolving
 `,context);
 for(const patch of ["progression:[{level:1,powerMin:1,powerMax:2,intensity:1}]","progression:[{level:5,powerMin:1,powerMax:2,intensity:1},{level:5,powerMin:2,powerMax:3,intensity:2}]","announcement:{mode:'execute',text:'evil'}","announcement:{mode:'custom',text:'x'.repeat(1001)}"]){assert.throws(()=>vm.runInContext(`createCampaignAbilities([{...ability,${patch}}])`,context));}
 for(const level of [0,-1,1.5,1001,NaN]){context.invalidLevel=level;assert.throws(()=>vm.runInContext('resolveCampaignAbilityLevel(evolving,invalidLevel)',context));}
+vm.runInContext(fs.readFileSync('src/interface/editor/ability-sequence.js','utf8'),context);
+vm.runInContext(`
+const sequence=draftSequenceModel('dark'),sequenceOriginal=JSON.stringify(sequence)
+sequence.preparation.images=[{image:'data:image/png;base64,iVBORw0KGgoAAA==',motion:'left',position:'actor'}]
+const animated={...ability,kind:'special',visual:{...ability.visual,sequence}}
+const withSequence=setDraftAbility(neutral,'new-hero',animated),sequencePacket=exportCampaignDraft(withSequence)
+if(JSON.stringify(importCampaignDraft(sequencePacket))!==JSON.stringify(withSequence)||JSON.parse(sequencePacket).media!=='references-and-images')throw Error('Séquence perdue dans un échange')
+if(resolveCampaignAbilityLevel({...animated,...{progression:[{level:5,powerMin:8,powerMax:12,intensity:3}]}},5).visual.sequence.launch.effect!=='beam')throw Error('Progression efface la séquence')
+globalThis.sequence=sequence
+`,context);
+assert.throws(()=>vm.runInContext('createCampaignAbilitySequence(sequence,"normal")',context),/Image/);
+for(const patch of ["duration:0","effect:'javascript'","size:500","images:[{image:'https://bad/image.png',motion:'fade',position:'center'}]","flash:'yes'","direction:'sideways'"]){assert.throws(()=>vm.runInContext(`createCampaignAbilitySequence({...sequence,impact:{...sequence.impact,${patch}}},'special')`,context));}
+assert.throws(()=>vm.runInContext("createCampaignAbilitySequence({...sequence,order:['impact','impact','launch']},'special')",context),/Ordre/);
+vm.runInContext(`for(const model of ['physical','magic','summon','dark','healing'])createCampaignAbilitySequence(draftSequenceModel(model),'normal');const reordered=createCampaignAbilitySequence({...sequence,order:['impact','preparation','launch']},'special');if(reordered.order[0]!=='impact')throw Error('Ordre perdu')`,context);

@@ -14,6 +14,8 @@ function removeDraftAbility(definition,heroId,id) {
 function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id)
   const progression=createDraftAbilityProgression()
+  const sequenceEditor=createDraftSequenceEditor()
+  const sequencePlayer=createDraftSequencePlayer($('abilityStage'),$('abilityFx'),text=>{$('abilityPhaseStatus').textContent=text})
   let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
   for(const [value,label] of Object.entries(DRAFT_ABILITY_VISUALS)){const option=document.createElement('option');option.value=value;option.textContent=label;$('abilityPreset').append(option)}
   function picture(){$('abilityImagePreview').hidden=!image;if(image)$('abilityImagePreview').src=image;else $('abilityImagePreview').removeAttribute('src');$('abilityImageRemove').disabled=!image}
@@ -23,6 +25,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     if(pending)throw Error('Attendez la fin de la préparation de l’image.')
     const value={id:selected || 'ability-'+crypto.randomUUID(),kind:$('abilityKind').value,name:$('abilityName').value.trim(),description:$('abilityDescription').value,type:$('abilityType').value,dice:Number($('abilityDice').value),stat:$('abilityStat').value,target:$('abilityTarget').value,effect:{kind:$('abilityEffect').value,value:$('abilityEffectValue').valueAsNumber,turns:$('abilityEffectTurns').valueAsNumber},visual:{preset:$('abilityPreset').value,color:$('abilityColor').value,intensity:Number($('abilityIntensity').value),...($('abilityKind').value==='special'&&image?{image}:{})}}
     for(const key of ['powerMin','powerMax','cooldown','uses'])value[key]=$('ability-'+key).valueAsNumber
+    const sequence=sequenceEditor.read();if(sequence)value.visual.sequence=sequence
     return createCampaignAbilities([{...value,...progression.read()}])[0]
   }
   function render() {
@@ -44,28 +47,33 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     selected=ability?.id || null;generation++;pending=0;image=ability?.visual.image || null;picture();$('abilityImageFile').value=''
     $('abilityKind').value=ability?.kind || newKind;kind();$('abilityName').value=ability?.name || '';$('abilityDescription').value=ability?.description || '';$('abilityType').value=ability?.type || 'damage';$('abilityDice').value=ability?.dice || 6;$('abilityStat').value=ability?.stat || 'force';$('abilityTarget').value=ability?.target || 'enemy'
     for(const [key,value] of Object.entries({powerMin:4,powerMax:8,cooldown:0,uses:0}))$('ability-'+key).value=ability?.[key] ?? value
-    $('abilityEffect').value=ability?.effect.kind || 'none';$('abilityEffectValue').value=ability?.effect.value ?? 0;$('abilityEffectTurns').value=ability?.effect.turns ?? 1;$('abilityPreset').value=ability?.visual.preset || 'slash';$('abilityColor').value=ability?.visual.color || '#d8b477';$('abilityIntensity').value=ability?.visual.intensity || 2;$('abilityError').textContent='';$('abilityRemove').hidden=!ability;$('abilityDialog').showModal();$('abilityName').focus()
+    $('abilityEffect').value=ability?.effect.kind || 'none';$('abilityEffectValue').value=ability?.effect.value ?? 0;$('abilityEffectTurns').value=ability?.effect.turns ?? 1;$('abilityPreset').value=ability?.visual.preset || 'slash';$('abilityColor').value=ability?.visual.color || '#d8b477';$('abilityIntensity').value=ability?.visual.intensity || 2;sequenceEditor.open(ability);$('abilityError').textContent='';$('abilityRemove').hidden=!ability;$('abilityDialog').showModal();$('abilityName').focus()
   }
   function preview(ability) {
     resolveCampaignAbilityLevel(ability,$('abilityTestLevel').valueAsNumber)
     previewAbility=ability;$('abilityPreviewLevel').value=$('abilityTestLevel').value
     $('abilityPreviewTitle').textContent=ability.name;$('abilityPreviewActor').textContent=getDefinition().characters.find(c=>c.id===heroId).name
     $('abilityPreviewTarget').textContent=ability.target==='self'?'Soi-même':['ally','allAllies'].includes(ability.target)?'Allié':'Cible'
-    const backdrop=getDefinition().locations?.find(p=>p.background)?.background
-    $('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')
+    $('abilityPreviewScene').replaceChildren();const neutral=document.createElement('option');neutral.value='';neutral.textContent='Décor neutre';$('abilityPreviewScene').append(neutral)
+    for(const place of getDefinition().locations || [])if(place.background){const option=document.createElement('option');option.value=place.id;option.textContent=place.name;$('abilityPreviewScene').append(option)}
+    $('abilityPreviewScene').selectedIndex=$('abilityPreviewScene').options.length>1?1:0;setBackdrop();$('abilityPreviewPart').value='all'
     $('abilityPreview').showModal();replay();$('abilityReplay').onclick=replay;$('abilityPreviewClose').focus({preventScroll:true});$('abilityPreview').scrollTop=0
   }
   function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
   $('abilityPreviewLevel').addEventListener('change',replay)
+  function setBackdrop(){const backdrop=getDefinition().locations?.find(p=>p.id===$('abilityPreviewScene').value)?.background;$('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')}
+  $('abilityPreviewScene').addEventListener('change',setBackdrop)
+  $('abilityPreviewPart').addEventListener('change',replay)
   function play(ability) {
-    clearTimeout(previewTimer);const stage=$('abilityStage'),effects=$('abilityFx');effects.replaceChildren();stage.className='ability-stage';stage.style.setProperty('--ability-color',ability.visual.color)
+    clearTimeout(previewTimer);sequencePlayer.cancel();if(ability.visual.sequence){sequencePlayer.play(ability,$('abilityPreviewPart').value);return}
+    $('abilityPhaseStatus').textContent='Animation simple';const stage=$('abilityStage'),effects=$('abilityFx');effects.replaceChildren();stage.className='ability-stage';stage.style.setProperty('--ability-color',ability.visual.color)
     void stage.offsetWidth;stage.classList.add('playing','intensity-'+ability.visual.intensity,'preset-'+ability.visual.preset)
     const count=ability.visual.preset==='swarm'?18:ability.visual.preset==='frost'?9:1
     for(let i=0;i<count;i++){const spark=document.createElement('span');spark.className='ability-spark';spark.style.setProperty('--particle',String(i));effects.append(spark)}
     if(ability.visual.image){const artwork=document.createElement('img');artwork.src=ability.visual.image;artwork.alt='Illustration de la capacité';artwork.className='ability-artwork';effects.append(artwork)}
     previewTimer=setTimeout(()=>{stage.className='ability-stage';effects.replaceChildren()},2400)
   }
-  $('abilityPreview').addEventListener('close',()=>{clearTimeout(previewTimer);$('abilityFx').replaceChildren();$('abilityStage').className='ability-stage';$('abilityReplay').onclick=null;previewAbility=null;$('abilityAnnouncement').textContent='';$('abilityPreviewError').textContent=''})
+  $('abilityPreview').addEventListener('close',()=>{clearTimeout(previewTimer);sequencePlayer.cancel();$('abilityFx').replaceChildren();$('abilityStage').className='ability-stage';$('abilityReplay').onclick=null;previewAbility=null;$('abilityAnnouncement').textContent='';$('abilityPreviewError').textContent=''})
   $('abilityPreviewClose').addEventListener('click',()=>$('abilityPreview').close())
   $('abilityTest').addEventListener('click',()=>{try{preview(read())}catch(e){$('abilityError').textContent=e.message}})
   $('addNormalAbility').addEventListener('click',()=>edit(null,'normal'));$('addSpecialAbility').addEventListener('click',()=>edit(null,'special'))

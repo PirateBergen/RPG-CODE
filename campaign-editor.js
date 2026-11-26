@@ -252,6 +252,72 @@ function createDraftAbilityProgression() {
     read(){return {announcement:{mode:$('abilityAnnouncementMode').value,text:$('abilityAnnouncementText').value},progression:[...$('abilityTiers').children].map(row=>Object.fromEntries([...row.querySelectorAll('[data-tier-field]')].map(input=>[input.dataset.tierField,input.type==='number'?input.valueAsNumber:Number(input.value)])))}}
   }
 }
+const DRAFT_SEQUENCE_LABELS={none:'Aucun effet',slash:'Entaille',projectile:'Projectile',fire:'Flammes',frost:'Givre',lightning:'Éclair',heal:'Halo de soin',shield:'Bouclier',smoke:'Brume',swarm:'Nuée',beam:'Rayon',wave:'Vague',explosion:'Explosion',mark:'Marque au sol'}
+function draftSequenceModel(model,color='#d8b477') {
+  const phase=(effect,duration,extra={})=>({enabled:true,effect,duration,color,size:100,direction:'forward',darken:false,shake:false,flash:false,images:[],...extra})
+  const models={physical:[phase('none',600),phase('slash',700),phase('explosion',600,{shake:true})],magic:[phase('swarm',1000),phase('projectile',900),phase('wave',700)],summon:[phase('smoke',1200,{darken:true}),phase('mark',1200),phase('wave',800)],dark:[phase('smoke',1400,{darken:true}),phase('beam',1000),phase('explosion',900,{shake:true,darken:true})],healing:[phase('swarm',800),phase('heal',1200),phase('shield',800)]}
+  return Object.fromEntries(Object.keys(CAMPAIGN_SEQUENCE_PHASES).map((key,i)=>[key,(models[model] || models.magic)[i]]))
+}
+function createDraftSequenceEditor() {
+  const $=id=>document.getElementById(id)
+  let generation=0,pending=0
+  const controls={}
+  function select(label,options,value){const wrap=document.createElement('label'),input=document.createElement('select');wrap.textContent=label;for(const [key,text]of Object.entries(options)){const option=document.createElement('option');option.value=key;option.textContent=text;input.append(option)}input.value=value;wrap.append(input);return {wrap,input}}
+  function imageRow(parent,item) {
+    const row=document.createElement('fieldset'),legend=document.createElement('legend'),image=document.createElement('img');legend.textContent='Image de l’étape';image.src=item.image;image.alt='Élément de l’animation';image.className='sequence-editor-image'
+    const motion=select('Apparition / déplacement',{fade:'Fondu',left:'Depuis la gauche',right:'Depuis la droite',rise:'Depuis le bas'},item.motion),position=select('Position',{actor:'Côté personnage',center:'Centre',target:'Côté cible'},item.position)
+    row.sequenceData={image:item.image,motion:motion.input,position:position.input}
+    const remove=document.createElement('button');remove.type='button';remove.textContent='Retirer cet élément';remove.addEventListener('click',()=>row.remove());row.append(legend,image,motion.wrap,position.wrap,remove);parent.append(row)
+  }
+  for(const [key,title]of Object.entries(CAMPAIGN_SEQUENCE_PHASES)) {
+    const details=document.createElement('details'),summary=document.createElement('summary'),body=document.createElement('div');summary.textContent=title;details.append(summary,body);$('sequenceSteps').append(details)
+    const fields={}
+    for(const [name,label]of Object.entries({enabled:'Activer cette étape',darken:'Assombrir le décor',shake:'Tremblement à l’impact',flash:'Flash unique doux'})){
+      const wrap=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.dataset.sequenceField=name;wrap.className='sequence-checkbox';wrap.append(input,document.createTextNode(label));body.append(wrap);fields[name]=input
+    }
+    const effect=select('Effet',DRAFT_SEQUENCE_LABELS,'none'),direction=select('Direction',{forward:'Personnage vers cible',reverse:'Cible vers personnage'},'forward');body.append(effect.wrap,direction.wrap);fields.effect=effect.input;fields.direction=direction.input
+    for(const [name,label,type,min,max,step]of [['duration','Durée (secondes)','number',.2,8,.1],['size','Taille de l’effet (%)','number',25,200,1],['color','Couleur','color']]){
+      const wrap=document.createElement('label'),input=document.createElement('input');wrap.textContent=label;input.type=type;input.dataset.sequenceField=name;if(type==='number'){input.min=min;input.max=max;input.step=step}wrap.append(input);body.append(wrap);fields[name]=input
+    }
+    const imagePanel=document.createElement('details'),heading=document.createElement('summary'),list=document.createElement('div'),fileLabel=document.createElement('label'),file=document.createElement('input'),hint=document.createElement('p');heading.textContent='Images de cette étape';imagePanel.className='sequence-images';fileLabel.textContent='Ajouter une image transparente';file.type='file';file.accept='image/png,image/jpeg,image/webp';fileLabel.append(file);hint.className='hint';hint.textContent='Jusqu’à trois éléments par étape, 10 Mo par fichier. Les images sont réduites et leur transparence conservée.';imagePanel.append(heading,list,fileLabel,hint);body.append(imagePanel);fields.images=list
+    file.addEventListener('change',async()=>{const imageFile=file.files[0],token=generation;file.value='';if(!imageFile)return;if(list.children.length>=3){$('abilityError').textContent='Trois images maximum par étape.';return}pending++;$('abilityError').textContent='Préparation de l’image…';try{const image=await readDraftImage(imageFile,{maxSide:1200,maxLength:600000,preserveTransparency:true});if(token===generation&&list.children.length<3){imageRow(list,{image,motion:'fade',position:'center'});$('abilityError').textContent=''}}catch(e){if(token===generation)$('abilityError').textContent=e.message || 'Image illisible'}finally{if(token===generation)pending--}})
+    controls[key]=fields
+  }
+  function fill(sequence) {
+    generation++;pending=0
+    $('sequenceOrder').value=sequence.order?.join(',') || 'preparation,launch,impact'
+    for(const [key,fields]of Object.entries(controls)){const phase=sequence[key];for(const [name,input]of Object.entries(fields)){if(name==='images'){input.replaceChildren();phase.images.forEach(item=>imageRow(input,item))}else if(input.type==='checkbox')input.checked=phase[name];else input.value=name==='duration'?phase.duration/1000:phase[name]}}
+  }
+  function kind(){for(const panel of $('sequenceSteps').querySelectorAll('.sequence-images'))panel.hidden=$('abilityKind').value!=='special'}
+  $('abilityKind').addEventListener('change',kind)
+  $('sequenceEnabled').addEventListener('change',()=>{$('sequenceAdvanced').hidden=!$('sequenceEnabled').checked})
+  $('sequenceApplyModel').addEventListener('click',()=>{fill(draftSequenceModel($('sequenceModel').value,$('abilityColor').value));$('sequenceEnabled').checked=true;$('sequenceAdvanced').hidden=false;kind()})
+  return {
+    open(ability){$('sequenceEnabled').checked=!!ability?.visual.sequence;$('sequenceAdvanced').hidden=!$('sequenceEnabled').checked;fill(ability?.visual.sequence || draftSequenceModel('magic',$('abilityColor').value));kind()},
+    read(){if(pending)throw Error('Attendez la fin de la préparation des images d’étapes.');if(!$('sequenceEnabled').checked)return undefined;return {...Object.fromEntries(Object.entries(controls).map(([key,fields])=>[key,Object.fromEntries(Object.entries(fields).map(([name,input])=>[name,name==='images'?($('abilityKind').value==='special'?[...input.children].map(row=>({image:row.sequenceData.image,motion:row.sequenceData.motion.value,position:row.sequenceData.position.value})):[]):input.type==='checkbox'?input.checked:input.type==='number'?(name==='duration'?Math.round(input.valueAsNumber*1000):input.valueAsNumber):input.value]))])),order:$('sequenceOrder').value.split(',')}}
+  }
+}
+function createDraftSequencePlayer(stage,effects,onPhase) {
+  let timers=[],generation=0
+  function cancel(){generation++;timers.forEach(clearTimeout);timers=[];effects.replaceChildren();stage.className='ability-stage';onPhase('')}
+  function later(fn,time,token){timers.push(setTimeout(()=>{if(token===generation)fn()},time))}
+  function play(ability,only='all') {
+    cancel();const token=generation,phases=(ability.visual.sequence.order || Object.keys(CAMPAIGN_SEQUENCE_PHASES)).map(key=>[key,ability.visual.sequence[key]]).filter(([key,phase])=>phase.enabled&&(only==='all'||key===only));let delay=0
+    const show=(key,p)=>{
+      effects.replaceChildren();stage.className='ability-stage';stage.style.setProperty('--ability-color',p.color);void stage.offsetWidth;stage.classList.add('composed','playing','intensity-'+ability.visual.intensity,'preset-'+p.effect);if(p.shake)stage.classList.add('sequence-shake');onPhase(CAMPAIGN_SEQUENCE_PHASES[key])
+      if(p.darken){const dark=document.createElement('div');dark.className='sequence-dark';effects.append(dark)}
+      if(p.flash){const flash=document.createElement('div');flash.className='sequence-flash';effects.append(flash)}
+      const particles=document.createElement('div');particles.className='sequence-particles';particles.style.transform=`scale(${(p.direction==='reverse'?-1:1)*p.size/100},${p.size/100})`;effects.append(particles)
+      if(p.effect!=='none')for(let i=0;i<(p.effect==='swarm'?18:p.effect==='frost'?9:1);i++){const spark=document.createElement('span');spark.className='ability-spark';spark.style.setProperty('--particle',String(i));spark.style.animationDuration=p.duration+'ms';particles.append(spark)}
+      const images=p.images.length?p.images:key==='launch'&&ability.visual.image?[{image:ability.visual.image,motion:'fade',position:'center'}]:[]
+      for(const item of images){const image=document.createElement('img');image.src=item.image;image.alt='Élément de la spéciale';image.className='sequence-artwork motion-'+item.motion;image.style.left={actor:'5%',center:'30%',target:'55%'}[item.position];image.style.width=40*p.size/100+'%';image.style.animationDuration=p.duration+'ms';effects.append(image)}
+    }
+    for(const [key,phase]of phases){if(!delay)show(key,phase);else later(()=>show(key,phase),delay,token);delay+=phase.duration}
+    if(!phases.length)onPhase('Aucune étape activée')
+    else later(()=>{effects.replaceChildren();stage.className='ability-stage';onPhase('Animation terminée')},delay,token)
+  }
+  return {play,cancel}
+}
 const DRAFT_ABILITY_VISUALS={slash:'Entaille',projectile:'Projectile magique',fire:'Flammes',frost:'Givre',lightning:'Éclair',heal:'Halo de soin',shield:'Bouclier',smoke:'Brume sombre',swarm:'Nuée de particules'}
 function setDraftAbility(definition,heroId,ability) {
   if(!definition.characters.some(c=>c.id===heroId))throw Error('Personnage introuvable')
@@ -268,6 +334,8 @@ function removeDraftAbility(definition,heroId,id) {
 function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id)
   const progression=createDraftAbilityProgression()
+  const sequenceEditor=createDraftSequenceEditor()
+  const sequencePlayer=createDraftSequencePlayer($('abilityStage'),$('abilityFx'),text=>{$('abilityPhaseStatus').textContent=text})
   let heroId=null,selected=null,image=null,generation=0,sequence=0,pending=0,previewTimer=null,previewAbility=null
   for(const [value,label] of Object.entries(DRAFT_ABILITY_VISUALS)){const option=document.createElement('option');option.value=value;option.textContent=label;$('abilityPreset').append(option)}
   function picture(){$('abilityImagePreview').hidden=!image;if(image)$('abilityImagePreview').src=image;else $('abilityImagePreview').removeAttribute('src');$('abilityImageRemove').disabled=!image}
@@ -277,6 +345,7 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     if(pending)throw Error('Attendez la fin de la préparation de l’image.')
     const value={id:selected || 'ability-'+crypto.randomUUID(),kind:$('abilityKind').value,name:$('abilityName').value.trim(),description:$('abilityDescription').value,type:$('abilityType').value,dice:Number($('abilityDice').value),stat:$('abilityStat').value,target:$('abilityTarget').value,effect:{kind:$('abilityEffect').value,value:$('abilityEffectValue').valueAsNumber,turns:$('abilityEffectTurns').valueAsNumber},visual:{preset:$('abilityPreset').value,color:$('abilityColor').value,intensity:Number($('abilityIntensity').value),...($('abilityKind').value==='special'&&image?{image}:{})}}
     for(const key of ['powerMin','powerMax','cooldown','uses'])value[key]=$('ability-'+key).valueAsNumber
+    const sequence=sequenceEditor.read();if(sequence)value.visual.sequence=sequence
     return createCampaignAbilities([{...value,...progression.read()}])[0]
   }
   function render() {
@@ -298,28 +367,33 @@ function createDraftAbilityPanel({getDefinition,replaceDefinition,changed,messag
     selected=ability?.id || null;generation++;pending=0;image=ability?.visual.image || null;picture();$('abilityImageFile').value=''
     $('abilityKind').value=ability?.kind || newKind;kind();$('abilityName').value=ability?.name || '';$('abilityDescription').value=ability?.description || '';$('abilityType').value=ability?.type || 'damage';$('abilityDice').value=ability?.dice || 6;$('abilityStat').value=ability?.stat || 'force';$('abilityTarget').value=ability?.target || 'enemy'
     for(const [key,value] of Object.entries({powerMin:4,powerMax:8,cooldown:0,uses:0}))$('ability-'+key).value=ability?.[key] ?? value
-    $('abilityEffect').value=ability?.effect.kind || 'none';$('abilityEffectValue').value=ability?.effect.value ?? 0;$('abilityEffectTurns').value=ability?.effect.turns ?? 1;$('abilityPreset').value=ability?.visual.preset || 'slash';$('abilityColor').value=ability?.visual.color || '#d8b477';$('abilityIntensity').value=ability?.visual.intensity || 2;$('abilityError').textContent='';$('abilityRemove').hidden=!ability;$('abilityDialog').showModal();$('abilityName').focus()
+    $('abilityEffect').value=ability?.effect.kind || 'none';$('abilityEffectValue').value=ability?.effect.value ?? 0;$('abilityEffectTurns').value=ability?.effect.turns ?? 1;$('abilityPreset').value=ability?.visual.preset || 'slash';$('abilityColor').value=ability?.visual.color || '#d8b477';$('abilityIntensity').value=ability?.visual.intensity || 2;sequenceEditor.open(ability);$('abilityError').textContent='';$('abilityRemove').hidden=!ability;$('abilityDialog').showModal();$('abilityName').focus()
   }
   function preview(ability) {
     resolveCampaignAbilityLevel(ability,$('abilityTestLevel').valueAsNumber)
     previewAbility=ability;$('abilityPreviewLevel').value=$('abilityTestLevel').value
     $('abilityPreviewTitle').textContent=ability.name;$('abilityPreviewActor').textContent=getDefinition().characters.find(c=>c.id===heroId).name
     $('abilityPreviewTarget').textContent=ability.target==='self'?'Soi-même':['ally','allAllies'].includes(ability.target)?'Allié':'Cible'
-    const backdrop=getDefinition().locations?.find(p=>p.background)?.background
-    $('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')
+    $('abilityPreviewScene').replaceChildren();const neutral=document.createElement('option');neutral.value='';neutral.textContent='Décor neutre';$('abilityPreviewScene').append(neutral)
+    for(const place of getDefinition().locations || [])if(place.background){const option=document.createElement('option');option.value=place.id;option.textContent=place.name;$('abilityPreviewScene').append(option)}
+    $('abilityPreviewScene').selectedIndex=$('abilityPreviewScene').options.length>1?1:0;setBackdrop();$('abilityPreviewPart').value='all'
     $('abilityPreview').showModal();replay();$('abilityReplay').onclick=replay;$('abilityPreviewClose').focus({preventScroll:true});$('abilityPreview').scrollTop=0
   }
   function replay(){try{const level=$('abilityPreviewLevel').valueAsNumber,ability=resolveCampaignAbilityLevel(previewAbility,level),hero=getDefinition().characters.find(c=>c.id===heroId);$('abilityPreviewError').textContent='';$('abilityAnnouncement').textContent=campaignAbilityAnnouncement(ability,hero.name);$('abilityAnnouncement').hidden=!$('abilityAnnouncement').textContent;$('abilityLevelSummary').textContent=`Niveau ${level} · Puissance ${ability.powerMin}–${ability.powerMax} · intensité ${ability.visual.intensity}/3 · hors bonus de statistiques` ;play(ability)}catch(error){$('abilityPreviewError').textContent=error.message}}
   $('abilityPreviewLevel').addEventListener('change',replay)
+  function setBackdrop(){const backdrop=getDefinition().locations?.find(p=>p.id===$('abilityPreviewScene').value)?.background;$('abilityPreviewBackdrop').hidden=!backdrop;if(backdrop)$('abilityPreviewBackdrop').src=backdrop;else $('abilityPreviewBackdrop').removeAttribute('src')}
+  $('abilityPreviewScene').addEventListener('change',setBackdrop)
+  $('abilityPreviewPart').addEventListener('change',replay)
   function play(ability) {
-    clearTimeout(previewTimer);const stage=$('abilityStage'),effects=$('abilityFx');effects.replaceChildren();stage.className='ability-stage';stage.style.setProperty('--ability-color',ability.visual.color)
+    clearTimeout(previewTimer);sequencePlayer.cancel();if(ability.visual.sequence){sequencePlayer.play(ability,$('abilityPreviewPart').value);return}
+    $('abilityPhaseStatus').textContent='Animation simple';const stage=$('abilityStage'),effects=$('abilityFx');effects.replaceChildren();stage.className='ability-stage';stage.style.setProperty('--ability-color',ability.visual.color)
     void stage.offsetWidth;stage.classList.add('playing','intensity-'+ability.visual.intensity,'preset-'+ability.visual.preset)
     const count=ability.visual.preset==='swarm'?18:ability.visual.preset==='frost'?9:1
     for(let i=0;i<count;i++){const spark=document.createElement('span');spark.className='ability-spark';spark.style.setProperty('--particle',String(i));effects.append(spark)}
     if(ability.visual.image){const artwork=document.createElement('img');artwork.src=ability.visual.image;artwork.alt='Illustration de la capacité';artwork.className='ability-artwork';effects.append(artwork)}
     previewTimer=setTimeout(()=>{stage.className='ability-stage';effects.replaceChildren()},2400)
   }
-  $('abilityPreview').addEventListener('close',()=>{clearTimeout(previewTimer);$('abilityFx').replaceChildren();$('abilityStage').className='ability-stage';$('abilityReplay').onclick=null;previewAbility=null;$('abilityAnnouncement').textContent='';$('abilityPreviewError').textContent=''})
+  $('abilityPreview').addEventListener('close',()=>{clearTimeout(previewTimer);sequencePlayer.cancel();$('abilityFx').replaceChildren();$('abilityStage').className='ability-stage';$('abilityReplay').onclick=null;previewAbility=null;$('abilityAnnouncement').textContent='';$('abilityPreviewError').textContent=''})
   $('abilityPreviewClose').addEventListener('click',()=>$('abilityPreview').close())
   $('abilityTest').addEventListener('click',()=>{try{preview(read())}catch(e){$('abilityError').textContent=e.message}})
   $('addNormalAbility').addEventListener('click',()=>edit(null,'normal'));$('addSpecialAbility').addEventListener('click',()=>edit(null,'special'))

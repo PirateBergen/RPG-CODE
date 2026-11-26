@@ -29,7 +29,7 @@ function createCampaignAbilities(input) {
         return {level:tier.level,powerMin:tier.powerMin,powerMax:tier.powerMax,intensity:tier.intensity}
       }).sort((a,b)=>a.level-b.level)
     }
-    return {id:a.id,kind:a.kind,name:a.name,description:a.description,type:a.type,dice:a.dice,stat:a.stat,target:a.target,powerMin:a.powerMin,powerMax:a.powerMax,cooldown:a.cooldown,uses:a.uses,effect:{kind:e.kind,value:e.value,turns:e.turns},visual:{preset:v.preset,color:v.color,intensity:v.intensity,...(v.image?{image:v.image}:{})},...extra}
+    return {id:a.id,kind:a.kind,name:a.name,description:a.description,type:a.type,dice:a.dice,stat:a.stat,target:a.target,powerMin:a.powerMin,powerMax:a.powerMax,cooldown:a.cooldown,uses:a.uses,effect:{kind:e.kind,value:e.value,turns:e.turns},visual:{preset:v.preset,color:v.color,intensity:v.intensity,...(v.image?{image:v.image}:{}),...(v.sequence!==undefined?{sequence:createCampaignAbilitySequence(v.sequence,a.kind)}:{})},...extra}
   })
 }
 function resolveCampaignAbilityLevel(ability,level) {

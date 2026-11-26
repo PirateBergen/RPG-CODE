@@ -69,3 +69,13 @@ function createCampaignAllies(input) {
   }
   return result
 }
+function createCampaignStory(input, characters) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Événements de campagne invalides")
+  const result=copyCampaignContent(input), ids=new Set(characters.map(character => character.id))
+  if (!Array.isArray(result.introduction) || result.introduction.some(line => !line || typeof line.text !== "string" || !isCampaignAssetPath(line.portrait,["png","jpg","jpeg","svg","webp"]))) throw Error("Introduction invalide")
+  if (!Array.isArray(result.curseChoices) || result.curseChoices.some(choice => !choice || !campaignContentText(choice.label))) throw Error("Choix de malédiction invalides")
+  for (const key of ["odinVisions", "runeDialogues"]) if (!Array.isArray(result[key]) || result[key].some(text => typeof text !== "string")) throw Error("Textes narratifs invalides")
+  const cemetery=result.cemetery
+  if (!cemetery || !Array.isArray(cemetery.players) || new Set(cemetery.players).size !== cemetery.players.length || cemetery.players.some(id => !ids.has(id)) || !Number.isInteger(cemetery.maxTries) || cemetery.maxTries < 0) throw Error("Paramètres du cimetière invalides")
+  return Object.freeze(result)
+}

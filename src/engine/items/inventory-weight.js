@@ -21,6 +21,3 @@ function parseInventoryWeight(text) {
   })
   return { total:Math.round(total * 1000) / 1000, warnings, entries }
 }
-
-mobSpecialAttacks["ju pion"]={name:"Rappel tonitruant",icon:"🎭",dmgMin:10,dmgMax:16,effect:"all",animation:"arcane",flavor:"Pika conclut son spectacle par un accord magique qui frappe tout le groupe. Une seule fois par combat."};
-

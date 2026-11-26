@@ -118,6 +118,29 @@ function createCampaignAllies(input) {
   }
   return result
 }
+function createCampaignStory(input, characters) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Événements de campagne invalides")
+  const result=copyCampaignContent(input), ids=new Set(characters.map(character => character.id))
+  if (!Array.isArray(result.introduction) || result.introduction.some(line => !line || typeof line.text !== "string" || !isCampaignAssetPath(line.portrait,["png","jpg","jpeg","svg","webp"]))) throw Error("Introduction invalide")
+  if (!Array.isArray(result.curseChoices) || result.curseChoices.some(choice => !choice || !campaignContentText(choice.label))) throw Error("Choix de malédiction invalides")
+  for (const key of ["odinVisions", "runeDialogues"]) if (!Array.isArray(result[key]) || result[key].some(text => typeof text !== "string")) throw Error("Textes narratifs invalides")
+  const cemetery=result.cemetery
+  if (!cemetery || !Array.isArray(cemetery.players) || new Set(cemetery.players).size !== cemetery.players.length || cemetery.players.some(id => !ids.has(id)) || !Number.isInteger(cemetery.maxTries) || cemetery.maxTries < 0) throw Error("Paramètres du cimetière invalides")
+  return Object.freeze(result)
+}
+// Trusted code adapters are separate from serializable, editable campaign content.
+function createCampaignRuleSet(campaignId, handlers = {}) {
+  if (typeof campaignId !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(campaignId) || !handlers || typeof handlers !== "object" || Array.isArray(handlers)) throw Error("Règles de campagne invalides")
+  for (const [name, handler] of Object.entries(handlers)) if (!["maxHp", "equipmentState", "equipmentModifiers"].includes(name) || typeof handler !== "function") throw Error("Branchement de campagne invalide")
+  return Object.freeze({campaignId, handlers:Object.freeze({...handlers})})
+}
+function applyCampaignRule(name, args, fallback, rules = ACTIVE_CAMPAIGN_RULES, campaign = ACTIVE_CAMPAIGN) {
+  if (rules.campaignId !== campaign.id || campaign.ruleSet && campaign.ruleSet !== rules.campaignId) throw Error("Les règles ne correspondent pas à la campagne")
+  const handler=Object.prototype.hasOwnProperty.call(rules.handlers,name)?rules.handlers[name]:null
+  if (!handler) return fallback
+  const value=handler(...args)
+  return value === undefined ? fallback : value
+}
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
@@ -136,7 +159,8 @@ function createCampaignDefinition(input) {
   const heroes = new Set(characters.filter(character => character.kind === "hero").map(character => character.id))
   if (!heroes.size) throw Error("La campagne doit définir un héros")
   for (const character of characters) if (character.kind === "companion" && !heroes.has(character.owner)) throw Error("Le compagnon doit appartenir à un héros de la campagne")
-  const content={...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
+  if(input.ruleSet!==undefined&&(typeof input.ruleSet!=="string"||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.ruleSet)))throw Error("Identifiant de règles invalide")
+  const content={...(input.story!==undefined?{story:createCampaignStory(input.story,characters)}:{}), ...(input.ruleSet!==undefined?{ruleSet:input.ruleSet}:{}),...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
   const catalogs={...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
   return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...catalogs, ...content, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
 }
@@ -1303,7 +1327,7 @@ const WANTED_MOBS = [
 /* MALÉDICTION               */
 /* ========================= */
 
-const curseWheelChoices = [
+const CAMPAIGN_CURSE_CHOICES = [
   { label:"-40% Vie",      icon:"💀", color:"#8b0000", description:"Votre vie est réduite de 40%" },
   { label:"Stat -4",       icon:"⬇",  color:"#4a0080", description:"Votre stat principale perd 4 points" },
   { label:"Critiques Only",icon:"⚔",  color:"#800040", description:"Au prochain combat, seuls les critiques comptent" },
@@ -1356,7 +1380,7 @@ const playerPowerSounds = {
 /* VISION ODIN               */
 /* ========================= */
 
-const ODIN_VISIONS = [
+const CAMPAIGN_ODIN_VISIONS = [
   "Odin vous voit. Son œil unique suit votre route depuis Asgard.",
   "Le Père de Tous vous accorde son soutien. Portez-le dignement.",
   "Vos noms sont gravés dans le bois d'Yggdrasil.",
@@ -1373,7 +1397,7 @@ const ODIN_VISIONS = [
 /* ÉVÉNEMENT RUNE PNJ        */
 /* ========================= */
 
-const runeEventDialogues = [
+const CAMPAIGN_RUNE_DIALOGUES = [
   "Ho, tant que j'y pense... j'ai trouvé ça, peut-être que ça peut vous être utile.",
   "Curieux... j'ai entendu dire que les anciens utilisaient ce symbole.",
   "Psst ! Gardez ça pour vous, mais j'ai vu cette marque gravée sur un vieux mur.",
@@ -1388,8 +1412,8 @@ const runeEventDialogues = [
 /* SORT CIMETIÈRE            */
 /* ========================= */
 
-const SPELL_PLAYERS   = ["greg","ju","elo"]
-const SPELL_MAX_TRIES = 3
+const CAMPAIGN_CEMETERY_PLAYERS = ["greg","ju","elo"]
+const CAMPAIGN_CEMETERY_MAX_TRIES = 3
 
 /* ========================= */
 /* MULTI-MOBS                */
@@ -1401,7 +1425,7 @@ const MOB_SLOTS = ["mob","mob2","mob3"]
 /* DIALOGUE INTRO            */
 /* ========================= */
 
-const dialogue = [
+const CAMPAIGN_INTRODUCTION = [
   { portrait:"tavernier.png", text:"Réveillez-vous étrangers !" },
   { portrait:"tavernier.png", text:"Vous êtes restés inconscients toute la nuit..." },
   { portrait:"serveuse.png",  text:"Bienvenue à Rivebois." }
@@ -1551,6 +1575,8 @@ const ACTIVE_CAMPAIGN = createCampaignDefinition({
   attacks:{heroes:CAMPAIGN_HERO_ATTACKS, heroSpecials:CAMPAIGN_HERO_SPECIALS, enemyTiers:CAMPAIGN_ENEMY_ATTACKS, enemyOverrides:CAMPAIGN_ENEMY_ATTACK_OVERRIDES, enemySpecials:CAMPAIGN_ENEMY_SPECIALS},
   items:{armory:CAMPAIGN_ARMORY_ITEMS, shop:CAMPAIGN_SHOP_ITEMS, categories:CAMPAIGN_ITEM_CATEGORIES},
   allies:CAMPAIGN_ALLIES,
+  ruleSet:"prophetie-des-mouches",
+  story:{introduction:CAMPAIGN_INTRODUCTION, curseChoices:CAMPAIGN_CURSE_CHOICES, odinVisions:CAMPAIGN_ODIN_VISIONS, runeDialogues:CAMPAIGN_RUNE_DIALOGUES, cemetery:{players:CAMPAIGN_CEMETERY_PLAYERS,maxTries:CAMPAIGN_CEMETERY_MAX_TRIES}},
   characters:[
     {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
     {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
@@ -1575,6 +1601,13 @@ const shopItemsArmurerie = ACTIVE_CAMPAIGN.items?.armory || []
 const shopItems = ACTIVE_CAMPAIGN.items?.shop || []
 const categoryLabels = ACTIVE_CAMPAIGN.items?.categories || {}
 const ALLY_PNJS = ACTIVE_CAMPAIGN.allies || []
+
+const dialogue = ACTIVE_CAMPAIGN.story?.introduction || []
+const curseWheelChoices = ACTIVE_CAMPAIGN.story?.curseChoices || []
+const ODIN_VISIONS = ACTIVE_CAMPAIGN.story?.odinVisions || []
+const runeEventDialogues = ACTIVE_CAMPAIGN.story?.runeDialogues || []
+const SPELL_PLAYERS = ACTIVE_CAMPAIGN.story?.cemetery?.players || []
+const SPELL_MAX_TRIES = ACTIVE_CAMPAIGN.story?.cemetery?.maxTries ?? 0
 function heroDisplayName(id) { const text=pikaDisplayText(String(id || "").trim());return text==="Pika"?text:text.toUpperCase() }
 function heroPortraitFile(id) { return ACTIVE_CAMPAIGN.characters.find(character => character.id === id)?.portrait || id + ".png" }
 function migratePikaCharacter(character) {
@@ -1625,9 +1658,7 @@ function parseInventoryWeight(text) {
   })
   return { total:Math.round(total * 1000) / 1000, warnings, entries }
 }
-
 mobSpecialAttacks["ju pion"]={name:"Rappel tonitruant",icon:"🎭",dmgMin:10,dmgMax:16,effect:"all",animation:"arcane",flavor:"Pika conclut son spectacle par un accord magique qui frappe tout le groupe. Une seule fois par combat."};
-
 const BALROG_SWORD_LINE="Épée mystérieuse aux inscriptions elfiques (15)"
 function balrogSwordBonus(level){const lvl=Math.max(1,Math.min(99,Number(level)||1));return {force:4+getEquipmentLevelBonus(lvl),defense:Math.min(3,1+Math.floor(lvl/10))}}
 function balrogSwordIsEquipped(root){return root.game?.balrogSword?.status==="claimed"&&root.game.balrogSword.holder==="greg"&&root.game.balrogSword.equipped===true&&String(root.characters?.greg?.inventaire||"").includes(BALROG_SWORD_LINE)}
@@ -1655,6 +1686,11 @@ function resolveBalrogSwordRequest(root,request){
  return {mode:"relic",message:payload.operation==="equip"?(data.equipped?"Épée équipée":"Épée déséquipée"):"L’épée rejoint l’inventaire de "+heroDisplayName(data.holder)}
 }
 
+
+function applyBalrogSwordEquipment(playerId,data,sword,mods){
+ if(playerId==="greg"&&Object.prototype.hasOwnProperty.call(data,"inventaire")&&sword?.status==="claimed"&&sword.holder==="greg"&&sword.equipped&&String(data.inventaire).includes(BALROG_SWORD_LINE)){const bonus=balrogSwordBonus(data.lvl);mods.force+=bonus.force;mods.defense+=bonus.defense}
+ return mods
+}
 const SPECIAL_DAMAGE_MULTIPLIER=1.35
 function getMobDamageRange(attack,lvl,tier="weak",data=null){if(data?.balanceVersion===3)return getCalibratedMobDamageRange(attack,data);const range=getMobBaseDamageRange(attack,lvl,tier,data);return attack?.special?{min:Math.round(range.min*SPECIAL_DAMAGE_MULTIPLIER),max:Math.round(range.max*SPECIAL_DAMAGE_MULTIPLIER)}:range}
 function helAdjustedMaxHP(id,data,base){
@@ -1745,3 +1781,8 @@ function kingNormalAttacks(mob){return getMobAttacksForMob("roi","boss")}
 function kingSpecialUsed(mob){return !!mob.king?.specialsUsed?.[mob.chargingSpecial?.kingStage||kingStage(mob)]}
 function kingDamageFactor(attack,mob){return isKingEncounter(mob)?1.35*(attack.special?[0,2.1,1.35,1,3.2,4.5][attack.kingStage||kingStage(mob)]:1):1}
 function kingOdinAvailable(mob){return isKingEncounter(mob)&&mob.hp>0&&kingStage(mob)===5&&kingAuroraCount(mob)===3&&!mob.king.odinInvoked&&mob.chargingSpecial?.kingStage===5}
+const ACTIVE_CAMPAIGN_RULES = createCampaignRuleSet("prophetie-des-mouches", {
+  maxHp:helAdjustedMaxHP,
+  equipmentState:()=>window.__balrogSword,
+  equipmentModifiers:applyBalrogSwordEquipment
+})

@@ -15,3 +15,10 @@ const shopItemsArmurerie = ACTIVE_CAMPAIGN.items?.armory || []
 const shopItems = ACTIVE_CAMPAIGN.items?.shop || []
 const categoryLabels = ACTIVE_CAMPAIGN.items?.categories || {}
 const ALLY_PNJS = ACTIVE_CAMPAIGN.allies || []
+
+const dialogue = ACTIVE_CAMPAIGN.story?.introduction || []
+const curseWheelChoices = ACTIVE_CAMPAIGN.story?.curseChoices || []
+const ODIN_VISIONS = ACTIVE_CAMPAIGN.story?.odinVisions || []
+const runeEventDialogues = ACTIVE_CAMPAIGN.story?.runeDialogues || []
+const SPELL_PLAYERS = ACTIVE_CAMPAIGN.story?.cemetery?.players || []
+const SPELL_MAX_TRIES = ACTIVE_CAMPAIGN.story?.cemetery?.maxTries ?? 0

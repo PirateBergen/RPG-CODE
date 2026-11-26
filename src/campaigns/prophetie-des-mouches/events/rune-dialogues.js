@@ -1,4 +1,4 @@
-const runeEventDialogues = [
+const CAMPAIGN_RUNE_DIALOGUES = [
   "Ho, tant que j'y pense... j'ai trouvé ça, peut-être que ça peut vous être utile.",
   "Curieux... j'ai entendu dire que les anciens utilisaient ce symbole.",
   "Psst ! Gardez ça pour vous, mais j'ai vu cette marque gravée sur un vieux mur.",

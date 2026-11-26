@@ -25,3 +25,8 @@ function resolveBalrogSwordRequest(root,request){
  return {mode:"relic",message:payload.operation==="equip"?(data.equipped?"Épée équipée":"Épée déséquipée"):"L’épée rejoint l’inventaire de "+heroDisplayName(data.holder)}
 }
 
+
+function applyBalrogSwordEquipment(playerId,data,sword,mods){
+ if(playerId==="greg"&&Object.prototype.hasOwnProperty.call(data,"inventaire")&&sword?.status==="claimed"&&sword.holder==="greg"&&sword.equipped&&String(data.inventaire).includes(BALROG_SWORD_LINE)){const bonus=balrogSwordBonus(data.lvl);mods.force+=bonus.force;mods.defense+=bonus.defense}
+ return mods
+}

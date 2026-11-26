@@ -1,0 +1,1636 @@
+{
+  "format": 1,
+  "baselineCommit": "15004ed401a64abb088876d0e56532dc4f48ded4",
+  "story": {
+    "dialogue": [
+      {
+        "portrait": "tavernier.png",
+        "text": "Réveillez-vous étrangers !"
+      },
+      {
+        "portrait": "tavernier.png",
+        "text": "Vous êtes restés inconscients toute la nuit..."
+      },
+      {
+        "portrait": "serveuse.png",
+        "text": "Bienvenue à Rivebois."
+      }
+    ],
+    "curseWheelChoices": [
+      {
+        "label": "-40% Vie",
+        "icon": "💀",
+        "color": "#8b0000",
+        "description": "Votre vie est réduite de 40%"
+      },
+      {
+        "label": "Stat -4",
+        "icon": "⬇",
+        "color": "#4a0080",
+        "description": "Votre stat principale perd 4 points"
+      },
+      {
+        "label": "Critiques Only",
+        "icon": "⚔",
+        "color": "#800040",
+        "description": "Au prochain combat, seuls les critiques comptent"
+      },
+      {
+        "label": "Perd un objet",
+        "icon": "🎒",
+        "color": "#603000",
+        "description": "Vous perdez le dernier objet de votre inventaire"
+      }
+    ],
+    "ODIN_VISIONS": [
+      "Odin vous voit. Son œil unique suit votre route depuis Asgard.",
+      "Le Père de Tous vous accorde son soutien. Portez-le dignement.",
+      "Vos noms sont gravés dans le bois d'Yggdrasil.",
+      "Les corbeaux ont rapporté vos actes. Odin est satisfait.",
+      "La sagesse d'Odin guide vos pas. Ne faiblissez pas.",
+      "Le Tout-Puissant a entendu vos prières. Il répond.",
+      "Odin lève son sceptre en votre honneur. Valhalla vous observe.",
+      "Le dieu borgne sourit. Votre chemin est juste.",
+      "Munin se souvient de vous. Huginn vous accompagne.",
+      "Par la volonté d'Odin, les runes vous livrent leurs secrets."
+    ],
+    "runeEventDialogues": [
+      "Ho, tant que j'y pense... j'ai trouvé ça, peut-être que ça peut vous être utile.",
+      "Curieux... j'ai entendu dire que les anciens utilisaient ce symbole.",
+      "Psst ! Gardez ça pour vous, mais j'ai vu cette marque gravée sur un vieux mur.",
+      "Je ne sais pas si ça vaut quelque chose, mais tenez... j'ai trouvé ça ce matin.",
+      "Les bardes chantent parfois ce signe... peut-être que ça vous dira quelque chose ?",
+      "Mon grand-père m'avait montré ça. Je ne l'ai jamais compris, mais vous peut-être ?",
+      "Étrange coïncidence que vous soyez là... j'ai quelque chose pour vous.",
+      "Je ne suis pas sûr de ce que ça signifie, mais ça semblait important."
+    ],
+    "SPELL_PLAYERS": [
+      "greg",
+      "ju",
+      "elo"
+    ],
+    "SPELL_MAX_TRIES": 3
+  },
+  "cases": [
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 102,
+      "effective": {
+        "force": 10,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 6,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 4,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 1
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 120,
+      "effective": {
+        "force": 10,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 6,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 4,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 1
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 102,
+      "effective": {
+        "force": 10,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 6,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 4,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 1
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 147,
+      "effective": {
+        "force": 16,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 6,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 10,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 1
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 174,
+      "effective": {
+        "force": 16,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 6,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 10,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 1
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 147,
+      "effective": {
+        "force": 16,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 6,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 10,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 1
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 272,
+      "effective": {
+        "force": 32,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 7,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 26,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 2
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 320,
+      "effective": {
+        "force": 32,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 7,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 26,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 2
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "greg",
+      "data": {
+        "force": 6,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 5,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "greg": true
+      },
+      "maxHp": 272,
+      "effective": {
+        "force": 32,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 4,
+        "defense": 7,
+        "hp": 120,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 26,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 2
+        },
+        "__effectivePlayerId": "greg"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 85,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 100,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 85,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 130,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 154,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 130,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 255,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 300,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "ju",
+      "data": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "ju": true
+      },
+      "maxHp": 255,
+      "effective": {
+        "force": 3,
+        "charme": 7,
+        "perspi": 6,
+        "chance": 5,
+        "defense": 4,
+        "hp": 100,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "ju"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 93,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 110,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 93,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 139,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 164,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 139,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 263,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 310,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "elo",
+      "data": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "elo": true
+      },
+      "maxHp": 263,
+      "effective": {
+        "force": 4,
+        "charme": 7,
+        "perspi": 5,
+        "chance": 5,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "elo"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 93,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 110,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 93,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 1,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 139,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 164,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 139,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 6,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 263,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": true,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 310,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "helMark": false,
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    },
+    {
+      "id": "bibi",
+      "data": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)"
+      },
+      "sword": {
+        "status": "claimed",
+        "holder": "greg",
+        "equipped": true
+      },
+      "marks": {
+        "bibi": true
+      },
+      "maxHp": 263,
+      "effective": {
+        "force": 5,
+        "charme": 4,
+        "perspi": 4,
+        "chance": 6,
+        "defense": 4,
+        "hp": 110,
+        "poids": 100,
+        "lvl": 15,
+        "inventaire": "Épée mystérieuse aux inscriptions elfiques (15)",
+        "__inventoryStatMods": {
+          "force": 0,
+          "charme": 0,
+          "perspi": 0,
+          "chance": 0,
+          "defense": 0
+        },
+        "__effectivePlayerId": "bibi"
+      }
+    }
+  ]
+}

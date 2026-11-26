@@ -1,4 +1,4 @@
-const ODIN_VISIONS = [
+const CAMPAIGN_ODIN_VISIONS = [
   "Odin vous voit. Son œil unique suit votre route depuis Asgard.",
   "Le Père de Tous vous accorde son soutien. Portez-le dignement.",
   "Vos noms sont gravés dans le bois d'Yggdrasil.",

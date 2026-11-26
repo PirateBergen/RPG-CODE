@@ -1,5 +1,5 @@
 function getCharacterMaxHp(playerId, charData = {}) {
-  const adjusted=value=>helAdjustedMaxHP(playerId,charData,value)
+  const adjusted=value=>applyCampaignRule("maxHp",[playerId,charData,value],value)
   const direct =
     parseInt(charData.maxHp ?? charData.hpMax ?? charData.hpmax, 10)
   if (Number.isFinite(direct) && direct > 0) return adjusted(direct)

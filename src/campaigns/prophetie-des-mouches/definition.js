@@ -8,6 +8,8 @@ const ACTIVE_CAMPAIGN = createCampaignDefinition({
   attacks:{heroes:CAMPAIGN_HERO_ATTACKS, heroSpecials:CAMPAIGN_HERO_SPECIALS, enemyTiers:CAMPAIGN_ENEMY_ATTACKS, enemyOverrides:CAMPAIGN_ENEMY_ATTACK_OVERRIDES, enemySpecials:CAMPAIGN_ENEMY_SPECIALS},
   items:{armory:CAMPAIGN_ARMORY_ITEMS, shop:CAMPAIGN_SHOP_ITEMS, categories:CAMPAIGN_ITEM_CATEGORIES},
   allies:CAMPAIGN_ALLIES,
+  ruleSet:"prophetie-des-mouches",
+  story:{introduction:CAMPAIGN_INTRODUCTION, curseChoices:CAMPAIGN_CURSE_CHOICES, odinVisions:CAMPAIGN_ODIN_VISIONS, runeDialogues:CAMPAIGN_RUNE_DIALOGUES, cemetery:{players:CAMPAIGN_CEMETERY_PLAYERS,maxTries:CAMPAIGN_CEMETERY_MAX_TRIES}},
   characters:[
     {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
     {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},

@@ -46,12 +46,12 @@ function getInventoryStatModifiers(text) {
   return mods
 }
 
-function getEffectiveCharacterData(playerId, rawData = {}, sword=window.__balrogSword) {
+function getEffectiveCharacterData(playerId, rawData = {}, equipmentState=applyCampaignRule("equipmentState",[],undefined)) {
   const data = { ...(rawData || {}) }
-  const mods = Object.prototype.hasOwnProperty.call(data, "inventaire")
+  let mods = Object.prototype.hasOwnProperty.call(data, "inventaire")
     ? getInventoryStatModifiers(data.inventaire || "")
     : (data.equipmentModifiers || {})
-  if(playerId==="greg"&&Object.prototype.hasOwnProperty.call(data,"inventaire")&&sword?.status==="claimed"&&sword.holder==="greg"&&sword.equipped&&String(data.inventaire).includes(BALROG_SWORD_LINE)){const bonus=balrogSwordBonus(data.lvl);mods.force+=bonus.force;mods.defense+=bonus.defense}
+  mods=applyCampaignRule("equipmentModifiers",[playerId,data,equipmentState,mods],mods)
   ;["force", "charme", "perspi", "chance", "defense"].forEach(stat => {
     data[stat] = (parseInt(data[stat], 10) || 0) + (mods[stat] || 0)
   })

@@ -6,6 +6,7 @@
       "engine/game-states.js",
       "engine/campaigns/catalogs.js",
       "engine/campaigns/content-catalogs.js",
+      "engine/campaigns/rules.js",
       "engine/campaigns/definition.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
       "engine/characters/progression.js",
@@ -37,11 +38,13 @@
       "engine/campaigns/legacy-catalogs.js",
       "campaigns/prophetie-des-mouches/characters/identity-and-compatibility.js",
       "engine/items/inventory-weight.js",
+      "campaigns/prophetie-des-mouches/enemies/historical-overrides.js",
       "campaigns/prophetie-des-mouches/rules/balrog-sword.js",
       "engine/combat/damage-routing.js",
       "campaigns/prophetie-des-mouches/rules/hel-pact.js",
       "campaigns/prophetie-des-mouches/rules/hel-nidhogg.js",
-      "campaigns/prophetie-des-mouches/enemies/king-profile.js"
+      "campaigns/prophetie-des-mouches/enemies/king-profile.js",
+      "campaigns/prophetie-des-mouches/rules/adapters.js"
     ],
     "game.js": [
       "platform/firebase/bootstrap.js",

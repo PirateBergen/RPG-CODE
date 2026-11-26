@@ -16,7 +16,8 @@ function createCampaignDefinition(input) {
       if(typeof place.name!=='string'||!place.name.trim()||place.name.length>120)throw Error('Nom de lieu invalide')
       if(!['region','city','village','wilderness','dungeon','building','other'].includes(place.type))throw Error('Type de lieu invalide')
       for(const key of ['description','gmNotes'])if(typeof place[key]!=='string'||place[key].length>5000)throw Error('Texte de lieu invalide (5 000 caractères maximum)')
-      return {id:place.id,name:place.name,type:place.type,description:place.description,gmNotes:place.gmNotes}
+      if(place.background!==undefined&&(typeof place.background!=='string'||place.background.length>1200000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(place.background)))throw Error('Image de fond invalide ou trop volumineuse')
+      return {id:place.id,name:place.name,type:place.type,description:place.description,gmNotes:place.gmNotes,...(place.background!==undefined?{background:place.background}:{})}
     })
   }
   const characters = input.characters.map(character => {

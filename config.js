@@ -159,7 +159,8 @@ function createCampaignDefinition(input) {
       if(typeof place.name!=='string'||!place.name.trim()||place.name.length>120)throw Error('Nom de lieu invalide')
       if(!['region','city','village','wilderness','dungeon','building','other'].includes(place.type))throw Error('Type de lieu invalide')
       for(const key of ['description','gmNotes'])if(typeof place[key]!=='string'||place[key].length>5000)throw Error('Texte de lieu invalide (5 000 caractères maximum)')
-      return {id:place.id,name:place.name,type:place.type,description:place.description,gmNotes:place.gmNotes}
+      if(place.background!==undefined&&(typeof place.background!=='string'||place.background.length>1200000||!/^data:image\/jpeg;base64,\/9j\/[A-Za-z0-9+/]*={0,2}$/.test(place.background)))throw Error('Image de fond invalide ou trop volumineuse')
+      return {id:place.id,name:place.name,type:place.type,description:place.description,gmNotes:place.gmNotes,...(place.background!==undefined?{background:place.background}:{})}
     })
   }
   const characters = input.characters.map(character => {
@@ -207,7 +208,8 @@ function createCampaignDefinition(input) {
 function exportCampaignDraft(definition) {
   const content=createCampaignDefinition(definition)
   const embedded=content.characters.some(character=>Object.keys(character.appearance || {}).length)
-  const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media:embedded?"references-and-portraits":"references",definition:content},null,2)
+  const media=content.locations?.some(place=>place.background)?"references-and-images":embedded?"references-and-portraits":"references"
+  const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media,definition:content},null,2)
   if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
   return text
 }
@@ -215,7 +217,7 @@ function importCampaignDraft(text) {
   if(typeof text!=="string" || text.length>8*1024*1024) throw Error("Fichier de brouillon invalide ou trop volumineux")
   let packet
   try{packet=JSON.parse(text)}catch(error){throw Error("Le brouillon ne contient pas un JSON valide")}
-  if(!packet || packet.format!=="rpg-campaign-draft" || packet.version!==1 || !["references","references-and-portraits"].includes(packet.media))throw Error("Format ou version de brouillon non pris en charge")
+  if(!packet || packet.format!=="rpg-campaign-draft" || packet.version!==1 || !["references","references-and-portraits","references-and-images"].includes(packet.media))throw Error("Format ou version de brouillon non pris en charge")
   return createCampaignDefinition(packet.definition)
 }
 const CAMPAIGN_BASE_STATS = {

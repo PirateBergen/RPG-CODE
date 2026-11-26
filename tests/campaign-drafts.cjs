@@ -53,3 +53,10 @@ globalThis.location=location
 `,context);
 for(const patch of ["name:' '","description:42","type:'invalid'","id:'../unsafe'","gmNotes:'x'.repeat(5001)"]){assert.throws(()=>vm.runInContext(`setDraftLocation(neutral,{...location,${patch}})`,context));}
 assert.throws(()=>vm.runInContext("createCampaignDefinition({...neutral,locations:[location,location]})",context),/dupliqué/);
+vm.runInContext(`
+const imageLocation={...location,background:'data:image/jpeg;base64,/9j/AA=='}
+const illustrated=setDraftLocation(neutral,imageLocation),packet=exportCampaignDraft(illustrated)
+if(JSON.parse(packet).media!=='references-and-images'||importCampaignDraft(packet).locations[0].background!==imageLocation.background)throw Error('Fond perdu dans un échange')
+if(setDraftLocation(illustrated,location).locations[0].background!==undefined)throw Error('Fond non retiré')
+`,context);
+for(const background of ['https://example.com/image.jpg','data:image/svg+xml;base64,AAAA','data:image/jpeg;base64,/9j/'+ 'A'.repeat(1200000)]){context.badBackground=background;assert.throws(()=>vm.runInContext('setDraftLocation(neutral,{...location,background:badBackground})',context));}

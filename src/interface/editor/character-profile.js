@@ -1,17 +1,17 @@
 // User-selected raster images are decoded locally and reduced before being embedded.
-async function readDraftCharacterImage(file) {
+async function readDraftImage(file,{maxSide=900,maxLength=400000}={}) {
   if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>10*1024*1024)throw Error('Choisissez une image PNG, JPEG ou WebP de 10 Mo maximum.')
   const bitmap=await createImageBitmap(file)
   try {
     if(bitmap.width*bitmap.height>40000000)throw Error('Cette image est trop grande. Choisissez une version plus petite.')
-    let size=900, result=''
+    let size=maxSide, result=''
     do {
       const ratio=Math.min(1,size/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas')
       canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio))
       const ctx=canvas.getContext('2d');ctx.fillStyle='#19232d';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height)
       result=canvas.toDataURL('image/jpeg',.82);size=Math.floor(size*.75)
-    }while(result.length>400000 && size>=150)
-    if(result.length>400000)throw Error('Image trop volumineuse après réduction.')
+    }while(result.length>maxLength && size>=150)
+    if(result.length>maxLength)throw Error('Image trop volumineuse après réduction.')
     return result
   }finally{bitmap.close()}
 }
@@ -36,7 +36,7 @@ function createDraftCharacterProfile() {
       const file=$(key+'File').files[0],token=generation;$(key+'File').value='';if(!file)return
       const sequence=++sequences[key]
       pending++;$('characterError').textContent='Préparation de l’image…'
-      try{const data=await readDraftCharacterImage(file);if(token===generation&&sequence===sequences[key]){appearance[key]=data;preview(key);$('characterError').textContent=''}}
+      try{const data=await readDraftImage(file);if(token===generation&&sequence===sequences[key]){appearance[key]=data;preview(key);$('characterError').textContent=''}}
       catch(e){if(token===generation&&sequence===sequences[key])$('characterError').textContent=e.message || 'Impossible de lire cette image.'}
       finally{if(token===generation)pending--}
     })

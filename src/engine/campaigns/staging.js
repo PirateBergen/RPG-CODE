@@ -1,11 +1,12 @@
-function createCampaignNpcs(input) {
+function createCampaignNpcs(input,locations=[]) {
   if(!Array.isArray(input))throw Error('Liste de PNJ invalide')
   const ids=new Set()
   return input.map(npc=>{
     if(!npc||typeof npc.id!=='string'||!/^npc-[a-z0-9-]+$/.test(npc.id)||ids.has(npc.id)||typeof npc.name!=='string'||!npc.name.trim()||npc.name.length>120||typeof npc.description!=='string'||npc.description.length>5000)throw Error('Fiche de PNJ invalide')
     ids.add(npc.id)
     if(npc.image!==undefined&&(typeof npc.image!=='string'||npc.image.length>600000||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(npc.image)))throw Error('Image de PNJ invalide')
-    return {id:npc.id,name:npc.name,description:npc.description,...(npc.image?{image:npc.image}:{})}
+    if(npc.locationIds!==undefined&&(!Array.isArray(npc.locationIds)||new Set(npc.locationIds).size!==npc.locationIds.length||npc.locationIds.some(id=>!locations.some(place=>place.id===id))))throw Error('Carte de PNJ introuvable ou dupliquée')
+    return {...(npc.locationIds!==undefined?{locationIds:[...npc.locationIds]}:{}),id:npc.id,name:npc.name,description:npc.description,...(npc.image?{image:npc.image}:{})}
   })
 }
 function draftStagingActor(definition,token){return (token.kind==='character'?definition.characters:token.kind==='enemy'?definition.bestiary:token.kind==='npc'?definition.npcs:token.kind==='ally'?definition.allies:[])?.find(actor=>actor.id===token.refId)}

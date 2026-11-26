@@ -65,7 +65,7 @@ function createCampaignDefinition(input) {
   const content={...(input.story!==undefined?{story:createCampaignStory(input.story,characters)}:{}), ...(input.ruleSet!==undefined?{ruleSet:input.ruleSet}:{}),...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
   const catalogs={...(input.bestiary!==undefined?{bestiary:createCampaignBestiary(input.bestiary)}:{}),...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
   const definition={schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, ...locations, characters:Object.freeze(characters.map(character => Object.freeze(character)))}
-  if(input.npcs!==undefined)definition.npcs=createCampaignNpcs(input.npcs)
+  if(input.npcs!==undefined)definition.npcs=createCampaignNpcs(input.npcs,definition.locations)
   if(input.staging!==undefined)definition.staging=createCampaignStaging(input.staging,definition)
   if(input.preparationNotes!==undefined){if(typeof input.preparationNotes!=='string'||input.preparationNotes.length>20000)throw Error('Notes de préparation trop longues (20 000 caractères maximum)');definition.preparationNotes=input.preparationNotes}
   return Object.freeze(definition)

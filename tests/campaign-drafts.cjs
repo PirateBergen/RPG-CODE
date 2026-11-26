@@ -158,3 +158,12 @@ if(JSON.stringify(importCampaignDraft(exportCampaignDraft(inGroup)))!==JSON.stri
 `,context);
 assert.throws(()=>vm.runInContext("setDraftLocation(prepared,{...location,groupId:'region-unknown'})",context),/Onglet/);
 assert.throws(()=>vm.runInContext("createCampaignMapGroups([{id:'region-a',name:'Brume'},{id:'region-b',name:'brume'}])",context),/utilisé/);
+vm.runInContext(`
+const npcMapped=createCampaignDefinition({...prepared,npcs:prepared.npcs.map(npc=>({...npc,locationIds:[location.id]}))})
+const npcRoundTrip=importCampaignDraft(exportCampaignDraft(npcMapped))
+if(npcRoundTrip.npcs[0].locationIds[0]!==location.id)throw Error('Cartes de PNJ perdues')
+if(removeDraftLocation(npcMapped,location.id).npcs[0].locationIds.length)throw Error('Carte supprimée toujours associée au PNJ')
+if(npcMapped.npcs[0].locationIds.length!==1)throw Error('Suppression de carte non isolée')
+`,context);
+assert.throws(()=>vm.runInContext("createCampaignDefinition({...prepared,npcs:prepared.npcs.map(npc=>({...npc,locationIds:['lieu-absent']}))})",context),/Carte de PNJ/);
+assert.throws(()=>vm.runInContext("createCampaignDefinition({...prepared,npcs:prepared.npcs.map(npc=>({...npc,locationIds:[location.id,location.id]}))})",context),/Carte de PNJ/);

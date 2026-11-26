@@ -249,14 +249,15 @@ function resolveDraftEnemy(enemy,variant,level) {
   const steps=Math.floor((level-base.baseLevel)/base.growth.every),mod=DRAFT_ENEMY_VARIANTS[variant]
   return {...base,stats:Object.fromEntries(Object.entries(base.stats).map(([key,value])=>[key,Math.round(value*(key==='hp'?mod.hp*(1+steps*base.growth.hpPercent/100):mod.stats*(1+steps*base.growth.statsPercent/100))*100)/100]))}
 }
-function createCampaignNpcs(input) {
+function createCampaignNpcs(input,locations=[]) {
   if(!Array.isArray(input))throw Error('Liste de PNJ invalide')
   const ids=new Set()
   return input.map(npc=>{
     if(!npc||typeof npc.id!=='string'||!/^npc-[a-z0-9-]+$/.test(npc.id)||ids.has(npc.id)||typeof npc.name!=='string'||!npc.name.trim()||npc.name.length>120||typeof npc.description!=='string'||npc.description.length>5000)throw Error('Fiche de PNJ invalide')
     ids.add(npc.id)
     if(npc.image!==undefined&&(typeof npc.image!=='string'||npc.image.length>600000||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(npc.image)))throw Error('Image de PNJ invalide')
-    return {id:npc.id,name:npc.name,description:npc.description,...(npc.image?{image:npc.image}:{})}
+    if(npc.locationIds!==undefined&&(!Array.isArray(npc.locationIds)||new Set(npc.locationIds).size!==npc.locationIds.length||npc.locationIds.some(id=>!locations.some(place=>place.id===id))))throw Error('Carte de PNJ introuvable ou dupliquée')
+    return {...(npc.locationIds!==undefined?{locationIds:[...npc.locationIds]}:{}),id:npc.id,name:npc.name,description:npc.description,...(npc.image?{image:npc.image}:{})}
   })
 }
 function draftStagingActor(definition,token){return (token.kind==='character'?definition.characters:token.kind==='enemy'?definition.bestiary:token.kind==='npc'?definition.npcs:token.kind==='ally'?definition.allies:[])?.find(actor=>actor.id===token.refId)}
@@ -372,7 +373,7 @@ function createCampaignDefinition(input) {
   const content={...(input.story!==undefined?{story:createCampaignStory(input.story,characters)}:{}), ...(input.ruleSet!==undefined?{ruleSet:input.ruleSet}:{}),...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
   const catalogs={...(input.bestiary!==undefined?{bestiary:createCampaignBestiary(input.bestiary)}:{}),...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
   const definition={schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, ...locations, characters:Object.freeze(characters.map(character => Object.freeze(character)))}
-  if(input.npcs!==undefined)definition.npcs=createCampaignNpcs(input.npcs)
+  if(input.npcs!==undefined)definition.npcs=createCampaignNpcs(input.npcs,definition.locations)
   if(input.staging!==undefined)definition.staging=createCampaignStaging(input.staging,definition)
   if(input.preparationNotes!==undefined){if(typeof input.preparationNotes!=='string'||input.preparationNotes.length>20000)throw Error('Notes de préparation trop longues (20 000 caractères maximum)');definition.preparationNotes=input.preparationNotes}
   return Object.freeze(definition)

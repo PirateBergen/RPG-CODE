@@ -5,7 +5,7 @@ function setDraftLocation(definition,place) {
 }
 function removeDraftLocation(definition,id) {
   if(!definition.locations?.some(place=>place.id===id))throw Error('Lieu introuvable')
-  return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id),...(definition.staging!==undefined?{staging:definition.staging.filter(board=>board.locationId!==id)}:{})})
+  return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id),...(definition.npcs!==undefined?{npcs:definition.npcs.map(npc=>npc.locationIds?{...npc,locationIds:npc.locationIds.filter(value=>value!==id)}:npc)}:{}),...(definition.staging!==undefined?{staging:definition.staging.filter(board=>board.locationId!==id)}:{})})
 }
 function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message,audioLibrary}) {
   const $=id=>document.getElementById(id),dialog=$('locationDialog')

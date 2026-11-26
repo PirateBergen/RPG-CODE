@@ -343,6 +343,7 @@
       "interface/editor/bestiary.js",
       "interface/editor/staging-board.js",
       "interface/editor/map-navigator.js",
+      "interface/editor/npcs.js",
       "interface/editor/gm-workspace.js",
       "interface/editor/audio-library.js",
       "interface/editor/campaign-editor.js"

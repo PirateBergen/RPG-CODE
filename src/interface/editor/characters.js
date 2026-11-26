@@ -12,7 +12,7 @@ function removeDraftCharacter(definition, id) {
   if (!definition.characters.some(c=>c.id===id)) throw Error('Personnage introuvable')
   if (definition.ruleSet || definition.characters.some(c=>c.owner===id) || definition.attacks?.heroes?.[id] || definition.attacks?.heroSpecials?.[id] || definition.story?.cemetery?.players.includes(id)) throw Error('Ce personnage est lié à un compagnon, des attaques ou un scénario. Sa suppression attend l’édition de ces liens.')
   if (definition.characters.filter(c=>c.kind==='hero'&&c.id!==id).length===0) throw Error('Conservez au moins un héros dans la campagne.')
-  return createCampaignDefinition({...definition,characters:definition.characters.filter(c=>c.id!==id)})
+  return createCampaignDefinition({...definition,...withoutDraftActorTokens(definition,'character',id),characters:definition.characters.filter(c=>c.id!==id)})
 }
 function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,message,guard,onAbilities}) {
   const $=id=>document.getElementById(id), dialog=$('characterDialog'), fields=$('characterStats')
@@ -61,7 +61,7 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
     try {
       if(pendingHero){dialog.close();return}
       const next=removeDraftCharacter(getDefinition(),selected)
-      if(!window.confirm('Retirer ce personnage du brouillon ?'))return
+      if(!window.confirm('Retirer ce personnage et ses pions de préparation du brouillon ?'))return
       replaceDefinition(next);changed();render();dialog.close();message('Personnage retiré du brouillon.')
     }catch(error){$('characterError').textContent=error.message}
   })

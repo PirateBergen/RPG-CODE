@@ -5,7 +5,7 @@ function setDraftLocation(definition,place) {
 }
 function removeDraftLocation(definition,id) {
   if(!definition.locations?.some(place=>place.id===id))throw Error('Lieu introuvable')
-  return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id)})
+  return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id),...(definition.staging!==undefined?{staging:definition.staging.filter(board=>board.locationId!==id)}:{})})
 }
 function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id),dialog=$('locationDialog')
@@ -63,7 +63,7 @@ function createDraftLocationPanel({getDefinition,replaceDefinition,changed,messa
   })
   $('locationRemove').addEventListener('click',()=>{
     try {
-      if(!selected||!window.confirm('Retirer ce lieu du brouillon ?'))return
+      if(!selected||!window.confirm('Retirer ce lieu et ses pions de préparation du brouillon ?'))return
       replaceDefinition(removeDraftLocation(getDefinition(),selected));changed();render();dialog.close();message('Lieu retiré du brouillon.')
     }catch(error){$('locationError').textContent=error.message}
   })

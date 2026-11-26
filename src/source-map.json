@@ -10,6 +10,7 @@
       "engine/campaigns/ability-sequence.js",
       "engine/campaigns/abilities.js",
       "engine/campaigns/bestiary.js",
+      "engine/campaigns/staging.js",
       "engine/campaigns/definition.js",
       "engine/campaigns/draft-format.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
@@ -336,12 +337,15 @@
       "interface/editor/abilities.js",
       "interface/editor/enemy-templates.js",
       "interface/editor/bestiary.js",
+      "interface/editor/staging-board.js",
+      "interface/editor/gm-workspace.js",
       "interface/editor/campaign-editor.js"
     ],
     "campaign-editor.css": [
       "interface/editor/campaign-editor.css",
       "interface/editor/ability-visuals.css",
-      "interface/editor/ability-sequence.css"
+      "interface/editor/ability-sequence.css",
+      "interface/editor/gm-workspace.css"
     ]
   }
 }

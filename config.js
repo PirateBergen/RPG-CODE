@@ -249,6 +249,35 @@ function resolveDraftEnemy(enemy,variant,level) {
   const steps=Math.floor((level-base.baseLevel)/base.growth.every),mod=DRAFT_ENEMY_VARIANTS[variant]
   return {...base,stats:Object.fromEntries(Object.entries(base.stats).map(([key,value])=>[key,Math.round(value*(key==='hp'?mod.hp*(1+steps*base.growth.hpPercent/100):mod.stats*(1+steps*base.growth.statsPercent/100))*100)/100]))}
 }
+function createCampaignNpcs(input) {
+  if(!Array.isArray(input))throw Error('Liste de PNJ invalide')
+  const ids=new Set()
+  return input.map(npc=>{
+    if(!npc||typeof npc.id!=='string'||!/^npc-[a-z0-9-]+$/.test(npc.id)||ids.has(npc.id)||typeof npc.name!=='string'||!npc.name.trim()||npc.name.length>120||typeof npc.description!=='string'||npc.description.length>5000)throw Error('Fiche de PNJ invalide')
+    ids.add(npc.id)
+    if(npc.image!==undefined&&(typeof npc.image!=='string'||npc.image.length>600000||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(npc.image)))throw Error('Image de PNJ invalide')
+    return {id:npc.id,name:npc.name,description:npc.description,...(npc.image?{image:npc.image}:{})}
+  })
+}
+function draftStagingActor(definition,token){return (token.kind==='character'?definition.characters:token.kind==='enemy'?definition.bestiary:token.kind==='npc'?definition.npcs:token.kind==='ally'?definition.allies:[])?.find(actor=>actor.id===token.refId)}
+function createCampaignStaging(input,definition) {
+  if(!Array.isArray(input))throw Error('Préparation des cartes invalide')
+  const maps=new Set(),ids=new Set()
+  return input.map(board=>{
+    if(!board||!definition.locations?.some(place=>place.id===board.locationId)||maps.has(board.locationId)||!Array.isArray(board.tokens)||board.tokens.length>200)throw Error('Carte de préparation invalide (200 pions maximum)')
+    maps.add(board.locationId)
+    return {locationId:board.locationId,tokens:board.tokens.map(token=>{
+      if(!token||typeof token.id!=='string'||!/^token-[a-z0-9-]+$/.test(token.id)||ids.has(token.id)||!['character','enemy','npc','ally'].includes(token.kind)||typeof token.refId!=='string'||!Number.isFinite(token.x)||!Number.isFinite(token.y)||token.x<0||token.x>100||token.y<0||token.y>100)throw Error('Position ou identifiant de pion invalide')
+      ids.add(token.id);const actor=draftStagingActor(definition,token)
+      if(!actor)throw Error('Un pion référence une fiche introuvable. Retirez ce pion avant de supprimer sa fiche.')
+      if(token.label!==undefined&&(typeof token.label!=='string'||token.label.length>100))throw Error('Nom de pion invalide')
+      if(token.kind==='enemy'&&(!actor.variants.includes(token.variant)||!Number.isSafeInteger(token.level)||token.level<actor.baseLevel||token.level>1000))throw Error('Un pion utilise une catégorie ou un niveau devenu indisponible. Modifiez-le sur sa carte.')
+      return {id:token.id,kind:token.kind,refId:token.refId,x:token.x,y:token.y,...(token.label?{label:token.label}:{}),...(token.kind==='enemy'?{variant:token.variant,level:token.level}:{})}
+    })}
+  })
+}
+function setDraftBoard(definition,locationId,tokens){const list=definition.staging || [];return createCampaignDefinition({...definition,staging:list.some(board=>board.locationId===locationId)?list.map(board=>board.locationId===locationId?{locationId,tokens}:board):[...list,{locationId,tokens}]})}
+function withoutDraftActorTokens(definition,kind,refId){return definition.staging===undefined?{}:{staging:definition.staging.map(board=>({...board,tokens:board.tokens.filter(token=>token.kind!==kind||token.refId!==refId)}))}}
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
@@ -311,14 +340,18 @@ function createCampaignDefinition(input) {
   if(input.ruleSet!==undefined&&(typeof input.ruleSet!=="string"||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.ruleSet)))throw Error("Identifiant de règles invalide")
   const content={...(input.story!==undefined?{story:createCampaignStory(input.story,characters)}:{}), ...(input.ruleSet!==undefined?{ruleSet:input.ruleSet}:{}),...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
   const catalogs={...(input.bestiary!==undefined?{bestiary:createCampaignBestiary(input.bestiary)}:{}),...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
-  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, ...locations, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
+  const definition={schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, ...locations, characters:Object.freeze(characters.map(character => Object.freeze(character)))}
+  if(input.npcs!==undefined)definition.npcs=createCampaignNpcs(input.npcs)
+  if(input.staging!==undefined)definition.staging=createCampaignStaging(input.staging,definition)
+  if(input.preparationNotes!==undefined){if(typeof input.preparationNotes!=='string'||input.preparationNotes.length>20000)throw Error('Notes de préparation trop longues (20 000 caractères maximum)');definition.preparationNotes=input.preparationNotes}
+  return Object.freeze(definition)
 }
 // Draft exchange only: references media, does not bundle assets or save a played session.
 function exportCampaignDraft(definition) {
   const content=createCampaignDefinition(definition)
   const actors=[...content.characters,...(content.bestiary || [])]
   const embedded=actors.some(character=>Object.keys(character.appearance || {}).length)
-  const media=content.locations?.some(place=>place.background)||actors.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
+  const media=content.npcs?.some(npc=>npc.image)||content.locations?.some(place=>place.background)||actors.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
   const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media,definition:content},null,2)
   if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
   return text

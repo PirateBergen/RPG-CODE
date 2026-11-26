@@ -14,4 +14,4 @@ function setDraftEnemy(definition,enemy) {
   const list=definition.bestiary || []
   return createCampaignDefinition({...definition,bestiary:list.some(item=>item.id===enemy.id)?list.map(item=>item.id===enemy.id?enemy:item):[...list,enemy]})
 }
-function removeDraftEnemy(definition,id){if(!definition.bestiary?.some(item=>item.id===id))throw Error('Ennemi introuvable');return createCampaignDefinition({...definition,bestiary:definition.bestiary.filter(item=>item.id!==id)})}
+function removeDraftEnemy(definition,id){if(!definition.bestiary?.some(item=>item.id===id))throw Error('Ennemi introuvable');return createCampaignDefinition({...definition,...withoutDraftActorTokens(definition,'enemy',id),bestiary:definition.bestiary.filter(item=>item.id!==id)})}

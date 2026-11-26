@@ -103,7 +103,7 @@ function removeDraftCharacter(definition, id) {
   if (!definition.characters.some(c=>c.id===id)) throw Error('Personnage introuvable')
   if (definition.ruleSet || definition.characters.some(c=>c.owner===id) || definition.attacks?.heroes?.[id] || definition.attacks?.heroSpecials?.[id] || definition.story?.cemetery?.players.includes(id)) throw Error('Ce personnage est lié à un compagnon, des attaques ou un scénario. Sa suppression attend l’édition de ces liens.')
   if (definition.characters.filter(c=>c.kind==='hero'&&c.id!==id).length===0) throw Error('Conservez au moins un héros dans la campagne.')
-  return createCampaignDefinition({...definition,characters:definition.characters.filter(c=>c.id!==id)})
+  return createCampaignDefinition({...definition,...withoutDraftActorTokens(definition,'character',id),characters:definition.characters.filter(c=>c.id!==id)})
 }
 function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,message,guard,onAbilities}) {
   const $=id=>document.getElementById(id), dialog=$('characterDialog'), fields=$('characterStats')
@@ -152,7 +152,7 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
     try {
       if(pendingHero){dialog.close();return}
       const next=removeDraftCharacter(getDefinition(),selected)
-      if(!window.confirm('Retirer ce personnage du brouillon ?'))return
+      if(!window.confirm('Retirer ce personnage et ses pions de préparation du brouillon ?'))return
       replaceDefinition(next);changed();render();dialog.close();message('Personnage retiré du brouillon.')
     }catch(error){$('characterError').textContent=error.message}
   })
@@ -165,7 +165,7 @@ function setDraftLocation(definition,place) {
 }
 function removeDraftLocation(definition,id) {
   if(!definition.locations?.some(place=>place.id===id))throw Error('Lieu introuvable')
-  return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id)})
+  return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id),...(definition.staging!==undefined?{staging:definition.staging.filter(board=>board.locationId!==id)}:{})})
 }
 function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message}) {
   const $=id=>document.getElementById(id),dialog=$('locationDialog')
@@ -223,7 +223,7 @@ function createDraftLocationPanel({getDefinition,replaceDefinition,changed,messa
   })
   $('locationRemove').addEventListener('click',()=>{
     try {
-      if(!selected||!window.confirm('Retirer ce lieu du brouillon ?'))return
+      if(!selected||!window.confirm('Retirer ce lieu et ses pions de préparation du brouillon ?'))return
       replaceDefinition(removeDraftLocation(getDefinition(),selected));changed();render();dialog.close();message('Lieu retiré du brouillon.')
     }catch(error){$('locationError').textContent=error.message}
   })
@@ -445,7 +445,7 @@ function setDraftEnemy(definition,enemy) {
   const list=definition.bestiary || []
   return createCampaignDefinition({...definition,bestiary:list.some(item=>item.id===enemy.id)?list.map(item=>item.id===enemy.id?enemy:item):[...list,enemy]})
 }
-function removeDraftEnemy(definition,id){if(!definition.bestiary?.some(item=>item.id===id))throw Error('Ennemi introuvable');return createCampaignDefinition({...definition,bestiary:definition.bestiary.filter(item=>item.id!==id)})}
+function removeDraftEnemy(definition,id){if(!definition.bestiary?.some(item=>item.id===id))throw Error('Ennemi introuvable');return createCampaignDefinition({...definition,...withoutDraftActorTokens(definition,'enemy',id),bestiary:definition.bestiary.filter(item=>item.id!==id)})}
 const DRAFT_ENEMY_STATS={hp:'PV maximum',force:'Force / puissance',charme:'Charme',perspi:'Perspicacité',chance:'Chance',defense:'Défense'}
 function createDraftBestiaryPanel({getDefinition,replaceDefinition,changed,message,onAbilities}) {
   const $=id=>document.getElementById(id),dialog=$('enemyDialog');let current=null,generation=0,pending=0,appearance={}
@@ -476,7 +476,7 @@ function createDraftBestiaryPanel({getDefinition,replaceDefinition,changed,messa
   function render(){
     const list=$('bestiary');list.replaceChildren();for(const enemy of getDefinition().bestiary || []){
       const card=document.createElement('div'),name=document.createElement('h3'),image=document.createElement('img'),info=document.createElement('p'),editButton=document.createElement('button'),abilities=document.createElement('button'),copy=document.createElement('button'),remove=document.createElement('button');card.className='enemy-card';name.textContent=enemy.name;image.src=enemy.appearance?.portrait || enemy.portrait;image.alt='Portrait de '+enemy.name;image.className='enemy-thumb';info.className='hint';info.textContent=enemy.variants.map(key=>DRAFT_ENEMY_VARIANTS[key].label).join(' · ')
-      for(const [button,text,action]of [[editButton,'Modifier',()=>edit(enemy)],[abilities,'Attaques et capacités',()=>onAbilities(enemy.id)],[copy,'Dupliquer',()=>{try{replaceDefinition(setDraftEnemy(getDefinition(),{...enemy,id:'enemy-'+crypto.randomUUID(),name:enemy.name.slice(0,110)+' (copie)'}));changed();render();message('Copie ajoutée au brouillon.')}catch(e){message(e.message,true)}}],[remove,'Retirer',()=>{if(!window.confirm('Retirer cet ennemi et ses capacités du brouillon ?'))return;replaceDefinition(removeDraftEnemy(getDefinition(),enemy.id));changed();render();message('Ennemi retiré du brouillon.')}]] ) {button.type='button';button.textContent=text;button.setAttribute('aria-label',text+' : '+enemy.name);button.addEventListener('click',action)}
+      for(const [button,text,action]of [[editButton,'Modifier',()=>edit(enemy)],[abilities,'Attaques et capacités',()=>onAbilities(enemy.id)],[copy,'Dupliquer',()=>{try{replaceDefinition(setDraftEnemy(getDefinition(),{...enemy,id:'enemy-'+crypto.randomUUID(),name:enemy.name.slice(0,110)+' (copie)'}));changed();render();message('Copie ajoutée au brouillon.')}catch(e){message(e.message,true)}}],[remove,'Retirer',()=>{if(!window.confirm('Retirer cet ennemi, ses capacités et ses pions de préparation du brouillon ?'))return;replaceDefinition(removeDraftEnemy(getDefinition(),enemy.id));changed();render();message('Ennemi retiré du brouillon.')}]] ) {button.type='button';button.textContent=text;button.setAttribute('aria-label',text+' : '+enemy.name);button.addEventListener('click',action)}
       card.append(image,name,info,editButton,abilities,copy,remove);list.append(card)
     }
     if(!list.children.length){const empty=document.createElement('p');empty.className='hint';empty.textContent='Aucun ennemi créé. Ajoutez les exemples ou créez votre propre monstre.';list.append(empty)}
@@ -487,6 +487,68 @@ function createDraftBestiaryPanel({getDefinition,replaceDefinition,changed,messa
   $('enemyAddExamples').addEventListener('click',()=>{try{const examples=['goblin','wolf','bandit','draugr','golem'].map(key=>createDraftEnemyTemplate(key,'enemy-'+crypto.randomUUID()));replaceDefinition(createCampaignDefinition({...getDefinition(),bestiary:[...(getDefinition().bestiary || []),...examples]}));changed();render();message('Cinq monstres de départ ajoutés. Enregistrez le brouillon pour les conserver.')}catch(e){message(e.message,true)}})
   $('enemyCancel').addEventListener('click',()=>dialog.close());$('enemyForm').addEventListener('input',updatePreview);$('enemyForm').addEventListener('change',updatePreview)
   $('enemyForm').addEventListener('submit',event=>{event.preventDefault();try{if(pending)throw Error('Attendez la fin de la préparation des images.');replaceDefinition(setDraftEnemy(getDefinition(),read()));changed();render();dialog.close();message('Ennemi préparé. Enregistrez le brouillon pour le conserver.')}catch(e){$('enemyError').textContent=e.message}})
+  return {render}
+}
+function draftTokenName(definition,token){const actor=draftStagingActor(definition,token);return token.label || actor?.name || 'Pion'}
+function createDraftStagingBoard({getDefinition,onSelect,onMove,onRemove}) {
+  const board=document.getElementById('prepBoard'),layer=document.getElementById('prepTokenLayer'),image=document.getElementById('prepMapImage');let locationId=null,drag=null
+  function select(id){for(const button of layer.querySelectorAll('button')){const active=button.dataset.tokenId===id;button.classList.toggle('selected',active);button.setAttribute('aria-pressed',String(active))}}
+  function render(place,selectedId) {
+    locationId=place?.id || null;drag=null;layer.replaceChildren();board.hidden=!place
+    if(!place)return
+    image.onload=()=>{if(locationId===place.id&&image.naturalWidth)board.style.aspectRatio=image.naturalWidth+'/'+image.naturalHeight}
+    image.hidden=!place.background;if(place.background){if(image.getAttribute('src')!==place.background)image.src=place.background;if(image.complete&&image.naturalWidth)board.style.aspectRatio=image.naturalWidth+'/'+image.naturalHeight}else{image.removeAttribute('src');board.style.aspectRatio='16/9'}
+    const definition=getDefinition(),tokens=definition.staging?.find(item=>item.locationId===place.id)?.tokens || []
+    for(const token of tokens) {
+      const actor=draftStagingActor(definition,token);if(!actor)continue
+      const button=document.createElement('button'),caption=document.createElement('span'),art=document.createElement('img');button.type='button';button.className='prep-token';button.dataset.tokenId=token.id;button.style.left=token.x+'%';button.style.top=token.y+'%';button.setAttribute('aria-label','Pion '+draftTokenName(definition,token));button.title=draftTokenName(definition,token);caption.className='prep-token-name';caption.textContent=draftTokenName(definition,token);art.src=actor.appearance?.portrait || actor.image || actor.portrait || 'images/draft-hero.svg';art.alt='';art.draggable=false;art.addEventListener('error',()=>{art.remove();button.classList.add('no-portrait')});button.append(art,caption)
+      button.addEventListener('pointerdown',event=>{if(event.button!==0)return;event.preventDefault();button.focus({preventScroll:true});onSelect(token.id);select(token.id);drag={id:token.id,button,startX:event.clientX,startY:event.clientY,x:token.x,y:token.y};button.setPointerCapture(event.pointerId)})
+      button.addEventListener('pointermove',event=>{if(drag?.id!==token.id)return;const rect=board.getBoundingClientRect();drag.x=Math.round(Math.min(98,Math.max(2,token.x+(event.clientX-drag.startX)*100/rect.width))*100)/100;drag.y=Math.round(Math.min(98,Math.max(2,token.y+(event.clientY-drag.startY)*100/rect.height))*100)/100;button.style.left=drag.x+'%';button.style.top=drag.y+'%'})
+      button.addEventListener('pointerup',event=>{if(drag?.id!==token.id)return;const state=drag;drag=null;if(Math.abs(event.clientX-state.startX)+Math.abs(event.clientY-state.startY)>2)onMove(token.id,{x:state.x,y:state.y});else{button.style.left=token.x+'%';button.style.top=token.y+'%'}})
+      button.addEventListener('pointercancel',()=>{drag=null;button.style.left=token.x+'%';button.style.top=token.y+'%'})
+      button.addEventListener('click',()=>{onSelect(token.id);select(token.id)})
+      button.addEventListener('keydown',event=>{const moves={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]};if(moves[event.key]){event.preventDefault();onSelect(token.id);const factor=event.shiftKey?5:1;onMove(token.id,{x:Math.max(2,Math.min(98,token.x+moves[event.key][0]*factor)),y:Math.max(2,Math.min(98,token.y+moves[event.key][1]*factor))});layer.querySelector('[data-token-id="'+token.id+'"]')?.focus({preventScroll:true})}else if(event.key==='Delete'){event.preventDefault();onRemove(token.id)}})
+      layer.append(button)
+    }
+    select(selectedId)
+  }
+  return {render,select}
+}
+function createDraftGmWorkspace({getDefinition,replaceDefinition,changed,onSave,message}) {
+  const $=id=>document.getElementById(id),dialog=$('gmWorkspace');let locationId=null,selectedId=null,npcImage=null,npcGeneration=0,npcPending=false
+  const tokens=()=>getDefinition().staging?.find(board=>board.locationId===locationId)?.tokens || []
+  function status(text,error=false){$('workspaceStatus').textContent=text;$('workspaceStatus').classList.toggle('workspace-error',error)}
+  function guard(fn){return (...args)=>{try{fn(...args)}catch(e){status(e.message,true)}}}
+  const board=createDraftStagingBoard({getDefinition,onSelect:id=>{selectedId=id;inspector();board.select(id)},onMove:(id,patch)=>updateToken(id,patch),onRemove:id=>removeToken(id)})
+  function commit(value){replaceDefinition(value);changed();status('Préparation modifiée. Enregistrez le brouillon pour la conserver.')}
+  function updateToken(id,patch){try{commit(setDraftBoard(getDefinition(),locationId,tokens().map(token=>token.id===id?{...token,...patch}:token)));renderMap()}catch(e){status(e.message,true)}}
+  function removeToken(id){try{commit(setDraftBoard(getDefinition(),locationId,tokens().filter(token=>token.id!==id)));selectedId=null;renderMap()}catch(e){status(e.message,true)}}
+  function actors(kind){return getDefinition()[{character:'characters',enemy:'bestiary',npc:'npcs',ally:'allies'}[kind]] || []}
+  function option(select,value,label){const item=document.createElement('option');item.value=value;item.textContent=label;select.append(item)}
+  function sourceChanged(){const actor=actors($('prepKind').value).find(item=>item.id===$('prepSource').value);$('prepEnemyOptions').hidden=$('prepKind').value!=='enemy';$('prepVariant').replaceChildren();for(const key of actor?.variants || [])option($('prepVariant'),key,DRAFT_ENEMY_VARIANTS[key].label);$('prepLevel').value=actor?.baseLevel || 1;$('prepAddToken').disabled=!locationId||!actor}
+  function palette(){const selected=$('prepSource').value,variant=$('prepVariant').value,level=$('prepLevel').value;$('prepSource').replaceChildren();for(const actor of actors($('prepKind').value))option($('prepSource'),actor.id,actor.name);if([...$('prepSource').options].some(item=>item.value===selected))$('prepSource').value=selected;sourceChanged();if($('prepSource').value===selected){if([...$('prepVariant').options].some(item=>item.value===variant))$('prepVariant').value=variant;$('prepLevel').value=level}}
+  function inspector(){const token=tokens().find(item=>item.id===selectedId);$('prepInspector').hidden=!token;if(!token)return;$('prepTokenSelect').value=token.id;$('prepTokenLabel').value=token.label || '';$('prepTokenX').value=token.x;$('prepTokenY').value=token.y;$('prepSelectedEnemy').hidden=token.kind!=='enemy';$('prepSelectedVariant').replaceChildren();const actor=draftStagingActor(getDefinition(),token);for(const key of actor?.variants || [])option($('prepSelectedVariant'),key,DRAFT_ENEMY_VARIANTS[key].label);$('prepSelectedVariant').value=token.variant || '';$('prepSelectedLevel').value=token.level || 1;$('prepSelectedStats').textContent=token.kind==='enemy'?'PV préparés : '+resolveDraftEnemy(actor,token.variant,token.level).stats.hp:''}
+  function renderMap(){const places=getDefinition().locations || [],previous=locationId;$('prepLocation').replaceChildren();for(const place of places)option($('prepLocation'),place.id,place.name);if(!places.some(place=>place.id===locationId)){locationId=places[0]?.id || null;selectedId=null}if(previous!==locationId)selectedId=null;$('prepLocation').value=locationId || '';const place=places.find(item=>item.id===locationId);$('prepMapEmpty').hidden=!!place;$('prepMapName').textContent=place?.name || 'Aucun lieu préparé';board.render(place,selectedId);$('prepTokenSelect').replaceChildren();option($('prepTokenSelect'),'','Choisir un pion');for(const token of tokens())option($('prepTokenSelect'),token.id,draftTokenName(getDefinition(),token)+(token.kind==='enemy'?' · '+DRAFT_ENEMY_VARIANTS[token.variant].label+' niv. '+token.level:''));if(!tokens().some(token=>token.id===selectedId))selectedId=null;inspector();palette()}
+  $('prepLocation').addEventListener('change',()=>{locationId=$('prepLocation').value;selectedId=null;renderMap()});$('prepKind').addEventListener('change',palette);$('prepSource').addEventListener('change',sourceChanged)
+  $('prepZoom').addEventListener('input',()=>{$('prepBoard').style.width=$('prepZoom').value+'%';$('prepZoomValue').textContent=$('prepZoom').value+' %'})
+  $('prepGrid').addEventListener('change',()=>$('prepBoard').classList.toggle('with-grid',$('prepGrid').checked))
+  $('prepAddToken').addEventListener('click',guard(()=>{if(!locationId)throw Error('Créez d’abord un lieu.');const kind=$('prepKind').value,actor=actors(kind).find(item=>item.id===$('prepSource').value),count=$('prepQuantity').valueAsNumber;if(!actor||!Number.isInteger(count)||count<1||count>20)throw Error('Choisissez une fiche et une quantité entre 1 et 20.');const next=[...tokens()];for(let i=0;i<count;i++){const index=next.length;next.push({id:'token-'+crypto.randomUUID(),kind,refId:actor.id,x:20+30*(index%3),y:25+40*(Math.floor(index/3)%2),...(kind==='enemy'?{variant:$('prepVariant').value,level:$('prepLevel').valueAsNumber}:{})})}commit(setDraftBoard(getDefinition(),locationId,next));selectedId=next.at(-1).id;renderMap()}))
+  $('prepTokenSelect').addEventListener('change',()=>{selectedId=$('prepTokenSelect').value;inspector();board.select(selectedId)})
+  $('prepApplyToken').addEventListener('click',()=>{const token=tokens().find(item=>item.id===selectedId);if(!token)return;updateToken(selectedId,{label:$('prepTokenLabel').value.trim(),x:$('prepTokenX').valueAsNumber,y:$('prepTokenY').valueAsNumber,...(token.kind==='enemy'?{variant:$('prepSelectedVariant').value,level:$('prepSelectedLevel').valueAsNumber}:{})})})
+  $('prepRemoveToken').addEventListener('click',()=>removeToken(selectedId))
+  function goTab(key){for(const button of $('workspaceTabs').querySelectorAll('[role=tab]')){const active=button.dataset.workspaceTab===key;button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1}for(const panel of dialog.querySelectorAll('[role=tabpanel]'))panel.hidden=panel.id!=='workspace-'+key;$('workspaceBody').scrollTop=0}
+  const tabButtons=[...$('workspaceTabs').querySelectorAll('[role=tab]')];for(const [index,button]of tabButtons.entries()){button.addEventListener('click',()=>goTab(button.dataset.workspaceTab));button.addEventListener('keydown',event=>{let next;if(event.key==='ArrowRight')next=(index+1)%tabButtons.length;if(event.key==='ArrowLeft')next=(index+tabButtons.length-1)%tabButtons.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabButtons.length-1;if(next!==undefined){event.preventDefault();goTab(tabButtons[next].dataset.workspaceTab);tabButtons[next].focus()}})}
+  function backToEditor(id){dialog.close();const panel=$(id);panel.open=true;panel.scrollIntoView({block:'start'});panel.querySelector('summary')?.focus()}
+  for(const [button,panel]of [['workspaceEditPlaces','locationPanel'],['workspaceEditHeroes','characterPanel'],['workspaceEditBestiary','bestiaryPanel']])$(button).addEventListener('click',()=>backToEditor(panel))
+  $('workspaceClose').addEventListener('click',()=>dialog.close());$('workspaceSave').addEventListener('click',guard(()=>{onSave();status($('error').textContent || $('status').textContent,!!$('error').textContent)}))
+  dialog.addEventListener('close',()=>board.render(getDefinition().locations?.find(place=>place.id===locationId),selectedId))
+  $('workspaceNotes').addEventListener('input',()=>{replaceDefinition({...getDefinition(),preparationNotes:$('workspaceNotes').value});changed();status('Notes modifiées. Enregistrez le brouillon pour les conserver.')})
+  $('workspaceNpcImage').addEventListener('change',async()=>{const file=$('workspaceNpcImage').files[0],token=++npcGeneration;$('workspaceNpcImage').value='';if(!file)return;npcPending=true;try{const data=await readDraftImage(file,{maxSide:1200,maxLength:600000,preserveTransparency:true});if(token===npcGeneration){npcImage=data;$('workspaceNpcPreview').src=data;$('workspaceNpcPreview').hidden=false;status('Image du PNJ prête.')}}catch(e){if(token===npcGeneration)status(e.message,true)}finally{if(token===npcGeneration)npcPending=false}})
+  $('workspaceNpcRemoveImage').addEventListener('click',()=>{npcGeneration++;npcPending=false;npcImage=null;$('workspaceNpcPreview').removeAttribute('src');$('workspaceNpcPreview').hidden=true})
+  $('workspaceNpcAdd').addEventListener('click',guard(()=>{if(npcPending)throw Error('Attendez la préparation de l’image du PNJ.');const npc={id:'npc-'+crypto.randomUUID(),name:$('workspaceNpcName').value.trim(),description:$('workspaceNpcDescription').value,...(npcImage?{image:npcImage}:{})};commit(createCampaignDefinition({...getDefinition(),npcs:[...(getDefinition().npcs || []),npc]}));$('workspaceNpcName').value='';$('workspaceNpcDescription').value='';$('workspaceNpcRemoveImage').click();renderNpcs();palette()}))
+  function renderNpcs(){const list=$('workspaceNpcs');list.replaceChildren();for(const npc of getDefinition().npcs || []){const card=document.createElement('div'),name=document.createElement('h3'),text=document.createElement('p'),remove=document.createElement('button');card.className='workspace-card';name.textContent=npc.name;text.textContent=npc.description;remove.type='button';remove.textContent='Retirer '+npc.name;remove.addEventListener('click',guard(()=>{if(!window.confirm('Retirer ce PNJ et ses pions de préparation ?'))return;commit(createCampaignDefinition({...getDefinition(),...withoutDraftActorTokens(getDefinition(),'npc',npc.id),npcs:getDefinition().npcs.filter(item=>item.id!==npc.id)}));renderNpcs();renderMap()}));card.append(name,text,remove);list.append(card)}if(!list.children.length)list.textContent='Aucun PNJ créé pour le moment.';$('workspaceAlliesInfo').textContent=getDefinition().allies?.length?`${getDefinition().allies.length} alliés du modèle sont aussi disponibles dans la palette de la carte.`:''}
+  function render(){if(!getDefinition())return;renderMap();renderNpcs();$('workspaceHeroList').textContent=getDefinition().characters.map(actor=>actor.name).join(' · ');$('workspaceEnemyList').textContent=(getDefinition().bestiary || []).map(actor=>actor.name).join(' · ') || 'Aucun ennemi préparé.';$('workspaceNotes').value=getDefinition().preparationNotes || '';}
+  $('openGmWorkspace').addEventListener('click',()=>{render();goTab('maps');status('Mode préparation locale. Aucun joueur connecté à cette carte.');dialog.showModal();$('workspaceClose').focus({preventScroll:true})})
   return {render}
 }
 (() => {
@@ -501,12 +563,13 @@ function createDraftBestiaryPanel({getDefinition,replaceDefinition,changed,messa
   const abilityPanel=createDraftAbilityPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
   const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
   const bestiaryPanel=createDraftBestiaryPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,onAbilities:id=>abilityPanel.open(id,'enemy')})
+  const workspace=createDraftGmWorkspace({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},onSave:()=>{if(!$('title').value.trim())throw Error('Donnez un titre à la campagne avant de l’enregistrer.');$('editor').requestSubmit()},message})
   function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision }
   function definition() {return createCampaignDefinition({...current.definition,title:$('title').value.trim(),description:$('description').value})}
   function open(record) {
     current=record; $('empty').hidden=true; $('editor').hidden=false
     $('title').value=record.definition.title; $('description').value=record.definition.description || ''
-    summary();characterPanel.render();locationPanel.render();bestiaryPanel.render()
+    summary();characterPanel.render();locationPanel.render();bestiaryPanel.render();workspace.render()
     mark(!record.revision); message(record.revision?'Brouillon ouvert.':'Brouillon prêt. Enregistrez-le pour le retrouver.'); refresh()
   }
   function summary() {

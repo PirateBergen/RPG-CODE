@@ -3,7 +3,7 @@ function exportCampaignDraft(definition) {
   const content=createCampaignDefinition(definition)
   const actors=[...content.characters,...(content.bestiary || [])]
   const embedded=actors.some(character=>Object.keys(character.appearance || {}).length)
-  const media=content.locations?.some(place=>place.background)||actors.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
+  const media=content.npcs?.some(npc=>npc.image)||content.locations?.some(place=>place.background)||actors.some(c=>c.abilities?.some(a=>a.visual.image||a.visual.sequence&&Object.keys(CAMPAIGN_SEQUENCE_PHASES).some(key=>a.visual.sequence[key].images.length)))?"references-and-images":embedded?"references-and-portraits":"references"
   const text=JSON.stringify({format:"rpg-campaign-draft",version:1,media,definition:content},null,2)
   if(text.length>8*1024*1024)throw Error("Brouillon trop volumineux")
   return text

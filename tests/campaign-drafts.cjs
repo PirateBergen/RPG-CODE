@@ -131,3 +131,16 @@ globalThis.exampleEnemy=allVariants
 `,context);
 for(const patch of ["variants:[]","variants:['weak','weak']","variants:['unknown']","stats:{...exampleEnemy.stats,hp:0}","growth:{hpPercent:101,statsPercent:3,every:1}","resistances:[{name:'Feu',percent:25}],weaknesses:[{name:'feu',percent:20}]","appearance:{portrait:'https://bad/image.png'}"]){assert.throws(()=>vm.runInContext(`createCampaignBestiary([{...exampleEnemy,${patch}}])`,context));}
 assert.throws(()=>vm.runInContext("createCampaignBestiary([exampleEnemy,exampleEnemy])",context),/dupliqué/);
+vm.runInContext(`
+const boardData={locationId:location.id,tokens:[{id:'token-hero',kind:'character',refId:'new-hero',x:25,y:40},{id:'token-enemy',kind:'enemy',refId:exampleEnemy.id,x:70,y:60,variant:'worldBoss',level:3},{id:'token-npc',kind:'npc',refId:'npc-test',x:50,y:50}]}
+const prepared=createCampaignDefinition({...neutral,locations:[location],bestiary:[exampleEnemy],npcs:[{id:'npc-test',name:'Gardienne',description:'Garde le pont.'}],staging:[boardData],preparationNotes:'Notes du MJ'})
+const preparedBefore=JSON.stringify(prepared),moved=setDraftBoard(prepared,location.id,boardData.tokens.map(token=>({...token,x:30})))
+if(JSON.stringify(prepared)!==preparedBefore||moved.staging[0].tokens[0].x!==30)throw Error('Déplacement non isolé')
+if(JSON.stringify(importCampaignDraft(exportCampaignDraft(prepared)))!==JSON.stringify(prepared))throw Error('Préparation perdue à l’export')
+if(removeDraftEnemy(prepared,exampleEnemy.id).staging[0].tokens.some(token=>token.kind==='enemy')||removeDraftCharacter(prepared,'new-hero').staging[0].tokens.some(token=>token.kind==='character')||removeDraftLocation(prepared,location.id).staging.length!==0)throw Error('Références de pions non nettoyées')
+globalThis.prepared=prepared
+`,context);
+for(const patch of ["x:101","y:-1","refId:'unknown'","kind:'script'","id:'../unsafe'"]){assert.throws(()=>vm.runInContext(`setDraftBoard(prepared,location.id,[{...prepared.staging[0].tokens[0],${patch}}])`,context));}
+assert.throws(()=>vm.runInContext("setDraftBoard(prepared,location.id,[{...prepared.staging[0].tokens[1],variant:'unknown'}])",context),/catégorie/);
+assert.throws(()=>vm.runInContext("createCampaignDefinition({...prepared,staging:[prepared.staging[0],prepared.staging[0]]})",context),/Carte/);
+assert.throws(()=>vm.runInContext("createCampaignDefinition({...prepared,npcs:[{id:'npc-test',name:'Gardienne',description:'',image:'https://bad/image.png'}]})",context),/Image/);

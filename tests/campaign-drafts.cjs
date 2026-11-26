@@ -17,4 +17,18 @@ storage.setItem('rpg-campaign-editor:v1:draft:broken','{');assert.equal(context.
 context.store.remove(updated);assert.equal(data.get('game-progress'),'unchanged');assert(data.has('rpg-campaign-editor:v1:draft:broken'));
 const old=storage.setItem;storage.setItem=()=>{throw Error('quota')};assert.throws(()=>context.store.save({...context.second,definition:context.second.definition}),/quota/);storage.setItem=old;assert.equal(context.store.get('test-b').revision,1);
 assert.throws(()=>vm.runInContext('importCampaignDraft(JSON.stringify({format:"save",version:1}))',context));
+vm.runInContext(fs.readFileSync('src/interface/editor/characters.js','utf8'),context);
+vm.runInContext(`
+const original=JSON.stringify(ACTIVE_CAMPAIGN), hero=createDraftHero('new-hero','Aurore')
+const neutral=createCampaignDefinition({schemaVersion:1,id:'nouveau',title:'Nouvelle histoire',characters:[hero,createDraftHero('other')]})
+const changed=updateDraftCharacter(neutral,'new-hero',{name:'Orion',stats:{...hero.stats,hp:145},mainStat:'chance'})
+if(changed.characters[0].id!=='new-hero'||changed.characters[0].stats.hp!==145||neutral.characters[0].name!=='Aurore')throw Error('Édition non isolée')
+if(removeDraftCharacter(changed,'other').characters.length!==1)throw Error('Suppression incorrecte')
+const copied=updateDraftCharacter(ACTIVE_CAMPAIGN,'greg',{name:'Autre héros',stats:{...ACTIVE_CAMPAIGN.characters[0].stats,hp:150},mainStat:'force'})
+if(JSON.stringify(copied.attacks)!==JSON.stringify(ACTIVE_CAMPAIGN.attacks)||JSON.stringify(ACTIVE_CAMPAIGN)!==original)throw Error('Contenu perdu ou modèle modifié')
+globalThis.neutral=neutral
+`,context);
+assert.throws(()=>vm.runInContext("removeDraftCharacter(removeDraftCharacter(neutral,'other'),'new-hero')",context),/au moins un héros/);
+assert.throws(()=>vm.runInContext("removeDraftCharacter(ACTIVE_CAMPAIGN,'greg')",context),/lié/);
+assert.throws(()=>vm.runInContext("updateDraftCharacter(neutral,'new-hero',{name:'A',stats:{force:1},mainStat:'force'})",context),/Statistiques/);
 console.log('OK brouillons : copie isolée, description, stockage distinct, concurrence, corruption et quota.');

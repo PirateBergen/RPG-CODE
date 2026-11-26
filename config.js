@@ -306,7 +306,7 @@ function createCampaignAudioTracks(input){
 }
 function draftAudioTrackKey(track){return track.source==='custom'?'sha256:'+track.sha256:'asset:'+track.path}
 function removeDraftAudioTrack(definition,id){return createCampaignDefinition({...definition,audioTracks:(definition.audioTracks || []).filter(track=>track.id!==id),...(definition.locations?{locations:definition.locations.map(place=>{if(place.audioId!==id)return place;const {audioId,...rest}=place;return rest})}:{})})}
-const CAMPAIGN_GM_STEP_KINDS=['text','npc','image','sound','effect','clear']
+const CAMPAIGN_GM_STEP_KINDS=['text','npc','image','sound','effect','clear','health','combat']
 const CAMPAIGN_GM_EFFECTS=['none','slash','projectile','fire','frost','lightning','heal','shield','smoke','swarm','beam','wave','explosion','mark']
 function createCampaignGmActions(input,definition){
   if(!Array.isArray(input)||input.length>100)throw Error('100 boutons MJ maximum par campagne.')
@@ -318,15 +318,46 @@ function createCampaignGmActions(input,definition){
     if(!Array.isArray(action.steps)||action.steps.length<1||action.steps.length>30)throw Error('Ajoutez de 1 à 30 étapes à votre bouton.')
     return {id:action.id,name:action.name.trim(),locationIds:[...action.locationIds],steps:action.steps.map(step=>{
       if(!step||!CAMPAIGN_GM_STEP_KINDS.includes(step.kind)||!['manual','auto'].includes(step.advance)||!Number.isFinite(step.delay)||step.delay<.2||step.delay>30)throw Error('Étape MJ invalide : délai de 0,2 à 30 secondes.')
-      const result={kind:step.kind,advance:step.kind==='text'?'manual':step.advance,delay:step.delay}
+      const result={kind:step.kind,advance:['text','health','combat'].includes(step.kind)?'manual':step.advance,delay:step.delay}
       if(step.kind==='text'){if(typeof step.text!=='string'||!step.text.trim()||step.text.length>5000)throw Error('Écrivez le texte de votre étape (5 000 caractères maximum).');result.text=step.text}
       if(step.kind==='npc'){if(!definition.npcs?.some(npc=>npc.id===step.npcId))throw Error('Un bouton MJ utilise un PNJ introuvable. Modifiez son étape avant de retirer le PNJ.');result.npcId=step.npcId}
       if(step.kind==='sound'){if(!definition.audioTracks?.some(track=>track.id===step.audioId))throw Error('Un bouton MJ utilise un son introuvable. Modifiez son étape avant de retirer ce son.');if(!Number.isInteger(step.volume)||step.volume<0||step.volume>100)throw Error('Volume de son invalide.');result.audioId=step.audioId;result.volume=step.volume}
       if(step.kind==='image'){if(typeof step.image!=='string'||step.image.length>600000||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(step.image))throw Error('Ajoutez une image à votre étape.');result.image=step.image}
       if(step.kind==='effect'){if(!CAMPAIGN_GM_EFFECTS.includes(step.effect)||typeof step.color!=='string'||!/^#[a-f0-9]{6}$/i.test(step.color)||![1,2,3].includes(step.intensity)||!Number.isFinite(step.duration)||step.duration<.2||step.duration>8||['darken','shake','flash'].some(key=>typeof step[key]!=='boolean'))throw Error('Réglages visuels invalides.');for(const key of ['effect','color','intensity','duration','darken','shake','flash'])result[key]=step[key]}
+      if(step.kind==='health'){
+        if(!['damage','heal'].includes(step.operation)||!['points','percentMax'].includes(step.unit)||!Number.isFinite(step.amount)||step.amount<=0||step.amount>(step.unit==='percentMax'?100:1000000)||!['allHeroes','selected','allEnemies'].includes(step.target))throw Error('Choisissez les cibles et un montant positif de PV (pourcentage maximum : 100).')
+        if(!Array.isArray(step.characterIds)||new Set(step.characterIds).size!==step.characterIds.length||step.characterIds.some(id=>!definition.characters.some(actor=>actor.id===id))||(step.target==='selected'&&!step.characterIds.length))throw Error('Choisissez au moins un personnage existant pour cet effet de PV.')
+        Object.assign(result,{operation:step.operation,unit:step.unit,amount:step.amount,target:step.target,characterIds:step.target==='selected'?[...step.characterIds]:[]})
+      }
+      if(step.kind==='combat'){
+        if(!Array.isArray(step.enemies)||!step.enemies.length||step.enemies.length>20)throw Error('Ajoutez au moins un ennemi à la rencontre (20 maximum).')
+        let total=0;result.enemies=step.enemies.map(entry=>{const enemy=definition.bestiary?.find(item=>item.id===entry.enemyId);if(!enemy)throw Error('Un bouton utilise un ennemi introuvable. Modifiez sa rencontre avant de retirer cet ennemi.');resolveDraftEnemy(enemy,entry.variant,entry.level);if(!Number.isSafeInteger(entry.count)||entry.count<1||entry.count>20)throw Error('Nombre d’ennemis invalide (1 à 20).');total+=entry.count;return {enemyId:entry.enemyId,variant:entry.variant,level:entry.level,count:entry.count}});if(total>20)throw Error('20 ennemis maximum par rencontre.')
+      }
       return result
     })}
   })
+}
+// Pure gameplay commands: caller owns the session and its persistence/permissions.
+function createCampaignActionSession(definition){return {characters:Object.fromEntries(definition.characters.map(actor=>{const maxHP=actor.stats?.hp || 100;return [actor.id,{hp:maxHP,maxHP}]})),combat:null,applied:[]}}
+function reconcileCampaignActionSession(definition,state){const base=createCampaignActionSession(definition);return {...state,characters:Object.fromEntries(Object.entries(base.characters).map(([id,actor])=>[id,{...actor,hp:state.characters[id]?.hp===0?0:Math.max(0,Math.min(actor.maxHP,actor.maxHP-Math.max(0,(state.characters[id]?.maxHP ?? actor.maxHP)-(state.characters[id]?.hp ?? actor.hp))))}]))}}
+function applyCampaignGameplayStep(definition,input,step,eventId){
+  if(typeof eventId!=='string'||!eventId||eventId.length>200)throw Error('Identifiant d’exécution invalide.')
+  if(input.applied.includes(eventId))return {state:input,changes:[],duplicate:true}
+  const checked=createCampaignGmActions([{id:'event-command',name:'Commande',locationIds:[],steps:[step]}],definition)[0].steps[0]
+  if(!['health','combat'].includes(checked.kind))throw Error('Cette étape ne modifie pas le jeu.')
+  const state=copyCampaignContent(reconcileCampaignActionSession(definition,input)),changes=[]
+  if(checked.kind==='combat'){
+    if(state.combat?.active)throw Error('Un combat est déjà en cours. Terminez-le avant de déclencher une nouvelle rencontre.')
+    const participants=definition.characters.filter(actor=>state.characters[actor.id].hp>0).map(actor=>actor.id)
+    if(!participants.some(id=>definition.characters.find(actor=>actor.id===id).kind==='hero'))throw Error('Aucun héros ne peut commencer ce combat : leurs PV sont à zéro.')
+    const enemies=[];for(const entry of checked.enemies){const base=definition.bestiary.find(enemy=>enemy.id===entry.enemyId),resolved=resolveDraftEnemy(base,entry.variant,entry.level);for(let i=0;i<entry.count;i++)enemies.push({id:eventId+'-enemy-'+enemies.length,enemyId:base.id,name:base.name,variant:entry.variant,level:entry.level,hp:resolved.stats.hp,maxHP:resolved.stats.hp,stats:resolved.stats,abilities:resolved.abilities})}
+    state.combat={active:true,participants,enemies};changes.push({kind:'combat',count:enemies.length})
+  }else{
+    let targets;if(checked.target==='allEnemies'){if(!state.combat?.active||!state.combat.enemies.length)throw Error('Aucun ennemi en combat à cibler.');targets=state.combat.enemies.map(enemy=>({actor:enemy,id:enemy.id,name:enemy.name}))}
+    else targets=definition.characters.filter(actor=>checked.target==='allHeroes'?actor.kind==='hero':checked.characterIds.includes(actor.id)).map(actor=>({actor:state.characters[actor.id],id:actor.id,name:actor.name}))
+    for(const target of targets){const before=target.actor.hp,amount=checked.unit==='percentMax'?Math.round(target.actor.maxHP*checked.amount)/100:checked.amount;target.actor.hp=Math.round(Math.max(0,Math.min(target.actor.maxHP,before+(checked.operation==='heal'?amount:-amount)))*100)/100;changes.push({kind:'health',id:target.id,name:target.name,before,after:target.actor.hp,maxHP:target.actor.maxHP})}
+  }
+  state.applied=[...state.applied,eventId].slice(-1000);return {state,changes,duplicate:false}
 }
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {

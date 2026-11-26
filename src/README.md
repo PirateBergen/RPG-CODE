@@ -173,3 +173,9 @@ L’éditeur propose les modèles Bénédiction et Malédiction, des étapes lib
 ### Modèle Avis de recherche prévu
 
 Le lot Quêtes/Contrats reste à réaliser : affiche individuelle et tableau de contrats ; portrait, titre, description, cible de bestiaire ou narrative, récompense, indices publics et notes MJ privées. Statuts disponibles/acceptés/terminés et validation MJ de la résolution ; afficher un contrat ne verse pas sa récompense. Un versement validé devra être unique, avec trace et possibilité de correction MJ. Les récompenses pourront appeler les effets nommés et pouvoirs déblocables. Ce paragraphe décrit le prochain modèle ; aucun bouton Wanted n’est encore activé dans le créateur et aucun contrat historique n’est modifié.
+
+## Rangement du créateur de boutons
+
+Les responsabilités de l’éditeur sont séparées sans changer le format des brouillons : `gm-actions.js` compose les étapes et gère les fiches de boutons ; `gm-action-fields.js` construit les formulaires des effets de jeu ; `gm-action-trial.js` possède les sessions temporaires par identifiant local et leurs commandes ; `gm-action-state-view.js` affiche les PV, rencontres et effets, sans modifier leur état. `gm-action-player.js` garde la lecture des scènes et leur nettoyage. Les formulaires lisent la liste d’étapes courante via un rappel pour conserver le fonctionnement après remplacement d’un modèle ou réordonnancement. Les règles restent dans `engine/campaigns/`.
+
+Cette séparation prépare les futurs jets et contrats sans dupliquer les formulaires ou les états. Les noms de champs, identifiants HTML, chemins de stockage, médias, règles et séquences de confirmation sont conservés. Les fichiers publics restent les mêmes ; seul l’ordre explicite des nouveaux fragments est ajouté au manifeste. Les parcours existants de l’éditeur et la suite ordinaire assurent la vérification, sans ajouter de nouveaux tests pour ce simple déplacement de responsabilités.

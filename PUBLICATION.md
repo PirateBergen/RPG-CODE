@@ -23,3 +23,5 @@ Le dossier de sortie doit être vide ou neuf : cela empêche un fichier retiré 
 Un échec après l’envoi signifie **publication non confirmée**, pas absence certaine d’envoi. Lire l’étape en échec et vérifier le site avant une relance. Ne pas annoncer une mise en ligne sur la seule réussite du transfert. Les données Firebase ne sont jamais restaurées ou modifiées par cette procédure.
 
 Pour republier une version connue : utiliser **Run workflow** sur `main` après un revert explicite du changement de jeu concerné et une nouvelle version de cache, puis attendre la confirmation finale. Ne pas forcer l’historique Git et ne pas restaurer de sauvegarde de campagne pour corriger l’hébergement.
+
+La préparation/transmission du paquet et son déploiement Pages sont exécutés dans deux jobs dépendants : le déploiement ne démarre qu’après la fin complète du transfert. Le second job reconstruit le manifeste attendu depuis le même commit, puis conserve la vérification des octets réellement servis. Les erreurs de récupération de métadonnées d’artefact ne doivent pas être considérées comme des erreurs de données de campagne.

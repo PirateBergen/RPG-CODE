@@ -327,6 +327,7 @@
       "platform/storage/draft-store.js",
       "interface/editor/character-profile.js",
       "interface/editor/characters.js",
+      "interface/editor/locations.js",
       "interface/editor/campaign-editor.js"
     ],
     "campaign-editor.css": [

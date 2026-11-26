@@ -6,6 +6,19 @@ function createCampaignDefinition(input) {
   if (input.description !== undefined && (typeof input.description !== "string" || input.description.length > 5000)) throw Error("Description invalide (5 000 caractères maximum)")
   if (!Array.isArray(input.characters) || !input.characters.length) throw Error("Personnages de campagne absents")
   const ids = new Set()
+  const locations={}
+  if(input.locations!==undefined){
+    if(!Array.isArray(input.locations)||input.locations.length>200)throw Error('Liste des lieux invalide (200 maximum)')
+    const locationIds=new Set()
+    locations.locations=input.locations.map(place=>{
+      if(!place||typeof place.id!=='string'||!/^lieu-[a-z0-9-]+$/.test(place.id)||locationIds.has(place.id))throw Error('Identifiant de lieu invalide ou dupliqué')
+      locationIds.add(place.id)
+      if(typeof place.name!=='string'||!place.name.trim()||place.name.length>120)throw Error('Nom de lieu invalide')
+      if(!['region','city','village','wilderness','dungeon','building','other'].includes(place.type))throw Error('Type de lieu invalide')
+      for(const key of ['description','gmNotes'])if(typeof place[key]!=='string'||place[key].length>5000)throw Error('Texte de lieu invalide (5 000 caractères maximum)')
+      return {id:place.id,name:place.name,type:place.type,description:place.description,gmNotes:place.gmNotes}
+    })
+  }
   const characters = input.characters.map(character => {
     if (!character || typeof character.id !== "string" || !/^[a-z][a-z0-9_-]*$/.test(character.id) || ["constructor", "prototype", "__proto__", "mob", "mob2", "mob3"].includes(character.id) || ids.has(character.id)) throw Error("Identifiant de personnage invalide ou dupliqué")
     ids.add(character.id)
@@ -45,5 +58,5 @@ function createCampaignDefinition(input) {
   if(input.ruleSet!==undefined&&(typeof input.ruleSet!=="string"||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.ruleSet)))throw Error("Identifiant de règles invalide")
   const content={...(input.story!==undefined?{story:createCampaignStory(input.story,characters)}:{}), ...(input.ruleSet!==undefined?{ruleSet:input.ruleSet}:{}),...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
   const catalogs={...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
-  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
+  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, ...locations, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
 }

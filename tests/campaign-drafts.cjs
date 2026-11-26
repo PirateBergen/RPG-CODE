@@ -40,3 +40,16 @@ if(JSON.stringify(roundtrip)!==JSON.stringify(profileCampaign))throw Error('Prof
 globalThis.profileHero=profileHero
 `,context);
 for(const patch of ["appearance:{portrait:'data:image/svg+xml;base64,AAAA'}","customInfo:[{label:'',value:'invalide'}]","race:42"]){assert.throws(()=>vm.runInContext(`createCampaignDefinition({schemaVersion:1,id:'invalid',title:'Invalide',characters:[{...profileHero,${patch}}]})`,context));}
+vm.runInContext(fs.readFileSync('src/interface/editor/locations.js','utf8'),context);
+vm.runInContext(`
+const location={id:'lieu-test',name:'Village des Brumes',type:'village',description:'Une place calme.',gmNotes:'Un passage secret.'}
+const withPlace=setDraftLocation(neutral,location), editedPlace=setDraftLocation(withPlace,{...location,name:'Nouveau nom'})
+if(neutral.locations!==undefined||withPlace.locations[0].name!=='Village des Brumes'||editedPlace.locations.length!==1||editedPlace.locations[0].name!=='Nouveau nom')throw Error('Édition de lieu incorrecte')
+if(JSON.stringify(importCampaignDraft(exportCampaignDraft(withPlace)))!==JSON.stringify(withPlace))throw Error('Lieu perdu dans un échange')
+if(removeDraftLocation(withPlace,'lieu-test').locations.length!==0)throw Error('Suppression incorrecte')
+const preserved=JSON.stringify(ACTIVE_CAMPAIGN),copiedPlace=setDraftLocation(ACTIVE_CAMPAIGN,location)
+if(JSON.stringify(copiedPlace.world)!==JSON.stringify(ACTIVE_CAMPAIGN.world)||JSON.stringify(ACTIVE_CAMPAIGN)!==preserved)throw Error('Modèle ou musiques modifiés')
+globalThis.location=location
+`,context);
+for(const patch of ["name:' '","description:42","type:'invalid'","id:'../unsafe'","gmNotes:'x'.repeat(5001)"]){assert.throws(()=>vm.runInContext(`setDraftLocation(neutral,{...location,${patch}})`,context));}
+assert.throws(()=>vm.runInContext("createCampaignDefinition({...neutral,locations:[location,location]})",context),/dupliqué/);

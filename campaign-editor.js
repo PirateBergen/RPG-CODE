@@ -157,6 +157,53 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
   })
   return {render}
 }
+const DRAFT_LOCATION_TYPES={region:'Région',city:'Ville',village:'Village',wilderness:'Nature / extérieur',dungeon:'Donjon / souterrain',building:'Bâtiment / intérieur',other:'Autre'}
+function setDraftLocation(definition,place) {
+  const places=definition.locations || [], exists=places.some(item=>item.id===place.id)
+  return createCampaignDefinition({...definition,locations:exists?places.map(item=>item.id===place.id?place:item):[...places,place]})
+}
+function removeDraftLocation(definition,id) {
+  if(!definition.locations?.some(place=>place.id===id))throw Error('Lieu introuvable')
+  return createCampaignDefinition({...definition,locations:definition.locations.filter(place=>place.id!==id)})
+}
+function createDraftLocationPanel({getDefinition,replaceDefinition,changed,message}) {
+  const $=id=>document.getElementById(id),dialog=$('locationDialog')
+  let selected=null
+  for(const [value,label] of Object.entries(DRAFT_LOCATION_TYPES)){const option=document.createElement('option');option.value=value;option.textContent=label;$('locationType').append(option)}
+  function edit(place) {
+    selected=place?.id || null;$('locationName').value=place?.name || '';$('locationType').value=place?.type || 'other';$('locationDescription').value=place?.description || '';$('locationNotes').value=place?.gmNotes || '';$('locationError').textContent='';$('locationRemove').hidden=!place;dialog.showModal();$('locationName').focus()
+  }
+  function render() {
+    const definition=getDefinition(),list=$('locations');list.replaceChildren()
+    if(!definition.locations?.length){const empty=document.createElement('p');empty.className='hint';empty.textContent='Aucun lieu créé. Commencez par un village, une forêt ou le premier décor de votre histoire.';list.append(empty)}
+    for(const place of definition.locations || []) {
+      const card=document.createElement('div'),name=document.createElement('h3'),type=document.createElement('p'),description=document.createElement('p'),button=document.createElement('button')
+      card.className='location-card';name.textContent=place.name;type.className='hint';type.textContent=DRAFT_LOCATION_TYPES[place.type];description.textContent=place.description || 'Description à imaginer.';description.className='location-description';button.type='button';button.textContent='Modifier';button.setAttribute('aria-label','Modifier le lieu '+place.name);button.addEventListener('click',()=>edit(place));card.append(name,type,description,button);list.append(card)
+    }
+    // Existing story maps are references, kept intact until the map editor is available.
+    const legacy=$('legacyLocations');legacy.replaceChildren()
+    for(const [map,name] of Object.entries(definition.world?.names || {})) {
+      const item=document.createElement('li');item.textContent=name || 'Carte sans nom';legacy.append(item)
+    }
+    $('legacyLocationPanel').hidden=!legacy.children.length
+  }
+  $('addLocation').addEventListener('click',()=>edit(null))
+  $('locationCancel').addEventListener('click',()=>dialog.close())
+  $('locationForm').addEventListener('submit',event=>{
+    event.preventDefault()
+    try {
+      const place={id:selected || 'lieu-'+crypto.randomUUID(),name:$('locationName').value.trim(),type:$('locationType').value,description:$('locationDescription').value,gmNotes:$('locationNotes').value}
+      replaceDefinition(setDraftLocation(getDefinition(),place));changed();render();dialog.close();message('Lieu préparé. Enregistrez le brouillon pour le conserver.')
+    }catch(error){$('locationError').textContent=error.message}
+  })
+  $('locationRemove').addEventListener('click',()=>{
+    try {
+      if(!selected||!window.confirm('Retirer ce lieu du brouillon ?'))return
+      replaceDefinition(removeDraftLocation(getDefinition(),selected));changed();render();dialog.close();message('Lieu retiré du brouillon.')
+    }catch(error){$('locationError').textContent=error.message}
+  })
+  return {render}
+}
 (() => {
   const $=id=>document.getElementById(id)
   let current=null, dirty=false, copyMode=false, store
@@ -166,17 +213,18 @@ function createDraftCharacterPanel({getDefinition,replaceDefinition,changed,mess
   const discard=()=>!dirty || window.confirm('Abandonner les modifications non enregistrées de ce brouillon ?')
   const uuid=()=>crypto.randomUUID()
   const characterPanel=createDraftCharacterPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,guard})
+  const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message})
   function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision }
   function definition() {return createCampaignDefinition({...current.definition,title:$('title').value.trim(),description:$('description').value})}
   function open(record) {
     current=record; $('empty').hidden=true; $('editor').hidden=false
     $('title').value=record.definition.title; $('description').value=record.definition.description || ''
-    summary();characterPanel.render()
+    summary();characterPanel.render();locationPanel.render()
     mark(!record.revision); message(record.revision?'Brouillon ouvert.':'Brouillon prêt. Enregistrez-le pour le retrouver.'); refresh()
   }
   function summary() {
     const d=current.definition
-    $('summary').textContent=`Contenu : ${d.characters.length} personnage(s), ${Object.keys(d.world?.names || {}).length} lieu(x), ${Object.keys(d.enemies?.stats || {}).length} ennemi(s), ${d.allies?.length || 0} allié(s).`
+    $('summary').textContent=`Contenu : ${d.characters.length} personnage(s), ${d.locations?.length || 0} lieu(x) créé(s), ${Object.keys(d.world?.names || {}).length} carte(s) du modèle, ${Object.keys(d.enemies?.stats || {}).length} ennemi(s), ${d.allies?.length || 0} allié(s).`
   }
   function refresh() {
     const library=$('library'); library.replaceChildren()

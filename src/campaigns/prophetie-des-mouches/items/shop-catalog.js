@@ -1,4 +1,4 @@
-const shopItemsArmurerie = [
+const CAMPAIGN_ARMORY_ITEMS = [
   { id:"epee",         name:"Épée",             img:"epee.png",         category:"arme",   basePrix:60,  baseStats:"Force +2",        scaling:8  },
   { id:"arc",          name:"Arc",              img:"arc.png",          category:"arme",   basePrix:70,  baseStats:"Précision +2",    scaling:8  },
   { id:"masse",        name:"Masse",            img:"masse.png",        category:"arme",   basePrix:65,  baseStats:"Force +3",        scaling:9  },
@@ -14,7 +14,7 @@ const shopItemsArmurerie = [
   { id:"anneaudef",    name:"Anneau de Défense",img:"anneau1.png",      category:"armure", basePrix:120, baseStats:"Défense +2",      scaling:12 }
 ]
 
-const shopItems = [
+const CAMPAIGN_SHOP_ITEMS = [
   { id:"sort",       name:"Parchemin Sort",  img:"sort.png",      category:"magie",   basePrix:100, baseStats:"Sort unique",  scaling:12 },
   { id:"anneaumagic",name:"Anneau Mystique", img:"anneau1.png",   category:"magie",   basePrix:130, baseStats:"Magie +3",     scaling:13 },
   { id:"potion",     name:"Potion de Vie",   img:"potionvie.png", category:"consomm", basePrix:50,  baseStats:"Vie +30",      scaling:5  },
@@ -29,7 +29,7 @@ const shopItems = [
   { id:"pierresoin", name:"Pierre de Soin",  img:"sort.png",      category:"util",    basePrix:120, baseStats:"+5 HP/tour",   scaling:8  }
 ]
 
-const categoryLabels = {
+const CAMPAIGN_ITEM_CATEGORIES = {
   arme:"⚔ Armes", armure:"🛡 Armures", magie:"✨ Magie", consomm:"🧪 Consommables", util:"🔧 Utilitaires"
 }
 

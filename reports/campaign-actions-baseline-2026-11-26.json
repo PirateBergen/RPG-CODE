@@ -1,0 +1,2046 @@
+{
+  "format": 1,
+  "baselineCommit": "c214b7c1a8e605106f0f403dbe2fd88e9a30bac2",
+  "catalogs": {
+    "attacks": {
+      "greg": [
+        {
+          "name": "Chat Bite (CaC)",
+          "type": "Mêlée",
+          "dice": 12,
+          "stat": "Force",
+          "effect": "Morsure brutale",
+          "crit": "Dégâts x2"
+        },
+        {
+          "name": "Le Bibi",
+          "type": "Spécial",
+          "dice": 20,
+          "stat": "Chance",
+          "effect": "Bibi attaque avec rage",
+          "crit": "Bonus allié de +2 dégâts pendant 3 rounds"
+        },
+        {
+          "name": "I know Frank (si arc)",
+          "type": "Distance",
+          "dice": 12,
+          "stat": "Perspicacité",
+          "effect": "Tir précis arc",
+          "crit": "Dégâts x2 et saignement, -1 HP pendant 2 tours"
+        }
+      ],
+      "ju": [
+        {
+          "name": "French cancan",
+          "type": "Mêlée",
+          "dice": 12,
+          "stat": "Force",
+          "pikaKind": "cancan",
+          "effect": "Contact obligatoire. Coups selon le jet ; dégâts fondés sur la Force et le niveau.",
+          "crit": "4 coups de pied",
+          "condition": "À 180 ou moins de la cible"
+        },
+        {
+          "name": "Je suis une fille",
+          "type": "Charme",
+          "dice": 12,
+          "stat": "Charme",
+          "pikaKind": "hypnosis",
+          "effect": "Hypnose 1 tour complet. Recharge : 3 tours. Faible/normal : sauf échec critique ; fort : 7+ ; boss : 10+ ; world boss : critique uniquement.",
+          "crit": "Hypnose pendant 2 tours complets"
+        },
+        {
+          "name": "Rire KRRKRR",
+          "type": "Sort à distance",
+          "dice": 12,
+          "stat": "Charme",
+          "pikaKind": "laugh",
+          "effect": "Ce rire est tellement bizarre que l’ennemi en reste sans voix. Dégâts à distance fondés sur le Charme et le niveau.",
+          "crit": "Ricochet à 50 % sur une autre cible ; si elle est seule, +50 % de dégâts."
+        }
+      ],
+      "elo": [
+        {
+          "name": "Mains magiques",
+          "type": "Soin",
+          "dice": 12,
+          "stat": "Defense",
+          "effect": "Restaure HP à soi ou allié",
+          "crit": "Pv restaurés x2"
+        },
+        {
+          "name": "Je vais te raconter une histoire",
+          "type": "Sort",
+          "dice": 12,
+          "stat": "Charme",
+          "effect": "invoque les forces de la nature. Bonus de dégâts en forêt ou mine",
+          "crit": "L'ennemi est empoisonné, -2 hp pendant 2 tours"
+        },
+        {
+          "name": "Je suis jet laguée",
+          "type": "Invocation",
+          "dice": 12,
+          "stat": "Chance",
+          "effect": "John Pork frappe à son arrivée, encaisse les attaques à cible unique et donne un bonus D4 aux attaques d’Elo pendant 3 rounds",
+          "crit": "Le familier devient fou, dégats x2 et attaque tous les mobs"
+        }
+      ]
+    },
+    "playerSpecialAttacks": {
+      "greg": {
+        "name": "Crâne de Frank",
+        "type": "Spécial",
+        "dice": 20,
+        "stat": "Force",
+        "effect": "Exécution brutale sur cible affaiblie",
+        "crit": "Dégâts colossaux",
+        "fail": "Greg vacille et rate sa fenêtre d'exécution.",
+        "conditionText": "Cible à 40% HP ou moins",
+        "flavor": "Greg lâche toute retenue et termine le travail sans élégance.",
+        "icon": "slash_overlay.png",
+        "rule": "mob_below_forty",
+        "damageBonus": 1.95
+      },
+      "ju": {
+        "name": "Endikaki",
+        "type": "Spécial",
+        "dice": 20,
+        "stat": "Charme",
+        "pikaKind": "endikaki",
+        "effect": "Invoque Endikaki, une bombe vivante qui fonce sur la cible et explose.",
+        "crit": "Explosion renforcée : dégâts doublés",
+        "fail": "Endikaki explose sans toucher l’ennemi.",
+        "conditionText": "Un autre allié est à moins de 20 % de ses PV (un allié KO compte).",
+        "flavor": "Le vieux fou est parti !",
+        "icon": "endikaki-token.svg",
+        "rule": "ally_below_twenty",
+        "damageBonus": 1.8
+      },
+      "elo": {
+        "name": "C'est fou ce dont les humains sont capables",
+        "type": "Spécial",
+        "dice": 20,
+        "stat": "Charme",
+        "effect": "Déchaîne la nature et soigne le groupe quand il vacille",
+        "crit": "Soin du groupe renforcé",
+        "fail": "L'incantation se brise, mais un souffle d'espoir subsiste.",
+        "conditionText": "Un allié à 60% HP ou moins",
+        "flavor": "Elo appelle une histoire si vieille qu'elle mord encore.",
+        "icon": "rune_glow.png",
+        "rule": "ally_below_sixty",
+        "damageBonus": 1.7
+      },
+      "bibi": {
+        "name": "Le zoomies final",
+        "type": "Spécial",
+        "dice": 20,
+        "stat": "Chance",
+        "effect": "Bibi déchaîne son chaos canin",
+        "crit": "Dégâts massifs",
+        "fail": "Bibi s'éparpille et ne trouve pas sa cible.",
+        "conditionText": "Greg à 20% HP ou moins",
+        "flavor": "Quand Bibi craque, tout le champ de bataille le sent.",
+        "icon": "fang.png",
+        "rule": "greg_below_twenty",
+        "damageBonus": 1.85
+      }
+    },
+    "mobAttacks": {
+      "weak": [
+        {
+          "name": "Attaque",
+          "icon": "⚔",
+          "dmgMin": 3,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Frappe basique"
+        }
+      ],
+      "medium": [
+        {
+          "name": "Frappe",
+          "icon": "⚔",
+          "dmgMin": 5,
+          "dmgMax": 12,
+          "effect": null,
+          "desc": "Attaque normale"
+        },
+        {
+          "name": "Assaut brutal",
+          "icon": "💢",
+          "dmgMin": 8,
+          "dmgMax": 18,
+          "effect": "stun",
+          "desc": "Étourdit la cible"
+        }
+      ],
+      "high": [
+        {
+          "name": "Coup puissant",
+          "icon": "⚔",
+          "dmgMin": 10,
+          "dmgMax": 20,
+          "effect": null,
+          "desc": "Frappe puissante"
+        },
+        {
+          "name": "Attaque de zone",
+          "icon": "🌀",
+          "dmgMin": 6,
+          "dmgMax": 12,
+          "effect": "all",
+          "desc": "Touche tous les joueurs"
+        },
+        {
+          "name": "Capacité spéciale",
+          "icon": "✨",
+          "dmgMin": 12,
+          "dmgMax": 25,
+          "effect": "curse",
+          "desc": "+1 malédiction"
+        }
+      ],
+      "boss": [
+        {
+          "name": "Frappe dévastatrice",
+          "icon": "💥",
+          "dmgMin": 20,
+          "dmgMax": 40,
+          "effect": null,
+          "desc": "Dégâts massifs"
+        },
+        {
+          "name": "Rugissement",
+          "icon": "😤",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": "debuff",
+          "desc": "Force/Défense -2 pendant 2 tours"
+        },
+        {
+          "name": "Pouvoir ultime",
+          "icon": "⚡",
+          "dmgMin": 25,
+          "dmgMax": 50,
+          "effect": "all",
+          "desc": "Frappe TOUS les joueurs"
+        }
+      ]
+    },
+    "mobAttackOverrides": {
+      "gobelins": [
+        {
+          "name": "Coup de gourdin",
+          "icon": "🪵",
+          "dmgMin": 4,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "Un classique gobelin très mal élevé"
+        },
+        {
+          "name": "Jet de caillou",
+          "icon": "🪨",
+          "dmgMin": 3,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Petit projectile, grand manque de respect"
+        }
+      ],
+      "loup": [
+        {
+          "name": "Morsure",
+          "icon": "🦷",
+          "dmgMin": 5,
+          "dmgMax": 10,
+          "effect": null,
+          "desc": "Morsure rapide à la gorge"
+        },
+        {
+          "name": "Bond sauvage",
+          "icon": "🐾",
+          "dmgMin": 4,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "Le loup jaillit sans prévenir"
+        }
+      ],
+      "draugr": [
+        {
+          "name": "Griffe funéraire",
+          "icon": "🪦",
+          "dmgMin": 5,
+          "dmgMax": 11,
+          "effect": null,
+          "desc": "Une main morte mais très motivée"
+        },
+        {
+          "name": "Souffle de caveau",
+          "icon": "💀",
+          "dmgMin": 4,
+          "dmgMax": 10,
+          "effect": "curse",
+          "desc": "Une haleine tombale qui colle à l'âme"
+        }
+      ],
+      "fantome": [
+        {
+          "name": "Toucher glacé",
+          "icon": "👻",
+          "dmgMin": 4,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "Le froid vous traverse jusqu'à l'os"
+        },
+        {
+          "name": "Ricanement spectral",
+          "icon": "🌫",
+          "dmgMin": 3,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Pas très douloureux, mais très mauvais pour le moral"
+        }
+      ],
+      "vampire": [
+        {
+          "name": "Spider monkey",
+          "icon": "🕷",
+          "dmgMin": 5,
+          "dmgMax": 11,
+          "effect": null,
+          "desc": "Le vampire bondit avec une énergie très peu naturelle"
+        },
+        {
+          "name": "Glowing glass skin",
+          "icon": "✨",
+          "dmgMin": 4,
+          "dmgMax": 10,
+          "effect": "curse",
+          "desc": "Une beauté scintillante qui fait mal aux yeux et au reste"
+        }
+      ],
+      "witch": [
+        {
+          "name": "No mourning",
+          "icon": "🧹",
+          "dmgMin": 5,
+          "dmgMax": 10,
+          "effect": "curse",
+          "desc": "La sorcière retire toute gravité à la situation, sauf les dégâts"
+        },
+        {
+          "name": "No good deed",
+          "icon": "✨",
+          "dmgMin": 4,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "Une bonne intention finit très mal pour la cible"
+        }
+      ],
+      "garde": [
+        {
+          "name": "Coup de lance",
+          "icon": "🗡",
+          "dmgMin": 5,
+          "dmgMax": 10,
+          "effect": null,
+          "desc": "Propre, carré, réglementaire"
+        },
+        {
+          "name": "Charge au bouclier",
+          "icon": "🛡",
+          "dmgMin": 4,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "La garde avance, la cible recule"
+        }
+      ],
+      "bandit": [
+        {
+          "name": "Coup sale",
+          "icon": "🔪",
+          "dmgMin": 5,
+          "dmgMax": 10,
+          "effect": null,
+          "desc": "Aucun honneur, un certain rendement"
+        },
+        {
+          "name": "Entaille de route",
+          "icon": "🪓",
+          "dmgMin": 4,
+          "dmgMax": 10,
+          "effect": null,
+          "desc": "Le péage est payable en hémoglobine"
+        }
+      ],
+      "ogre": [
+        {
+          "name": "Couches d'onion",
+          "icon": "🧅",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": null,
+          "desc": "L'ogre révèle de nouvelles couches de violence"
+        },
+        {
+          "name": "Fais ton RReeu",
+          "icon": "📣",
+          "dmgMin": 7,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Un cri si lourd qu'il devient presque un coup"
+        }
+      ],
+      "dragon": [
+        {
+          "name": "Morsure draconique",
+          "icon": "🐉",
+          "dmgMin": 9,
+          "dmgMax": 17,
+          "effect": null,
+          "desc": "Des dents premium"
+        },
+        {
+          "name": "Souffle de braise",
+          "icon": "🔥",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": "all",
+          "desc": "Le feu règle plusieurs problèmes à la fois"
+        }
+      ],
+      "valkyrie": [
+        {
+          "name": "Pique céleste",
+          "icon": "🪽",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": null,
+          "desc": "Une attaque descendue d'en haut"
+        },
+        {
+          "name": "Entaille d'Asgard",
+          "icon": "⚔",
+          "dmgMin": 7,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Le métal chante, la cible moins"
+        }
+      ],
+      "golem": [
+        {
+          "name": "Poing de granite",
+          "icon": "🪨",
+          "dmgMin": 10,
+          "dmgMax": 18,
+          "effect": null,
+          "desc": "Une explication géologique très directe"
+        },
+        {
+          "name": "Onde de choc",
+          "icon": "💥",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": "all",
+          "desc": "Le sol participe lui aussi"
+        }
+      ],
+      "pretre": [
+        {
+          "name": "Sol do mi",
+          "icon": "📿",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": "curse",
+          "desc": "Le prêtre attaque en gamme ascendante et en intensité douteuse"
+        },
+        {
+          "name": "À genoux",
+          "icon": "🕯",
+          "dmgMin": 7,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "L'ordre est bref, l'impact très concret"
+        }
+      ],
+      "fenrir": [
+        {
+          "name": "Crocs du loup-monde",
+          "icon": "🐺",
+          "dmgMin": 10,
+          "dmgMax": 18,
+          "effect": null,
+          "desc": "La fin du monde, version morsure"
+        },
+        {
+          "name": "Déchirement du flanc",
+          "icon": "🌘",
+          "dmgMin": 9,
+          "dmgMax": 17,
+          "effect": null,
+          "desc": "Fenrir ouvre le combat comme un paquet cadeau"
+        }
+      ],
+      "zombie": [
+        {
+          "name": "Claquement d'os",
+          "icon": "🧟",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": null,
+          "desc": "Pas rapide, mais très appliqué"
+        },
+        {
+          "name": "Morsure moisie",
+          "icon": "☣",
+          "dmgMin": 7,
+          "dmgMax": 14,
+          "effect": "curse",
+          "desc": "Le goût reste. Longtemps."
+        }
+      ],
+      "zombie2": [
+        {
+          "name": "Main de cave",
+          "icon": "🧟",
+          "dmgMin": 8,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Une vieille habitude qui colle"
+        },
+        {
+          "name": "Morsure rance",
+          "icon": "☣",
+          "dmgMin": 7,
+          "dmgMax": 13,
+          "effect": "curse",
+          "desc": "Une attaque avec arrière-goût"
+        }
+      ],
+      "troll": [
+        {
+          "name": "Patate de pont",
+          "icon": "👊",
+          "dmgMin": 7,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Le troll gère les passages à sa manière"
+        },
+        {
+          "name": "Jet de gravats",
+          "icon": "🪵",
+          "dmgMin": 6,
+          "dmgMax": 13,
+          "effect": null,
+          "desc": "Le mobilier urbain n'est plus en sécurité"
+        }
+      ],
+      "cyclope": [
+        {
+          "name": "Taloche monoculaire",
+          "icon": "👁",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": null,
+          "desc": "Le cyclope vous a bien à l'œil"
+        },
+        {
+          "name": "Coup de massue",
+          "icon": "🪓",
+          "dmgMin": 8,
+          "dmgMax": 16,
+          "effect": null,
+          "desc": "Une discussion courte et convaincante"
+        }
+      ],
+      "serpentgeant": [
+        {
+          "name": "Morsure constrictrice",
+          "icon": "🐍",
+          "dmgMin": 9,
+          "dmgMax": 17,
+          "effect": null,
+          "desc": "Ça serre et ça mord, combo classique"
+        },
+        {
+          "name": "Fouet d'écailles",
+          "icon": "🌀",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": null,
+          "desc": "La queue fait très bien le travail"
+        }
+      ],
+      "balraug": [
+        {
+          "name": "Fouet de feu",
+          "icon": "🔥",
+          "dmgMin": 14,
+          "dmgMax": 24,
+          "effect": null,
+          "desc": "Un fouet qui corrige jusqu'à l'âme"
+        },
+        {
+          "name": "Piétinement infernal",
+          "icon": "💥",
+          "dmgMin": 12,
+          "dmgMax": 22,
+          "effect": "all",
+          "desc": "Le sol se souvient du passage du Balraug"
+        }
+      ],
+      "jormungand": [
+        {
+          "name": "Morsure du monde",
+          "icon": "🌊",
+          "dmgMin": 15,
+          "dmgMax": 26,
+          "effect": null,
+          "desc": "Le serpent-monde ferme la mâchoire sur l'horizon"
+        },
+        {
+          "name": "Vague corrosive",
+          "icon": "🫧",
+          "dmgMin": 12,
+          "dmgMax": 21,
+          "effect": "all",
+          "desc": "Toute la ligne prend la marée"
+        }
+      ],
+      "kraken": [
+        {
+          "name": "Claquement de tentacule",
+          "icon": "🐙",
+          "dmgMin": 14,
+          "dmgMax": 24,
+          "effect": null,
+          "desc": "Le Kraken distribue des baffes maritimes"
+        },
+        {
+          "name": "Jet de maelstrom",
+          "icon": "🌊",
+          "dmgMin": 12,
+          "dmgMax": 20,
+          "effect": "all",
+          "desc": "Le combat devient très humide, très vite"
+        }
+      ],
+      "liquorice": [
+        {
+          "name": "Entité démoniaque",
+          "icon": "🍬",
+          "dmgMin": 7,
+          "dmgMax": 13,
+          "effect": null,
+          "desc": "La réglisse assume enfin sa vraie nature cosmique"
+        },
+        {
+          "name": "Goût de cul",
+          "icon": "💀",
+          "dmgMin": 6,
+          "dmgMax": 12,
+          "effect": null,
+          "desc": "Le palais souffre, puis le reste du corps suit"
+        }
+      ],
+      "tavernier": [
+        {
+          "name": "Baffe du comptoir",
+          "icon": "🍺",
+          "dmgMin": 4,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "Service compris, pourboire non inclus"
+        },
+        {
+          "name": "Coup de torchon",
+          "icon": "🧽",
+          "dmgMin": 3,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Étonnamment humiliant"
+        }
+      ],
+      "soulard": [
+        {
+          "name": "Moulinet ivre",
+          "icon": "🍷",
+          "dmgMin": 3,
+          "dmgMax": 7,
+          "effect": null,
+          "desc": "Trajectoire douteuse, impact réel"
+        },
+        {
+          "name": "Hoquet de guerre",
+          "icon": "💫",
+          "dmgMin": 2,
+          "dmgMax": 6,
+          "effect": null,
+          "desc": "Le souffle est une arme improvisée"
+        }
+      ],
+      "serveuse": [
+        {
+          "name": "Revers de plateau",
+          "icon": "🍽",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Rapide, sec, professionnel"
+        },
+        {
+          "name": "Carafe expéditive",
+          "icon": "🥛",
+          "dmgMin": 3,
+          "dmgMax": 7,
+          "effect": null,
+          "desc": "Un service très mal orienté"
+        }
+      ],
+      "marchand": [
+        {
+          "name": "Balance truquée",
+          "icon": "💰",
+          "dmgMin": 4,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "L'arnaque devient physique"
+        },
+        {
+          "name": "Contrat agressif",
+          "icon": "📜",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Les petites lignes frappent fort"
+        }
+      ],
+      "forgeron": [
+        {
+          "name": "Marteau de forge",
+          "icon": "🔨",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": null,
+          "desc": "Un outil devenu argument final"
+        },
+        {
+          "name": "Gerbe d'étincelles",
+          "icon": "⚒",
+          "dmgMin": 6,
+          "dmgMax": 12,
+          "effect": null,
+          "desc": "Le métal proteste en feu"
+        }
+      ],
+      "forgeron1": [
+        {
+          "name": "Coup d'enclume",
+          "icon": "🔩",
+          "dmgMin": 8,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Poids, précision, très peu de tendresse"
+        },
+        {
+          "name": "Scorie volante",
+          "icon": "✨",
+          "dmgMin": 6,
+          "dmgMax": 11,
+          "effect": null,
+          "desc": "Une petite pluie de forge"
+        }
+      ],
+      "voyantepnj": [
+        {
+          "name": "Carte maudite",
+          "icon": "🃏",
+          "dmgMin": 6,
+          "dmgMax": 11,
+          "effect": "curse",
+          "desc": "La voyante tire votre pire version"
+        },
+        {
+          "name": "Prédiction acide",
+          "icon": "🔮",
+          "dmgMin": 5,
+          "dmgMax": 10,
+          "effect": null,
+          "desc": "L'avenir vous gifle avant l'heure"
+        }
+      ],
+      "garde baldur": [
+        {
+          "name": "Estoc nordique",
+          "icon": "🗡",
+          "dmgMin": 6,
+          "dmgMax": 12,
+          "effect": null,
+          "desc": "Le nord aime les choses simples"
+        },
+        {
+          "name": "Parade punitive",
+          "icon": "🛡",
+          "dmgMin": 5,
+          "dmgMax": 11,
+          "effect": null,
+          "desc": "Défense et mépris dans le même geste"
+        }
+      ],
+      "child baldur": [
+        {
+          "name": "Caillou héroïque",
+          "icon": "🪨",
+          "dmgMin": 2,
+          "dmgMax": 5,
+          "effect": null,
+          "desc": "Petit bras, grande conviction"
+        },
+        {
+          "name": "Coup de panique",
+          "icon": "💢",
+          "dmgMin": 2,
+          "dmgMax": 4,
+          "effect": null,
+          "desc": "Improvisé, mais sincère"
+        }
+      ],
+      "pnj1": [
+        {
+          "name": "Poing de village",
+          "icon": "👊",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Rien de personnel, juste local"
+        },
+        {
+          "name": "Coup de botte",
+          "icon": "👢",
+          "dmgMin": 3,
+          "dmgMax": 7,
+          "effect": null,
+          "desc": "Un classique des places publiques"
+        }
+      ],
+      "pnj2": [
+        {
+          "name": "Taloche civile",
+          "icon": "🖐",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Administration locale de la douleur"
+        },
+        {
+          "name": "Pichenette vexée",
+          "icon": "💢",
+          "dmgMin": 3,
+          "dmgMax": 6,
+          "effect": null,
+          "desc": "Le geste n'est pas grand, l'intention si"
+        }
+      ],
+      "oldmessager": [
+        {
+          "name": "Coup de canne",
+          "icon": "🦯",
+          "dmgMin": 3,
+          "dmgMax": 7,
+          "effect": null,
+          "desc": "Le message était urgent, la canne aussi"
+        },
+        {
+          "name": "Avertissement sec",
+          "icon": "📯",
+          "dmgMin": 3,
+          "dmgMax": 6,
+          "effect": null,
+          "desc": "Un vieux ton qui claque"
+        }
+      ],
+      "maire": [
+        {
+          "name": "Signature autoritaire",
+          "icon": "📜",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": null,
+          "desc": "Le maire paraphe directement sur le visage"
+        },
+        {
+          "name": "Coup de marteau municipal",
+          "icon": "🏛",
+          "dmgMin": 7,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Le conseil est levé, la cible aussi"
+        }
+      ],
+      "generalmelenchon": [
+        {
+          "name": "Abattez la citadelle",
+          "icon": "📣",
+          "dmgMin": 10,
+          "dmgMax": 18,
+          "effect": null,
+          "desc": "L'ordre tombe avec la délicatesse d'un meeting sous tension"
+        },
+        {
+          "name": "Les frittes molles",
+          "icon": "🍟",
+          "dmgMin": 9,
+          "dmgMax": 17,
+          "effect": null,
+          "desc": "Une attaque politique d'une mollesse étonnamment létale"
+        }
+      ],
+      "jarl baldur": [
+        {
+          "name": "Commandement du jarl",
+          "icon": "👑",
+          "dmgMin": 8,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Le statut social devient contondant"
+        },
+        {
+          "name": "Lame de salle longue",
+          "icon": "⚔",
+          "dmgMin": 7,
+          "dmgMax": 13,
+          "effect": null,
+          "desc": "Une attaque digne de la grande salle"
+        }
+      ],
+      "marchand2": [
+        {
+          "name": "Remise brutale",
+          "icon": "🪙",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Un prix cassé, une arcade aussi"
+        },
+        {
+          "name": "Argument de comptoir",
+          "icon": "📦",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Le stock part vite, surtout à la tête"
+        }
+      ],
+      "gardedunord": [
+        {
+          "name": "Coupe boréale",
+          "icon": "🗡",
+          "dmgMin": 7,
+          "dmgMax": 13,
+          "effect": null,
+          "desc": "Le froid affine le geste"
+        },
+        {
+          "name": "Charge de sentinelle",
+          "icon": "🛡",
+          "dmgMin": 6,
+          "dmgMax": 12,
+          "effect": null,
+          "desc": "Le rempart avance avec ses jambes"
+        }
+      ],
+      "garde2": [
+        {
+          "name": "Taille de garnison",
+          "icon": "⚔",
+          "dmgMin": 7,
+          "dmgMax": 13,
+          "effect": null,
+          "desc": "Pas élégant, efficace"
+        },
+        {
+          "name": "Coup de pommeau",
+          "icon": "🪖",
+          "dmgMin": 6,
+          "dmgMax": 11,
+          "effect": null,
+          "desc": "Une méthode compacte et brutale"
+        }
+      ],
+      "conseillerroinord": [
+        {
+          "name": "Conseil empoisonné",
+          "icon": "📘",
+          "dmgMin": 8,
+          "dmgMax": 15,
+          "effect": "curse",
+          "desc": "Un avis tranchant comme une dette"
+        },
+        {
+          "name": "Ordonnance glaciale",
+          "icon": "❄",
+          "dmgMin": 7,
+          "dmgMax": 13,
+          "effect": null,
+          "desc": "Le protocole fait très mal"
+        }
+      ],
+      "intendantbrume": [
+        {
+          "name": "Taxe de brume",
+          "icon": "🌫",
+          "dmgMin": 9,
+          "dmgMax": 16,
+          "effect": null,
+          "desc": "Une retenue à la source, version vitale"
+        },
+        {
+          "name": "Décompte funeste",
+          "icon": "📚",
+          "dmgMin": 8,
+          "dmgMax": 14,
+          "effect": null,
+          "desc": "Les chiffres se referment comme une mâchoire"
+        }
+      ],
+      "hydre": [
+        {
+          "name": "Morsure multiple",
+          "icon": "🐍",
+          "dmgMin": 14,
+          "dmgMax": 24,
+          "effect": null,
+          "desc": "Une tête suffit rarement"
+        },
+        {
+          "name": "Crachat venimeux",
+          "icon": "☣",
+          "dmgMin": 12,
+          "dmgMax": 20,
+          "effect": "all",
+          "desc": "La salle entière se fait arroser"
+        }
+      ],
+      "basilic": [
+        {
+          "name": "Crocs minéraux",
+          "icon": "🗿",
+          "dmgMin": 13,
+          "dmgMax": 22,
+          "effect": null,
+          "desc": "Une pierre qui décide de mordre"
+        },
+        {
+          "name": "Reflet pétrifiant",
+          "icon": "👁",
+          "dmgMin": 11,
+          "dmgMax": 19,
+          "effect": null,
+          "desc": "Le regard reste collé longtemps après"
+        }
+      ],
+      "odin": [
+        {
+          "name": "Lance du père de tout",
+          "icon": "🜂",
+          "dmgMin": 16,
+          "dmgMax": 27,
+          "effect": null,
+          "desc": "Gungnir a très peu de ratés"
+        },
+        {
+          "name": "Œil du savoir",
+          "icon": "👁",
+          "dmgMin": 13,
+          "dmgMax": 22,
+          "effect": "all",
+          "desc": "La révélation pique sur tout le groupe"
+        }
+      ],
+      "thor": [
+        {
+          "name": "Impact de Mjolnir",
+          "icon": "⚡",
+          "dmgMin": 16,
+          "dmgMax": 28,
+          "effect": null,
+          "desc": "Thor argumente à coups de tonnerre"
+        },
+        {
+          "name": "Arc électrique",
+          "icon": "🌩",
+          "dmgMin": 13,
+          "dmgMax": 22,
+          "effect": "all",
+          "desc": "La foudre cherche des amis"
+        }
+      ],
+      "freya": [
+        {
+          "name": "Rosée coupante",
+          "icon": "🌺",
+          "dmgMin": 14,
+          "dmgMax": 23,
+          "effect": null,
+          "desc": "Très beau, très douloureux"
+        },
+        {
+          "name": "Vol des vales",
+          "icon": "✨",
+          "dmgMin": 12,
+          "dmgMax": 20,
+          "effect": null,
+          "desc": "La grâce a pris des statistiques offensives"
+        }
+      ],
+      "heimdall": [
+        {
+          "name": "Lame du veilleur",
+          "icon": "🌈",
+          "dmgMin": 15,
+          "dmgMax": 24,
+          "effect": null,
+          "desc": "Chaque coup sonne comme une alerte"
+        },
+        {
+          "name": "Signal d'alarme",
+          "icon": "📯",
+          "dmgMin": 12,
+          "dmgMax": 20,
+          "effect": "all",
+          "desc": "Impossible d'ignorer l'annonce"
+        }
+      ],
+      "roi": [
+        {
+          "name": "Décret royal",
+          "icon": "👑",
+          "dmgMin": 15,
+          "dmgMax": 25,
+          "effect": null,
+          "desc": "Le souverain gouverne jusque dans les côtes"
+        },
+        {
+          "name": "Justice du trône",
+          "icon": "🏰",
+          "dmgMin": 13,
+          "dmgMax": 22,
+          "effect": "all",
+          "desc": "Le royaume frappe par ordonnance"
+        }
+      ],
+      "nhiddog": [
+        {
+          "name": "Morsure des racines",
+          "icon": "🕳",
+          "dmgMin": 14,
+          "dmgMax": 24,
+          "effect": null,
+          "desc": "Le monde d'en dessous a de très bonnes dents"
+        },
+        {
+          "name": "Frappe souterraine",
+          "icon": "🌑",
+          "dmgMin": 12,
+          "dmgMax": 21,
+          "effect": "all",
+          "desc": "Ça remonte de très loin et très fort"
+        }
+      ],
+      "elo pion": [
+        {
+          "name": "Charge pionnière",
+          "icon": "♟",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "Petit format, grande obstination"
+        },
+        {
+          "name": "Coup de diagonale",
+          "icon": "✨",
+          "dmgMin": 3,
+          "dmgMax": 7,
+          "effect": null,
+          "desc": "Presque élégant, pas vraiment"
+        }
+      ],
+      "ju pion": [
+        {
+          "name": "Pirouette piquante",
+          "icon": "💃",
+          "dmgMin": 6,
+          "dmgMax": 10,
+          "effect": null,
+          "desc": "Un pas de danse trompeur suivi d’un coup unique bien placé."
+        },
+        {
+          "name": "Couplet déroutant",
+          "icon": "🎵",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": "debuff",
+          "desc": "Un refrain qui brouille les idées : dégâts et −2 en Force et Défense pendant 2 rounds, sans hypnose."
+        }
+      ],
+      "greg pion": [
+        {
+          "name": "Morsure de pion",
+          "icon": "♟",
+          "dmgMin": 5,
+          "dmgMax": 9,
+          "effect": null,
+          "desc": "Une agressivité disproportionnée"
+        },
+        {
+          "name": "Poussée brutale",
+          "icon": "💢",
+          "dmgMin": 4,
+          "dmgMax": 8,
+          "effect": null,
+          "desc": "L'avance est courte mais vexante"
+        }
+      ]
+    },
+    "mobSpecialAttacks": {
+      "gobelins": {
+        "name": "Les sournoiseries du gobelin",
+        "icon": "💣",
+        "dmgMin": 7,
+        "dmgMax": 12,
+        "effect": null,
+        "animation": "tavern",
+        "flavor": "Une pluie de bombes artisanales mal fabriquées, mais avec enthousiasme."
+      },
+      "loup": {
+        "name": "Hurlement de meute",
+        "icon": "🐺",
+        "dmgMin": 8,
+        "dmgMax": 14,
+        "effect": null,
+        "animation": "howl",
+        "flavor": "Un hurlement glacial annonce la morsure coordonnée."
+      },
+      "draugr": {
+        "name": "WHAAAAAA",
+        "icon": "🪦",
+        "dmgMin": 10,
+        "dmgMax": 17,
+        "effect": "curse",
+        "animation": "spectral",
+        "flavor": "Le draugr s'exprime dans la langue des Dieux."
+      },
+      "fantome": {
+        "name": "Dance or die",
+        "icon": "👻",
+        "dmgMin": 8,
+        "dmgMax": 13,
+        "effect": null,
+        "animation": "spectral",
+        "flavor": "Le fantôme danse et son rythme est insoutenable."
+      },
+      "vampire": {
+        "name": "La vie en oah oah",
+        "icon": "🩸",
+        "dmgMin": 12,
+        "dmgMax": 20,
+        "effect": "curse",
+        "animation": "bloodmoon",
+        "flavor": "Si si je vous promets que je suis une dangereuse créature."
+      },
+      "witch": {
+        "name": "Défier la gravité",
+        "icon": "🧪",
+        "dmgMin": 11,
+        "dmgMax": 18,
+        "effect": "curse",
+        "animation": "arcane",
+        "flavor": "Regardez à l'Ouest."
+      },
+      "garde": {
+        "name": "J'ai pris une flèche dans le genou",
+        "icon": "🛡",
+        "dmgMin": 10,
+        "dmgMax": 16,
+        "effect": null,
+        "animation": "stone",
+        "flavor": "Le garde raconte son histoire et la pitié vous envahie."
+      },
+      "bandit": {
+        "name": "Tres tres vilain",
+        "icon": "🪓",
+        "dmgMin": 8,
+        "dmgMax": 15,
+        "effect": null,
+        "animation": "tavern",
+        "flavor": "Un coup bas, mal annoncé, mais très appliqué."
+      },
+      "ogre": {
+        "name": "It's all ogre now",
+        "icon": "🌳",
+        "dmgMin": 14,
+        "dmgMax": 22,
+        "effect": null,
+        "animation": "stone",
+        "flavor": "L'ogre prononce sa catchphrase et tout le monde regrette d'être venu."
+      },
+      "dragon": {
+        "name": "Thu'um draconique",
+        "icon": "🐉",
+        "dmgMin": 16,
+        "dmgMax": 26,
+        "effect": "all",
+        "animation": "fire",
+        "flavor": "Ne soyez pas si arrogants, humanoïdes."
+      },
+      "liquorice": {
+        "name": "Bonbon piégé",
+        "icon": "🍬",
+        "dmgMin": 12,
+        "dmgMax": 18,
+        "effect": null,
+        "animation": "arcane",
+        "flavor": "Quiconque ose y goûter s'assèche instantanément."
+      },
+      "valkyrie": {
+        "name": "Chute de lance",
+        "icon": "🪽",
+        "dmgMin": 14,
+        "dmgMax": 22,
+        "effect": null,
+        "animation": "divine",
+        "flavor": "La lance traverse le ciel comme un verdict déjà signé."
+      },
+      "golem": {
+        "name": "Écrasement tectonique",
+        "icon": "🪨",
+        "dmgMin": 15,
+        "dmgMax": 24,
+        "effect": null,
+        "animation": "stone",
+        "flavor": "Le sol oublie sa fonction de sol."
+      },
+      "pretre": {
+        "name": "Mon cierge est allumé, la cire prête à couler",
+        "icon": "📿",
+        "dmgMin": 16,
+        "dmgMax": 24,
+        "effect": "curse",
+        "animation": "divine",
+        "flavor": "Le sermon dérape immédiatement vers quelque chose de très peu canonique."
+      },
+      "fenrir": {
+        "name": "Le son de la fin du monde",
+        "icon": "🌘",
+        "dmgMin": 16,
+        "dmgMax": 25,
+        "effect": null,
+        "animation": "howl",
+        "flavor": "Fenrir hurle sous la lune et invoque le Ragnarok."
+      },
+      "zombie": {
+        "name": "Marche des morceaux",
+        "icon": "🧟",
+        "dmgMin": 13,
+        "dmgMax": 20,
+        "effect": null,
+        "animation": "venom",
+        "flavor": "Chaque membre participe, même sans coordination centrale."
+      },
+      "zombie2": {
+        "name": "Morsure recyclée",
+        "icon": "☣",
+        "dmgMin": 13,
+        "dmgMax": 19,
+        "effect": "curse",
+        "animation": "venom",
+        "flavor": "Rien n'est frais, tout est offensant."
+      },
+      "troll": {
+        "name": "Pont cassé",
+        "icon": "🪵",
+        "dmgMin": 12,
+        "dmgMax": 18,
+        "effect": null,
+        "animation": "stone",
+        "flavor": "Le troll frappe comme si la route lui appartenait."
+      },
+      "cyclope": {
+        "name": "Regard du mal calibré",
+        "icon": "👁",
+        "dmgMin": 13,
+        "dmgMax": 20,
+        "effect": null,
+        "animation": "stone",
+        "flavor": "Un seul œil, mais une très mauvaise intention."
+      },
+      "serpentgeant": {
+        "name": "Constriction abyssale",
+        "icon": "🐍",
+        "dmgMin": 15,
+        "dmgMax": 24,
+        "effect": null,
+        "animation": "abyss",
+        "flavor": "Le serpent décide que respirer est devenu optionnel."
+      },
+      "balraug": {
+        "name": "Coup de fouet bien placé",
+        "icon": "🔥",
+        "dmgMin": 25,
+        "dmgMax": 38,
+        "effect": "all",
+        "animation": "fire",
+        "flavor": "Le Balraug bloque le passage avec une autorité tout à fait litigieuse."
+      },
+      "jormungand": {
+        "name": "Raz de marée",
+        "icon": "🌊",
+        "dmgMin": 24,
+        "dmgMax": 36,
+        "effect": "all",
+        "animation": "abyss",
+        "flavor": "Le serpent sort de l'eau et sa taille fait trembler le monde."
+      },
+      "kraken": {
+        "name": "Fatale tentacule",
+        "icon": "🐙",
+        "dmgMin": 23,
+        "dmgMax": 35,
+        "effect": "all",
+        "animation": "abyss",
+        "flavor": "Le Kraken surgit et sa masse fait trembler le monde."
+      },
+      "nhiddog": {
+        "name": "Faim insatiable",
+        "icon": "🕳",
+        "dmgMin": 21,
+        "dmgMax": 33,
+        "effect": "all",
+        "animation": "abyss",
+        "flavor": "Le dragon affamé suce le sang de ses opposants."
+      },
+      "hydre": {
+        "name": "Conseil de têtes",
+        "icon": "🐍",
+        "dmgMin": 24,
+        "dmgMax": 38,
+        "effect": "all",
+        "animation": "venom",
+        "flavor": "Personne n'est d'accord, sauf sur le fait de vous dévorer."
+      },
+      "basilic": {
+        "name": "Œil qui fige",
+        "icon": "🗿",
+        "dmgMin": 22,
+        "dmgMax": 34,
+        "effect": null,
+        "animation": "venom",
+        "flavor": "Le regard pèse comme une pierre vivante."
+      },
+      "roi": {
+        "name": "Impôt terminal",
+        "icon": "👑",
+        "dmgMin": 26,
+        "dmgMax": 40,
+        "effect": "all",
+        "animation": "royal",
+        "flavor": "Le roi prélève directement en points de vie."
+      },
+      "odin": {
+        "name": "Décret du borgne",
+        "icon": "🜂",
+        "dmgMin": 28,
+        "dmgMax": 42,
+        "effect": "all",
+        "animation": "divine",
+        "flavor": "Une sentence divine, cosmique, et très peu négociable."
+      },
+      "thor": {
+        "name": "Procès-verbal de Mjolnir",
+        "icon": "⚡",
+        "dmgMin": 27,
+        "dmgMax": 41,
+        "effect": "all",
+        "animation": "storm",
+        "flavor": "Le tonnerre signe son nom sur tout le groupe."
+      },
+      "freya": {
+        "name": "Grâce qui blesse",
+        "icon": "🌺",
+        "dmgMin": 24,
+        "dmgMax": 36,
+        "effect": null,
+        "animation": "divine",
+        "flavor": "Une beauté si parfaite qu'elle devient offensive."
+      },
+      "heimdall": {
+        "name": "Alarme du pont",
+        "icon": "🌈",
+        "dmgMin": 24,
+        "dmgMax": 37,
+        "effect": "all",
+        "animation": "storm",
+        "flavor": "Heimdall sonne la fin avant même qu'elle commence."
+      },
+      "tavernier": {
+        "name": "Tournée générale de baffes",
+        "icon": "🍺",
+        "dmgMin": 7,
+        "dmgMax": 12,
+        "effect": null,
+        "animation": "tavern",
+        "flavor": "Le tavernier sert chaud, vite, et avec l'avant-bras."
+      },
+      "soulard": {
+        "name": "Chanson de fin de tonneau",
+        "icon": "🍷",
+        "dmgMin": 6,
+        "dmgMax": 10,
+        "effect": null,
+        "animation": "tavern",
+        "flavor": "Le rythme est faux mais le coup porte."
+      },
+      "serveuse": {
+        "name": "Plateau orbital",
+        "icon": "🍽",
+        "dmgMin": 7,
+        "dmgMax": 11,
+        "effect": null,
+        "animation": "tavern",
+        "flavor": "Un service express directement à la mâchoire."
+      },
+      "marchand": {
+        "name": "Offre non remboursable",
+        "icon": "💰",
+        "dmgMin": 8,
+        "dmgMax": 13,
+        "effect": null,
+        "animation": "royal",
+        "flavor": "Le marchand facture désormais à l'unité de douleur."
+      },
+      "marchand2": {
+        "name": "Promotion létale",
+        "icon": "🪙",
+        "dmgMin": 8,
+        "dmgMax": 13,
+        "effect": null,
+        "animation": "royal",
+        "flavor": "Deux achetés, trois bleus offerts."
+      },
+      "forgeron": {
+        "name": "Enclume du destin",
+        "icon": "🔨",
+        "dmgMin": 12,
+        "dmgMax": 19,
+        "effect": null,
+        "animation": "fire",
+        "flavor": "Chaque frappe résonne jusque dans la colonne vertébrale."
+      },
+      "forgeron1": {
+        "name": "Reprise à chaud",
+        "icon": "⚒",
+        "dmgMin": 11,
+        "dmgMax": 18,
+        "effect": null,
+        "animation": "fire",
+        "flavor": "Le métal n'est pas le seul à plier."
+      },
+      "maire": {
+        "name": "Discours d'urgence",
+        "icon": "📜",
+        "dmgMin": 14,
+        "dmgMax": 22,
+        "effect": null,
+        "animation": "royal",
+        "flavor": "Une allocution si longue qu'elle devient contondante."
+      },
+      "generalmelenchon": {
+        "name": "MAIS QUI ELLE EST CELLE LA",
+        "icon": "📣",
+        "dmgMin": 18,
+        "dmgMax": 27,
+        "effect": "all",
+        "animation": "royal",
+        "flavor": "Humiliation gauchiste sans torticolis."
+      },
+      "chnaw": {
+        "name": "Regroupement",
+        "icon": "📸",
+        "dmgMin": 17,
+        "dmgMax": 26,
+        "effect": "all",
+        "animation": "tavern",
+        "flavor": "Les chnaws se multiplient jusqu'à écraser quiconque se met en travers de leur chemin."
+      },
+      "ju pion": {
+        "name": "Rappel tonitruant",
+        "icon": "🎭",
+        "dmgMin": 10,
+        "dmgMax": 16,
+        "effect": "all",
+        "animation": "arcane",
+        "flavor": "Pika conclut son spectacle par un accord magique qui frappe tout le groupe. Une seule fois par combat."
+      }
+    },
+    "shopItemsArmurerie": [
+      {
+        "id": "epee",
+        "name": "Épée",
+        "img": "epee.png",
+        "category": "arme",
+        "basePrix": 60,
+        "baseStats": "Force +2",
+        "scaling": 8
+      },
+      {
+        "id": "arc",
+        "name": "Arc",
+        "img": "arc.png",
+        "category": "arme",
+        "basePrix": 70,
+        "baseStats": "Précision +2",
+        "scaling": 8
+      },
+      {
+        "id": "masse",
+        "name": "Masse",
+        "img": "masse.png",
+        "category": "arme",
+        "basePrix": 65,
+        "baseStats": "Force +3",
+        "scaling": 9
+      },
+      {
+        "id": "baton",
+        "name": "Bâton",
+        "img": "baton.png",
+        "category": "arme",
+        "basePrix": 55,
+        "baseStats": "Magie +2",
+        "scaling": 7
+      },
+      {
+        "id": "bouclier",
+        "name": "Bouclier",
+        "img": "bouclier.png",
+        "category": "arme",
+        "basePrix": 70,
+        "baseStats": "Défense +3",
+        "scaling": 8
+      },
+      {
+        "id": "fleches",
+        "name": "Flèches (x10)",
+        "img": "fleche.png",
+        "category": "arme",
+        "basePrix": 25,
+        "baseStats": "Munitions",
+        "scaling": 3
+      },
+      {
+        "id": "armleg",
+        "name": "Armure Légère",
+        "img": "armurelegere.png",
+        "category": "armure",
+        "basePrix": 90,
+        "baseStats": "Défense +2",
+        "scaling": 10
+      },
+      {
+        "id": "armlour",
+        "name": "Armure Lourde",
+        "img": "armurelourde.png",
+        "category": "armure",
+        "basePrix": 150,
+        "baseStats": "Défense +5",
+        "scaling": 15
+      },
+      {
+        "id": "anneauforce",
+        "name": "Anneau de Force",
+        "img": "anneau1.png",
+        "category": "armure",
+        "basePrix": 120,
+        "baseStats": "Force +2",
+        "scaling": 12
+      },
+      {
+        "id": "anneaucharme",
+        "name": "Anneau de Charme",
+        "img": "anneau2.png",
+        "category": "armure",
+        "basePrix": 120,
+        "baseStats": "Charme +2",
+        "scaling": 12
+      },
+      {
+        "id": "anneauperspi",
+        "name": "Anneau de Perspic.",
+        "img": "anneau1.png",
+        "category": "armure",
+        "basePrix": 120,
+        "baseStats": "Perspicacité +2",
+        "scaling": 12
+      },
+      {
+        "id": "anneauchance",
+        "name": "Anneau de Chance",
+        "img": "anneau2.png",
+        "category": "armure",
+        "basePrix": 120,
+        "baseStats": "Chance +2",
+        "scaling": 12
+      },
+      {
+        "id": "anneaudef",
+        "name": "Anneau de Défense",
+        "img": "anneau1.png",
+        "category": "armure",
+        "basePrix": 120,
+        "baseStats": "Défense +2",
+        "scaling": 12
+      }
+    ],
+    "shopItems": [
+      {
+        "id": "sort",
+        "name": "Parchemin Sort",
+        "img": "sort.png",
+        "category": "magie",
+        "basePrix": 100,
+        "baseStats": "Sort unique",
+        "scaling": 12
+      },
+      {
+        "id": "anneaumagic",
+        "name": "Anneau Mystique",
+        "img": "anneau1.png",
+        "category": "magie",
+        "basePrix": 130,
+        "baseStats": "Magie +3",
+        "scaling": 13
+      },
+      {
+        "id": "potion",
+        "name": "Potion de Vie",
+        "img": "potionvie.png",
+        "category": "consomm",
+        "basePrix": 50,
+        "baseStats": "Vie +30",
+        "scaling": 5
+      },
+      {
+        "id": "potionres",
+        "name": "Potion de Rés.",
+        "img": "potionres.png",
+        "category": "consomm",
+        "basePrix": 300,
+        "baseStats": "Résurrection",
+        "scaling": 20
+      },
+      {
+        "id": "lanterne",
+        "name": "Lanterne",
+        "img": "lanterne.png",
+        "category": "util",
+        "basePrix": 30,
+        "baseStats": "Vision nuit",
+        "scaling": 2
+      },
+      {
+        "id": "torche",
+        "name": "Torche",
+        "img": "torche.png",
+        "category": "util",
+        "basePrix": 15,
+        "baseStats": "Éclairage",
+        "scaling": 1
+      },
+      {
+        "id": "corde",
+        "name": "Corde/Grappin",
+        "img": "corde.png",
+        "category": "util",
+        "basePrix": 25,
+        "baseStats": "Utilité",
+        "scaling": 2
+      },
+      {
+        "id": "cartedumonde",
+        "name": "Carte du Monde",
+        "img": "mapicon.png",
+        "category": "util",
+        "basePrix": 90,
+        "baseStats": "Révèle les routes",
+        "scaling": 6
+      },
+      {
+        "id": "selle",
+        "name": "Selle de Bibi",
+        "img": "bag.png",
+        "category": "util",
+        "basePrix": 80,
+        "baseStats": "Poids +",
+        "scaling": 5
+      },
+      {
+        "id": "pioche",
+        "name": "Pioche",
+        "img": "pioche.png",
+        "category": "util",
+        "basePrix": 40,
+        "baseStats": "Minage",
+        "scaling": 3
+      },
+      {
+        "id": "amulette",
+        "name": "Amulette Sacrée",
+        "img": "anneau2.png",
+        "category": "util",
+        "basePrix": 150,
+        "baseStats": "Curse -1",
+        "scaling": 10
+      },
+      {
+        "id": "pierresoin",
+        "name": "Pierre de Soin",
+        "img": "sort.png",
+        "category": "util",
+        "basePrix": 120,
+        "baseStats": "+5 HP/tour",
+        "scaling": 8
+      }
+    ],
+    "categoryLabels": {
+      "arme": "⚔ Armes",
+      "armure": "🛡 Armures",
+      "magie": "✨ Magie",
+      "consomm": "🧪 Consommables",
+      "util": "🔧 Utilitaires"
+    },
+    "ALLY_PNJS": [
+      {
+        "id": "nidhogg",
+        "name": "Nidhogg",
+        "image": "nhiddog.png",
+        "role": "Rongeur des racines",
+        "color": "#b48a9b",
+        "lore": "Le dragon vous prête sa morsure. Son pacte se gagne indépendamment de celui de Hel.",
+        "actions": [
+          {
+            "id": "nidhogg_bite",
+            "label": "Morsure des racines",
+            "type": "damage",
+            "icon": "🐉",
+            "dice": 20,
+            "dmgBase": 100,
+            "dmgBonus": 12,
+            "critMult": 2,
+            "desc": "Dégâts adaptés au niveau. La cible subit ensuite +15 % de dégâts pendant deux rounds, +25 % sur critique naturel. Critique : dégâts ×2, plafond de 50 % des PV maximum contre 40 % normalement. Sur 1 : aucun dégât ni effet, intervention consommée. Vulnérabilité non cumulable avec elle-même.",
+            "dialogue": "Même les racines des rois finissent par céder."
+          }
+        ]
+      },
+      {
+        "id": "hel",
+        "name": "Hel",
+        "image": "hel.png",
+        "role": "Souveraine des morts",
+        "color": "#a998c9",
+        "lore": "Un pacte lie votre souffle au royaume de Hel.",
+        "actions": [
+          {
+            "id": "hel_reprieve",
+            "label": "Sursis de la souveraine",
+            "type": "buff",
+            "icon": "☽",
+            "dice": 20,
+            "threshold": 8,
+            "desc": "Sur 8+ au D20, protège un héros pendant deux rounds : le prochain coup fatal le laisse à 1 PV, puis le sursis disparaît. Sur 20 naturel : deux héros choisis. Sur 1 : aucun sursis, intervention consommée. Une utilisation par combat, sur autorisation du MJ.",
+            "dialogue": "Votre heure n’a pas encore sonné."
+          }
+        ]
+      },
+      {
+        "id": "melenchon",
+        "name": "Les troupes de Mélenchon",
+        "image": "generalmelenchon.png",
+        "role": "Appui aérien de l’Oregon III",
+        "color": "#e5a24a",
+        "lore": "Le général engage ses troupes : l’Oregon III survole le champ de bataille et ouvre le feu.",
+        "actions": [
+          {
+            "id": "melenchon_bombardment",
+            "label": "Bombardement de l’Oregon",
+            "type": "damage",
+            "icon": "💣",
+            "dice": 20,
+            "dmgBase": 160,
+            "dmgBonus": 18,
+            "critMult": 2,
+            "desc": "L’Oregon III bombarde un ennemi choisi : 160 + D20 × 18 dégâts au total. Critique 20 : dégâts doublés. Une seule utilisation pendant ce combat, sur autorisation du MJ.",
+            "dialogue": "L’Oregon arrive en renfort. Bombardez la cible !"
+          }
+        ]
+      },
+      {
+        "id": "baldur",
+        "name": "Jarl Baldur",
+        "image": "jarl baldur.png",
+        "role": "Puissant guerrier et jarl de Brume",
+        "color": "#e2b36b",
+        "lore": "Un chef viking lié au groupe par son serment.",
+        "actions": [
+          {
+            "id": "baldur_wrath",
+            "label": "Le courroux du Jarl",
+            "type": "damage",
+            "icon": "🪓",
+            "dice": 20,
+            "dmgBase": 120,
+            "dmgBonus": 15,
+            "critMult": 2,
+            "staggerOnCrit": true,
+            "desc": "Baldur abat sa hache sur un ennemi : 120 + D20 × 15 dégâts. Critique 20 : dégâts doublés et prochaine action ennemie interrompue.",
+            "dialogue": "Par mon serment, vous ne tomberez pas seuls !"
+          }
+        ]
+      },
+      {
+        "id": "odin",
+        "name": "Odin",
+        "image": "odin.png",
+        "role": "Père de tous les dieux",
+        "color": "#8866ff",
+        "lore": "Le Tout-Père voit tout, sait tout. Sa lance Gungnir ne manque jamais sa cible.",
+        "actions": [
+          {
+            "id": "odin_gungnir",
+            "label": "Lancer de Gungnir",
+            "type": "damage",
+            "icon": "⚡",
+            "desc": "Odin jette sa lance sacrée. 200 + D20 × 25 dégâts. Critique 18-20 : dégâts × 4.",
+            "dice": 20,
+            "dmgBase": 200,
+            "dmgBonus": 25,
+            "critMin": 18,
+            "critMult": 4,
+            "dialogue": "Gungnir frappe vrai."
+          },
+          {
+            "id": "odin_ravens",
+            "label": "Vision des corbeaux",
+            "type": "malus",
+            "icon": "🦅",
+            "desc": "Huginn et Muninn révèlent les failles. D20 : sur 10+, le mob subit -15 à toutes ses actions.",
+            "dice": 20,
+            "threshold": 10,
+            "dialogue": "Mes corbeaux ont tout vu."
+          }
+        ]
+      },
+      {
+        "id": "thor",
+        "name": "Thor",
+        "image": "thor.png",
+        "role": "Dieu du tonnerre",
+        "color": "#ffaa00",
+        "lore": "Fils d'Odin, gardien de Midgard. Mjolnir revient toujours dans sa main.",
+        "actions": [
+          {
+            "id": "thor_mjolnir",
+            "label": "Mjolnir",
+            "type": "damage",
+            "icon": "🔨",
+            "desc": "Thor abat Mjolnir. 250 + D20 × 30 dégâts. Sur 15+ : frappe tous les mobs en même temps.",
+            "dice": 20,
+            "dmgBase": 250,
+            "dmgBonus": 30,
+            "chainMin": 15,
+            "dialogue": "Par le tonnerre."
+          }
+        ]
+      },
+      {
+        "id": "gardienne",
+        "name": "La Gardienne",
+        "image": "gardienne.png",
+        "role": "Gardienne des âmes",
+        "color": "#a9dfff",
+        "lore": "Elle veille sur les âmes qui traversent l’Antre.",
+        "actions": [
+          {
+            "id": "gardienne_souffle",
+            "label": "Souffle de la Gardienne",
+            "type": "heal",
+            "icon": "✦",
+            "desc": "Restaure D20 × 12 PV à un allié. Sur un critique (20), relève une cible KO avec tous ses PV. Une utilisation par combat, sur autorisation du MJ. Ne donne pas l’Immortalité quantique.",
+            "dice": 20,
+            "healMult": 12,
+            "dialogue": "Votre histoire ne s’achève pas ici."
+          }
+        ]
+      },
+      {
+        "id": "freya",
+        "name": "Freya",
+        "image": "freya.png",
+        "role": "Déesse de l'amour et de la guerre",
+        "color": "#ff88cc",
+        "lore": "Maîtresse de la seiðr, elle choisit la moitié des guerriers tombés.",
+        "actions": [
+          {
+            "id": "freya_valkyrie",
+            "label": "Grâce des Valkyries",
+            "type": "heal",
+            "icon": "✦",
+            "desc": "Freya bénit un héros. D20 × 20 HP restaurés. Critique 20 : résurrection complète.",
+            "dice": 20,
+            "healMult": 20,
+            "dialogue": "Les Valkyries veillent sur vous."
+          },
+          {
+            "id": "freya_seidr",
+            "label": "Seiðr de guerre",
+            "type": "damage",
+            "icon": "🌙",
+            "desc": "Freya tisse un sort dévastateur. 180 + D20 × 20 dégâts. Sur 1 : dégâts réduits à 20 %.",
+            "dice": 20,
+            "dmgBase": 180,
+            "dmgBonus": 20,
+            "dialogue": "La magie ancienne vous consume."
+          }
+        ]
+      },
+      {
+        "id": "witch",
+        "name": "La Sorcière",
+        "image": "witch.png",
+        "role": "Gardienne des secrets oubliés",
+        "color": "#44ffaa",
+        "lore": "Nul ne connaît son vrai nom. Elle existe depuis avant les dieux.",
+        "actions": [
+          {
+            "id": "witch_hex",
+            "label": "Malédiction ancienne",
+            "type": "malus",
+            "icon": "🌑",
+            "desc": "Elle maudit l'ennemi en son cœur. D20 : sur 10+, le mob inflige 25 % de dégâts en moins ce combat.",
+            "dice": 20,
+            "threshold": 10,
+            "dialogue": "Tu portes désormais mon sceau."
+          },
+          {
+            "id": "witch_elixir",
+            "label": "Élixir de puissance",
+            "type": "buff",
+            "icon": "⚗",
+            "desc": "Elle tend un élixir à un héros. D20 × 10 ajoutés à sa stat principale.",
+            "dice": 20,
+            "buffMult": 10,
+            "dialogue": "Buvez. Ne posez pas de questions."
+          }
+        ]
+      }
+    ]
+  }
+}

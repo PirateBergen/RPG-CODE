@@ -1,4 +1,4 @@
-const mobSpecialAttacks = {
+const CAMPAIGN_ENEMY_SPECIALS = {
   gobelins: { name:"Les sournoiseries du gobelin", icon:"💣", dmgMin:7, dmgMax:12, effect:null, animation:"tavern", flavor:"Une pluie de bombes artisanales mal fabriquées, mais avec enthousiasme." },
   loup: { name:"Hurlement de meute", icon:"🐺", dmgMin:8, dmgMax:14, effect:null, animation:"howl", flavor:"Un hurlement glacial annonce la morsure coordonnée." },
   draugr: { name:"WHAAAAAA", icon:"🪦", dmgMin:10, dmgMax:17, effect:"curse", animation:"spectral", flavor:"Le draugr s'exprime dans la langue des Dieux." },

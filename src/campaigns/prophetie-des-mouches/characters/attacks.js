@@ -1,4 +1,4 @@
-const attacks = {
+const CAMPAIGN_HERO_ATTACKS = {
   greg: [
     { name:"Chat Bite (CaC)",      type:"Mêlée",    dice:12, stat:"Force",        effect:"Morsure brutale",                                             crit:"Dégâts x2" },
     { name:"Le Bibi",              type:"Spécial",  dice:20, stat:"Chance",       effect:"Bibi attaque avec rage",                                      crit:"Bonus allié de +2 dégâts pendant 3 rounds" },
@@ -16,7 +16,7 @@ const attacks = {
   ]
 }
 
-const playerSpecialAttacks = {
+const CAMPAIGN_HERO_SPECIALS = {
   greg: {
     name: "Crâne de Frank",
     type: "Spécial",

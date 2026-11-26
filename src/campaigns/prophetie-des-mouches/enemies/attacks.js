@@ -1,4 +1,4 @@
-const mobAttacks = {
+const CAMPAIGN_ENEMY_ATTACKS = {
   weak: [
     { name:"Attaque",        icon:"⚔",  dmgMin:3,  dmgMax:8,  effect:null,    desc:"Frappe basique" }
   ],
@@ -18,7 +18,7 @@ const mobAttacks = {
   ]
 }
 
-const mobAttackOverrides = {
+const CAMPAIGN_ENEMY_ATTACK_OVERRIDES = {
   gobelins: [
     { name:"Coup de gourdin", icon:"🪵", dmgMin:4, dmgMax:9, effect:null, desc:"Un classique gobelin très mal élevé" },
     { name:"Jet de caillou", icon:"🪨", dmgMin:3, dmgMax:8, effect:null, desc:"Petit projectile, grand manque de respect" }

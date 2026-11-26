@@ -47,6 +47,77 @@ function createCampaignEnemies(input) {
   if (worldBosses.some(id => classicBosses.includes(id))) throw Error("Catégories de boss incompatibles")
   return Object.freeze({stats, worldBosses, classicBosses})
 }
+// Copy declarative content without executing it or changing any session data.
+function copyCampaignContent(value, parents = new Set()) {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (!value || typeof value !== "object" || parents.has(value) || !Array.isArray(value) && Object.prototype.toString.call(value) !== "[object Object]") throw Error("Contenu de campagne non sérialisable")
+  parents.add(value)
+  let result
+  if (Array.isArray(value)) result=value.map(item => copyCampaignContent(item, parents))
+  else result=Object.fromEntries(Object.entries(value).map(([key, item]) => {
+    if (["__proto__", "constructor", "prototype"].includes(key)) throw Error("Clé de contenu interdite")
+    return [key, copyCampaignContent(item, parents)]
+  }))
+  parents.delete(value)
+  return result
+}
+function campaignContentRecord(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw Error("Table de contenu invalide")
+  return Object.entries(value)
+}
+function campaignContentText(value) { return typeof value === "string" && !!value.trim() }
+function validateCampaignAttack(value) {
+  if (!value || !campaignContentText(value.name)) throw Error("Nom d’attaque absent")
+  if (value.dice !== undefined && ![4,6,8,10,12,20,100].includes(value.dice)) throw Error("Dé d’attaque invalide")
+  if (value.dmgMin !== undefined || value.dmgMax !== undefined) {
+    if (!Number.isFinite(value.dmgMin) || !Number.isFinite(value.dmgMax) || value.dmgMin < 0 || value.dmgMax < value.dmgMin) throw Error("Dégâts d’attaque invalides")
+  }
+}
+function createCampaignAttacks(input, characters) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Catalogue d’attaques invalide")
+  const ids=new Set(characters.map(character => character.id)), result=copyCampaignContent(input)
+  for (const key of ["heroes", "heroSpecials", "enemyTiers", "enemyOverrides", "enemySpecials"]) {
+    for (const [id, value] of campaignContentRecord(result[key])) {
+      if (!campaignContentText(id) || ["heroes", "heroSpecials"].includes(key) && !ids.has(id)) throw Error("Personnage d’attaque inconnu")
+      if (key === "enemyTiers" && !["weak", "medium", "high", "boss"].includes(id)) throw Error("Niveau d’attaque ennemi inconnu")
+      if (["heroSpecials", "enemySpecials"].includes(key)) validateCampaignAttack(value)
+      else {
+        if (!Array.isArray(value) || !value.length) throw Error("Liste d’attaques invalide")
+        value.forEach(validateCampaignAttack)
+        if (new Set(value.map(attack => attack.name)).size !== value.length) throw Error("Noms d’attaques dupliqués")
+      }
+    }
+  }
+  return Object.freeze(result)
+}
+function createCampaignItems(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Catalogue d’objets invalide")
+  const result=copyCampaignContent(input)
+  for (const [id, label] of campaignContentRecord(result.categories)) if (!campaignContentText(id) || typeof label !== "string") throw Error("Catégorie d’objet invalide")
+  for (const key of ["armory", "shop"]) {
+    if (!Array.isArray(result[key])) throw Error("Boutique invalide")
+    const ids=new Set()
+    for (const item of result[key]) {
+      if (!item || !campaignContentText(item.id) || ids.has(item.id) || !campaignContentText(item.name) || !isCampaignAssetPath(item.img,["png","jpg","jpeg","webp","svg"]) || !Object.prototype.hasOwnProperty.call(result.categories,item.category) || !Number.isFinite(item.basePrix) || item.basePrix < 0 || !Number.isFinite(item.scaling) || item.scaling < 0) throw Error("Objet de boutique invalide")
+      ids.add(item.id)
+    }
+  }
+  return Object.freeze(result)
+}
+function createCampaignAllies(input) {
+  if (!Array.isArray(input)) throw Error("Catalogue d’alliés invalide")
+  const result=copyCampaignContent(input), ids=new Set(), actions=new Set()
+  for (const ally of result) {
+    if (!ally || !campaignContentText(ally.id) || ids.has(ally.id) || !campaignContentText(ally.name) || !isCampaignAssetPath(ally.image,["png","jpg","jpeg","webp","svg"]) || !Array.isArray(ally.actions) || !ally.actions.length) throw Error("Allié invalide")
+    ids.add(ally.id)
+    for (const action of ally.actions) {
+      if (!action || !campaignContentText(action.id) || actions.has(action.id) || !campaignContentText(action.label) || !["damage","heal","buff","malus"].includes(action.type) || ![4,6,8,10,12,20,100].includes(action.dice)) throw Error("Capacité d’allié invalide")
+      actions.add(action.id)
+    }
+  }
+  return result
+}
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
@@ -65,8 +136,9 @@ function createCampaignDefinition(input) {
   const heroes = new Set(characters.filter(character => character.kind === "hero").map(character => character.id))
   if (!heroes.size) throw Error("La campagne doit définir un héros")
   for (const character of characters) if (character.kind === "companion" && !heroes.has(character.owner)) throw Error("Le compagnon doit appartenir à un héros de la campagne")
+  const content={...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
   const catalogs={...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
-  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...catalogs, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
+  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...catalogs, ...content, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
 }
 const playerBaseStats = {
   greg: { force:6, charme:4, perspi:4, chance:4, defense:5, hp:120, poids:100 },
@@ -195,7 +267,7 @@ const CAMPAIGN_ENEMY_STATS = {
 /* ATTAQUES JOUEURS          */
 /* ========================= */
 
-const attacks = {
+const CAMPAIGN_HERO_ATTACKS = {
   greg: [
     { name:"Chat Bite (CaC)",      type:"Mêlée",    dice:12, stat:"Force",        effect:"Morsure brutale",                                             crit:"Dégâts x2" },
     { name:"Le Bibi",              type:"Spécial",  dice:20, stat:"Chance",       effect:"Bibi attaque avec rage",                                      crit:"Bonus allié de +2 dégâts pendant 3 rounds" },
@@ -213,7 +285,7 @@ const attacks = {
   ]
 }
 
-const playerSpecialAttacks = {
+const CAMPAIGN_HERO_SPECIALS = {
   greg: {
     name: "Crâne de Frank",
     type: "Spécial",
@@ -265,7 +337,7 @@ const playerSpecialAttacks = {
 /* ATTAQUES MOBS             */
 /* ========================= */
 
-const mobAttacks = {
+const CAMPAIGN_ENEMY_ATTACKS = {
   weak: [
     { name:"Attaque",        icon:"⚔",  dmgMin:3,  dmgMax:8,  effect:null,    desc:"Frappe basique" }
   ],
@@ -285,7 +357,7 @@ const mobAttacks = {
   ]
 }
 
-const mobAttackOverrides = {
+const CAMPAIGN_ENEMY_ATTACK_OVERRIDES = {
   gobelins: [
     { name:"Coup de gourdin", icon:"🪵", dmgMin:4, dmgMax:9, effect:null, desc:"Un classique gobelin très mal élevé" },
     { name:"Jet de caillou", icon:"🪨", dmgMin:3, dmgMax:8, effect:null, desc:"Petit projectile, grand manque de respect" }
@@ -519,7 +591,7 @@ const mobSpecialAnimations = {
   tavern:    { accent:"#ffd9a0", glow:"rgba(255,210,150,0.45)", bg:"radial-gradient(circle at center,rgba(90,48,12,0.94) 0%,rgba(20,10,2,0.98) 74%)" }
 }
 
-const mobSpecialAttacks = {
+const CAMPAIGN_ENEMY_SPECIALS = {
   gobelins: { name:"Les sournoiseries du gobelin", icon:"💣", dmgMin:7, dmgMax:12, effect:null, animation:"tavern", flavor:"Une pluie de bombes artisanales mal fabriquées, mais avec enthousiasme." },
   loup: { name:"Hurlement de meute", icon:"🐺", dmgMin:8, dmgMax:14, effect:null, animation:"howl", flavor:"Un hurlement glacial annonce la morsure coordonnée." },
   draugr: { name:"WHAAAAAA", icon:"🪦", dmgMin:10, dmgMax:17, effect:"curse", animation:"spectral", flavor:"Le draugr s'exprime dans la langue des Dieux." },
@@ -1145,28 +1217,7 @@ const CAMPAIGN_MAP_NAMES = {
 /* SHOP                      */
 /* ========================= */
 
-// Campagne historique active. Changer de campagne et de stockage sera une étape distincte.
-const ACTIVE_CAMPAIGN = createCampaignDefinition({
-  schemaVersion:1,
-  id:"prophetie-des-mouches",
-  title:"La Prophétie des Mouches",
-  world:{names:CAMPAIGN_MAP_NAMES, music:CAMPAIGN_MAP_MUSIC},
-  enemies:{stats:CAMPAIGN_ENEMY_STATS, worldBosses:CAMPAIGN_WORLD_BOSSES, classicBosses:CAMPAIGN_CLASSIC_BOSSES},
-  characters:[
-    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
-    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
-    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png"},
-    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png"}
-  ]
-})
-// Stable public bindings while the rest of the engine is progressively decoupled.
-// Keep the tables mutable, as with the original const-backed catalogs.
-const mapNames = ACTIVE_CAMPAIGN.world?.names || {}
-const mapMusic = ACTIVE_CAMPAIGN.world?.music || {}
-const mobStats = ACTIVE_CAMPAIGN.enemies?.stats || {}
-const WORLD_BOSS_NAMES = ACTIVE_CAMPAIGN.enemies?.worldBosses || []
-const CLASSIC_BOSS_NAMES = ACTIVE_CAMPAIGN.enemies?.classicBosses || []
-const shopItemsArmurerie = [
+const CAMPAIGN_ARMORY_ITEMS = [
   { id:"epee",         name:"Épée",             img:"epee.png",         category:"arme",   basePrix:60,  baseStats:"Force +2",        scaling:8  },
   { id:"arc",          name:"Arc",              img:"arc.png",          category:"arme",   basePrix:70,  baseStats:"Précision +2",    scaling:8  },
   { id:"masse",        name:"Masse",            img:"masse.png",        category:"arme",   basePrix:65,  baseStats:"Force +3",        scaling:9  },
@@ -1182,7 +1233,7 @@ const shopItemsArmurerie = [
   { id:"anneaudef",    name:"Anneau de Défense",img:"anneau1.png",      category:"armure", basePrix:120, baseStats:"Défense +2",      scaling:12 }
 ]
 
-const shopItems = [
+const CAMPAIGN_SHOP_ITEMS = [
   { id:"sort",       name:"Parchemin Sort",  img:"sort.png",      category:"magie",   basePrix:100, baseStats:"Sort unique",  scaling:12 },
   { id:"anneaumagic",name:"Anneau Mystique", img:"anneau1.png",   category:"magie",   basePrix:130, baseStats:"Magie +3",     scaling:13 },
   { id:"potion",     name:"Potion de Vie",   img:"potionvie.png", category:"consomm", basePrix:50,  baseStats:"Vie +30",      scaling:5  },
@@ -1197,7 +1248,7 @@ const shopItems = [
   { id:"pierresoin", name:"Pierre de Soin",  img:"sort.png",      category:"util",    basePrix:120, baseStats:"+5 HP/tour",   scaling:8  }
 ]
 
-const categoryLabels = {
+const CAMPAIGN_ITEM_CATEGORIES = {
   arme:"⚔ Armes", armure:"🛡 Armures", magie:"✨ Magie", consomm:"🧪 Consommables", util:"🔧 Utilitaires"
 }
 
@@ -1360,7 +1411,7 @@ const dialogue = [
 /* PNJ ALLIÉS EN COMBAT      */
 /* ========================= */
 
-const ALLY_PNJS = [
+const CAMPAIGN_ALLIES = [
  {id:"nidhogg",name:"Nidhogg",image:"nhiddog.png",role:"Rongeur des racines",color:"#b48a9b",lore:"Le dragon vous prête sa morsure. Son pacte se gagne indépendamment de celui de Hel.",actions:[{id:"nidhogg_bite",label:"Morsure des racines",type:"damage",icon:"🐉",dice:20,dmgBase:100,dmgBonus:12,critMult:2,desc:"Dégâts adaptés au niveau. La cible subit ensuite +15 % de dégâts pendant deux rounds, +25 % sur critique naturel. Critique : dégâts ×2, plafond de 50 % des PV maximum contre 40 % normalement. Sur 1 : aucun dégât ni effet, intervention consommée. Vulnérabilité non cumulable avec elle-même.",dialogue:"Même les racines des rois finissent par céder."}]},
  {id:"hel",name:"Hel",image:"hel.png",role:"Souveraine des morts",color:"#a998c9",lore:"Un pacte lie votre souffle au royaume de Hel.",actions:[{id:"hel_reprieve",label:"Sursis de la souveraine",type:"buff",icon:"☽",dice:20,threshold:8,desc:"Sur 8+ au D20, protège un héros pendant deux rounds : le prochain coup fatal le laisse à 1 PV, puis le sursis disparaît. Sur 20 naturel : deux héros choisis. Sur 1 : aucun sursis, intervention consommée. Une utilisation par combat, sur autorisation du MJ.",dialogue:"Votre heure n’a pas encore sonné."}]},
  {id:"melenchon",name:"Les troupes de Mélenchon",image:"generalmelenchon.png",role:"Appui aérien de l’Oregon III",color:"#e5a24a",lore:"Le général engage ses troupes : l’Oregon III survole le champ de bataille et ouvre le feu.",actions:[{id:"melenchon_bombardment",label:"Bombardement de l’Oregon",type:"damage",icon:"💣",dice:20,dmgBase:160,dmgBonus:18,critMult:2,desc:"L’Oregon III bombarde un ennemi choisi : 160 + D20 × 18 dégâts au total. Critique 20 : dégâts doublés. Une seule utilisation pendant ce combat, sur autorisation du MJ.",dialogue:"L’Oregon arrive en renfort. Bombardez la cible !"}]},
@@ -1490,6 +1541,40 @@ const ALLY_PNJS = [
 ]
 
 
+// Campagne historique active. Changer de campagne et de stockage sera une étape distincte.
+const ACTIVE_CAMPAIGN = createCampaignDefinition({
+  schemaVersion:1,
+  id:"prophetie-des-mouches",
+  title:"La Prophétie des Mouches",
+  world:{names:CAMPAIGN_MAP_NAMES, music:CAMPAIGN_MAP_MUSIC},
+  enemies:{stats:CAMPAIGN_ENEMY_STATS, worldBosses:CAMPAIGN_WORLD_BOSSES, classicBosses:CAMPAIGN_CLASSIC_BOSSES},
+  attacks:{heroes:CAMPAIGN_HERO_ATTACKS, heroSpecials:CAMPAIGN_HERO_SPECIALS, enemyTiers:CAMPAIGN_ENEMY_ATTACKS, enemyOverrides:CAMPAIGN_ENEMY_ATTACK_OVERRIDES, enemySpecials:CAMPAIGN_ENEMY_SPECIALS},
+  items:{armory:CAMPAIGN_ARMORY_ITEMS, shop:CAMPAIGN_SHOP_ITEMS, categories:CAMPAIGN_ITEM_CATEGORIES},
+  allies:CAMPAIGN_ALLIES,
+  characters:[
+    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
+    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
+    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png"},
+    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png"}
+  ]
+})
+// Stable public bindings while the rest of the engine is progressively decoupled.
+// Keep the tables mutable, as with the original const-backed catalogs.
+const mapNames = ACTIVE_CAMPAIGN.world?.names || {}
+const mapMusic = ACTIVE_CAMPAIGN.world?.music || {}
+const mobStats = ACTIVE_CAMPAIGN.enemies?.stats || {}
+const WORLD_BOSS_NAMES = ACTIVE_CAMPAIGN.enemies?.worldBosses || []
+const CLASSIC_BOSS_NAMES = ACTIVE_CAMPAIGN.enemies?.classicBosses || []
+
+const attacks = ACTIVE_CAMPAIGN.attacks?.heroes || {}
+const playerSpecialAttacks = ACTIVE_CAMPAIGN.attacks?.heroSpecials || {}
+const mobAttacks = ACTIVE_CAMPAIGN.attacks?.enemyTiers || {}
+const mobAttackOverrides = ACTIVE_CAMPAIGN.attacks?.enemyOverrides || {}
+const mobSpecialAttacks = ACTIVE_CAMPAIGN.attacks?.enemySpecials || {}
+const shopItemsArmurerie = ACTIVE_CAMPAIGN.items?.armory || []
+const shopItems = ACTIVE_CAMPAIGN.items?.shop || []
+const categoryLabels = ACTIVE_CAMPAIGN.items?.categories || {}
+const ALLY_PNJS = ACTIVE_CAMPAIGN.allies || []
 function heroDisplayName(id) { const text=pikaDisplayText(String(id || "").trim());return text==="Pika"?text:text.toUpperCase() }
 function heroPortraitFile(id) { return ACTIVE_CAMPAIGN.characters.find(character => character.id === id)?.portrait || id + ".png" }
 function migratePikaCharacter(character) {

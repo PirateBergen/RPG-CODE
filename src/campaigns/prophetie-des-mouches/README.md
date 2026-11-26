@@ -19,3 +19,5 @@ Ce dossier est relié aux fichiers publics par `src/source-map.json`. Le copier 
 `definition.js` décrit l’identité de cette campagne et ses héros/compagnon, avec leurs identifiants et portraits existants. La référence active reste fixée à cette campagne ; aucune partie ni archive ne change de chemin.
 
 La fiche rattache également les catalogues existants de `world/locations-and-music.js`, `enemies/stats.js` et `enemies/categories.js`. Les règles particulières, attaques et déroulements narratifs restent dans leurs fichiers actuels ; aucun nom de carte ni valeur de combat n’est modifié.
+
+Les fichiers d’attaques des personnages et ennemis, le catalogue de boutiques et celui des alliés alimentent la fiche active. Ils conservent leurs données et identifiants historiques ; les anciennes variables sont fournies par l’adaptateur partagé. Les résolutions de combat et les exceptions narratives restent inchangées.

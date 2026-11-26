@@ -5,6 +5,9 @@ const ACTIVE_CAMPAIGN = createCampaignDefinition({
   title:"La Prophétie des Mouches",
   world:{names:CAMPAIGN_MAP_NAMES, music:CAMPAIGN_MAP_MUSIC},
   enemies:{stats:CAMPAIGN_ENEMY_STATS, worldBosses:CAMPAIGN_WORLD_BOSSES, classicBosses:CAMPAIGN_CLASSIC_BOSSES},
+  attacks:{heroes:CAMPAIGN_HERO_ATTACKS, heroSpecials:CAMPAIGN_HERO_SPECIALS, enemyTiers:CAMPAIGN_ENEMY_ATTACKS, enemyOverrides:CAMPAIGN_ENEMY_ATTACK_OVERRIDES, enemySpecials:CAMPAIGN_ENEMY_SPECIALS},
+  items:{armory:CAMPAIGN_ARMORY_ITEMS, shop:CAMPAIGN_SHOP_ITEMS, categories:CAMPAIGN_ITEM_CATEGORIES},
+  allies:CAMPAIGN_ALLIES,
   characters:[
     {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
     {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},

@@ -1,0 +1,17 @@
+const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
+const base=path.resolve(__dirname,'..'),read=file=>fs.readFileSync(path.join(base,file),'utf8'),copy=value=>JSON.parse(JSON.stringify(value));
+const baseline=JSON.parse(read('reports/campaign-catalogs-baseline-2026-11-26.json')).catalogs;
+const context=vm.createContext({});vm.runInContext(read('config.js'),context);
+const current=copy(vm.runInContext('({mapNames,mapMusic,mobStats,WORLD_BOSS_NAMES,CLASSIC_BOSS_NAMES})',context));assert.deepEqual(current,baseline);
+assert.equal(current.mapNames['epouventail.jpg'],'');assert.equal(current.mapMusic['bateau.jpg'],undefined);assert.equal(current.mapNames['neige.jpg'],undefined);
+assert(current.mapMusic['MAPMONDE.jpg']);assert(current.mobStats['ELO PION']);assert.equal(current.mobStats.fenrir.tier,'high');assert(current.WORLD_BOSS_NAMES.includes('fenrir'));
+const definition=vm.runInContext('ACTIVE_CAMPAIGN',context);assert.deepEqual(copy(definition.world),{names:baseline.mapNames,music:baseline.mapMusic});assert.deepEqual(copy(definition.enemies),{stats:baseline.mobStats,worldBosses:baseline.WORLD_BOSS_NAMES,classicBosses:baseline.CLASSIC_BOSS_NAMES});
+const run=vm.createContext({});vm.runInContext(read('src/engine/campaigns/catalogs.js'),run);vm.runInContext(read('src/engine/campaigns/definition.js'),run);
+const draft={schemaVersion:1,id:'autre-histoire',title:'Autre histoire',characters:[{id:'aube',name:'Aube',kind:'hero',portrait:'aube.png'}],world:{names:{'caverne.png':''},music:{'caverne.png':'caverne.ogg'}},enemies:{stats:{'Garde de nuit':{tier:'medium',baseHP:60}},worldBosses:[],classicBosses:['Garde de nuit']}};
+const other=run.createCampaignDefinition(draft);draft.world.music['caverne.png']='modification.mp3';draft.enemies.stats['Garde de nuit'].baseHP=999;assert.equal(other.world.music['caverne.png'],'caverne.ogg');assert.equal(other.enemies.stats['Garde de nuit'].baseHP,60);
+run.ACTIVE_CAMPAIGN=other;vm.runInContext(read('src/engine/campaigns/legacy-catalogs.js'),run);assert.deepEqual(copy(vm.runInContext('Object.keys(mobStats)',run)),['Garde de nuit']);assert.equal(vm.runInContext('mapNames["caverne.png"]',run),'');assert.deepEqual(copy(vm.runInContext('WORLD_BOSS_NAMES',run)),[]);
+assert.deepEqual(copy(vm.runInContext('({mapNames,mapMusic,mobStats,WORLD_BOSS_NAMES,CLASSIC_BOSS_NAMES})',context)),baseline);
+assert.deepEqual(copy(context.createCampaignDefinition(copy(definition))),copy(definition));
+for(const value of [{names:{'../carte.png':'danger'},music:{}},{names:{'carte.png':3},music:{}},{names:{},music:{'carte.png':'https://example.test/musique.mp3'}}])assert.throws(()=>run.createCampaignWorld(value));
+for(const value of [{stats:{x:{tier:'inconnu',baseHP:1}},worldBosses:[],classicBosses:[]},{stats:{x:{tier:'weak',baseHP:NaN}},worldBosses:[],classicBosses:[]},{stats:{x:{tier:'weak',baseHP:1}},worldBosses:['absent'],classicBosses:[]},{stats:{x:{tier:'weak',baseHP:1}},worldBosses:['x','x'],classicBosses:[]},{stats:{x:{tier:'weak',baseHP:1}},worldBosses:['x'],classicBosses:['x']}])assert.throws(()=>run.createCampaignEnemies(value));
+console.log('OK Catalogues : tous les lieux, musiques, PV et catégories historiques sont identiques à la référence ; autre campagne isolée ; identifiants et entrées particulières conservés.');

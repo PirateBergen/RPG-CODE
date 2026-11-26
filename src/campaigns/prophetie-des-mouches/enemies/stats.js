@@ -1,4 +1,4 @@
-const mobStats = {
+const CAMPAIGN_ENEMY_STATS = {
   gobelins:          { tier:"weak",   baseHP:20  },
   loup:              { tier:"weak",   baseHP:48  },
   draugr:            { tier:"weak",   baseHP:56  },

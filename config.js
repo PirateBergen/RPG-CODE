@@ -17,6 +17,36 @@ const GAME_STATE = {
 /* STATS JOUEURS             */
 /* ========================= */
 
+// Validate static campaign content without reading or writing a session.
+function isCampaignAssetPath(value, extensions) {
+  return typeof value === "string" && !/[:\\\0?#]/.test(value) && !value.startsWith("/") && !value.split("/").some(part => !part || part === "." || part === "..") && extensions.includes(value.split(".").pop().toLowerCase())
+}
+function createCampaignWorld(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw Error("Catalogue des lieux invalide")
+  const table = (value, music) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw Error("Table des lieux invalide")
+    return Object.fromEntries(Object.entries(value).map(([image, content]) => {
+      if (!isCampaignAssetPath(image, ["png", "jpg", "jpeg", "webp", "svg"]) || typeof content !== "string" || music && !isCampaignAssetPath(content, ["mp3", "wav", "ogg", "m4a"])) throw Error("Lieu ou musique invalide")
+      return [image, content]
+    }))
+  }
+  // Missing names/music and empty display labels retain their historical meaning.
+  return Object.freeze({names:table(input.names, false), music:table(input.music, true)})
+}
+function createCampaignEnemies(input) {
+  if (!input || !input.stats || typeof input.stats !== "object" || Array.isArray(input.stats)) throw Error("Bestiaire invalide")
+  const stats = Object.fromEntries(Object.entries(input.stats).map(([id, value]) => {
+    if (!id.trim() || ["__proto__", "constructor", "prototype"].includes(id) || !value || !["weak", "medium", "high", "boss"].includes(value.tier) || !Number.isFinite(value.baseHP) || value.baseHP <= 0) throw Error("Statistiques de monstre invalides")
+    return [id, {tier:value.tier, baseHP:value.baseHP}]
+  }))
+  const group = value => {
+    if (!Array.isArray(value) || new Set(value).size !== value.length || value.some(id => typeof id !== "string" || !Object.prototype.hasOwnProperty.call(stats, id))) throw Error("Catégorie de boss invalide")
+    return [...value]
+  }
+  const worldBosses=group(input.worldBosses), classicBosses=group(input.classicBosses)
+  if (worldBosses.some(id => classicBosses.includes(id))) throw Error("Catégories de boss incompatibles")
+  return Object.freeze({stats, worldBosses, classicBosses})
+}
 // Description de contenu uniquement : ni connexion, ni écriture de partie.
 function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
@@ -35,20 +65,9 @@ function createCampaignDefinition(input) {
   const heroes = new Set(characters.filter(character => character.kind === "hero").map(character => character.id))
   if (!heroes.size) throw Error("La campagne doit définir un héros")
   for (const character of characters) if (character.kind === "companion" && !heroes.has(character.owner)) throw Error("Le compagnon doit appartenir à un héros de la campagne")
-  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
+  const catalogs={...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
+  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...catalogs, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
 }
-// Campagne historique active. Changer de campagne et de stockage sera une étape distincte.
-const ACTIVE_CAMPAIGN = createCampaignDefinition({
-  schemaVersion:1,
-  id:"prophetie-des-mouches",
-  title:"La Prophétie des Mouches",
-  characters:[
-    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
-    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
-    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png"},
-    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png"}
-  ]
-})
 const playerBaseStats = {
   greg: { force:6, charme:4, perspi:4, chance:4, defense:5, hp:120, poids:100 },
   ju:   { force:3, charme:7, perspi:6, chance:5, defense:4, hp:100, poids:100 },
@@ -114,7 +133,7 @@ function xpForLevel(lvl) {
 /* STATS MOBS                */
 /* ========================= */
 
-const mobStats = {
+const CAMPAIGN_ENEMY_STATS = {
   gobelins:          { tier:"weak",   baseHP:20  },
   loup:              { tier:"weak",   baseHP:48  },
   draugr:            { tier:"weak",   baseHP:56  },
@@ -971,8 +990,8 @@ function getMobAnimationStyle(animationKey) {
 }
 
 
-const WORLD_BOSS_NAMES=["fenrir","jormungand","kraken","nhiddog","hydre","basilic","odin","thor","freya","heimdall","balraug","roi"]
-const CLASSIC_BOSS_NAMES=[]
+const CAMPAIGN_WORLD_BOSSES=["fenrir","jormungand","kraken","nhiddog","hydre","basilic","odin","thor","freya","heimdall","balraug","roi"]
+const CAMPAIGN_CLASSIC_BOSSES=[]
 function getBalanceLevelBonus(level){let bonus=0;for(let i=2;i<=level;i++)bonus+=i>=15?4:i>=10?3:i>=5?2:1;return bonus}
 function getPartyDamageReference(level){
  level=Math.max(1,Math.min(99,Math.round(Number(level)||1)));const bonus=getBalanceLevelBonus(level)
@@ -1035,7 +1054,7 @@ function getMobBaseDamageRange(attack, mobLvl, mobTier = "weak", mobData = null)
 /* MAPS & MUSIQUES           */
 /* ========================= */
 
-const mapMusic = {
+const CAMPAIGN_MAP_MUSIC = {
   "prisonbrume.jpg":      "prison-brume.mp3",
   "taverne.jpg":         "ambiancetaverne.mp3",
   "village1.jpg":        "marche.mp3",
@@ -1080,7 +1099,7 @@ const mapMusic = {
   "hvergelmir.jpg":      "niflheim.mp3"
 }
 
-const mapNames = {
+const CAMPAIGN_MAP_NAMES = {
   "prisonbrume.jpg":      "Prison de Brume",
   "taverne.jpg":         "La Taverne",
   "village1.jpg":        "Village Rivebois",
@@ -1126,6 +1145,27 @@ const mapNames = {
 /* SHOP                      */
 /* ========================= */
 
+// Campagne historique active. Changer de campagne et de stockage sera une étape distincte.
+const ACTIVE_CAMPAIGN = createCampaignDefinition({
+  schemaVersion:1,
+  id:"prophetie-des-mouches",
+  title:"La Prophétie des Mouches",
+  world:{names:CAMPAIGN_MAP_NAMES, music:CAMPAIGN_MAP_MUSIC},
+  enemies:{stats:CAMPAIGN_ENEMY_STATS, worldBosses:CAMPAIGN_WORLD_BOSSES, classicBosses:CAMPAIGN_CLASSIC_BOSSES},
+  characters:[
+    {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
+    {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},
+    {id:"elo", name:"Elo", kind:"hero", portrait:"elo.png"},
+    {id:"bibi", name:"Bibi", kind:"companion", owner:"greg", portrait:"bibi.png"}
+  ]
+})
+// Stable public bindings while the rest of the engine is progressively decoupled.
+// Keep the tables mutable, as with the original const-backed catalogs.
+const mapNames = ACTIVE_CAMPAIGN.world?.names || {}
+const mapMusic = ACTIVE_CAMPAIGN.world?.music || {}
+const mobStats = ACTIVE_CAMPAIGN.enemies?.stats || {}
+const WORLD_BOSS_NAMES = ACTIVE_CAMPAIGN.enemies?.worldBosses || []
+const CLASSIC_BOSS_NAMES = ACTIVE_CAMPAIGN.enemies?.classicBosses || []
 const shopItemsArmurerie = [
   { id:"epee",         name:"Épée",             img:"epee.png",         category:"arme",   basePrix:60,  baseStats:"Force +2",        scaling:8  },
   { id:"arc",          name:"Arc",              img:"arc.png",          category:"arme",   basePrix:70,  baseStats:"Précision +2",    scaling:8  },

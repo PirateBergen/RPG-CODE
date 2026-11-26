@@ -4,8 +4,8 @@
   "bundles": {
     "config.js": [
       "engine/game-states.js",
+      "engine/campaigns/catalogs.js",
       "engine/campaigns/definition.js",
-      "campaigns/prophetie-des-mouches/definition.js",
       "campaigns/prophetie-des-mouches/characters/base-stats.js",
       "engine/characters/progression.js",
       "campaigns/prophetie-des-mouches/enemies/stats.js",
@@ -20,6 +20,8 @@
       "campaigns/prophetie-des-mouches/enemies/categories.js",
       "engine/combat/legacy-balance.js",
       "campaigns/prophetie-des-mouches/world/locations-and-music.js",
+      "campaigns/prophetie-des-mouches/definition.js",
+      "engine/campaigns/legacy-catalogs.js",
       "campaigns/prophetie-des-mouches/items/shop-catalog.js",
       "engine/items/equipment-progression.js",
       "campaigns/prophetie-des-mouches/world/wanted-catalog.js",

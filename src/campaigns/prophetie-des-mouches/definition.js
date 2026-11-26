@@ -3,6 +3,8 @@ const ACTIVE_CAMPAIGN = createCampaignDefinition({
   schemaVersion:1,
   id:"prophetie-des-mouches",
   title:"La Prophétie des Mouches",
+  world:{names:CAMPAIGN_MAP_NAMES, music:CAMPAIGN_MAP_MUSIC},
+  enemies:{stats:CAMPAIGN_ENEMY_STATS, worldBosses:CAMPAIGN_WORLD_BOSSES, classicBosses:CAMPAIGN_CLASSIC_BOSSES},
   characters:[
     {id:"greg", name:"Greg", kind:"hero", portrait:"greg.png"},
     {id:"ju", name:"Pika", kind:"hero", portrait:"pika-token.svg"},

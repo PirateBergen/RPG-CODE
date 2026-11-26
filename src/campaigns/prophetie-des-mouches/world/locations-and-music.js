@@ -1,4 +1,4 @@
-const mapMusic = {
+const CAMPAIGN_MAP_MUSIC = {
   "prisonbrume.jpg":      "prison-brume.mp3",
   "taverne.jpg":         "ambiancetaverne.mp3",
   "village1.jpg":        "marche.mp3",
@@ -43,7 +43,7 @@ const mapMusic = {
   "hvergelmir.jpg":      "niflheim.mp3"
 }
 
-const mapNames = {
+const CAMPAIGN_MAP_NAMES = {
   "prisonbrume.jpg":      "Prison de Brume",
   "taverne.jpg":         "La Taverne",
   "village1.jpg":        "Village Rivebois",

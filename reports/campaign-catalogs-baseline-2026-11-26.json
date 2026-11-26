@@ -1,0 +1,328 @@
+{
+  "format": 1,
+  "baselineCommit": "93d94d131aa549dd1ca0ed6bb0690aa4b03f6432",
+  "catalogs": {
+    "mapNames": {
+      "prisonbrume.jpg": "Prison de Brume",
+      "taverne.jpg": "La Taverne",
+      "village1.jpg": "Village Rivebois",
+      "armurerie.jpg": "Forge de Rivebois",
+      "voyante.jpg": "Apothicaire",
+      "marche.jpg": "Place du marché",
+      "foret.jpg": "Forêt enchantée",
+      "arbre.jpg": "Arbre Monde",
+      "castleofevil.jpg": "The Castle of Evil",
+      "cimetiere.jpg": "Cimetière ancien",
+      "mine.jpg": "Mine du vent d'Est",
+      "prebalraug.jpg": "Salle principal",
+      "port.jpg": "La Cité du Nord Brume",
+      "portail.jpg": "Portail de Vérité",
+      "trou.jpg": "Passage de l'Antre monde",
+      "cristaux.jpg": "Cristal de vérité",
+      "tourbillon.jpg": "Le Maelestrom",
+      "interieurcastle.jpg": "Salle principale",
+      "throne.jpg": "Throne",
+      "bateaunord.png": "Port de Brume",
+      "bifrost.jpg": "Bifrost",
+      "MAPMONDE.jpg": "MAP MONDE",
+      "chasseuraurore.jpg": "Camp des Chasseurs d'Aurore",
+      "tenteaurore.jpg": "Tente du Général Mélenchon",
+      "antre.jpg": "L'Antre monde",
+      "egout.jpg": "🌊 Égout de Brume",
+      "bateau.jpg": "Le for sure",
+      "bateau1.jpg": "L'Oregon III",
+      "tavernebrume.png": "Taverne de Brume",
+      "armurerie1.jpg": "Armurerie de Brume",
+      "balduregout.jpg": "Salle secrète de Baldur",
+      "marche1.jpg": "Place du Marché de Brume",
+      "mairemaison.jpg": "🏛 Mairie de Rivebois",
+      "epouventail.jpg": "",
+      "asgard.jpg": "⚡ La cité des dieux Asgard",
+      "rivebois.jpg": "🏘 Rivebois",
+      "ruines.jpg": "🏚 Ruines du village du Jarl Baldur",
+      "niflheim.jpg": "🌊 Cité engloutie Niflheim",
+      "hvergelmir.jpg": "🌊 Source sacrée Hvergelmir"
+    },
+    "mapMusic": {
+      "prisonbrume.jpg": "prison-brume.mp3",
+      "taverne.jpg": "ambiancetaverne.mp3",
+      "village1.jpg": "marche.mp3",
+      "armurerie.jpg": "armurerie.mp3",
+      "marche.jpg": "marche.mp3",
+      "voyante.jpg": "voyante.mp3",
+      "foret.jpg": "foret.mp3",
+      "arbre.jpg": "arbre.mp3",
+      "castleofevil.jpg": "castleofevil.mp3",
+      "cimetiere.jpg": "cimetiere.mp3",
+      "mine.jpg": "mine.mp3",
+      "port.jpg": "port.mp3",
+      "bateaunord.png": "port.mp3",
+      "neige.jpg": "neige.mp3",
+      "bifrost.jpg": "bifrost.mp3",
+      "MAPMONDE.jpg": "prairie.mp3",
+      "prairie.jpg": "prairie.mp3",
+      "chasseuraurore.jpg": "chasseuraurore.mp3",
+      "tenteaurore.jpg": "tente.mp3",
+      "bateau1.jpg": "chasseuraurore.mp3",
+      "antre.jpg": "antre.mp3",
+      "portail.jpg": "foret.mp3",
+      "tourbillon.jpg": "tourbillon.mp3",
+      "trou.jpg": "trou.mp3",
+      "cristaux.jpg": "cristaux.mp3",
+      "interieurmine.jpg": "mine.mp3",
+      "prebalraug.jpg": "mine.mp3",
+      "throne.jpg": "throne.mp3",
+      "interieurcastle.jpg": "castleofevil.mp3",
+      "egout.jpg": "egout.mp3",
+      "tavernebrume.png": "ambiancetaverne.mp3",
+      "armurerie1.jpg": "brumeinside.mp3",
+      "balduregout.jpg": "egout.mp3",
+      "marche1.jpg": "port.mp3",
+      "palaisville.jpg": "brumeinside.mp3",
+      "mairemaison.jpg": "mairemaison.mp3",
+      "epouventail.jpg": "marche.mp3",
+      "asgard.jpg": "asgard.mp3",
+      "rivebois.jpg": "marche.mp3",
+      "ruines.jpg": "ruines.mp3",
+      "niflheim.jpg": "niflheim.mp3",
+      "hvergelmir.jpg": "niflheim.mp3"
+    },
+    "mobStats": {
+      "gobelins": {
+        "tier": "weak",
+        "baseHP": 20
+      },
+      "loup": {
+        "tier": "weak",
+        "baseHP": 48
+      },
+      "draugr": {
+        "tier": "weak",
+        "baseHP": 56
+      },
+      "fantome": {
+        "tier": "weak",
+        "baseHP": 20
+      },
+      "vampire": {
+        "tier": "weak",
+        "baseHP": 32
+      },
+      "witch": {
+        "tier": "weak",
+        "baseHP": 24
+      },
+      "garde": {
+        "tier": "weak",
+        "baseHP": 56
+      },
+      "bandit": {
+        "tier": "weak",
+        "baseHP": 24
+      },
+      "ogre": {
+        "tier": "medium",
+        "baseHP": 48
+      },
+      "dragon": {
+        "tier": "medium",
+        "baseHP": 70
+      },
+      "liquorice": {
+        "tier": "medium",
+        "baseHP": 56
+      },
+      "valkyrie": {
+        "tier": "medium",
+        "baseHP": 60
+      },
+      "golem": {
+        "tier": "high",
+        "baseHP": 100
+      },
+      "pretre": {
+        "tier": "high",
+        "baseHP": 80
+      },
+      "balraug": {
+        "tier": "boss",
+        "baseHP": 180
+      },
+      "fenrir": {
+        "tier": "high",
+        "baseHP": 100
+      },
+      "jormungand": {
+        "tier": "boss",
+        "baseHP": 360
+      },
+      "kraken": {
+        "tier": "boss",
+        "baseHP": 390
+      },
+      "nhiddog": {
+        "tier": "boss",
+        "baseHP": 330
+      },
+      "roi": {
+        "tier": "boss",
+        "baseHP": 450
+      },
+      "chnaw": {
+        "tier": "high",
+        "baseHP": 90
+      },
+      "tavernier": {
+        "tier": "weak",
+        "baseHP": 20
+      },
+      "soulard": {
+        "tier": "weak",
+        "baseHP": 16
+      },
+      "serveuse": {
+        "tier": "weak",
+        "baseHP": 18
+      },
+      "marchand": {
+        "tier": "weak",
+        "baseHP": 44
+      },
+      "forgeron": {
+        "tier": "medium",
+        "baseHP": 60
+      },
+      "forgeron1": {
+        "tier": "medium",
+        "baseHP": 56
+      },
+      "voyantepnj": {
+        "tier": "medium",
+        "baseHP": 44
+      },
+      "garde baldur": {
+        "tier": "medium",
+        "baseHP": 32
+      },
+      "child baldur": {
+        "tier": "weak",
+        "baseHP": 15
+      },
+      "pnj1": {
+        "tier": "weak",
+        "baseHP": 24
+      },
+      "pnj2": {
+        "tier": "weak",
+        "baseHP": 24
+      },
+      "oldmessager": {
+        "tier": "weak",
+        "baseHP": 20
+      },
+      "maire": {
+        "tier": "high",
+        "baseHP": 90
+      },
+      "generalmelenchon": {
+        "tier": "high",
+        "baseHP": 120
+      },
+      "jarl baldur": {
+        "tier": "high",
+        "baseHP": 55
+      },
+      "marchand2": {
+        "tier": "weak",
+        "baseHP": 22
+      },
+      "gardedunord": {
+        "tier": "medium",
+        "baseHP": 60
+      },
+      "garde2": {
+        "tier": "medium",
+        "baseHP": 56
+      },
+      "conseillerroinord": {
+        "tier": "high",
+        "baseHP": 90
+      },
+      "intendantbrume": {
+        "tier": "high",
+        "baseHP": 100
+      },
+      "zombie": {
+        "tier": "high",
+        "baseHP": 120
+      },
+      "zombie2": {
+        "tier": "high",
+        "baseHP": 110
+      },
+      "troll": {
+        "tier": "medium",
+        "baseHP": 80
+      },
+      "cyclope": {
+        "tier": "medium",
+        "baseHP": 85
+      },
+      "serpentgeant": {
+        "tier": "high",
+        "baseHP": 130
+      },
+      "hydre": {
+        "tier": "boss",
+        "baseHP": 450
+      },
+      "basilic": {
+        "tier": "boss",
+        "baseHP": 400
+      },
+      "odin": {
+        "tier": "boss",
+        "baseHP": 600
+      },
+      "thor": {
+        "tier": "boss",
+        "baseHP": 550
+      },
+      "freya": {
+        "tier": "boss",
+        "baseHP": 480
+      },
+      "heimdall": {
+        "tier": "boss",
+        "baseHP": 520
+      },
+      "ELO PION": {
+        "tier": "weak",
+        "baseHP": 28
+      },
+      "ju pion": {
+        "tier": "weak",
+        "baseHP": 28
+      },
+      "greg pion": {
+        "tier": "weak",
+        "baseHP": 32
+      }
+    },
+    "WORLD_BOSS_NAMES": [
+      "fenrir",
+      "jormungand",
+      "kraken",
+      "nhiddog",
+      "hydre",
+      "basilic",
+      "odin",
+      "thor",
+      "freya",
+      "heimdall",
+      "balraug",
+      "roi"
+    ],
+    "CLASSIC_BOSS_NAMES": []
+  }
+}

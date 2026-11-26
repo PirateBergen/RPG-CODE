@@ -17,3 +17,5 @@ Les références d’images et de sons conservent leurs valeurs existantes. Aucu
 Ce dossier est relié aux fichiers publics par `src/source-map.json`. Le copier ne crée pas encore une campagne jouable indépendante : le sélecteur, le contrat de campagne et l’éditeur feront partie de la prochaine étape du projet.
 
 `definition.js` décrit l’identité de cette campagne et ses héros/compagnon, avec leurs identifiants et portraits existants. La référence active reste fixée à cette campagne ; aucune partie ni archive ne change de chemin.
+
+La fiche rattache également les catalogues existants de `world/locations-and-music.js`, `enemies/stats.js` et `enemies/categories.js`. Les règles particulières, attaques et déroulements narratifs restent dans leurs fichiers actuels ; aucun nom de carte ni valeur de combat n’est modifié.

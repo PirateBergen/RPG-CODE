@@ -1,6 +1,8 @@
 const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert/strict');
 const base=path.resolve(__dirname,'..'),context=vm.createContext({}),read=name=>fs.readFileSync(path.join(base,name),'utf8'),copy=value=>JSON.parse(JSON.stringify(value));
+vm.runInContext(read('src/engine/campaigns/catalogs.js'),context);
 vm.runInContext(read('src/engine/campaigns/definition.js'),context);
+for(const file of ['enemies/stats.js','enemies/categories.js','world/locations-and-music.js'])vm.runInContext(read('src/campaigns/prophetie-des-mouches/'+file),context);
 vm.runInContext(read('src/campaigns/prophetie-des-mouches/definition.js'),context);
 vm.runInContext(read('src/engine/combat/roster.js'),context);
 vm.runInContext(read('src/campaigns/prophetie-des-mouches/characters/identity-and-compatibility.js'),context);

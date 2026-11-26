@@ -1,6 +1,6 @@
 const assert=require('assert/strict'),path=require('path');
 module.exports=async(page,viewport,root)=>{
- await page.locator('#openGmWorkspace').click();await page.getByRole('tab',{name:'PNJ et alliés',exact:true}).click();
+ await require('./editor-navigation.cjs').tab(page,'npcs');await page.getByRole('tab',{name:'PNJ et alliés',exact:true}).click();
  const card=page.locator('.npc-card').filter({has:page.getByRole('heading',{name:'Gardienne du pont',exact:true})});
  await card.getByRole('button',{name:'Modifier le PNJ Gardienne du pont',exact:true}).click();await page.locator('#npcLocationChoices').getByLabel('Village des Brumes',{exact:true}).check();await page.locator('#npcLocationChoices').getByLabel('Caverne de test',{exact:true}).check();await page.locator('#workspaceNpcAdd').click();
  await page.locator('#npcMapTabs').getByRole('tab',{name:'Village des Brumes (1)',exact:true}).click();assert.equal(await page.locator('.npc-card').count(),1);

@@ -1,6 +1,6 @@
 function createDraftNpcPanel({getDefinition,commit,status,getLocationId}) {
   const $=id=>document.getElementById(id);let filter='all',editing=null,image=null,generation=0,pending=false
-  const places=()=>getDefinition().locations || []
+  const places=()=>getDefinition()?.locations || []
   function attempt(fn){return ()=>{try{fn()}catch(error){status(error.message,true)}}}
   function preview(){ $('workspaceNpcPreview').hidden=!image;if(image)$('workspaceNpcPreview').src=image;else $('workspaceNpcPreview').removeAttribute('src') }
   function choices(ids=[]){const list=$('npcLocationChoices');list.replaceChildren();for(const place of places()){const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.value=place.id;check.checked=ids.includes(place.id);label.append(check,document.createTextNode(place.name));list.append(label)}if(!list.children.length)list.textContent='Créez des cartes pour y classer vos PNJ.'}

@@ -1,5 +1,6 @@
 const assert=require('assert/strict'),path=require('path');
 module.exports=async(page,viewport,root)=>{
+ await require("./editor-navigation.cjs").tab(page,"enemies");
  await page.locator('#enemyAdd').click();await page.locator('#enemyName').fill('Annulé');await page.keyboard.press('Escape');assert.equal(await page.locator('.enemy-card').count(),0);
  await page.locator('#enemyAddExamples').click();assert.equal(await page.locator('.enemy-card').count(),5);await page.getByRole('button',{name:'Modifier : Gobelin',exact:true}).click();await page.locator('#enemyName').fill('Gobelin des brumes');
  for(const checkbox of await page.locator('#enemyVariants input').all())await checkbox.check();await page.locator('#enemyTestVariant').selectOption('worldBoss');assert((await page.locator('#enemyStatsPreview').textContent()).includes('PV maximum : 320'));await page.locator('#enemyTestLevel').fill('3');assert((await page.locator('#enemyStatsPreview').textContent()).includes('PV maximum : 371.2'));

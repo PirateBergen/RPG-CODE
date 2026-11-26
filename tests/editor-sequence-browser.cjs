@@ -1,5 +1,6 @@
 const assert=require('assert/strict'),path=require('path');
 module.exports=async(page,viewport,root)=>{
+ await require("./editor-navigation.cjs").tab(page,"heroes");
  await page.getByRole('button',{name:'Attaques et capacités de Aurore',exact:true}).click();await page.getByRole('button',{name:'Modifier la capacité Éclipse',exact:true}).click();await page.locator('#sequenceEditor>summary').click();await page.locator('#sequenceModel').selectOption('dark');await page.locator('#sequenceApplyModel').click();assert(await page.locator('#sequenceEnabled').isChecked());
  const steps=page.locator('#sequenceSteps>details');for(let i=0;i<3;i++){const step=steps.nth(i);await step.locator(':scope>summary').click();await step.locator('[data-sequence-field=duration]').fill('1')}
  const prep=steps.nth(0);

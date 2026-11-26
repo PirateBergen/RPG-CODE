@@ -2,7 +2,7 @@
   const $=id=>document.getElementById(id)
   let current=null, dirty=false, copyMode=false, store
   try { store=createLocalCampaignDraftStore(window.localStorage) } catch { /* Export remains available without storage. */ }
-  const message=(text,error=false)=>{ $(error?'error':'status').textContent=text; $(error?'status':'error').textContent='' }
+  const message=(text,error=false)=>{ $(error?'error':'status').textContent=text; $(error?'status':'error').textContent='';if($('gmWorkspace').open){$('workspaceStatus').textContent=text;$('workspaceStatus').classList.toggle('workspace-error',error)} }
   const guard=fn=>async(...args)=>{try{await fn(...args)}catch(error){message(error.message || 'Impossible de terminer cette action.',true)}}
   const discard=()=>!dirty || window.confirm('Abandonner les modifications non enregistrées de ce brouillon ?')
   const uuid=()=>crypto.randomUUID()
@@ -11,14 +11,14 @@
   const audioLibrary=createDraftAudioLibrary({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()}})
   const locationPanel=createDraftLocationPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,audioLibrary})
   const bestiaryPanel=createDraftBestiaryPanel({getDefinition:()=>current.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},message,onAbilities:id=>abilityPanel.open(id,'enemy')})
-  const workspace=createDraftGmWorkspace({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},onCreateMap:groupId=>locationPanel.create(groupId),onEditMap:place=>locationPanel.edit(place),onSave:()=>{if(!$('title').value.trim())throw Error('Donnez un titre à la campagne avant de l’enregistrer.');$('editor').requestSubmit()},message,audioLibrary})
-  function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision }
+  const workspace=createDraftGmWorkspace({getDefinition:()=>current?.definition,replaceDefinition:value=>{current={...current,definition:value}},changed:()=>{mark(true);summary()},onCreateMap:groupId=>locationPanel.create(groupId),onEditMap:place=>locationPanel.edit(place),onSave:()=>{if(!$('title').value.trim()){workspace.showTab('campaign');$('title').focus();throw Error('Donnez un titre à la campagne avant de l’enregistrer.');}$('editor').requestSubmit()},message,audioLibrary})
+  function mark(value) { dirty=value; $('state').textContent=value?'Modifications non enregistrées':'Brouillon enregistré localement'; $('delete').disabled=!current?.revision;$('selectedCampaignState').textContent=$('state').textContent }
   function definition() {return createCampaignDefinition({...current.definition,title:$('title').value.trim(),description:$('description').value})}
   function open(record) {
-    current=record; $('empty').hidden=true; $('editor').hidden=false
+    current=record; $('empty').hidden=true; $('editor').hidden=false;$('selectedCampaign').hidden=false;$('selectedCampaignTitle').textContent=record.definition.title
     $('title').value=record.definition.title; $('description').value=record.definition.description || ''
     summary();characterPanel.render();locationPanel.render();bestiaryPanel.render();workspace.render()
-    mark(!record.revision); message(record.revision?'Brouillon ouvert.':'Brouillon prêt. Enregistrez-le pour le retrouver.'); refresh()
+    mark(!record.revision);if(!$('gmWorkspace').open)workspace.open(); message(record.revision?'Brouillon ouvert.':'Brouillon prêt. Enregistrez-le pour le retrouver.'); refresh()
   }
   function summary() {
     const d=current.definition
@@ -64,7 +64,7 @@
   }))
   $('delete').addEventListener('click',guard(()=>{
     if(!current?.revision || !window.confirm('Supprimer ce brouillon local et ses modifications ? Cette action ne touche aucune partie.'))return
-    store.remove(current);current=null;dirty=false;$('editor').hidden=true;$('empty').hidden=false;refresh();message('Brouillon local supprimé.')
+    $('gmWorkspace').close();store.remove(current);current=null;dirty=false;$('selectedCampaign').hidden=true;$('editor').hidden=true;$('empty').hidden=false;refresh();message('Brouillon local supprimé.')
   }))
   $('import').addEventListener('click',()=>{if(discard())$('file').click()})
   $('file').addEventListener('change',guard(async()=>{

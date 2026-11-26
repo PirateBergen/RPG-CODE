@@ -322,6 +322,13 @@
     ],
     "hel-nidhogg.js": [
       "presentation/allies/hel-nidhogg-duo.js"
+    ],
+    "campaign-editor.js": [
+      "platform/storage/draft-store.js",
+      "interface/editor/campaign-editor.js"
+    ],
+    "campaign-editor.css": [
+      "interface/editor/campaign-editor.css"
     ]
   }
 }

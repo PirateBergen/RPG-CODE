@@ -2,7 +2,7 @@ const fs=require('fs'),path=require('path'),os=require('os'),assert=require('ass
 const root=path.resolve(__dirname,'..'),result=build(root,{check:true});let checks=0;
 function test(name,fn){fn();checks++;console.log('OK '+name)}
 test('Tous les points d’entrée restent disponibles, sans ajout de script public',()=>{
- const actual=fs.readdirSync(root).filter(name=>name.endsWith('.js')||name==='style.css').sort();assert.deepEqual([...result.outputs.keys()].sort(),actual);
+ const actual=fs.readdirSync(root).filter(name=>name.endsWith('.js')||name.endsWith('.css')).sort();assert.deepEqual([...result.outputs.keys()].sort(),actual);
  const scripts=require('./browser-scripts.cjs').browserScripts(root);for(const name of scripts)assert(result.outputs.has(name));assert(result.outputs.has('sw.js'));
 });
 test('Les sources de campagne, règles, interface, présentation et infrastructure sont distinctes',()=>{

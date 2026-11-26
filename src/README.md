@@ -53,3 +53,9 @@ Les textes d’introduction, visions, dialogues des runes, choix de malédiction
 - Les statistiques de départ et le partage de tour héros/compagnon utilisent la fiche ; leur comportement historique est comparé à `reports/campaign-characters-baseline-2026-11-26.json`. Les autres dépendances narratives du moteur restent à isoler.
 
 L’objectif confirmé est un site commun permettant à plusieurs MJ de créer et jouer leurs campagnes. Deux échanges finaux distincts sont prévus : une campagne réutilisable avec ses médias et règles compatibles, et une sauvegarde de partie avec sa progression. Le format de brouillon actuel ne remplace aucun de ces deux exports complets. Le premier éditeur peut être développé en espace local séparé ; le lancement public de parties multiples attend l’isolation des espaces et des permissions par groupe.
+
+## Premier atelier local
+
+`campagnes.html` est une entrée autonome : elle charge uniquement le catalogue `config.js` et `campaign-editor.js`, sans Firebase, authentification ni démarrage du jeu. Sa politique de sécurité interdit les connexions. Le formulaire modifie le titre et la description ; les autres catalogues sont conservés par copie. Il peut créer un brouillon minimal, copier le modèle historique sans progression, importer et exporter le format de brouillon existant. Les médias ne sont pas inclus.
+
+`platform/storage/draft-store.js` utilise exclusivement `rpg-campaign-editor:v1:draft:<identifiant-local>`. L’identifiant local est distinct de celui du contenu : deux imports de la même campagne restent deux brouillons. Les révisions empêchent un onglet ancien d’écraser un enregistrement plus récent ; les entrées illisibles sont conservées. Les brouillons restent propres au navigateur, sans compte ni synchronisation. Les sauvegardes de partie ne sont pas lues ou écrites. Aucun bouton de lancement ou remplacement de campagne n’est proposé. Vérification dédiée : `node tests/campaign-editor-browser.cjs`.

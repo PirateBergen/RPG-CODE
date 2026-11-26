@@ -146,6 +146,7 @@ function createCampaignDefinition(input) {
   if (!input || input.schemaVersion !== 1) throw Error("Version de campagne inconnue")
   if (typeof input.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.id)) throw Error("Identifiant de campagne invalide")
   if (typeof input.title !== "string" || !input.title.trim()) throw Error("Titre de campagne absent")
+  if (input.description !== undefined && (typeof input.description !== "string" || input.description.length > 5000)) throw Error("Description invalide (5 000 caractères maximum)")
   if (!Array.isArray(input.characters) || !input.characters.length) throw Error("Personnages de campagne absents")
   const ids = new Set()
   const characters = input.characters.map(character => {
@@ -170,7 +171,7 @@ function createCampaignDefinition(input) {
   if(input.ruleSet!==undefined&&(typeof input.ruleSet!=="string"||!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(input.ruleSet)))throw Error("Identifiant de règles invalide")
   const content={...(input.story!==undefined?{story:createCampaignStory(input.story,characters)}:{}), ...(input.ruleSet!==undefined?{ruleSet:input.ruleSet}:{}),...(input.attacks!==undefined?{attacks:createCampaignAttacks(input.attacks, characters)}:{}), ...(input.items!==undefined?{items:createCampaignItems(input.items)}:{}), ...(input.allies!==undefined?{allies:createCampaignAllies(input.allies)}:{})}
   const catalogs={...(input.world!==undefined?{world:createCampaignWorld(input.world)}:{}), ...(input.enemies!==undefined?{enemies:createCampaignEnemies(input.enemies)}:{})}
-  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...catalogs, ...content, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
+  return Object.freeze({schemaVersion:1, id:input.id, title:input.title, ...(input.description !== undefined ? {description:input.description} : {}), ...catalogs, ...content, characters:Object.freeze(characters.map(character => Object.freeze(character)))})
 }
 // Draft exchange only: references media, does not bundle assets or save a played session.
 function exportCampaignDraft(definition) {
